@@ -13,7 +13,7 @@ function createWindow() {
         }
     });
     win.maximize();
-    win.loadFile('index.html').then();
+    win.loadFile('public/index.html').then();
 
     win.webContents.openDevTools();
 }
@@ -21,7 +21,7 @@ function createWindow() {
 app.on('ready', createWindow);
 
 app.on('window-all-closed', () => {
-    db.close()
+    db.close();
     app.quit();
 });
 

@@ -133,6 +133,6 @@ function ChangeSection(section) {
         arr[i].hidden = arr[i] !== section;
 
     if(section.id === 'section-folders') {
-        DisplayImagesByPath('D:\\Work\\bufer\\ban\\CloudBan').then();
+        DisplayImagesByPath('D:\\Work\\bufer\\locker').then();
     }
 }
