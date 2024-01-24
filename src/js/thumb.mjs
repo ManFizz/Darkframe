@@ -1,5 +1,6 @@
 import { openModal } from './modal.js';
 import { GetFiles } from './backend.js';
+import { GetMediaFile } from "./Display.js";
 
 let gallery = document.querySelector("#gallery");
 
@@ -17,38 +18,6 @@ function GetThumb() {
     el.classList.add('thumb');
     el.classList.add('bg-dark');
     return el;
-}
-
-function GetThumbImg(src) {
-    let img = document.createElement("img");
-    img.src = src;
-    img.onerror = () => {
-        let dis = new Image();
-        dis.src = img.src;
-    };
-    return img;
-}
-function GetThumbVideo(src) {
-    let video = document.createElement("video");
-    video.setAttribute('preload', 'metadata');
-    video.setAttribute("loop","");
-    //video.muted = true;
-    let source = document.createElement("source");
-    source.src = src;
-    video.appendChild(source);
-    video.onerror = () => {
-        let vid = document.createElement("video");
-        vid.src = video.src;
-    };
-    return video;
-}
-
-function GetThumbMarkVideo() {
-    let mark = document.createElement("i");
-    mark.classList.add("bi");
-    mark.classList.add("bi-camera-video-fill");
-    mark.classList.add("video-mark");
-    return mark;
 }
 
 export function BuildThumbReturn(path) {
@@ -77,87 +46,22 @@ export function BuildThumbReturn(path) {
 }
 
 
-function WorkWithRatio(blockElem, display) {
-    CheckRatio(display, blockElem);
-    display.addEventListener('load', () => {
-        CheckRatio(display, blockElem);
-    });
-    display.addEventListener('loadedmetadata', () => {
-        CheckRatio(display, blockElem);
-    });
-    display.onloadeddata = () => { CheckRatio(display, blockElem); };
-    display.onloadedmetadata = () => { CheckRatio(display, blockElem); };
-    display.onload = () => { CheckRatio(display, blockElem); };
+let imageList = [];
 
-}
-
-export function BuildThumbBySrc(path, link = null, tags = null, source = null)
+export function BuildThumbBySrc(thumbUrl, openModalUrl = null, tags = null,
+                                sourceUrl = null, title = null)
 {
-    let blockElem = GetThumb();
-    let display;
-    if(path.match(".*(.jpg|.jpeg|.png|.webp|.gif).*$")) {
-        display = GetThumbImg(path);
-        blockElem.appendChild(display);
-    } else if(path.match(".*(.webm|.mp4|.avi).*$")) {
-        display = GetThumbVideo(path);
-        blockElem.appendChild(display);
-        blockElem.appendChild(GetThumbMarkVideo());
-    } else {
-        console.error('invalid type object: ' + path);
-        return null;
-    }
+    let newDisplayFile = GetMediaFile(thumbUrl, openModalUrl, tags,
+        sourceUrl, title);
 
-    display.onclick = function() {
-        openModal(blockElem, link).then()
+    let blockElem = newDisplayFile.GetThumb();
+    blockElem.onclick = () => {
+        openModal(blockElem, openModalUrl).then();
     };
 
-    WorkWithRatio(blockElem, display);
-    blockElem.setAttribute("tags", tags);
+    //blockElem.setAttribute("tags", tags);
 
     gallery.append(blockElem);
-}
-
-const isOverflown = ({ clientWidth, clientHeight, scrollWidth, scrollHeight }) => {
-    return [scrollHeight > clientHeight, scrollWidth > clientWidth];
-}
-function CheckRatio(display, parent)
-{
-    let width, height;
-    if(display.tagName === "VIDEO")
-    {
-        width = display.videoWidth;
-        height = display.videoHeight;
-    }
-    else
-    {
-        width = display.naturalWidth;
-        height = display.naturalHeight;
-    }
-    if(width === 0 || height === 0)
-        return;
-
-    parent.setAttribute("data-pswp-width", width);
-    parent.setAttribute("data-pswp-height", height);
-
-    let style = "";
-    let ratio = Math.round(width*1.4 / height);
-    if (ratio > 1) {
-        const columns = 3;
-        if(ratio > columns)
-            ratio = columns;
-        style = "grid-column: span " + ratio;
-    }
-
-    ratio = Math.round(height / (width*1.4));
-    if (ratio > 1) {
-        style += "grid-row: span " + ratio;
-    }
-    if(isOverflown(parent)[0])
-        parent.classList.add('long');
-    else
-        parent.classList.remove('long');
-
-    parent.style = style;
 }
 
 

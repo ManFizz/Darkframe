@@ -3,11 +3,16 @@ class DisplayFile {
     width = -1
     height = -1
     sourceUrl
-    thumb
+    thumbUrl
+    tags
 
-    constructor(u) {
-        this.sourceUrl = u
-        this.thumbUrl = u
+    constructor({ title = '', width = -1, height = -1, sourceUrl = '', thumbUrl = '', tags = [] } = {}) {
+        this.title = title;
+        this.width = width;
+        this.height = height;
+        this.sourceUrl = sourceUrl;
+        this.thumbUrl = thumbUrl || sourceUrl || '';
+        this.tags = tags;
     }
 
     GetThumb() {
@@ -19,83 +24,165 @@ class DisplayFile {
         return el;
     }
 
-    //for override
+    // @virtual
     ProcessThumb() {}
-
-    setName(n) {
-        this.title = n;
-    }
-
-    setWidth(w) {
-        this.width = w;
-    }
-
-    setHeight(w) {
-        this.height = w;
-    }
-
-    setThumbUrl(u) {
-        this.thumbUrl = u;
-    }
 }
 
-function GetDisplayFile(path) {
-    if(path.match(".*(.jpg|.jpeg|.png|.webp|.gif).*$")) {
-        display = GetThumbImg(path);
-        blockElem.appendChild(display);
-    } else if(path.match(".*(.webm|.mp4|.avi).*$")) {
-        display = GetThumbVideo(path);
-        blockElem.appendChild(display);
-        blockElem.appendChild(GetThumbMarkVideo());
-    } else {
-        console.error('invalid type object: ' + path);
-        return null;
-    }
-}
-
-class ImageFile extends DisplayFile {
+export class ImageFile extends DisplayFile {
     ProcessThumb = (el) => {
         let img = document.createElement('img');
         img.src = this.thumbUrl
-        if(this.width !== -1) {
-            img.naturalWidth = this.width
-            img.naturalHeight = this.height
-        }
-        img.onerror = () => { //try load again only once
+
+        if(this.width !== -1) img.naturalWidth = this.width
+        if(this.height !== -1) img.naturalHeight = this.height
+
+        //try load again only once
+        img.onerror = () => {
             let dis = new Image()
             dis.src = img.src
         };
-        el.appendChild(img)
+
+        el.appendChild(img);
+        WorkWithRatio(el, img);
     }
 }
 
-class VideoFile extends  DisplayFile {
+export class VideoFile extends  DisplayFile {
+
     ProcessThumb = (el) => {
-        if (this.sourceUrl === this.thumbUrl) {
+        if (IsVideo(this.thumbUrl)) {
             let video = document.createElement("video");
-            video.setAttribute('preload', 'metadata');
-            video.setAttribute("loop","");
-            //video.muted = true;
+            if(this.thumbUrl === this.sourceUrl) {
+                video.setAttribute('preload', 'metadata');
+            }
+            else
+            {
+                video.muted = true;
+                video.autoplay = true;
+                video.loop = true;
+            }
+
             let source = document.createElement("source");
-            source.src = this.sourceUrl;
+            source.src = this.thumbUrl;
             video.appendChild(source);
+
             video.onerror = () => { //try load again only once
                 let vid = document.createElement("video");
                 vid.src = video.src;
             };
-            el.appendChild(video)
-        } else {
-            //custom thumb => thumb is image
+
+            el.appendChild(video);
+            el.appendChild(VideoFile.GetThumbMarkVideo());
+            WorkWithRatio(el, video);
+        }
+        else if (IsImage(this.thumbUrl))
+        {
             let imgF = new ImageFile(this.thumbUrl)
             imgF.ProcessThumb(el);
         }
+        else {
+            console.error('invalid type object in VideoFile:ProcessThumb ' + this.thumbUrl);
+            return null;
+        }
     };
 
-    GetThumbMarkVideo() {
+    static GetThumbMarkVideo() {
         let mark = document.createElement("i");
         mark.classList.add("bi");
         mark.classList.add("bi-camera-video-fill");
         mark.classList.add("video-mark");
         return mark;
     }
+}
+
+export function IsImage(path){
+    return path.match(".*(.jpg|.jpeg|.png|.webp|.gif).*$");
+}
+
+export function IsVideo(path){
+    return path.match(".*(.webm|.mp4|.avi).*$");
+}
+
+export function GetMediaFile(thumbUrl, openModalUrl = null, tags = null,
+                             sourceUrl = null, title = null) {
+    if(IsImage(thumbUrl)) {
+         return new ImageFile({
+            sourceUrl: sourceUrl || thumbUrl,
+            thumbUrl: thumbUrl,
+            tags: tags,
+            title: title,
+        });
+    }
+    else if(IsVideo(thumbUrl))
+    {
+        return new VideoFile({
+            sourceUrl: sourceUrl || thumbUrl,
+            thumbUrl: thumbUrl,
+            tags: tags,
+            title: title,
+        });
+    }
+    else
+    {
+        console.error('invalid type object in GetMediaFile: ' + thumbUrl);
+        return null;
+    }
+}
+
+const isOverflown = ({ clientWidth, clientHeight, scrollWidth, scrollHeight }) => {
+    return [scrollHeight > clientHeight, scrollWidth > clientWidth];
+}
+
+function CheckRatio(display, parent)
+{
+    let width, height;
+    if(display.tagName === "VIDEO")
+    {
+        width = display.videoWidth;
+        height = display.videoHeight;
+    }
+    else
+    {
+        width = display.naturalWidth;
+        height = display.naturalHeight;
+    }
+    if(width === 0 || height === 0)
+        return;
+
+    parent.setAttribute("data-pswp-width", width);
+    parent.setAttribute("data-pswp-height", height);
+
+    let style = "";
+    let ratio = Math.round(width*1.4 / height);
+    if (ratio > 1) {
+        const columns = 3;
+        if(ratio > columns)
+            ratio = columns;
+        style = "grid-column: span " + ratio;
+    }
+
+    ratio = Math.round(height / (width*1.4));
+    if (ratio > 1) {
+        style += "grid-row: span " + ratio;
+    }
+    if(isOverflown(parent)[0])
+        parent.classList.add('long');
+    else
+        parent.classList.remove('long');
+
+    parent.style = style;
+}
+
+function WorkWithRatio(blockElem, display) {
+    CheckRatio(display, blockElem);
+    display.addEventListener('load', () => {
+        CheckRatio(display, blockElem);
+    });
+    display.addEventListener('loadedmetadata', () => {
+        CheckRatio(display, blockElem);
+    });
+    display.onloadeddata = () => { CheckRatio(display, blockElem); };
+    display.onloadedmetadata = () => { CheckRatio(display, blockElem); };
+    display.onload = () => { CheckRatio(display, blockElem); };
+
 }
