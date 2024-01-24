@@ -40,30 +40,6 @@ export function SetNavActive(selector)
 }
 
 
-let incView = 0;
-function ToggleView()
-{
-    gallery.classList.remove('gallery-view-1');
-    gallery.classList.remove('gallery-view-2');
-    gallery.classList.remove('gallery-view-3');
-    switch(incView % 3)
-    {
-        case 0: {
-            gallery.classList.add('gallery-view-1');
-            break;
-        }
-        case 1: {
-            gallery.classList.add('gallery-view-2');
-            break;
-        }
-        case 2: {
-            gallery.classList.add('gallery-view-3');
-            incView = -1;
-            break;
-        }
-    }
-    incView +=1;
-}
 
 function P365GetVideoByURL(url)
 {
@@ -135,4 +111,19 @@ function ChangeSection(section) {
     if(section.id === 'section-folders') {
         DisplayImagesByPath('D:\\Work\\bufer\\locker').then();
     }
+}
+
+let incView = 1;
+function ToggleView()
+{
+    const listView = [1, 2, 3];
+
+    listView.forEach(c => {
+        gallery.classList.remove('gallery-view-' + c);
+    });
+    gallery.classList.add('gallery-view-' + listView[incView]);
+
+    incView ++;
+    if(incView === listView.length)
+        incView = 0;
 }
