@@ -1,5 +1,6 @@
 const path = require('path');
 const HtmlWebpackPlugin = require('html-webpack-plugin')
+const CopyWebpackPlugin = require('copy-webpack-plugin');
 const webpack = require('webpack')
 
 module.exports = {
@@ -20,6 +21,18 @@ module.exports = {
                 test: /\.html$/,
                 use: ['html-loader'],
             },
+            {
+                test: /\.(png|jpe?g|gif)$/i,
+                use: [
+                    {
+                        loader: 'url-loader',
+                        options: {
+                            limit: 102400, // 100 КБ
+                            fallback: 'file-loader',
+                        },
+                    },
+                ],
+            },
         ]
     },
     output: {
@@ -30,6 +43,11 @@ module.exports = {
         new HtmlWebpackPlugin({
             template: './src/html/index.html',
             chunks: ['main'],
+        }),
+        new CopyWebpackPlugin({
+            patterns: [
+                { from: 'public', to: '.' }, // Копировать все файлы из public в dist/public
+            ],
         }),
     ],
 };
