@@ -13,9 +13,8 @@ function createWindow() {
         }
     });
     win.maximize();
-    win.loadFile('public/index.html').then();
-
-    win.webContents.openDevTools();
+    win.loadFile('dist/index.html').then();
+    //win.webContents.openDevTools();
 }
 
 app.on('ready', createWindow);
@@ -26,7 +25,7 @@ app.on('window-all-closed', () => {
 });
 
 let { ipcMain } = require("electron")
-function readdirSortTime(dir, timeKey = 'mtime') {
+function readDirSortTime(dir, timeKey = 'mtime') {
     return (
         fs.readdirSync(dir)
             .map(name => ({
@@ -41,20 +40,18 @@ function readdirSortTime(dir, timeKey = 'mtime') {
 ipcMain.handle("getDirFiles", (event, dir) => {
     if(!fs.existsSync(dir))
         return null;
-    let files = readdirSortTime(dir);
 
-    if(files == null)
-        return null;
+    let files = readDirSortTime(dir);
 
-    return JSON.stringify(files);
+    return files != null ? JSON.stringify(files) : null;
 });
 
 const sqlite3 = require('sqlite3').verbose()
 const db = new sqlite3.Database('./data.db')
 
-function UpdateFavs(event)
+function UpdateFavorites(event)
 {
-    let sql = `SELECT * FROM favorites ORDER BY display`;
+    const sql = `SELECT * FROM favorites ORDER BY display`;
     db.all(sql, [], (err, rows) => {
         if (err) {
             throw err;
@@ -63,24 +60,9 @@ function UpdateFavs(event)
     });
 }
 
-ipcMain.handle("getFavorites", (event) => {
-    UpdateFavs(event);
-})
-
-
-ipcMain.handle("addFavorites", (event, _url, _name, _source, _tags) => {
-    db.run(`INSERT INTO favorites (name, url, source, tags) VALUES (?,?,?,?);`, [_name, _url, _source, _tags], () => {UpdateFavs(event)} );
-})
-
-ipcMain.handle("removeFavorites", (event, _url) => {
-    db.run(`DELETE FROM favorites WHERE url LIKE ?;`, [_url], () => {
-        UpdateFavs(event);
-    });
-})
-
-function UpdateFavTags(event)
+function UpdateFavoriteTags(event)
 {
-    let sql = `SELECT * FROM favorites_tags ORDER BY display`;
+    const sql = `SELECT * FROM favorites_tags ORDER BY display`;
     db.all(sql, [], (err, rows) => {
         if (err) {
             throw err;
@@ -89,19 +71,25 @@ function UpdateFavTags(event)
     });
 }
 
-ipcMain.handle("getFavTags", (event) => {
-    UpdateFavTags(event);
+function AddFavTags(event, _tag){
+    db.run(`INSERT INTO favorites_tags (tag) VALUES (?);`, [_tag], () => { UpdateFavoriteTags(event) });
+}
+
+ipcMain.handle("getFavorites", (event) => { UpdateFavorites(event) })
+
+ipcMain.handle("addFavorites", (event, _url, _name, _source, _tags) => {
+    db.run(`INSERT INTO favorites (name, url, source, tags) VALUES (?,?,?,?);`,
+        [_name, _url, _source, _tags], () => { UpdateFavorites(event) });
 })
 
-ipcMain.handle("AddFavTags", (event, _tag) => {
-    AddFavTags(event, _tag);
+ipcMain.handle("removeFavorites", (event, _url) => {
+    db.run(`DELETE FROM favorites WHERE url LIKE ?;`, [_url],
+        () => { UpdateFavorites(event) });
 })
-function AddFavTags(event, _tag)
-{
-    db.run(`INSERT INTO favorites_tags (tag) VALUES (?);`, [_tag], () => {
-        UpdateFavTags(event);
-    });
-}
+
+ipcMain.handle("getFavTags", (event) => { UpdateFavoriteTags(event) })
+
+ipcMain.handle("AddFavTags", (event, _tag) => { AddFavTags(event, _tag) })
 
 
 

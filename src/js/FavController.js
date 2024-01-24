@@ -1,4 +1,4 @@
-import {BuildThumbBySrc, ClearGallery} from "./thumb.mjs";
+import {BuildThumbBySrc, ClearGallery} from "./thumb.js";
 import {ForceAddFavImage, ForceAddFavTagAddFavTag, ForceRemoveFav} from './backend.js';
 import {SetNavActive} from "./main.js";
 import {ToggleTag} from "./r34.js";

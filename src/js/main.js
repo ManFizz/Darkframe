@@ -1,4 +1,4 @@
-import { ClearGallery, DisplayImagesByPath } from './thumb.mjs';
+import { ClearGallery, DisplayImagesByPath } from './thumb.js';
 import {DisplayP365} from "./p365.js";
 
 $('#sidebarCollapse').on('click', function() {

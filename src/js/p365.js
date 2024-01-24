@@ -1,4 +1,4 @@
-import {BuildThumbBySrc, ClearGallery} from "./thumb.mjs";
+import {BuildThumbBySrc, ClearGallery} from "./thumb.js";
 import {SetNavActive} from "./main.js";
 
 

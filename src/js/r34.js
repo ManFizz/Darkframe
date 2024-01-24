@@ -1,5 +1,5 @@
-import { BuildThumbBySrc, ClearGallery } from "./thumb.mjs";
-import { AddFavTag } from  './FavController.mjs';
+import { BuildThumbBySrc, ClearGallery } from "./thumb.js";
+import { AddFavTag } from './FavController.js';
 import { MaybeForceOpenModal } from './modal.js';
 
 const block_tags = ['scat', 'fart', 'yaoi', 'male_focus', 'zoophilia','fury','furry'];

@@ -1,23 +1,35 @@
 const path = require('path');
-const nodeExternals = require('webpack-node-externals');
+const HtmlWebpackPlugin = require('html-webpack-plugin')
+const webpack = require('webpack')
 
 module.exports = {
+    target: "electron-renderer",
     mode: 'development',
-    entry: {
-        main: './src/js/main.js',
-        r34: './src/js/r34.js',
-        modal: './src/js/modal.js',
-        backend: './src/js/backend.js',
+    entry: './src/js/index.js',
+    module: {
+        rules: [
+            {
+                test: /\.css$/,
+                use: [ 'style-loader', 'css-loader' ]
+            },
+            {
+                test: /\.js$/,
+                use: 'babel-loader'
+            },
+            {
+                test: /\.html$/,
+                use: ['html-loader'],
+            },
+        ]
     },
     output: {
-        filename: '[name].bundle.js',
         path: path.resolve(__dirname, 'dist'),
+        filename: 'bundle.js',
     },
-    target: 'electron-main',
-    externals: [nodeExternals()],
-    resolve: {
-        fallback: {
-            "path": require.resolve("path-browserify"),
-        },
-    },
+    plugins: [
+        new HtmlWebpackPlugin({
+            template: './src/html/index.html',
+            chunks: ['main'],
+        }),
+    ],
 };
