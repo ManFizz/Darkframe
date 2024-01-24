@@ -1,4 +1,4 @@
-import {AddFavTag, OnUpdateFavoritesTags, OnUpdateFavorites} from "./FavController.mjs";
+import {OnUpdateFavoritesTags, OnUpdateFavorites} from "./FavController.mjs";
 
 let { ipcRenderer } = require("electron");
 
