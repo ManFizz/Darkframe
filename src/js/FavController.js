@@ -7,14 +7,14 @@ $( document ).ready(function() {
     document.getElementById('nav-fav').onclick = DisplayFavorites;
 });
 
-function ToggleFav(url, name="", source="", tags="")
+export function ToggleFav(url, name="", source="", tags="")
 {
     if(isFav(url))
         removeFav(url);
     else addFav(url, name, source, tags);
 }
 
-function removeFav(url)
+export function removeFav(url)
 {
     if(Favorites == null)
         return false;
@@ -30,7 +30,7 @@ function removeFav(url)
 export function AddFavTag(tag) {
     ForceAddFavTagAddFavTag(tag);
 }
-function addFav(url, name="", source="", tags="")
+export function addFav(url, name="", source="", tags="")
 {
     if(Favorites == null)
         return false;
@@ -43,8 +43,11 @@ function addFav(url, name="", source="", tags="")
     ForceAddFavImage(url, name, source, tags);
 }
 
-function isFav(url)
+export function isFav(url)
 {
+    if(url == null)
+        return false;
+
     if(Favorites == null)
         return false;
 

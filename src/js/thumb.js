@@ -1,6 +1,7 @@
 import { openModal } from './modal.js';
 import { GetFiles } from './backend.js';
 import { GetMediaFile } from "./Display.js";
+import {addFav, isFav, removeFav} from "./FavController";
 
 let gallery = document.querySelector("#gallery");
 
@@ -55,6 +56,12 @@ export function BuildThumbBySrc(thumbUrl, openModalUrl = null, tags = null,
         sourceUrl, title);
 
     let blockElem = newDisplayFile.GetThumb();
+
+    let overlay = document.createElement("div");
+    overlay.classList.add("overlay");
+    buildOverlay(overlay, sourceUrl || thumbUrl);
+    blockElem.appendChild(overlay);
+
     blockElem.onclick = () => {
         openModal(blockElem, openModalUrl).then();
     };
@@ -62,6 +69,30 @@ export function BuildThumbBySrc(thumbUrl, openModalUrl = null, tags = null,
     //blockElem.setAttribute("tags", tags);
 
     gallery.append(blockElem);
+}
+
+function buildOverlay(overlay, url, fav = null) {
+    if(
+        (fav != null && fav === true)
+        ||
+        (fav !== false && isFav(url))
+    )  {
+        overlay.innerHTML = "<i class=\"bi bi-ban\"></i>";
+        overlay.querySelector(".bi-ban").addEventListener("click", (e) => {
+            e.stopPropagation();
+            removeFav(url);
+            buildOverlay(overlay, url, false);
+        });
+    }
+    else
+    {
+        overlay.innerHTML = "<i class=\"bi bi-heart-fill\"></i>";
+        overlay.querySelector(".bi-heart-fill").addEventListener("click", (e) => {
+            e.stopPropagation();
+            addFav(url);
+            buildOverlay(overlay, url, true);
+        });
+    }
 }
 
 
