@@ -131,6 +131,7 @@ export async function DisplayImagesByPath(path)
         return;
     }
 
+    ClearGallery();
     let arr = JSON.parse(responseText);
     arr.forEach(src => {
         if(src.includes('.nomedia'))
