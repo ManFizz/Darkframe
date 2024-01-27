@@ -17,8 +17,8 @@ export function ForceAddFavTagAddFavTag(tag) {
     ipcRenderer.invoke("AddFavTags", tag).then();
 }
 
-export function ForceAddFavImage(url, name, source, tags) {
-    ipcRenderer.invoke("addFavorites", url, name, source, tags).then();
+export function ForceAddFavImage(url, name, source, tags, remote_type) {
+    ipcRenderer.invoke("addFavorites", url, name, source, tags, 1, remote_type).then();
 }
 
 ipcRenderer.on('getFavorites', (event, arg) => {

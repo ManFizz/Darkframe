@@ -1,4 +1,5 @@
 import {WorkLastTags} from "./r34.js";
+import {imageList} from "./thumb";
 
 let { createPopper } = require('@popperjs/core');
 
@@ -169,14 +170,14 @@ function GetDataFromThumb(link) {
 function ParseTags() {
     while (modalTags.childNodes.length > 0)
         modalTags.childNodes[0].remove();
-
-    let tags = activeDialogElement.getAttribute("tags").split(" ");
+    let id = parseInt(activeDialogElement.getAttribute("id-list"));
+    let tags = imageList[id].tags.split(" ");
     tags.forEach(tag => {
         let span = document.createElement("span");
         span.classList.add("badge");
         span.classList.add("bg-primary");
         span.classList.add("m-1");
-        span.textContent = tag;
+        span.textContent = tag.toString();
         modalTags.appendChild(span);
     });
 }
@@ -192,7 +193,7 @@ export async function openModal(elem = null, videoLink = null) {
         dialog.showModal();
 
     //dialog.scroll();
-    ParseTags();
+    ParseTags(activeDialogElement);
     document.activeElement.blur();
 }
 function CalcLongClass(img)

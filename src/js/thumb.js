@@ -5,10 +5,14 @@ import {addFav, isFav, removeFav} from "./FavController";
 
 let gallery = document.querySelector("#gallery");
 
+let current_remote_type = 1;
+
 export function ClearGallery()
 {
     while (gallery.childNodes.length > 0)
         gallery.childNodes[0].remove();
+
+    imageList = [];
 }
 
 
@@ -47,15 +51,20 @@ export function BuildThumbReturn(path) {
 }
 
 
-let imageList = [];
+export let imageList = [];
 
-export function BuildThumbBySrc(thumbUrl, openModalUrl = null, tags = null,
+export function BuildThumbBySrc(thumbUrl, remote_type, openModalUrl = null, tags = null,
                                 sourceUrl = null, title = null)
 {
-    let newDisplayFile = GetMediaFile(thumbUrl, openModalUrl, tags,
-        sourceUrl, title);
+    current_remote_type = remote_type;
+    let newDisplayFile = GetMediaFile(thumbUrl, openModalUrl, tags, sourceUrl, title);
+    if(newDisplayFile == null)
+        return;
+
+    imageList.push(newDisplayFile);
 
     let blockElem = newDisplayFile.GetThumb();
+    blockElem.setAttribute("id-list", imageList.indexOf(newDisplayFile).toString());
 
     let overlay = document.createElement("div");
     overlay.classList.add("overlay");
@@ -89,7 +98,7 @@ function buildOverlay(overlay, url, fav = null) {
         overlay.innerHTML = "<i class=\"bi bi-heart-fill\"></i>";
         overlay.querySelector(".bi-heart-fill").addEventListener("click", (e) => {
             e.stopPropagation();
-            addFav(url);
+            addFav(url, null, null, null, current_remote_type);
             buildOverlay(overlay, url, true);
         });
     }
@@ -142,7 +151,7 @@ export async function DisplayImagesByPath(path)
             BuildThumbFolder(path, src);
             return;
         }
-        BuildThumbBySrc(path + "\\" + src);
+        BuildThumbBySrc(path + "\\" + src, 1);
     });
     BuildThumbReturn(path);
 }

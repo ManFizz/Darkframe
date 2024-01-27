@@ -13,7 +13,7 @@ function P365GetVideoByURL(url)
 
         let parser = new DOMParser();
         let xmlDoc = parser.parseFromString(x.responseText, "text/html");
-        BuildThumbBySrc(xmlDoc.querySelector("head > meta[property='og:image']").content, xmlDoc.querySelector("head > meta[property='og:video']").content);
+        BuildThumbBySrc(xmlDoc.querySelector("head > meta[property='og:image']").content, 3, xmlDoc.querySelector("head > meta[property='og:video']").content);
     };
     x.send(null);
 }

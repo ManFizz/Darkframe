@@ -77,9 +77,9 @@ function AddFavTags(event, _tag){
 
 ipcMain.handle("getFavorites", (event) => { UpdateFavorites(event) })
 
-ipcMain.handle("addFavorites", (event, _url, _name, _source, _tags) => {
-    db.run(`INSERT INTO favorites (name, url, source, tags) VALUES (?,?,?,?);`,
-        [_name, _url, _source, _tags], () => { UpdateFavorites(event) });
+ipcMain.handle("addFavorites", (event, _url, _name, _source, _tags, _display, _remote_type) => {
+    db.run(`INSERT INTO favorites (name, url, source, tags, display, remote_type) VALUES (?,?,?,?,?,?);`,
+        [_name, _url, _source, _tags, _display, _remote_type], () => { UpdateFavorites(event) });
 })
 
 ipcMain.handle("removeFavorites", (event, _url) => {

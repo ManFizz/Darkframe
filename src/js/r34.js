@@ -203,7 +203,7 @@ async function AddToGalleryByURL(url, pageNum)
         }
 
         posts.forEach(post => {
-            BuildThumbBySrc(post.getAttribute('file_url'), null, post.getAttribute('tags'));
+            BuildThumbBySrc(post.getAttribute('file_url'), 2, null, post.getAttribute('tags'));
         });
         lastRequestLoadByURL = null;
         MaybeForceOpenModal();

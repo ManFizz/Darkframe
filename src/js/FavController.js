@@ -7,13 +7,6 @@ $( document ).ready(function() {
     document.getElementById('nav-fav').onclick = DisplayFavorites;
 });
 
-export function ToggleFav(url, name="", source="", tags="")
-{
-    if(isFav(url))
-        removeFav(url);
-    else addFav(url, name, source, tags);
-}
-
 export function removeFav(url)
 {
     if(Favorites == null)
@@ -30,7 +23,7 @@ export function removeFav(url)
 export function AddFavTag(tag) {
     ForceAddFavTagAddFavTag(tag);
 }
-export function addFav(url, name="", source="", tags="")
+export function addFav(url, name="", source="", tags="", remote_type)
 {
     if(Favorites == null)
         return false;
@@ -40,7 +33,7 @@ export function addFav(url, name="", source="", tags="")
         return;
     }
 
-    ForceAddFavImage(url, name, source, tags);
+    ForceAddFavImage(url, name, source, tags, remote_type);
 }
 
 export function isFav(url)
@@ -103,6 +96,6 @@ function DisplayFavorites()
     ClearGallery();
 
     Favorites.forEach( fav => {
-        BuildThumbBySrc(fav.url);
+        BuildThumbBySrc(fav.url, -1);
     });
 }
