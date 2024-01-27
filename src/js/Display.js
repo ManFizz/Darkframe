@@ -96,7 +96,7 @@ export class VideoFile extends  DisplayFile {
 }
 
 export function IsImage(path){
-    return path.match(".*(.jpg|.jpeg|.png|.webp|.gif).*$");
+    return path.match(".*(.jpg|.jpeg|.png|.webp|.gif|.jfif).*$");
 }
 
 export function IsVideo(path){
