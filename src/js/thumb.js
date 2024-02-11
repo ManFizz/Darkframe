@@ -28,8 +28,9 @@ function GetThumb() {
 export function BuildThumbReturn(path) {
     let arr = path.split('\\');
     path = '';
-    for(let i = 0; i < arr.length - 1; i++)
+    for(let i = 0; i < arr.length - 2; i++)
         path += arr[i] + '\\';
+    path += arr[arr.length - 2];
     let blockElem = GetThumb();
 
     let img = document.createElement("img");
