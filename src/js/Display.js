@@ -1,18 +1,24 @@
+import {isFav} from "./FavController";
+
 class DisplayFile {
     title
-    width = -1
-    height = -1
+    width
+    height
     sourceUrl
     thumbUrl
     tags
+    remote_type = null
+    time
+    _fav = null
 
-    constructor({ title = '', width = -1, height = -1, sourceUrl = '', thumbUrl = '', tags = [] } = {}) {
+    constructor({ title = '', width = -1, height = -1, sourceUrl = '', thumbUrl = '', tags = [] } = {}, time = 0) {
         this.title = title;
         this.width = width;
         this.height = height;
         this.sourceUrl = sourceUrl;
         this.thumbUrl = thumbUrl || sourceUrl || '';
         this.tags = tags;
+        this.time = time;
     }
 
     GetThumb() {
@@ -22,6 +28,12 @@ class DisplayFile {
         el.classList.add('bg-dark');
         this.ProcessThumb(el);
         return el;
+    }
+
+    isFav() {
+        if(this._fav === null)
+            this._fav = isFav(this.thumbUrl);
+        return this._fav;
     }
 
     // @virtual
@@ -92,18 +104,42 @@ export function IsImage(path){
     return path.match(".*(.jpg|.jpeg|.png|.webp|.gif|.jfif).*$");
 }
 
+
+export async function IsAnimated(path) {
+    if(path.match(".*(.gif).*$"))
+        return true;
+
+    if(path.match(".*(.webp).*$")) {
+        const img = new Image();
+        img.src = path;
+        await img.decode();
+
+        try {
+            const imageBitmap = await createImageBitmap(img);
+            if (imageBitmap && imageBitmap.duration > 0) {
+                return true;
+            }
+        } catch (error) {}
+
+        return false;
+    }
+
+    return false;
+}
+
 export function IsVideo(path){
     return path.match(".*(.webm|.mp4|.avi).*$");
 }
 
 export function GetMediaFile(thumbUrl, openModalUrl = null, tags = null,
-                             sourceUrl = null, title = null) {
+                             sourceUrl = null, title = null, time = null) {
     if(IsImage(thumbUrl)) {
          return new ImageFile({
             sourceUrl: sourceUrl || thumbUrl,
             thumbUrl: thumbUrl,
             tags: tags,
             title: title,
+            time: time,
         });
     }
     else if(IsVideo(thumbUrl))
@@ -113,6 +149,7 @@ export function GetMediaFile(thumbUrl, openModalUrl = null, tags = null,
             thumbUrl: thumbUrl,
             tags: tags,
             title: title,
+            time: time,
         });
     }
     else
@@ -141,9 +178,6 @@ function CheckRatio(display, parent)
     }
     if(width === 0 || height === 0)
         return;
-
-    parent.setAttribute("data-pswp-width", width);
-    parent.setAttribute("data-pswp-height", height);
 
     let style = "";
     let ratio = Math.round(width*1.4 / height);

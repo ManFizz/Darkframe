@@ -1,75 +1,60 @@
 import {BuildThumbBySrc, ClearGallery} from "./thumb.js";
-import {ForceAddFavImage, ForceAddFavTagAddFavTag, ForceRemoveFav} from './backend.js';
+import {ForceAddFavImage, ForceAddFavTag, ForceRemoveFav} from './backend.js';
 import {SetNavActive} from "./main.js";
 import {ToggleTag} from "./r34.js";
+
+let Favorites = null;
+export function OnUpdateFavorites(arr) {
+    Favorites = arr;
+}
+
+let FavTags = null;
+export function OnUpdateFavoritesTags(arr) {
+    FavTags = arr;
+    BuildFavoriteTags();
+}
 
 $( document ).ready(function() {
     document.getElementById('nav-fav').onclick = DisplayFavorites;
 });
 
-export function removeFav(url)
-{
-    if(Favorites == null)
-        return false;
-
-    if(!isFav(url)) {
-        console.log('error');
-        return;
-    }
-
-    ForceRemoveFav(url);
-}
-
 export function AddFavTag(tag) {
-    ForceAddFavTagAddFavTag(tag);
+    ForceAddFavTag(tag);
 }
-export function addFav(url, name="", source="", tags="", remote_type)
-{
-    if(Favorites == null)
-        return false;
 
-    if(isFav(url)) {
-        console.log('error');
+export function removeFav(displayFile)
+{
+    if(displayFile.isFav() !== true) {
+        console.log('removeFav :: error');
         return;
     }
 
-    ForceAddFavImage(url, name, source, tags, remote_type);
+    ForceRemoveFav(displayFile);
+}
+
+export function addFav(displayFile)
+{
+    if(displayFile.isFav() !== false) {
+        console.log('addFav :: error');
+        return;
+    }
+
+    ForceAddFavImage(displayFile);
 }
 
 export function isFav(url)
 {
-    if(url == null)
-        return false;
-
-    if(Favorites == null)
+    if(url == null || Favorites == null)
         return false;
 
     for(let i = 0; i < Favorites.length; i++)
-    {
-        let fav = Favorites[i];
-        if(fav.url.toString().localeCompare(url.toString()) === 0)
+        if(Favorites[i].url.toString().localeCompare(url.toString()) === 0)
             return true;
-    }
+
     return false;
 }
 
-let Favorites = null;
-export function OnUpdateFavorites(arr) {
-    let f = false;
-    if (Favorites == null)
-        f = true;
-    Favorites = arr;
-    if (!f)
-        return;
-
-    //gallery.querySelectorAll()
-}
-
-
-
-let FavTags = null;
-export function OnUpdateFavoritesTags(arr) {
-    FavTags = arr;
+function BuildFavoriteTags() {
     let tagList = document.getElementById('tags-fav-select') ;
     while (tagList.childNodes.length)
         tagList.childNodes[0].remove();
@@ -85,7 +70,7 @@ export function OnUpdateFavoritesTags(arr) {
         btn.textContent = tag.tag;
         div.appendChild(btn);
         tagList.appendChild(div);
-    })
+    });
 }
 
 

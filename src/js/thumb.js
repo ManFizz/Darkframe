@@ -1,6 +1,6 @@
 import { openModal } from './modal.js';
 import { GetFiles } from './backend.js';
-import { GetMediaFile } from "./Display.js";
+import {GetMediaFile, ImageFile, IsAnimated} from "./Display.js";
 import {addFav, isFav, removeFav} from "./FavController";
 
 let gallery = document.querySelector("#gallery");
@@ -55,12 +55,15 @@ export function BuildThumbReturn(path) {
 export let imageList = [];
 
 export function BuildThumbBySrc(thumbUrl, remote_type, openModalUrl = null, tags = null,
-                                sourceUrl = null, title = null)
+                                sourceUrl = null, title = null, time = null)
 {
     current_remote_type = remote_type;
-    let newDisplayFile = GetMediaFile(thumbUrl, openModalUrl, tags, sourceUrl, title);
+    let newDisplayFile = GetMediaFile(thumbUrl, openModalUrl, tags, sourceUrl, title, time);
     if(newDisplayFile == null)
         return;
+
+    if(current_remote_type > 0)
+        newDisplayFile.remote_type = current_remote_type;
 
     imageList.push(newDisplayFile);
 
@@ -69,29 +72,23 @@ export function BuildThumbBySrc(thumbUrl, remote_type, openModalUrl = null, tags
 
     let overlay = document.createElement("div");
     overlay.classList.add("overlay");
-    buildOverlay(overlay, sourceUrl || thumbUrl);
+    buildOverlay(overlay, newDisplayFile);
     blockElem.appendChild(overlay);
 
     blockElem.onclick = () => {
         openModal(blockElem, openModalUrl).then();
     };
 
-    //blockElem.setAttribute("tags", tags);
-
     gallery.append(blockElem);
 }
 
-function buildOverlay(overlay, url, fav = null) {
-    if(
-        (fav != null && fav === true)
-        ||
-        (fav !== false && isFav(url))
-    )  {
+function buildOverlay(overlay, displayFile) {
+    if(displayFile.isFav())  {
         overlay.innerHTML = "<i class=\"bi bi-ban\"></i>";
         overlay.querySelector(".bi-ban").addEventListener("click", (e) => {
             e.stopPropagation();
-            removeFav(url);
-            buildOverlay(overlay, url, false);
+            removeFav(displayFile);
+            buildOverlay(overlay, displayFile);
         });
     }
     else
@@ -99,8 +96,8 @@ function buildOverlay(overlay, url, fav = null) {
         overlay.innerHTML = "<i class=\"bi bi-heart-fill\"></i>";
         overlay.querySelector(".bi-heart-fill").addEventListener("click", (e) => {
             e.stopPropagation();
-            addFav(url, null, null, null, current_remote_type);
-            buildOverlay(overlay, url, true);
+            addFav(displayFile);
+            buildOverlay(overlay, displayFile);
         });
     }
 }
