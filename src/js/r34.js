@@ -202,8 +202,10 @@ async function AddToGalleryByURL(url, pageNum)
             }
         }
 
+        const sourceUrl = "https://rule34.xxx/index.php?page=post&s=view&id=";
         posts.forEach(post => {
-            BuildThumbBySrc(post.getAttribute('file_url'), 2, null, post.getAttribute('tags'));
+            BuildThumbBySrc(post.getAttribute('file_url'), 2, null,
+                post.getAttribute('tags'), sourceUrl + post.getAttribute('id'));
         });
         lastRequestLoadByURL = null;
         MaybeForceOpenModal();
