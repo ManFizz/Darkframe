@@ -52,15 +52,8 @@ export class VideoFile extends  DisplayFile {
     ProcessThumb = (el) => {
         if (IsVideo(this.thumbUrl)) {
             let video = document.createElement("video");
-            if(this.thumbUrl === this.sourceUrl) {
-                video.setAttribute('preload', 'metadata');
-            }
-            else
-            {
-                video.muted = true;
-                video.autoplay = true;
-                video.loop = true;
-            }
+            video.setAttribute('preload', 'metadata');
+            video.autoplay = false;
 
             let source = document.createElement("source");
             source.src = this.thumbUrl;
