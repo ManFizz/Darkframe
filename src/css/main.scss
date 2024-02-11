@@ -289,8 +289,9 @@ input[type=range].volume::-moz-range-thumb {
   transition: all 0.3s;
   margin-left: -320px;
   padding: 10px;
-  position: fixed;
+  position: sticky;
   z-index: 2;
+  top: 0;
 }
 
 .sidebar .custom-menu {
