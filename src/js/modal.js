@@ -106,7 +106,7 @@ async function ActivePostNext()
 
 async function ActivePostPrev()
 {
-    if(activeDialogElement.previousElementSibling == null)
+    if(activeDialogElement.previousElementSibling == null || activeDialogElement.previousElementSibling.getAttribute("id-list") === null)
         return;
 
     activeDialogElement = activeDialogElement.previousElementSibling;
@@ -171,6 +171,9 @@ function ParseTags() {
     while (modalTags.childNodes.length > 0)
         modalTags.childNodes[0].remove();
     let id = parseInt(activeDialogElement.getAttribute("id-list"));
+    if(imageList[id].tags === null || imageList[id].tags.length === 0)
+        return;
+
     let tags = imageList[id].tags.split(" ");
     tags.forEach(tag => {
         let span = document.createElement("span");
