@@ -3,7 +3,8 @@
   "version": "1.0.0",
   "main": "main.js",
   "scripts": {
-    "start": "webpack && electron ."
+    "build": "webpack && electron .",
+    "view": "electron ."
   },
   "keywords": [],
   "author": "",
@@ -22,9 +23,12 @@
     "jquery": "^1.9.1",
     "path-browserify": "^1.0.1",
     "popper.js": "^1.16.1",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
     "sqlite3": "5.1.5",
     "twbs-pagination": "^1.4.2",
-    "webpack-node-externals": "^3.0.0"
+    "webpack-node-externals": "^3.0.0",
+    "webpinfo": "^2.0.0"
   },
   "directories": {
     "lib": "lib"

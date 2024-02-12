@@ -1,5 +1,6 @@
 import {WorkLastTags} from "./r34.js";
-import {imageList} from "./thumb";
+import {getImageList} from "./thumb";
+import {VideoFile} from "./Display";
 
 let { createPopper } = require('@popperjs/core');
 
@@ -35,37 +36,22 @@ export function MaybeForceOpenModal() {
     }
 }
 
-$( document ).ready(function() {
-    modalTags = document.querySelector("#modal-tags");
-    dialog = document.querySelector("dialog");
-    dialog.querySelector("#close-modal").onclick = closeModal;
-    dialog.querySelector("#post-prev").onclick = ActivePostPrev;
-    dialog.querySelector("#post-next").onclick = ActivePostNext;
-    dialog.querySelector("#toggle-repeat-1").onclick = toggleRepeat;
-    dialog.querySelector("#toggle-repeat").onclick = toggleRepeat;
-    dialog.querySelector("#btn-mute").onclick = toggleMuted;
-    dialog.querySelector("#btn-volume").onclick = toggleMuted;
-    let videoControl = dialog.querySelector(".time-control");
-    videoControl.querySelector(".bi-skip-start-fill").onclick = () => skipToSec(0);
-    videoControl.querySelector(".bi-rewind-fill").onclick = () => skipSec(-10);
-    videoControl.querySelector(".btn-pause").onclick = togglePlay;
-    videoControl.querySelector(".btn-play").onclick = togglePlay;
-    videoControl.querySelector(".bi-fast-forward-fill").onclick = () => skipSec(10);
-    videoControl.querySelector(".bi-skip-end-fill").onclick = () => skipToSec(-1);
+let seekTooltip;
 
+let timeElapsed;
+let duration;
+export function InitModal() {
+    seekTooltip = document.getElementById('seek-tooltip');
+    dialog = document.querySelector("dialog");
+    modalTags = document.querySelector("#modal-tags");
     progressBar = document.getElementById('progress-bar');
     seek = document.getElementById('seek');
-    seek.addEventListener('input', skipAhead);
+    timeElapsed = document.getElementById('time-elapsed');
+    duration = document.getElementById('duration');
 
-    document.addEventListener('keydown', (e) => {
-        if ((e.key === 'ArrowLeft' || e.key === 'ArrowRight') && dialog.hasAttribute('open'))
-        {
-            if (e.key === 'ArrowLeft')
-                ActivePostPrev().then();
-            else
-                ActivePostNext().then();
-        }
-    });
+    dialog.scrollTop = 0;
+    dialog.scrollLeft = 0;
+
     popperInstance = createPopper(progressBar, seekTooltip, {
         modifiers: [
             {
@@ -79,14 +65,11 @@ $( document ).ready(function() {
         ],
         placement: 'top-start',
     });
-    dialog = document.querySelector('.modal');
-    dialog.scrollTop = 0;
-    dialog.scrollLeft = 0;
-});
+}
 
 let activeDialogElement;
 
-async function ActivePostNext()
+export async function ActivePostNext()
 {
     skipToSec(0);
     if (activeDialogElement.nextElementSibling == null)
@@ -104,7 +87,7 @@ async function ActivePostNext()
     await openModal();
 }
 
-async function ActivePostPrev()
+export async function ActivePostPrev()
 {
     if(activeDialogElement.previousElementSibling == null || activeDialogElement.previousElementSibling.getAttribute("id-list") === null)
         return;
@@ -122,15 +105,20 @@ function GetDataFromThumb(link) {
     if(!video.paused)
         video.pause();
 
+    const imageList = getImageList();
+    let id = parseInt(activeDialogElement.getAttribute("id-list"));
+    if(imageList[id].thumbUrl === null)
+        throw "wtf";
+
     let controls = dialog.querySelector('.video-controls');
-    let thumb = activeDialogElement.querySelector('video');
-    if (thumb != null || link != null) {
+    if (imageList[id] instanceof VideoFile || link != null) {
         controls.style.display = "flex";
         if(link != null)
             video.src = link;
         else {
-            thumb = activeDialogElement.querySelector('source');
-            video.src = thumb.src;
+            //thumb = activeDialogElement.querySelector('source');
+            //video.src = thumb.src;
+            video.src = imageList[id].thumbUrl;
         }
 
         video.style.display = 'block';
@@ -149,8 +137,10 @@ function GetDataFromThumb(link) {
             updateProgress(video)
         });
     } else {
-        thumb = activeDialogElement.querySelector('img');
-        img.src = thumb.src;
+        //thumb = activeDialogElement.querySelector('img');
+        //img.src = thumb.src;
+
+        img.src = imageList[id].thumbUrl;
         img.style.display = 'block';
         video.style.display = 'none';
         video.src = "";
@@ -170,6 +160,8 @@ function GetDataFromThumb(link) {
 function ParseTags() {
     while (modalTags.childNodes.length > 0)
         modalTags.childNodes[0].remove();
+
+    const imageList = getImageList();
     let id = parseInt(activeDialogElement.getAttribute("id-list"));
     if(imageList[id].tags === null || imageList[id].tags.length === 0)
         return;
@@ -207,7 +199,7 @@ function CalcLongClass(img)
         dialog.classList.remove('long');
 }
 
-async function closeModal()
+export async function closeModal()
 {
     dialog.close();
 
@@ -218,7 +210,7 @@ async function closeModal()
     document.querySelector('body').style.overflowY = 'auto';
 }
 
-function togglePlay() {
+export function togglePlay() {
     let video = dialog.querySelector('video');
     if (video.paused || video.ended) {
         video.play().then();
@@ -231,7 +223,7 @@ function togglePlay() {
     }
 }
 
-function toggleRepeat()
+export function toggleRepeat()
 {
     let video = dialog.querySelector('video');
     video.loop = !video.loop;
@@ -240,7 +232,7 @@ function toggleRepeat()
     dialog.querySelector(".btn-repeat-1").classList.toggle('hidden');
 }
 
-function toggleMuted()
+export function toggleMuted()
 {
     let video = dialog.querySelector('video');
     video.muted = !video.muted;
@@ -249,10 +241,6 @@ function toggleMuted()
     dialog.querySelector(".btn-mute").classList.toggle('hidden');
 }
 
-const timeElapsed = document.getElementById('time-elapsed');
-const duration = document.getElementById('duration');
-// formatTime takes a time length in seconds and returns the time in
-// minutes and seconds
 function formatTime(timeInSeconds) {
     const result = new Date(timeInSeconds * 1000);
 
@@ -267,13 +255,13 @@ function updateProgress(video) {
     progressBar.value = Math.floor(video.currentTime);
 }
 
-function skipAhead(event) {
+export function skipAhead(event) {
     const skipTo = event.target.dataset.seek ? event.target.dataset.seek : event.target.value;
     dialog.querySelector('video').currentTime = skipTo;
     progressBar.value = skipTo;
     seek.value = skipTo;
 }
-function skipToSec(skipTo)
+export function skipToSec(skipTo)
 {
     skipTo = parseInt(skipTo);
     let vid = dialog.querySelector('video');
@@ -287,7 +275,7 @@ function skipToSec(skipTo)
     seek.value = skipTo;
 }
 
-function skipSec(seconds)
+export function skipSec(seconds)
 {
     seconds = parseInt(seconds);
     let vid = dialog.querySelector('video');
@@ -302,21 +290,6 @@ function skipSec(seconds)
     seek.value = skipTo;
 }
 
-
-let lastStateVideo = false;
-$( document ).ready(function() {
-    seek.addEventListener('mousemove', updateSeekTooltip);
-    seek.addEventListener('mousedown', (event) => {
-        let vid = dialog.querySelector('video');
-        lastStateVideo = vid.paused;
-        vid.pause();
-    });
-    seek.addEventListener('mouseup', (event) => {
-        let vid = dialog.querySelector('video');
-        if(vid.paused && !lastStateVideo)
-            vid.play().then();
-    });
-});
 function initializeVideo(video) {
     const videoDuration = Math.round(video.duration);
     seek.setAttribute('max', videoDuration.toString());
@@ -332,12 +305,9 @@ function updateTimeElapsed(video) {
     timeElapsed.setAttribute('datetime', `${time.minutes}m ${time.seconds}s`)
 }
 
-const seekTooltip = document.getElementById('seek-tooltip');
-
-
 let off = 100;
 
-function updateSeekTooltip(event) {
+export function updateSeekTooltip(event) {
     const skipTo = Math.round((event.offsetX / event.target.clientWidth) * parseInt(event.target.getAttribute('max'), 10));
     seek.setAttribute('data-seek', skipTo.toString())
     const t = formatTime(skipTo);

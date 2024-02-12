@@ -14,7 +14,7 @@ module.exports = {
                 use: [ 'style-loader', 'css-loader' ]
             },
             {
-                test: /\.js$/,
+                test: /\.(js|jsx)$/,
                 use: 'babel-loader'
             },
             {
@@ -46,8 +46,11 @@ module.exports = {
         }),
         new CopyWebpackPlugin({
             patterns: [
-                { from: 'public', to: '.' }, // Копировать все файлы из public в dist/public
+                { from: 'public', to: '.' },
             ],
         }),
     ],
+    resolve: {
+        extensions: ['.js', '.jsx']
+    },
 };

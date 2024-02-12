@@ -1,4 +1,5 @@
 import {isFav} from "./FavController";
+import {WebPInfo} from "webpinfo";
 
 class DisplayFile {
     title
@@ -59,7 +60,7 @@ export class ImageFile extends DisplayFile {
     }
 }
 
-export class VideoFile extends  DisplayFile {
+export class VideoFile extends DisplayFile {
 
     ProcessThumb = (el) => {
         if (IsVideo(this.thumbUrl)) {
@@ -110,18 +111,8 @@ export async function IsAnimated(path) {
         return true;
 
     if(path.match(".*(.webp).*$")) {
-        const img = new Image();
-        img.src = path;
-        await img.decode();
-
-        try {
-            const imageBitmap = await createImageBitmap(img);
-            if (imageBitmap && imageBitmap.duration > 0) {
-                return true;
-            }
-        } catch (error) {}
-
-        return false;
+        const cleanPath = path.replace(/^file:\/\/\//, '');
+        return await WebPInfo.isAnimated(cleanPath);
     }
 
     return false;

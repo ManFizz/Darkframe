@@ -1,5 +1,4 @@
 import { BuildThumbBySrc, ClearGallery } from "./thumb.js";
-import { AddFavTag } from './FavController.js';
 import { MaybeForceOpenModal } from './modal.js';
 
 const block_tags = ['scat', 'fart', 'yaoi', 'male_focus', 'zoophilia','fury','furry'];
@@ -18,45 +17,6 @@ updated
 const postPerPage = 50;
 
 let currentPage;
-let tagInput;
-let tagUl;
-let tagSelect;
-
-$( document ).ready(function() {
-    let form = document.querySelector("#tags-form");
-    tagUl = form.querySelector('#ul-tags');
-
-    form.addEventListener("submit", async (e) => {
-        e.stopImmediatePropagation();
-        e.preventDefault();
-        let input = form.querySelector("#tags-input");
-        let inputRate = form.querySelector("#rate-input").value;
-        ClearGallery();
-        await WorkTags(input.value + " score:>=" + inputRate);
-    });
-
-    let form2 = document.querySelector('#tag-fav-add');
-    form2.addEventListener("submit", async (e) => {
-        e.stopImmediatePropagation();
-        e.preventDefault();
-        let input = form2.querySelector("input");
-        AddFavTag(input.value);
-        input.value = "";
-    });
-
-    tagInput = document.querySelector('#tags-form input');
-    tagInput.addEventListener('input', () => {
-        FindTag(tagInput.value);
-        UpdateFormTags(tagInput.value.split(' '));
-
-        /*let elem = document.createElement("button");
-        elem.type = "button";
-        elem.classList.add("btn");
-        elem.classList*/
-    });
-
-    tagSelect = document.querySelector("#tags-select");
-});
 
 function BuildUrlByTags(stringTags, page=1)
 {
@@ -83,7 +43,7 @@ function BuildUrlByTags(stringTags, page=1)
 }
 
 let lastTags;
-async function WorkTags(tags, pageNum=1) {
+export async function WorkTags(tags, pageNum=1) {
     currentPage = pageNum;
     lastTags = tags;
 
@@ -101,7 +61,7 @@ function isEmptyOrSpaces(str){
     return str === null || str.match(/^ *$/) !== null;
 }
 
-function UpdateFormTags(tags=null) {
+export function UpdateFormTags(tags=null) {
     if(tags == null)
         tags = document.querySelector("#tags-form input").value.split(' ');
     let form = document.querySelector("#tags-select");
@@ -216,11 +176,12 @@ async function AddToGalleryByURL(url, pageNum)
 }
 
 let lastRequestTagFind = null;
-function FindTag(tag)
+export function FindTag(tag)
 {
     if(lastRequestTagFind !== null)
         lastRequestTagFind.abort();
 
+    let tagUl = document.querySelector('#tags-form #ul-tags');
     let match = tag.match(/[^ -][^ ]*$/);
     if(match == null)
     {
@@ -256,8 +217,11 @@ function FindTag(tag)
 
 function InsertTag(tag)
 {
+    let tagInput = document.querySelector('#tags-form input');
     let value = tagInput.value;
     tagInput.value = value.replace(value.match(/[^ -][^ ]*$/)[0], '') + tag;
+
+    let tagUl = document.querySelector('#tags-form #ul-tags');
     tagUl.classList.remove('show');
     UpdateFormTags();
 }

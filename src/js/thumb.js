@@ -1,44 +1,16 @@
 import { openModal } from './modal.js';
 import { GetFiles } from './backend.js';
 import {GetMediaFile, ImageFile, IsAnimated} from "./Display.js";
-import {addFav, isFav, removeFav} from "./FavController";
+import {addFav, removeFav} from "./FavController";
 
-let gallery = document.querySelector("#gallery");
+let gallery;
 
 let current_remote_type = 1;
 
-document.addEventListener('DOMContentLoaded', function() {
-    let btnOrderSort = document.getElementById("btn-order-sort");
-    btnOrderSort.addEventListener('click', function(event) {
-        event.preventDefault();
+export function InitThumb(){
+    gallery = document.querySelector("#gallery");
+}
 
-        if (typeOrder !== 'asc') {
-            typeOrder = 'asc';
-        } else typeOrder = 'desc';
-
-        let icon = btnOrderSort.querySelector('.fa');
-        if (icon) {
-            icon.className = 'fa fa-sort-' + typeOrder;
-            icon.outerHTML += "";
-        }
-
-        SortFolderDisplay();
-    });
-
-    let btnTypeSort = document.getElementById('btn-type-sort');
-    btnTypeSort.innerText = typeSort;
-    btnTypeSort.addEventListener('click', function(event) {
-        event.preventDefault();
-
-        if(typeSort === 'name'){
-            typeSort = 'time'
-        } else typeSort = 'name';
-
-        btnTypeSort.innerText = typeSort;
-
-        SortFolderDisplay();
-    });
-});
 export function ClearGallery()
 {
     while (gallery.childNodes.length > 0)
@@ -48,7 +20,7 @@ export function ClearGallery()
 }
 
 
-function GetThumb() {
+export function GetThumb() {
 
     let el = document.createElement('div');
     el.classList.add('card');
@@ -57,34 +29,11 @@ function GetThumb() {
     return el;
 }
 
-export function BuildThumbReturn(path) {
-    let arr = path.split('\\');
-    path = '';
-    for(let i = 0; i < arr.length - 2; i++)
-        path += arr[i] + '\\';
-    path += arr[arr.length - 2];
-    let blockElem = GetThumb();
+let imageList = [];
 
-    let img = document.createElement("img");
-    img.src = 'images/return.png';
-    blockElem.appendChild(img);
-
-    blockElem.onclick = () => {
-        ClearGallery();
-        DisplayImagesByPath(path).then();
-    };
-    if(arr.length > 1) {
-        let title = document.createElement('p');
-        title.classList.add('title');
-        title.textContent = arr[arr.length - 2];
-        blockElem.appendChild(title);
-    }
-
-    gallery.insertBefore(blockElem, gallery.firstElementChild);
+export function getImageList() {
+    return imageList;
 }
-
-
-export let imageList = [];
 
 export function BuildThumbBySrc(thumbUrl, remote_type, openModalUrl = null, tags = null,
                                 sourceUrl = null, title = null, time = null)
@@ -108,7 +57,7 @@ export function BuildThumbBySrc(thumbUrl, remote_type, openModalUrl = null, tags
             // Проверка, что изображение успешно загружено
             if (img.complete && img.naturalWidth > 0) {
                 let anim = await IsAnimated(img.src);
-                if(!anim)
+                if(anim === false)
                     resizeImage(img);
                 img.onload = null;
             }
@@ -146,133 +95,6 @@ function buildOverlay(overlay, displayFile) {
         });
     }
 }
-
-
-export function BuildThumbFolder(path, name) {
-    path = path + '\\' + name;
-
-    let blockElem = GetThumb();
-    let img = document.createElement("img");
-    img.src = 'images/folder.png';
-    blockElem.appendChild(img);
-
-    blockElem.onclick = () => {
-        ClearGallery();
-        DisplayImagesByPath(path).then();
-    };
-
-    let title = document.createElement('p');
-    title.classList.add('title');
-    title.textContent = name;
-    blockElem.appendChild(title);
-
-    gallery.insertBefore(blockElem, gallery.firstElementChild);
-}
-
-let typeSort = 'time'; // 'name' или 'time'
-let typeOrder = 'asc'; // 'asc' или 'desc'
-
-const sortFunction = (a, b) => {
-    if (typeSort === 'name') {
-        return typeOrder === 'asc' ? a.name.localeCompare(b.name) : b.name.localeCompare(a.name);
-    } else if (typeSort === 'time') {
-        return typeOrder === 'asc' ? a.time - b.time : b.time - a.time;
-    }
-};
-
-export async function DisplayImagesByPath(path)
-{
-    let mainContainer = document.querySelector("#main-container");
-    let responseText = await GetFiles(path);
-    if(responseText == null) {
-        let warn = document.createElement('div');
-        warn.innerHTML = "<div class=\"alert alert-danger alert-dismissible fade show\">\n" +
-            "    <button type=\"button\" class=\"btn-close\" data-bs-dismiss=\"alert\"></button>\n" +
-            "    <strong>Error!</strong> Maybe this path doesn't exist\n" +
-            "  </div>";
-        mainContainer.insertBefore(warn, mainContainer.firstChild);
-        return;
-    }
-
-    ClearGallery();
-    let arr = JSON.parse(responseText);
-    const sortedArr = arr.sort(sortFunction);
-
-    sortedArr.forEach(item => {
-        const { name, time } = item;
-        if(name.includes('.nomedia'))
-            return;
-
-        if(!name.includes('.')) //is folder
-        {
-            BuildThumbFolder(path, name);
-            return;
-        }
-
-        let absPath = path + "\\" + name;
-        BuildThumbBySrc(absPath, 1, null, null, null, name, time);
-    });
-    BuildThumbReturn(path);
-}
-
-function getValue(object) {
-    if(object === undefined)
-        throw "wtf" + object + " | " + typeof object;
-
-    if(typeSort === 'time')
-        return object.time;
-
-    if(typeSort === 'name')
-        return object.title || object.thumbUrl;
-
-    throw "undef typeSort: [" + typeOrder + "]";
-}
-
-function SortFolderDisplay() {
-    const gallery = document.getElementById('gallery');
-    const thumbs = gallery.querySelectorAll('.thumb');
-
-    const sortedThumbs = Array.from(thumbs).sort(sortFunc);
-
-    sortedThumbs.forEach(thumb => {
-        gallery.insertBefore(thumb, gallery.firstChild);
-    });
-}
-
-
-function sortFunc(a, b) {
-    const idListA = parseInt(a.getAttribute("id-list"));
-    const idListB = parseInt(b.getAttribute("id-list"));
-
-    const validA = IsValidDisplayId(idListA);
-    const validB = IsValidDisplayId(idListB);
-
-    if (validA && validB) {
-        const valueA = getValue(imageList[idListA]),
-            valueB  = getValue(imageList[idListB]);
-
-        if (typeOrder === 'name') {
-            return valueA.localeCompare(valueB);
-        } else {
-            return valueA - valueB;
-        }
-    } else if (validA && !validB) {
-        return -1;
-    } else if (!validA && validB) {
-        return 1;
-    } else {
-        return 0;
-    }
-}
-
-function IsValidDisplayId(id) {
-    if(isNaN(id))
-        return false;
-
-    let object = imageList[id];
-    return object !== null && object !== undefined;
-}
-
 
 function resizeImage(originalImage) {
     const maxDimension = 1080;

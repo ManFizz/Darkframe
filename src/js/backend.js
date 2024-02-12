@@ -16,14 +16,14 @@ export async function GetFiles(path) {
 }
 
 export function ForceRemoveFav(displayFile){
-    ipcRenderer.invoke("removeFavorites", displayFile.thumbUrl).then();
+    ipcRenderer.invoke("removeFavorites", displayFile.thumbUrl);
 }
 
 export function ForceAddFavTag(tag) {
-    ipcRenderer.invoke("AddFavTags", tag).then();
+    ipcRenderer.invoke("AddFavTags", tag);
 }
 
 export function ForceAddFavImage(displayFile) {
-    ipcRenderer.invoke("addFavorites", displayFile.thumbUrl, displayFile.name, displayFile.sourceUrl,
-        displayFile.tags, 1 /* display */, displayFile.remote_type).then();
+    ipcRenderer.invoke("addFavorites", displayFile.thumbUrl, displayFile.title, displayFile.sourceUrl,
+        displayFile.tags, 1 /* display */, displayFile.remote_type);
 }

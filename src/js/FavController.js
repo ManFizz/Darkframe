@@ -14,10 +14,6 @@ export function OnUpdateFavoritesTags(arr) {
     BuildFavoriteTags();
 }
 
-$( document ).ready(function() {
-    document.getElementById('nav-fav').onclick = DisplayFavorites;
-});
-
 export function AddFavTag(tag) {
     ForceAddFavTag(tag);
 }
@@ -29,6 +25,14 @@ export function removeFav(displayFile)
         return;
     }
 
+    const indexToDelete = Favorites.findIndex(fav =>
+        fav.source === displayFile.sourceUrl &&
+        fav.remote_type === displayFile.remote_type);
+
+    if (indexToDelete !== -1) {
+        Favorites.splice(indexToDelete, 1);
+        displayFile._fav = false;
+    }
     ForceRemoveFav(displayFile);
 }
 
@@ -39,6 +43,8 @@ export function addFav(displayFile)
         return;
     }
 
+    Favorites.push(displayFile);
+    displayFile._fav = true;
     ForceAddFavImage(displayFile);
 }
 
@@ -74,13 +80,13 @@ function BuildFavoriteTags() {
 }
 
 
-function DisplayFavorites()
+export function DisplayFavorites()
 {
     SetNavActive("#nav-fav");
 
     ClearGallery();
 
     Favorites.forEach( fav => {
-        BuildThumbBySrc(fav.url, -1);
+        BuildThumbBySrc(fav.url, fav.remote_type, null, fav.tags, fav.source, fav.name);
     });
 }
