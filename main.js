@@ -1,6 +1,14 @@
 const {app, BrowserWindow, ipcRenderer} = require('electron');
 const fs = require('fs');
 
+let openDevTools = false;
+for (let i = 0; i < process.argv.length; i++) {
+    if (process.argv[i] === 'devtools') {
+        openDevTools = true;
+        break;
+    }
+}
+
 let win;
 function createWindow() {
     win = new BrowserWindow({
@@ -14,7 +22,9 @@ function createWindow() {
     });
     win.maximize();
     win.loadFile('dist/index.html').then();
-    //win.webContents.openDevTools();
+    if (openDevTools) {
+        win.webContents.openDevTools();
+    }
 }
 
 app.on('ready', createWindow);
