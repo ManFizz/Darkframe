@@ -6,15 +6,9 @@ export function getTypeOrder() {
 }
 
 export function ToggleOrderSort() {
-    if (typeOrder !== 'asc') {
-        typeOrder = 'asc';
-    } else typeOrder = 'desc';
+    document.querySelector("#btn-order-sort").classList.toggle('flip');
+    typeOrder = typeOrder === 'asc' ? 'desc' : 'asc';
 
-    let icon = document.querySelector('#btn-order-sort .fa');
-    if (icon) {
-        icon.className = 'fa fa-sort-' + typeOrder;
-        icon.outerHTML += "";
-    }
 
     SortFolderDisplay();
 }
@@ -36,15 +30,15 @@ export function ToggleTypeSort() {
     SortFolderDisplay();
 }
 
-export function sortFolderArray(arr) {
-    const sortFunctionArray = (a, b) => {
-        if (typeSort === 'name') {
-            return typeOrder === 'asc' ? a.name.localeCompare(b.name) : b.name.localeCompare(a.name);
-        } else if (typeSort === 'time') {
-            return typeOrder === 'asc' ? a.time - b.time : b.time - a.time;
-        }
-    };
+const sortFunctionArray = (a, b) => {
+    if (typeSort === 'name') {
+        return typeOrder === 'asc' ? a.name.localeCompare(b.name) : b.name.localeCompare(a.name);
+    } else if (typeSort === 'time') {
+        return typeOrder === 'asc' ? a.time - b.time : b.time - a.time;
+    }
+};
 
+export function sortFolderArray(arr) {
     return arr.sort(sortFunctionArray);
 }
 
@@ -53,58 +47,48 @@ let imageList;
 function SortFolderDisplay() {
     imageList = getImageList();
     const gallery = document.getElementById('gallery');
-    const thumbs = gallery.querySelectorAll('.thumb');
+    const thumbs = gallery.childNodes;
+    let itemsArr = [];
+    for (let i in thumbs) {
+        if (thumbs[i].nodeType === 1) {
+            itemsArr.push(thumbs[i]);
+        }
+    }
 
-    const sortedThumbs = sortFolderThumbs(Array.from(thumbs));
-    sortedThumbs.forEach(thumb => {
-        gallery.insertBefore(thumb, null);
-    });
+    itemsArr = sortFolderThumbs(itemsArr);
+    for (let i = 0; i < itemsArr.length; ++i) {
+        gallery.appendChild(itemsArr[i]);
+    }
 }
 
 function sortFolderThumbs(arr) {
+    const getValue = (o) => {
+        if (o === undefined)
+            throw new Error("Invalid object: " + o);
+
+        return typeSort === 'time' ? o.time : (o.title || o.thumbUrl);
+    };
+
     const sortFunctionThumbs = (a, b) => {
         const idListA = parseInt(a.getAttribute("id-list"));
         const idListB = parseInt(b.getAttribute("id-list"));
-        const IsValidDisplayId = (id) => {
-            if(isNaN(id))
-                return false;
 
-            let object = imageList[id];
-            return object !== null && object !== undefined;
-        };
-        const getValue = (object) => {
-            if(object === undefined)
-                throw "wtf" + object + " | " + typeof object;
-
-            if(typeSort === 'time')
-                return object.time;
-
-            if(typeSort === 'name')
-                return object.title || object.thumbUrl;
-
-            throw "undef typeSort: [" + typeOrder + "]";
-        };
+        const IsValidDisplayId = (id) => !isNaN(id) && imageList[id] !== null && imageList[id] !== undefined;
 
         const validA = IsValidDisplayId(idListA);
         const validB = IsValidDisplayId(idListB);
 
-        if (validA && validB) {
-            const valueA = getValue(imageList[idListA]),
-                valueB  = getValue(imageList[idListB]);
+        if (!validA && !validB) return 0;
+        if (validA && !validB) return 1;
+        if (!validA && validB) return -1;
 
-            if (typeOrder === 'name') {
-                return valueA.localeCompare(valueB);
-            } else {
-                return valueA - valueB;
-            }
-        } else if (validA && !validB) {
-            return -1;
-        } else if (!validA && validB) {
-            return 1;
-        } else {
-            return 0;
-        }
-    }
-
+        const valueA = getValue(imageList[idListA]);
+        const valueB = getValue(imageList[idListB]);
+        let result = typeSort === 'name' ? valueA.localeCompare(valueB) : valueA - valueB;
+        if(typeOrder !== 'asc')
+            result *= -1;
+        
+        return result;
+    };
     return arr.sort(sortFunctionThumbs);
 }

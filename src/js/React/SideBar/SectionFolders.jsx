@@ -71,10 +71,10 @@ class SectionFolders extends Component {
                         Sort
                     </button>
                     <button
-                        className="btn btn-primary dropdown-toggle"
+                        className="btn btn-primary"
                         id="btn-order-sort"
                     >
-                        <i className="fa fa-sort"/>
+                        <i className="bi bi-caret-down-fill"/>
                     </button>
                 </div>
             </section>

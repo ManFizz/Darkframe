@@ -12,7 +12,7 @@ class DisplayFile {
     time
     _fav = null
 
-    constructor({ title = '', width = -1, height = -1, sourceUrl = '', thumbUrl = '', tags = [] } = {}, time = 0) {
+    constructor({ title = '', width = -1, height = -1, sourceUrl = '', thumbUrl = '', tags = [], time = 0}) {
         this.title = title;
         this.width = width;
         this.height = height;

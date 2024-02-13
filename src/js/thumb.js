@@ -1,5 +1,4 @@
 import { openModal } from './modal.js';
-import { GetFiles } from './backend.js';
 import {GetMediaFile, ImageFile, IsAnimated} from "./Display.js";
 import {addFav, removeFav} from "./FavController";
 

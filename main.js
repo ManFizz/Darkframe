@@ -43,7 +43,7 @@ function readDirSortTime(dir, timeKey = 'mtime') {
                 time: fs.statSync(`${dir}/${name}`)[timeKey].getTime()
             }))
             .sort((b, a) => (a.time - b.time)) // ascending
-            .map(f => f.name)
+            //.map(f => f.name)
     );
 }
 
