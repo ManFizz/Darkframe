@@ -404,11 +404,12 @@ body {
 }
 
 #tags-fav-select {
-  overflow-y: scroll;
+  overflow-y: auto;
   height: 500px;
   display: grid;
-  align-items: center;
-  justify-items: stretch;
+  align-items: start;
+  align-content: start;
+  justify-content: stretch;
 }
 
 .modal > i {

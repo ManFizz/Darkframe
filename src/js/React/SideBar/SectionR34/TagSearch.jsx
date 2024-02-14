@@ -1,6 +1,6 @@
 import React, {Component} from "react";
 import {ClearGallery} from "../../../thumb";
-import {FindTag, UpdateFormTags, WorkTags} from "../../../r34";
+import {FindTag, UpdateFormTags, AddMedia, GetCurrentSource} from "../../../r34";
 import {AddFavTag} from "../../../FavController";
 
 class TagSearch extends Component {
@@ -13,7 +13,7 @@ class TagSearch extends Component {
             let input = listForm.querySelector("#tags-input");
             let inputRate = listForm.querySelector("#rate-input").value;
             ClearGallery();
-            await WorkTags(input.value + " score:>=" + inputRate);
+            await AddMedia(input.value + " score:>=" + inputRate);
         });
 
         let addForm = document.querySelector('#tag-fav-add');
@@ -21,7 +21,8 @@ class TagSearch extends Component {
             e.stopImmediatePropagation();
             e.preventDefault();
             let input = addForm.querySelector("input");
-            AddFavTag(input.value);
+            AddFavTag(input.value, GetCurrentSource().remoteType);
+            console.log(GetCurrentSource(), GetCurrentSource().remoteType);
             input.value = "";
         });
 

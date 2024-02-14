@@ -1,4 +1,4 @@
-import {WorkLastTags} from "./r34.js";
+import {AddMedia} from "./r34.js";
 import {getImageList} from "./thumb";
 import {VideoFile} from "./Display";
 
@@ -78,7 +78,7 @@ export async function ActivePostNext()
             return;
 
         forceOpenModal = true;
-        WorkLastTags().then();
+        AddMedia(null);
         return;
     }
 

@@ -3,15 +3,16 @@ import {ClearGallery} from "../../thumb";
 import {ChangeSection} from "../../main";
 import {getTypeSort, ToggleOrderSort, ToggleTypeSort} from "../../foldersSort";
 import {DisplayImagesByPath} from "../../folders";
+import PrivateData from "../../../../private";
 
-const startPath = "D:\\Work\\bufer\\locker";
+
 
 class SectionFolders extends Component {
 
     componentDidMount() {
         document.getElementById('nav-fold').onclick = () => {
             ChangeSection('section-folders');
-            DisplayImagesByPath(startPath).then();
+            DisplayImagesByPath(PrivateData.startPath).then();
         };
 
         let btnOrderSort = document.getElementById("btn-order-sort");
@@ -44,7 +45,7 @@ class SectionFolders extends Component {
 
     render() {
         return <>
-            <section id="section-folders" hidden="">
+            <section id="section-folders" hidden>
                 <form className="input-group mb-0" id="path-form">
                     <input
                         className="form-control"

@@ -1,0 +1,6 @@
+const PrivateData = {
+    api_gelbooru: "&api_key=REPLACE&user_id=REPLACE",
+    startPath: "D:\\REPLACE\\REPLACE",
+};
+
+export default PrivateData;

@@ -29,14 +29,13 @@ export class NavBar extends Component {
                             Sites
                             <ul className="dropdown-menu">
                                 <li className="dropdown-item">
-                                    <a className="dropdown-item" id="nav-r34">
-                                        R34
-                                    </a>
+                                    <a className="dropdown-item" id="nav-r34">Rule 34</a>
                                 </li>
                                 <li className="dropdown-item">
-                                    <a className="dropdown-item" id="nav-p365">
-                                        P365
-                                    </a>
+                                    <a className="dropdown-item" id="nav-gelbooru">Gelbooru</a>
+                                </li>
+                                <li className="dropdown-item">
+                                    <a className="dropdown-item" id="nav-p365">P365</a>
                                 </li>
                             </ul>
                         </button>

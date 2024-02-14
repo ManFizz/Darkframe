@@ -81,8 +81,8 @@ function UpdateFavoriteTags(event)
     });
 }
 
-function AddFavTags(event, _tag){
-    db.run(`INSERT INTO favorites_tags (tag) VALUES (?);`, [_tag], () => { UpdateFavoriteTags(event) });
+function AddFavTags(event, _tag, _remote_type){
+    db.run(`INSERT INTO favorites_tags (tag, remote_type) VALUES (?, ?);`, [_tag, _remote_type], () => { UpdateFavoriteTags(event) });
 }
 
 ipcMain.handle("getFavorites", (event) => { UpdateFavorites(event) })
@@ -99,7 +99,7 @@ ipcMain.handle("removeFavorites", (event, _url) => {
 
 ipcMain.handle("getFavTags", (event) => { UpdateFavoriteTags(event) })
 
-ipcMain.handle("AddFavTags", (event, _tag) => { AddFavTags(event, _tag) })
+ipcMain.handle("AddFavTags", (event, _tag, _remote_type) => { AddFavTags(event, _tag, _remote_type) })
 
 
 

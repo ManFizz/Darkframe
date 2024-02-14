@@ -19,8 +19,8 @@ export function ForceRemoveFav(displayFile){
     ipcRenderer.invoke("removeFavorites", displayFile.thumbUrl);
 }
 
-export function ForceAddFavTag(tag) {
-    ipcRenderer.invoke("AddFavTags", tag);
+export function ForceAddFavTag(tag, remoteType) {
+    ipcRenderer.invoke("AddFavTags", tag, remoteType);
 }
 
 export function ForceAddFavImage(displayFile) {
