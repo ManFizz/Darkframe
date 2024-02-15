@@ -1,5 +1,6 @@
-import {isFav} from "./FavController";
+import {addFav, isFav, removeFav} from "./FavController";
 import {WebPInfo} from "webpinfo";
+import {openModal} from "./modal";
 
 class DisplayFile {
     title
@@ -27,6 +28,17 @@ class DisplayFile {
         el.classList.add('card');
         el.classList.add('thumb');
         el.classList.add('bg-dark');
+
+        let overlay = document.createElement("div");
+        overlay.classList.add("overlay");
+        this.buildOverlay(overlay, this);
+        el.appendChild(overlay);
+
+        const pseudoElement = document.createElement('div');
+        pseudoElement.classList.add('background-overlay');
+        pseudoElement.style.backgroundImage = `url(${this.thumbUrl})`;
+        el.append(pseudoElement);
+
         this.ProcessThumb(el);
         return el;
     }
@@ -39,6 +51,26 @@ class DisplayFile {
 
     // @virtual
     ProcessThumb() {}
+    
+    buildOverlay(overlay) {
+        if(this.isFav())  {
+            overlay.innerHTML = "<i class=\"bi bi-ban\"></i>";
+            overlay.querySelector(".bi-ban").addEventListener("click", (e) => {
+                e.stopPropagation();
+                removeFav(this);
+                this.buildOverlay(overlay);
+            });
+        }
+        else
+        {
+            overlay.innerHTML = "<i class=\"bi bi-heart-fill\"></i>";
+            overlay.querySelector(".bi-heart-fill").addEventListener("click", (e) => {
+                e.stopPropagation();
+                addFav(this);
+                this.buildOverlay(overlay);
+            });
+        }
+    }
 }
 
 export class ImageFile extends DisplayFile {
@@ -56,8 +88,24 @@ export class ImageFile extends DisplayFile {
         };
 
         el.appendChild(img);
-        WorkWithRatio(el, img);
+
+        setupCheckRatio(img);
+
+        setupResize(img);
     }
+}
+
+function setupResize(img) {
+    img.onload = async () => {
+        console.log("pre end");
+        if (img.complete && img.naturalWidth > 0) {
+            img.onload = null;
+
+            let anim = await IsAnimated(img.src);
+            if(anim === false)
+                resizeImage(img);
+        }
+    };
 }
 
 export class VideoFile extends DisplayFile {
@@ -79,7 +127,7 @@ export class VideoFile extends DisplayFile {
 
             el.appendChild(video);
             el.appendChild(VideoFile.GetThumbMarkVideo());
-            WorkWithRatio(el, video);
+            setupCheckRatio(video);
         }
         else if (IsImage(this.thumbUrl))
         {
@@ -104,7 +152,6 @@ export class VideoFile extends DisplayFile {
 export function IsImage(path){
     return path.match(".*(.jpg|.jpeg|.png|.webp|.gif|.jfif).*$");
 }
-
 
 export async function IsAnimated(path) {
     if(path.match(".*(.gif).*$"))
@@ -144,63 +191,56 @@ export function GetMediaFile(thumbUrl, openModalUrl = null, tags = null,
         });
     }
     else
-    {
-        console.error('invalid type object in GetMediaFile: ' + thumbUrl);
-        return null;
-    }
+        throw new Error('invalid type object in GetMediaFile: ' + thumbUrl);
 }
 
-const isOverflown = ({ clientWidth, clientHeight, scrollWidth, scrollHeight }) => {
-    return [scrollHeight > clientHeight, scrollWidth > clientWidth];
-}
-
-function CheckRatio(display, parent)
-{
-    let width, height;
-    if(display.tagName === "VIDEO")
-    {
-        width = display.videoWidth;
-        height = display.videoHeight;
-    }
-    else
-    {
-        width = display.naturalWidth;
-        height = display.naturalHeight;
-    }
-    if(width === 0 || height === 0)
-        return;
-
-    let style = "";
-    let ratio = Math.round(width*1.4 / height);
-    if (ratio > 1) {
-        const columns = 3;
-        if(ratio > columns)
-            ratio = columns;
-        style = "grid-column: span " + ratio;
-    }
-
-    ratio = Math.round(height / (width*1.4));
-    if (ratio > 1) {
-        style += "grid-row: span " + ratio;
-    }
-    if(isOverflown(parent)[0])
-        parent.classList.add('long');
-    else
-        parent.classList.remove('long');
-
-    parent.style = style;
-}
-
-function WorkWithRatio(blockElem, display) {
-    CheckRatio(display, blockElem);
+function setupCheckRatio(display) {
+    CheckRatio(display);
     display.addEventListener('load', () => {
-        CheckRatio(display, blockElem);
+        CheckRatio(display);
     });
     display.addEventListener('loadedmetadata', () => {
-        CheckRatio(display, blockElem);
+        CheckRatio(display);
     });
-    display.onloadeddata = () => { CheckRatio(display, blockElem); };
-    display.onloadedmetadata = () => { CheckRatio(display, blockElem); };
-    display.onload = () => { CheckRatio(display, blockElem); };
+    display.onloadeddata = () => { CheckRatio(display); };
+    display.onloadedmetadata = () => { CheckRatio(display); };
+    display.onload = () => { CheckRatio(display); };
+}
 
+function CheckRatio(display) {
+    const width = display.tagName === "VIDEO" ? display.videoWidth : display.naturalWidth;
+    const height = display.tagName === "VIDEO" ? display.videoHeight : display.naturalHeight;
+
+    if (width === 0 || height === 0) return;
+
+    const ratio = width * 1.4 / height;
+    const maxColumns = 3;
+    const maxRows = 3;
+
+    const parent = display.parentElement;
+    if (ratio > 1)
+        parent.style.gridColumn = "span " + Math.min(Math.round(ratio), maxColumns);
+    else if (ratio < 1)
+        parent.style.gridRow = "span " + Math.min(Math.round(1 / ratio), maxRows);
+}
+
+function resizeImage(originalImage, maxDimension = 1080) {
+    const canvas = document.createElement('canvas');
+    const context = canvas.getContext('2d');
+
+    const naturalWidth = originalImage.naturalWidth;
+    const naturalHeight = originalImage.naturalHeight;
+
+    const maxDim = Math.max(naturalWidth, naturalHeight);
+
+    const newWidth = naturalWidth * (maxDimension / maxDim);
+    const newHeight = naturalHeight * (maxDimension / maxDim);
+
+    canvas.width = newWidth;
+    canvas.height = newHeight;
+
+    context.drawImage(originalImage, 0, 0, canvas.width, canvas.height);
+
+    originalImage.src = canvas.toDataURL('image/webp');
+    originalImage.parent.querySelector(".background-overlay").style.backgroundImage = `url(${originalImage.src})`;
 }

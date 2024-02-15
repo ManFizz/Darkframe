@@ -1,5 +1,5 @@
 import {GetFiles} from "./backend";
-import {BuildThumbBySrc, ClearGallery, GetThumb} from "./thumb";
+import {BuildThumbBySrc, ClearGallery} from "./thumb";
 import {sortFolderArray} from "./foldersSort";
 
 export async function DisplayImagesByPath(path)
@@ -35,6 +35,15 @@ export async function DisplayImagesByPath(path)
         BuildThumbBySrc(absPath, 1, null, null, null, name, time);
     });
     BuildThumbReturn(path);
+}
+
+function GetThumb() {
+
+    let el = document.createElement('div');
+    el.classList.add('card');
+    el.classList.add('thumb');
+    el.classList.add('bg-dark');
+    return el;
 }
 
 export function BuildThumbFolder(path, name) {
