@@ -1,4 +1,4 @@
-import {AddMedia} from "./r34.js";
+import {AddMedia, GetCurrentSource, InsertTag} from "./r34.js";
 import {getImageList} from "./thumb";
 import {VideoFile} from "./Display";
 
@@ -173,6 +173,47 @@ function ParseTags() {
         span.classList.add("bg-primary");
         span.classList.add("m-1");
         span.textContent = tag.toString();
+        modalTags.appendChild(span);
+    });
+    if (lastRequestTagsUpdate !== null)
+        lastRequestTagsUpdate.abort();
+
+    const currentSource = GetCurrentSource();
+    if(currentSource.remoteType === 4) {
+        let stringTags = imageList[id].tags;
+
+        const x = new XMLHttpRequest();
+        const url = currentSource.tagsUrl + stringTags;
+        x.open("GET", url, true);
+        x.onload = function() {
+            handleTagsResponse(x.responseText);
+            lastRequestTagsUpdate = null;
+        };
+        x.send();
+        lastRequestTagsUpdate = x;
+    }
+}
+let lastRequestTagsUpdate = null;
+
+function handleTagsResponse(responseText) {
+    while (modalTags.childNodes.length > 0)
+        modalTags.childNodes[0].remove();
+
+    let array = JSON.parse(responseText).tag;
+    array.sort((a, b) => a.type === b.type ? a.name.localeCompare(b.name) : b.type - a.type);
+    array.forEach(tag => {
+        if(tag.type === 6) //Deprecated
+            return;
+
+        let span = document.createElement("span");
+        span.classList.add("badge");
+        span.classList.add("m-1");
+        span.classList.add("tag-type-" + tag.type);
+        span.textContent = tag.name;
+        span.onclick = (e) => {
+            e.preventDefault();
+            InsertTag(tag.name);
+        };
         modalTags.appendChild(span);
     });
 }

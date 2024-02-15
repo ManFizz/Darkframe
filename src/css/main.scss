@@ -98,3 +98,27 @@ body {
 #btn-order-sort.flip .bi-caret-down-fill::before {
   transform: rotateX(180deg);
 }
+
+.tag-type-0 {
+  background-color: rgb(var(--bs-primary-rgb));
+}
+
+.tag-type-1 {
+  background-color: rgb(var(--bs-secondary-rgb));
+}
+
+.tag-type-2 {
+  background-color: rgb(var(--bs-info-rgb));
+}
+
+.tag-type-3 {
+  background-color: rgb(var(--bs-success-rgb));
+}
+
+.tag-type-4 {
+  background-color: rgb(var(--bs-danger-rgb));
+}
+
+.tag-type-5 {
+  background-color: rgb(var(--bs-warning-rgb));
+}

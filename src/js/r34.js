@@ -15,6 +15,8 @@ const sources = {
         mainUrl: "https://gelbooru.com/index.php?page=dapi&s=post&q=index" + PrivateData.api_gelbooru,
         tagUrl: "https://gelbooru.com/index.php?page=dapi&s=tag&q=index&json=1&limit=8&orderby=count" +
             PrivateData.api_gelbooru + "&name_pattern=",
+        tagsUrl: "https://gelbooru.com/index.php?page=dapi&s=tag&q=index&json=1" +
+            PrivateData.api_gelbooru + "&names=",
         sourceUrl: "https://gelbooru.com/index.php?page=dapi&s=post&q=index" +
             PrivateData.api_gelbooru + "&id=",
         remoteType: 4,
@@ -230,9 +232,12 @@ function handleTagResponse(responseText, tagUl) {
     tagUl.classList.add('show');
 }
 
-function InsertTag(tag) {
+export function InsertTag(tag) {
     const tagInput = document.querySelector('#tags-form input');
     const value = tagInput.value;
+    if(value.includes(tag)) //Probably some issue TODO
+        return;
+
     const match = value.match(/[^ -][^ ]*$/);
 
     if (match) {
