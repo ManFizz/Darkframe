@@ -27,12 +27,13 @@ create table favorites_tags
 (
     id      INTEGER
         primary key autoincrement,
-    tag     STRING(64)
-        unique,
+    tag     STRING(64),
     display INT default 1,
     remote_type
         constraint favorites_tags_remote_types_id_fk
-            references remote_types
+            references remote_types,
+    constraint favorites_tags_pk
+        unique (tag, remote_type)
 );
 
 create table history
