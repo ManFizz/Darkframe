@@ -3,7 +3,7 @@ import {ClearGallery} from "../../thumb";
 import {ChangeSection} from "../../main";
 import {getTypeSort, ToggleOrderSort, ToggleTypeSort} from "../../foldersSort";
 import {DisplayImagesByPath} from "../../folders";
-import PrivateData from "../../../../private";
+import PrivateData from "../../../../data/private";
 
 
 

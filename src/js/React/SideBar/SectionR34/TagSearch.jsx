@@ -22,7 +22,6 @@ class TagSearch extends Component {
             e.preventDefault();
             let input = addForm.querySelector("input");
             AddFavTag(input.value, GetCurrentSource().remoteType);
-            console.log(GetCurrentSource(), GetCurrentSource().remoteType);
             input.value = "";
         });
 
@@ -56,6 +55,7 @@ class TagSearch extends Component {
                     name="rate-input"
                     min={0}
                     max={2000}
+                    step={10}
                     defaultValue={0}
                 />
             </form>

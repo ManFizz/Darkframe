@@ -20,10 +20,8 @@ export function AddFavTag(tag, remoteType) {
 
 export function removeFav(displayFile)
 {
-    if(displayFile.isFav() !== true) {
-        console.log('removeFav :: error');
-        return;
-    }
+    if(displayFile.isFav() !== true)
+        throw new Error('removeFav :: error');
 
     const indexToDelete = Favorites.findIndex(fav =>
         fav.source === displayFile.sourceUrl &&
@@ -38,10 +36,8 @@ export function removeFav(displayFile)
 
 export function addFav(displayFile)
 {
-    if(displayFile.isFav() !== false) {
-        console.log('addFav :: error');
-        return;
-    }
+    if(displayFile.isFav() !== false)
+        throw new Error('addFav :: error');
 
     Favorites.push(displayFile);
     displayFile._fav = true;

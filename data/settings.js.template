@@ -1,0 +1,5 @@
+const Settings = {
+    safeView: false,
+};
+
+export default Settings;

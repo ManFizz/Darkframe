@@ -1,6 +1,6 @@
 import { BuildThumbBySrc, ClearGallery } from "./thumb.js";
 import { MaybeForceOpenModal } from './modal.js';
-import PrivateData from "../../private";
+import PrivateData from "../../data/private";
 
 const sources = {
     r34: {
@@ -52,7 +52,7 @@ export function AddMedia(stringTags, pageNum= 1) {
     const tags = currentTags.split(' ');
     UpdateFormTags(tags);
 
-    const inputPageUrl = `${currentSource.mainUrl}&limit=${postPerPage}&pid=${pageNum - 1}&tags=${tags.join('+')}`;
+    const inputPageUrl = `${currentSource.mainUrl}&limit=${postPerPage}&pid=${currentPage - 1}&tags=${tags.join('+')}`;
     AddToGalleryByURL(inputPageUrl, currentPage).then();
 }
 

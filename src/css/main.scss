@@ -10,6 +10,10 @@
   user-select: none;
 }
 
+.blur img, .blur video {
+  filter: blur(50px);
+}
+
 #main-container {
   -webkit-transition: all 0.3s;
   -o-transition: all 0.3s;

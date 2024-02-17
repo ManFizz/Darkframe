@@ -1,6 +1,6 @@
 import {addFav, isFav, removeFav} from "./FavController";
 import {WebPInfo} from "webpinfo";
-import {openModal} from "./modal";
+import Settings from "../../data/settings";
 
 class DisplayFile {
     title
@@ -29,15 +29,13 @@ class DisplayFile {
         el.classList.add('thumb');
         el.classList.add('bg-dark');
 
+        if(Settings.safeView)
+            el.classList.add('blur');
+
         let overlay = document.createElement("div");
         overlay.classList.add("overlay");
         this.buildOverlay(overlay, this);
         el.appendChild(overlay);
-
-        const pseudoElement = document.createElement('div');
-        pseudoElement.classList.add('background-overlay');
-        pseudoElement.style.backgroundImage = `url(${this.thumbUrl})`;
-        el.append(pseudoElement);
 
         this.ProcessThumb(el);
         return el;
@@ -86,8 +84,12 @@ export class ImageFile extends DisplayFile {
             let dis = new Image()
             dis.src = img.src
         };
-
         el.appendChild(img);
+
+        const pseudoElement = document.createElement('img');
+        pseudoElement.classList.add('background-overlay');
+        pseudoElement.src = this.thumbUrl;
+        el.append(pseudoElement);
 
         setupCheckRatio(img);
 
@@ -97,7 +99,6 @@ export class ImageFile extends DisplayFile {
 
 function setupResize(img) {
     img.onload = async () => {
-        console.log("pre end");
         if (img.complete && img.naturalWidth > 0) {
             img.onload = null;
 
@@ -134,10 +135,8 @@ export class VideoFile extends DisplayFile {
             let imgF = new ImageFile(this.thumbUrl)
             imgF.ProcessThumb(el);
         }
-        else {
-            console.error('invalid type object in VideoFile:ProcessThumb ' + this.thumbUrl);
-            return null;
-        }
+        else
+            throw new Error('invalid type object in VideoFile:ProcessThumb ' + this.thumbUrl);
     };
 
     static GetThumbMarkVideo() {
@@ -150,15 +149,16 @@ export class VideoFile extends DisplayFile {
 }
 
 export function IsImage(path){
-    return path.match(".*(.jpg|.jpeg|.png|.webp|.gif|.jfif).*$");
+    return path.toLowerCase().match(".*(.jpg|.jpeg|.png|.webp|.gif|.jfif)$");
 }
 
 export async function IsAnimated(path) {
-    if(path.match(".*(.gif).*$"))
+    const lowerCasePath = path.toLowerCase();
+    if(lowerCasePath.match(".*(.gif)$"))
         return true;
 
-    if(path.match(".*(.webp).*$")) {
-        const cleanPath = path.replace(/^file:\/\/\//, '');
+    if(lowerCasePath.match(".*(.webp)$")) {
+        const cleanPath = lowerCasePath.replace(/^file:\/\/\//, '');
         return await WebPInfo.isAnimated(cleanPath);
     }
 
@@ -166,7 +166,7 @@ export async function IsAnimated(path) {
 }
 
 export function IsVideo(path){
-    return path.match(".*(.webm|.mp4|.avi).*$");
+    return path.toLowerCase().match(".*(.webm|.mp4|.avi)$");
 }
 
 export function GetMediaFile(thumbUrl, openModalUrl = null, tags = null,
@@ -180,7 +180,8 @@ export function GetMediaFile(thumbUrl, openModalUrl = null, tags = null,
             time: time,
         });
     }
-    else if(IsVideo(thumbUrl))
+
+    if(IsVideo(thumbUrl))
     {
         return new VideoFile({
             sourceUrl: sourceUrl || thumbUrl,
@@ -190,8 +191,11 @@ export function GetMediaFile(thumbUrl, openModalUrl = null, tags = null,
             time: time,
         });
     }
-    else
-        throw new Error('invalid type object in GetMediaFile: ' + thumbUrl);
+
+    if(!thumbUrl.toLowerCase().match(".*(.txt)$"))
+        console.log('invalid type object in GetMediaFile: ' + thumbUrl);
+
+    return null;
 }
 
 function setupCheckRatio(display) {
@@ -224,7 +228,7 @@ function CheckRatio(display) {
         parent.style.gridRow = "span " + Math.min(Math.round(1 / ratio), maxRows);
 }
 
-function resizeImage(originalImage, maxDimension = 1080) {
+function resizeImage(originalImage, maxDimension = 1024) {
     const canvas = document.createElement('canvas');
     const context = canvas.getContext('2d');
 
@@ -242,5 +246,5 @@ function resizeImage(originalImage, maxDimension = 1080) {
     context.drawImage(originalImage, 0, 0, canvas.width, canvas.height);
 
     originalImage.src = canvas.toDataURL('image/webp');
-    originalImage.parent.querySelector(".background-overlay").style.backgroundImage = `url(${originalImage.src})`;
+    originalImage.parentElement.querySelector(".background-overlay").src = originalImage.src;
 }

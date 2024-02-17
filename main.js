@@ -1,6 +1,8 @@
 const {app, BrowserWindow, ipcRenderer} = require('electron');
 const fs = require('fs');
 
+let { ipcMain } = require("electron")
+
 let openDevTools = false;
 for (let i = 0; i < process.argv.length; i++) {
     if (process.argv[i] === 'devtools') {
@@ -34,7 +36,6 @@ app.on('window-all-closed', () => {
     app.quit();
 });
 
-let { ipcMain } = require("electron")
 function readDirSortTime(dir, timeKey = 'mtime') {
     return (
         fs.readdirSync(dir)
