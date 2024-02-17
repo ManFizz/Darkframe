@@ -221,6 +221,11 @@ function handleTagsResponse(responseText) {
 export async function openModal(elem = null, videoLink = null) {
     if(elem != null)
         activeDialogElement = elem;
+    const old = document.querySelector(".modal-active");
+    if(old !== null)
+        old.classList.remove("modal-active");
+    activeDialogElement.classList.add("modal-active");
+
 
     GetDataFromThumb(videoLink);
 
@@ -242,6 +247,9 @@ function CalcLongClass(img)
 
 export async function closeModal()
 {
+    const old = document.querySelector(".modal-active");
+    if(old !== null)
+        old.classList.remove("modal-active");
     dialog.close();
 
     let videoModal = dialog.querySelector('video');
