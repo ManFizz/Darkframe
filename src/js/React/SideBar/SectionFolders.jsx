@@ -1,34 +1,10 @@
 import React, {Component} from 'react';
 import {ClearGallery} from "../../thumb";
-import {ChangeSection} from "../../main";
-import {getTypeSort, ToggleOrderSort, ToggleTypeSort} from "../../foldersSort";
 import {DisplayImagesByPath} from "../../folders";
-import PrivateData from "../../../../data/private";
-
-
 
 class SectionFolders extends Component {
 
     componentDidMount() {
-        document.getElementById('nav-fold').onclick = () => {
-            ChangeSection('section-folders');
-            DisplayImagesByPath(PrivateData.startPath).then();
-        };
-
-        let btnOrderSort = document.getElementById("btn-order-sort");
-        btnOrderSort.addEventListener('click', function(event) {
-            event.preventDefault();
-            ToggleOrderSort();
-        });
-
-        let btnTypeSort = document.getElementById('btn-type-sort');
-        btnTypeSort.innerText = getTypeSort();
-        btnTypeSort.addEventListener('click', function(event) {
-            event.preventDefault();
-            ToggleTypeSort();
-        });
-
-
         let form = document.querySelector("#path-form");
         form.addEventListener("reset", async () => {
             ClearGallery();

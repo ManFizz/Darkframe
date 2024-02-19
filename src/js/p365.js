@@ -1,6 +1,4 @@
 import {BuildThumbBySrc, ClearGallery} from "./thumb.js";
-import {SetNavActive} from "./main.js";
-
 
 function P365GetVideoByURL(url)
 {
@@ -36,9 +34,6 @@ export function DisplayP365() {
         let xmlDoc = parser.parseFromString(x.responseText, "text/html")
         let urls = xmlDoc.querySelectorAll(".video_block a");
         if(urls != null) {
-
-            SetNavActive("#nav-p365");
-
             ClearGallery();
 
             urls.forEach(link => {

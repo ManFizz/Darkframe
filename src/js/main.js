@@ -1,40 +1,31 @@
-import {DisplayP365} from "./p365.js";
-
 let gallery;
 
 export function InitMain()
 {
     gallery = document.querySelector("#gallery");
-    document.getElementById('nav-toggle-view').onclick = ToggleView;
-    document.getElementById('nav-p365').onclick = DisplayP365;
     document.getElementById('sidebarCollapse').onclick = () => {
         document.querySelector('.sidebar').classList.toggle('open');
         document.getElementById('main-container').classList.toggle('sidebar-open');
     }
 }
 
-export function SetNavActive(selector)
-{
-    let parent = document.querySelectorAll("#parent-nav");
-    parent.forEach((node) => {
-        node.classList.remove('active');
-    });
-    document.querySelector(selector).parentNode.classList.add("active");
-}
+export let currentSection = "section-r34";
 
 export function ChangeSection(section) {
+    currentSection = section;
+
     let sidebar = document.querySelector('.sidebar');
-    section = document.getElementById(section);
+    let el = document.getElementById(section);
     if(!section)
-        throw new Error('Invalid section' + section);
+        console.log('Invalid section' + section);
 
     let arr = sidebar.getElementsByTagName('section');
     for(let i = 0; i < arr.length; i++)
-        arr[i].hidden = arr[i] !== section;
+        arr[i].hidden = arr[i] !== el;
 }
 
 let incView = 1;
-function ToggleView()
+export function ToggleView()
 {
     const listView = [1, 2, 3];
 

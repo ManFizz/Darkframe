@@ -1,6 +1,5 @@
 import {BuildThumbBySrc, ClearGallery} from "./thumb.js";
 import {ForceAddFavImage, ForceAddFavTag, ForceRemoveFav} from './backend.js';
-import {SetNavActive} from "./main.js";
 import {GetCurrentSource, ToggleTag} from "./r34.js";
 
 let Favorites = null;
@@ -83,8 +82,6 @@ export function BuildFavoriteTags() {
 
 export function DisplayFavorites()
 {
-    SetNavActive("#nav-fav");
-
     ClearGallery();
 
     Favorites.forEach( fav => {

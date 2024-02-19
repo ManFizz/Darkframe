@@ -1,4 +1,8 @@
 .sidebar {
+  &.open {
+    margin-left: 0;
+  }
+
   min-width: 320px;
   max-width: 320px;
   -webkit-transition: all 0.3s;
@@ -11,7 +15,7 @@
   top: 0;
 }
 
-.sidebar .custom-menu {
+.custom-menu {
   display: inline-block;
   position: absolute;
   top: 20px;
@@ -21,14 +25,21 @@
   -o-transition: 0.3s;
   transition: 0.3s;
   z-index: 1;
+
+  .btn {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+  }
 }
 
-.sidebar .custom-menu .btn {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-}
+.tag-list {
 
-.sidebar.open {
-  margin-left: 0;
+  button {
+    padding: 3px;
+  }
+
+  .btn-group {
+    margin: 2px;
+  }
 }

@@ -1,32 +1,24 @@
 import {getImageList} from "./thumb";
+import {currentSection} from "./main";
 
 let typeOrder = 'asc'; // 'asc' или 'desc'
-export function getTypeOrder() {
-    return typeOrder;
-}
 
 export function ToggleOrderSort() {
     document.querySelector("#btn-order-sort").classList.toggle('flip');
     typeOrder = typeOrder === 'asc' ? 'desc' : 'asc';
 
-
     SortFolderDisplay();
 }
 
 let typeSort = 'time'; // 'name' или 'time'
-export function getTypeSort() {
-    return typeSort;
-}
 
-//let sortTypes = ['name', 'type']; TODO
+export function SetTypeSort(type) {
+    if(type in ['name', 'time'])
+        throw new Error("undef type sort");
 
-export function ToggleTypeSort() {
-    if(typeSort === 'name'){
-        typeSort = 'time'
-    } else typeSort = 'name';
+    typeSort = type;
 
-    document.querySelector("#btn-type-sort").innerText = typeSort;
-
+    if(currentSection === "section-folders")
     SortFolderDisplay();
 }
 
@@ -41,7 +33,6 @@ const sortFunctionArray = (a, b) => {
 export function sortFolderArray(arr) {
     return arr.sort(sortFunctionArray);
 }
-
 
 let imageList;
 function SortFolderDisplay() {
