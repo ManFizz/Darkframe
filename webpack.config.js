@@ -6,7 +6,7 @@ const webpack = require('webpack')
 module.exports = {
     target: "electron-renderer",
     mode: 'development',
-    entry: './src/js/index.js',
+    entry: './webpack.imports.js',
     module: {
         rules: [
             {
