@@ -34,10 +34,10 @@ body {
 }
 
 .main-split {
-  height: calc(100vh - 54px);
+  height: calc(100vh - 58px);
 
   nav {
-    height: calc(100vh - 54px);
+    height: calc(100vh - 58px);
   }
 }
 
@@ -47,11 +47,11 @@ body {
 
 #tags-fav-select {
   overflow-y: auto;
-  height: 500px;
-  display: grid;
-  align-items: start;
-  align-content: start;
-  justify-content: stretch;
+  display: flex;
+  flex-wrap: wrap;
+  flex-direction: row;
+  align-content: flex-start;
+  max-height: 60vh;
 }
 
 .modal > i {
@@ -59,76 +59,29 @@ body {
   position: fixed;
 }
 
-.thumb p.title {
-  color: white;
-  text-align: center;
-  font-size: 32px;
-  padding: 0;
-  margin: auto;
-  filter: drop-shadow(3px 2px 1px black);
-  position: absolute;
-  bottom: 10px;
-  left: 5px;
-  right: 5px;
-}
+#btn-order-sort {
+  .bi-caret-down-fill::before {
+    transition: .2s linear;
+  }
 
-.card {
-  position: relative;
-  overflow: hidden;
-
-  :hover .overlay {
-    opacity: 1;
+  &.flip .bi-caret-down-fill::before {
+    transform: rotateX(180deg);
   }
 }
 
-.overlay {
-  position: absolute;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(0deg, rgba(0, 0, 0, 0.5), transparent, transparent, transparent);
-  opacity: 0;
-  display: flex;
-  align-items: flex-end;
-  justify-content: flex-end;
-  padding-right: 5px;
+$tag-colors: (
+        0: primary,
+        1: secondary,
+        2: info,
+        3: success,
+        4: danger,
+        5: warning
+);
 
-  i {
-    font-size: 22px;
-    color: white;
-    cursor: pointer;
+@each $class, $color in $tag-colors {
+  .tag-type-#{$class} {
+    background-color: rgb(var(--bs-#{$color}-rgb));
   }
-}
-
-#btn-order-sort .bi-caret-down-fill::before {
-  transition: .2s linear;
-}
-
-#btn-order-sort.flip .bi-caret-down-fill::before {
-  transform: rotateX(180deg);
-}
-
-.tag-type-0 {
-  background-color: rgb(var(--bs-primary-rgb));
-}
-
-.tag-type-1 {
-  background-color: rgb(var(--bs-secondary-rgb));
-}
-
-.tag-type-2 {
-  background-color: rgb(var(--bs-info-rgb));
-}
-
-.tag-type-3 {
-  background-color: rgb(var(--bs-success-rgb));
-}
-
-.tag-type-4 {
-  background-color: rgb(var(--bs-danger-rgb));
-}
-
-.tag-type-5 {
-  background-color: rgb(var(--bs-warning-rgb));
 }
 
 .background-overlay {
@@ -146,8 +99,47 @@ body {
 .thumb {
   background-color: transparent !important;
   transition: .4s ease-out;
+  position: relative;
+  overflow: hidden;
+  border-color: transparent;
 
   img, video{
     margin: auto 0;
+  }
+
+  p.title {
+    color: white;
+    text-align: center;
+    font-size: 32px;
+    padding: 0;
+    margin: auto;
+    filter: drop-shadow(3px 2px 1px black);
+    position: absolute;
+    bottom: 10px;
+    left: 5px;
+    right: 5px;
+  }
+
+  &:hover .overlay {
+    opacity: 1;
+  }
+}
+
+.overlay {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-end;
+  padding-right: 5px;
+  transition: .1s linear;
+
+  i {
+    font-size: 22px;
+    color: white;
+    cursor: pointer;
+    filter: drop-shadow(1px 1px 1px black);
   }
 }

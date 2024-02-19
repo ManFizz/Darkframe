@@ -1,3 +1,7 @@
+.modal[open] {
+  display: block;
+}
+
 .modal {
   min-height: 100vh;
   min-width: 100vw;
@@ -6,6 +10,23 @@
   margin: 0;
   max-width: 100vw;
   max-height: 100vh;
+  border: 0;
+
+  img, video {
+    height: 100%;
+    width: 100%;
+    object-fit: contain;
+    min-width: 600px;
+  }
+
+  img {
+    -webkit-user-drag: none;
+    pointer-events: none;
+  }
+
+  video {
+    max-height: 100vh;
+  }
 }
 
 .modal-active {
@@ -17,32 +38,13 @@
   background: rgba(0, 0, 0, 0.4);
 }
 
-.modal img {
-  height: 100%;
-  width: 100%;
-  object-fit: contain;
-  min-width: 600px;
-}
-
-.modal video {
-  height: 100%;
-  width: 100%;
-  object-fit: contain;
-  min-width: 600px;
-  max-height: 100vh;
-}
-
 .modal.long {
   height: fit-content;
-}
 
-.modal.long img {
-  max-width: 1000px;
-  margin: auto;
-}
-
-.modal[open] {
-  display: block;
+  img {
+    max-width: 1000px;
+    margin: auto;
+  }
 }
 
 .btn-cancel {
@@ -75,9 +77,4 @@
 .arrow-left {
   left: 0;
   top: 50%;
-}
-
-.modal img {
-  -webkit-user-drag: none;
-  pointer-events: none;
 }

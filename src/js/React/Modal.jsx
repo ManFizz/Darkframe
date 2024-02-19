@@ -36,13 +36,11 @@ class Modal extends Component {
                 <i className="bi bi-x-lg btn-cancel" id="close-modal"/>
                 <VideoControls/>
                 <img alt=""/>
-                <video autoPlay="" loop=""/>
+                <video autoPlay={true} loop={true}/>
                 <div
-                    className="col-md-6 d-flex flex-wrap justify-content-center mx-auto pt-2"
+                    className="col-md-6 d-flex flex-wrap justify-content-center mx-auto"
                     id="modal-tags"
-                >
-                    <span className="badge bg-primary">Ass focus</span>
-                </div>
+                />
             </dialog>
         </>;
     };

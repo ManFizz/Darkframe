@@ -22,7 +22,7 @@
 
 .gallery-view-2 {
   display: grid;
-  align-items: stretch;
+  align-items: center;
   grid-template-columns: repeat(8, auto);
   grid-auto-flow: row dense;
   width: 100%;
