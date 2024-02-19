@@ -86,10 +86,12 @@ export class ImageFile extends DisplayFile {
         };
         el.appendChild(img);
 
-        const pseudoElement = document.createElement('img');
-        pseudoElement.classList.add('background-overlay');
-        pseudoElement.src = this.thumbUrl;
-        el.append(pseudoElement);
+        if(Settings.backgroundImg) {
+            const pseudoElement = document.createElement('img');
+            pseudoElement.classList.add('background-overlay');
+            pseudoElement.src = this.thumbUrl;
+            el.append(pseudoElement);
+        }
 
         setupCheckRatio(img);
 
@@ -199,6 +201,8 @@ export function GetMediaFile(thumbUrl, openModalUrl = null, tags = null,
 }
 
 function setupCheckRatio(display) {
+    if(!Settings.checkRatio) return;
+
     CheckRatio(display);
     display.addEventListener('load', () => {
         CheckRatio(display);
@@ -246,5 +250,7 @@ function resizeImage(originalImage, maxDimension = 1024) {
     context.drawImage(originalImage, 0, 0, canvas.width, canvas.height);
 
     originalImage.src = canvas.toDataURL('image/webp');
-    originalImage.parentElement.querySelector(".background-overlay").src = originalImage.src;
+    let backOverlay = originalImage.parentElement.querySelector(".background-overlay");
+    if(backOverlay)
+        backOverlay.src = originalImage.src;
 }

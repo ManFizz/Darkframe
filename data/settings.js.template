@@ -1,5 +1,7 @@
 const Settings = {
     safeView: false,
+    backgroundImg: true,
+    checkRatio: true,
 };
 
 export default Settings;
