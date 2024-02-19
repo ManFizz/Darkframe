@@ -1,4 +1,5 @@
 import {BuildThumbBySrc, ClearGallery} from "./thumb.js";
+import Private from "../../data/private";
 
 function P365GetVideoByURL(url)
 {
@@ -21,7 +22,7 @@ let P365currentDomain = 'wow';
 let P365protocol = 'http://'
 
 export function DisplayP365() {
-    const url = P365protocol + P365currentDomain + '.porno365.bond/user/176139';
+    const url = P365protocol + P365currentDomain + '.porno365.bond/user/' + Private.P365UserId;
     const x = new XMLHttpRequest();
     x.overrideMimeType('application/xml');
     x.open("GET", url, true);
