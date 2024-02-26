@@ -1,70 +1,123 @@
 import React, {Component} from 'react';
-import {skipAhead, skipSec, skipToSec, toggleMuted, togglePlay, toggleRepeat, updateSeekTooltip} from "../../modal";
-import {createPopper} from "@popperjs/core";
+import {
+    BsFastForwardFill,
+    BsFillPauseFill, BsFillPlayFill,
+    BsFillRewindFill, BsFillSkipEndFill,
+    BsFillSkipStartFill,
+    BsFillVolumeMuteFill,
+    BsFillVolumeUpFill,
+    BsRepeat,
+    BsRepeat1
+} from "react-icons/bs";
 
 class VideoControls extends Component {
-    static lastStateVideo = false;
+    constructor(props) {
+        super(props);
 
-    componentDidMount() {
-        let dialog = document.querySelector("dialog");
-        dialog.querySelector("#toggle-repeat-1").onclick = toggleRepeat;
-        dialog.querySelector("#toggle-repeat").onclick = toggleRepeat;
-        dialog.querySelector("#btn-mute").onclick = toggleMuted;
-        dialog.querySelector("#btn-volume").onclick = toggleMuted;
-        let videoControl = dialog.querySelector(".time-control");
-        videoControl.querySelector(".bi-skip-start-fill").onclick = () => skipToSec(0);
-        videoControl.querySelector(".bi-rewind-fill").onclick = () => skipSec(-10);
-        videoControl.querySelector(".btn-pause").onclick = togglePlay;
-        videoControl.querySelector(".btn-play").onclick = togglePlay;
-        videoControl.querySelector(".bi-fast-forward-fill").onclick = () => skipSec(10);
-        videoControl.querySelector(".bi-skip-end-fill").onclick = () => skipToSec(-1);
+        this.toggleMute = this.toggleMute.bind(this);
+        this.togglePlay = this.togglePlay.bind(this);
+        this.skipAhead = this.skipAhead.bind(this);
+        this.skipToSec = this.skipToSec.bind(this);
+        this.skipSec = this.skipSec.bind(this);
+        this.handleSeekMouseUp = this.handleSeekMouseUp.bind(this);
+        this.handleSeekMouseDown = this.handleSeekMouseDown.bind(this);
 
-        let seek = document.getElementById('seek');
-        seek.addEventListener('input', skipAhead);
-
-        seek.addEventListener('mousemove', updateSeekTooltip);
-        seek.addEventListener('mousedown', () => {
-            let vid = dialog.querySelector('video');
-            this.lastStateVideo = vid.paused;
-            vid.pause();
-        });
-        seek.addEventListener('mouseup', () => {
-            let vid = dialog.querySelector('video');
-            if(vid.paused && !this.lastStateVideo)
-                vid.play().then();
-        });
+        this.lastStateVideo = false;
     }
 
+    toggleMute() {
+        const { video } = this.props;
+        video.muted = !video.muted;
+    }
+
+    togglePlay() {
+        const { video } = this.props;
+        const isPaused = (video.paused || video.ended);
+        if(isPaused)
+            video.play().then();
+        else
+            video.pause();
+    }
+
+    skipAhead(event) {
+        const { video } = this.props;
+        const newValue = event.target.dataset.seek ? event.target.dataset.seek : event.target.value;
+        if(newValue !== Math.round(video.currentTime))
+            video.currentTime = newValue;
+    }
+
+    skipToSec(skipTo) {
+        const { video } = this.props;
+        video.currentTime = Math.max(0, Math.min(skipTo, video.duration));
+    }
+
+    skipSec(seconds) {
+        const { video } = this.props;
+        video.currentTime = Math.max(0, Math.min(video.currentTime + seconds, video.duration));
+    }
+
+    formatTime(timeInSeconds) {
+        const date = new Date(timeInSeconds * 1000);
+        const time = {
+            minutes: date.getMinutes(),
+            seconds: date.getSeconds() < 10 ? "0" + date.getSeconds() : date.getSeconds(),
+        };
+        return `${time.minutes}:${time.seconds}`;
+    }
+
+    handleSeekMouseUp() {
+        const { video } = this.props;
+        if(video.paused && !this.lastStateVideo)
+            video.play().then();
+    }
+
+    handleSeekMouseDown() {
+        const { video } = this.props;
+        this.lastStateVideo = video.paused;
+        video.pause();
+    }
+
+
     render() {
+        const { isLooped, isMuted, isPaused, currentTime, videoDuration, toggleLoop } = this.props;
         return <>
             <div className="video-controls">
                 <div className="video-misc">
-                    <i className="bi bi-repeat-1 btn-repeat-1" id="toggle-repeat-1"/>
-                    <i className="bi bi-repeat  btn-repeat hidden" id="toggle-repeat"/>
-                    <i className="bi bi-volume-mute-fill btn-mute hidden" id="btn-mute"/>
-                    <i className="bi bi-volume-up-fill btn-volume" id="btn-volume"/>
+                    <BsRepeat1 onClick={toggleLoop} style={{ display: isLooped ? 'block' : 'none' }}/>
+                    <BsRepeat onClick={toggleLoop} style={{ display: !isLooped ? 'block' : 'none' }}/>
+                    <BsFillVolumeMuteFill onClick={this.toggleMute} style={{ display: isMuted ? 'block' : 'none' }}/>
+                    <BsFillVolumeUpFill onClick={this.toggleMute} style={{ display: !isMuted ? 'block' : 'none' }}/>
                 </div>
                 <div className="time-control">
-                    <time id="time-elapsed">00:00</time>
-                    <i className="bi bi-skip-start-fill"/>
-                    <i className="bi bi-rewind-fill"/>
-                    <i className="bi bi-pause-fill btn-pause"/>
-                    <i className="bi bi-play-fill btn-play hidden"/>
-                    <i className="bi bi-fast-forward-fill"/>
-                    <i className="bi bi-skip-end-fill"/>
-                    <time id="duration">00:00</time>
+                    <time id="time-elapsed">{this.formatTime(currentTime)}</time>
+                    <BsFillSkipStartFill onClick={() => this.skipToSec(0)}/>
+                    <BsFillRewindFill onClick={() => this.skipSec(-10)}/>
+                    <BsFillPauseFill onClick={this.togglePlay} style={{ display: !isPaused ? 'block' : 'none' }}/>
+                    <BsFillPlayFill onClick={this.togglePlay} style={{ display: isPaused ? 'block' : 'none' }}/>
+                    <BsFastForwardFill onClick={() => this.skipSec(10)}/>
+                    <BsFillSkipEndFill onClick={() => this.skipToSec(Number.MAX_VALUE)}/>
+                    <time id="duration">{this.formatTime(videoDuration)}</time>
                 </div>
                 <div className="video-progress">
-                    <progress id="progress-bar" value={0}/>
+                    <progress
+                        value={currentTime}
+                        max={videoDuration}
+                    />
                     <input
                         className="seek"
                         id="seek"
-                        defaultValue={0}
                         min={0}
                         type="range"
-                        step={1}
+                        step={0.25}
+                        onChange={this.skipAhead}
+                        value={currentTime}
+                        max={videoDuration}
+                        onMouseUp={this.handleSeekMouseUp}
+                        onMouseDown={this.handleSeekMouseDown}
                     />
-                    <div className="seek-tooltip" id="seek-tooltip">
+                    <div
+                        className="seek-tooltip"
+                    >
                         <div id="arrow" data-popper-arrow="true">
                             .
                         </div>

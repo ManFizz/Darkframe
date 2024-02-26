@@ -1,7 +1,8 @@
 import React, {Component} from "react";
 import {ClearGallery} from "../../../thumb";
-import {FindTag, UpdateFormTags, AddMedia, GetCurrentSource} from "../../../r34";
+import {FindTag, UpdateFormTags, AddMedia} from "../../../r34";
 import {AddFavTag} from "../../../FavController";
+import {currentSource} from "../../../main";
 
 class TagSearch extends Component {
 
@@ -21,7 +22,7 @@ class TagSearch extends Component {
             e.stopImmediatePropagation();
             e.preventDefault();
             let input = addForm.querySelector("input");
-            AddFavTag(input.value, GetCurrentSource().remoteType);
+            AddFavTag(input.value, currentSource.remoteType);
             input.value = "";
         });
 

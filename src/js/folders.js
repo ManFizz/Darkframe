@@ -1,6 +1,8 @@
 import {GetFiles} from "./backend";
 import {BuildThumbBySrc, ClearGallery} from "./thumb";
 import {sortFolderArray} from "./foldersSort";
+import {getGallery, updateGallery} from "./AppInitializer";
+import {Folder, Return} from "./Display";
 
 export async function DisplayImagesByPath(path)
 {
@@ -37,60 +39,36 @@ export async function DisplayImagesByPath(path)
     BuildThumbReturn(path);
 }
 
-function GetThumb() {
-
-    let el = document.createElement('div');
-    el.classList.add('card');
-    el.classList.add('thumb');
-    el.classList.add('bg-dark');
-    return el;
-}
-
 export function BuildThumbFolder(path, name) {
-    path = path + '\\' + name;
+    let displayList = getGallery();
+    if(!displayList)
+        displayList = [];
 
-    let blockElem = GetThumb();
-    let img = document.createElement("img");
-    img.src = 'images/folder.png';
-    blockElem.appendChild(img);
+    const folderDisplay = new Folder({
+        title: name,
+        sourceUrl: path,
+        thumbUrl: name,
+    });
+    displayList.unshift(folderDisplay);
 
-    blockElem.onclick = () => {
-        ClearGallery();
-        DisplayImagesByPath(path).then();
-    };
-
-    let title = document.createElement('p');
-    title.classList.add('title');
-    title.textContent = name;
-    blockElem.appendChild(title);
-
-    const gallery = document.getElementById('gallery');
-    gallery.insertBefore(blockElem, gallery.firstElementChild);
+    updateGallery(displayList);
 }
 
 
 export function BuildThumbReturn(path) {
-    let arr = path.split('\\');
-    path = '';
-    for(let i = 0; i < arr.length - 2; i++)
-        path += arr[i] + '\\';
-    path += arr[arr.length - 2];
-    let blockElem = GetThumb();
+    let displayList = getGallery();
+    if(!displayList)
+        displayList = [];
 
-    let img = document.createElement("img");
-    img.src = 'images/return.png';
-    blockElem.appendChild(img);
+    const pathParts = path.split('\\');
+    path = pathParts.slice(0, -1).join('\\');
+    const name = pathParts[pathParts.length - 2];
+    const folderDisplay = new Return({
+        title: name,
+        sourceUrl: path,
+        thumbUrl: name,
+    });
+    displayList.unshift(folderDisplay);
 
-    blockElem.onclick = () => {
-        ClearGallery();
-        DisplayImagesByPath(path).then();
-    };
-    if(arr.length > 1) {
-        let title = document.createElement('p');
-        title.classList.add('title');
-        title.textContent = arr[arr.length - 2];
-        blockElem.appendChild(title);
-    }
-
-    gallery.insertBefore(blockElem, gallery.firstElementChild);
+    updateGallery(displayList);
 }

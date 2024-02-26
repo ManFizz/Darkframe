@@ -1,51 +1,31 @@
 import { BuildThumbBySrc, ClearGallery } from "./thumb.js";
 import { MaybeForceOpenModal } from './modal.js';
+import {currentSource} from "./main";
 import PrivateData from "../../data/private";
 
-const sources = {
-    r34: {
-        name: "Rule 34",
-        mainUrl: "https://api.rule34.xxx/index.php?page=dapi&s=post&q=index",
-        tagUrl: "https://api.rule34.xxx/autocomplete.php?q=",
-        sourceUrl: "https://rule34.xxx/index.php?page=post&s=view&id=",
-        remoteType: 2,
-    },
-    gelbooru: {
-        name: "Gelbooru",
-        mainUrl: "https://gelbooru.com/index.php?page=dapi&s=post&q=index" + PrivateData.api_gelbooru,
-        tagUrl: "https://gelbooru.com/index.php?page=dapi&s=tag&q=index&json=1&limit=8&orderby=count" +
-            PrivateData.api_gelbooru + "&name_pattern=",
-        tagsUrl: "https://gelbooru.com/index.php?page=dapi&s=tag&q=index&json=1" +
-            PrivateData.api_gelbooru + "&names=",
-        sourceUrl: "https://gelbooru.com/index.php?page=dapi&s=post&q=index" +
-            PrivateData.api_gelbooru + "&id=",
-        remoteType: 4,
+const postPerPage = 100;
+
+export function addByIdArray() {
+    const idArray = PrivateData.idArray;
+    for(let i=0; i < idArray.length; i++) {
+        const id = idArray[i];
+        setTimeout(() => AddMedia(`id:=${id}`), i*1000);
     }
-};
-
-const postPerPage = 50;
-
-
-let currentSource = sources.r34;
-export function GetCurrentSource() {
-    return currentSource;
 }
 
-export function SetSource(name) {
-    if(name === sources.r34.name)
-        currentSource = sources.r34;
-    else if(name === sources.gelbooru.name)
-        currentSource = sources.gelbooru;
-    else throw new Error("undefined source: " + name);
-}
-
+let maxPosts = 0;
 let currentPage;
 let currentTags;
+
 export function AddMedia(stringTags, pageNum= 1) {
     if(stringTags !== null) {
         currentPage = pageNum;
         currentTags = stringTags;
     } else {
+        const maxPages = Math.ceil(maxPosts/postPerPage);
+        if(maxPages <= currentPage)
+            return;
+
         currentPage += 1;
     }
 
@@ -135,12 +115,12 @@ function sendRequest(url, pageNum) {
 }
 
 function handleResponse(responseXML, pageNum) {
-    const max = parseInt(responseXML.querySelector('posts').getAttribute('count'));
+    maxPosts = parseInt(responseXML.querySelector('posts').getAttribute('count'));
     const offset = parseInt(responseXML.querySelector('posts').getAttribute('offset'));
     const posts = responseXML.querySelectorAll("post");
 
     if (offset === 0) {
-        handlePagination(posts.length, max, pageNum);
+        //handlePagination(posts.length, maxPosts, pageNum);
     }
 
     const sourceUrl = currentSource.sourceUrl;

@@ -1,10 +1,10 @@
 import React, {Component} from 'react';
 import {BuildFavoriteTags, DisplayFavorites} from "../FavController";
-import {ChangeSection, currentSection, ToggleView} from "../main";
+import {ChangeSection, currentSection, SetSource, ToggleView} from "../main";
 import {DisplayImagesByPath} from "../folders";
 import PrivateData from "../../../data/private";
 import {SetTypeSort, ToggleOrderSort} from "../foldersSort";
-import {AddMedia, SetSource} from "../r34";
+import {AddMedia} from "../r34";
 import {DisplayP365} from "../p365";
 import {ClearGallery} from "../thumb";
 
@@ -19,11 +19,13 @@ export class NavBar extends Component {
     }
 
     clickFolderHandler = () => {
+        ClearGallery();
         ChangeSection('section-folders');
         DisplayImagesByPath(PrivateData.startPath).then();
     }
 
     clickR34Handler = (sourceName) => {
+        ClearGallery();
         ChangeSection('section-r34');
         SetSource(sourceName);
         document.querySelector("#section-r34 .h1").innerText = sourceName;
@@ -31,11 +33,13 @@ export class NavBar extends Component {
     }
 
     clickP365Handler = () => {
+        ClearGallery();
         ChangeSection('section-p365');
         DisplayP365();
     }
 
     clickFavoriteHandler = () => {
+        ClearGallery();
         ChangeSection('section-favorite');
         DisplayFavorites();
     }

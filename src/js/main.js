@@ -1,13 +1,37 @@
-let gallery;
+import PrivateData from "../../data/private";
 
-export function InitMain()
-{
-    gallery = document.querySelector("#gallery");
-    document.getElementById('sidebarCollapse').onclick = () => {
-        document.querySelector('.sidebar').classList.toggle('open');
-        document.getElementById('main-container').classList.toggle('sidebar-open');
+const sources = {
+    r34: {
+        name: "Rule 34",
+        mainUrl: "https://api.rule34.xxx/index.php?page=dapi&s=post&q=index",
+        tagUrl: "https://api.rule34.xxx/autocomplete.php?q=",
+        sourceUrl: "https://rule34.xxx/index.php?page=post&s=view&id=",
+        remoteType: 2,
+    },
+    gelbooru: {
+        name: "Gelbooru",
+        mainUrl: "https://gelbooru.com/index.php?page=dapi&s=post&q=index" + PrivateData.api_gelbooru,
+        tagUrl: "https://gelbooru.com/index.php?page=dapi&s=tag&q=index&json=1&limit=8&orderby=count" +
+            PrivateData.api_gelbooru + "&name_pattern=",
+        tagsUrl: "https://gelbooru.com/index.php?page=dapi&s=tag&q=index&json=1" +
+            PrivateData.api_gelbooru + "&names=",
+        sourceUrl: "https://gelbooru.com/index.php?page=dapi&s=post&q=index" +
+            PrivateData.api_gelbooru + "&id=",
+        remoteType: 4,
     }
+};
+
+export let currentSource = sources.r34;
+
+export function SetSource(name) {
+    if(name === sources.r34.name)
+        currentSource = sources.r34;
+    else if(name === sources.gelbooru.name)
+        currentSource = sources.gelbooru;
+    else throw new Error("undefined source: " + name);
 }
+
+let gallery;
 
 export let currentSection = "section-r34";
 

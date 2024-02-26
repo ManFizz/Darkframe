@@ -135,6 +135,7 @@ $tag-colors: (
   justify-content: flex-end;
   padding-right: 5px;
   transition: .1s linear;
+  z-index: 50;
 
   i {
     font-size: 22px;

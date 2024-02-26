@@ -1,6 +1,7 @@
 import {BuildThumbBySrc, ClearGallery} from "./thumb.js";
 import {ForceAddFavImage, ForceAddFavTag, ForceRemoveFav} from './backend.js';
-import {GetCurrentSource, ToggleTag} from "./r34.js";
+import {ToggleTag} from "./r34.js";
+import {currentSource} from "./main";
 
 let Favorites = null;
 export function OnUpdateFavorites(arr) {
@@ -31,6 +32,9 @@ export function removeFav(displayFile)
         displayFile._fav = false;
     }
     ForceRemoveFav(displayFile);
+
+    if(displayFile._updateFavStatus)
+        displayFile._updateFavStatus();
 }
 
 export function addFav(displayFile)
@@ -41,6 +45,9 @@ export function addFav(displayFile)
     Favorites.push(displayFile);
     displayFile._fav = true;
     ForceAddFavImage(displayFile);
+
+    if(displayFile._updateFavStatus)
+        displayFile._updateFavStatus();
 }
 
 export function isFav(url)
@@ -60,7 +67,7 @@ export function BuildFavoriteTags() {
     while (tagList.childNodes.length)
         tagList.childNodes[0].remove();
 
-    let currentRemote = GetCurrentSource().remoteType;
+    let currentRemote = currentSource.remoteType;
 
     FavTags.forEach( tag => {
         if(tag.remote_type !== currentRemote)

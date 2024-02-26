@@ -1,26 +1,11 @@
-import { openModal } from './modal.js';
-import {GetMediaFile, ImageFile} from "./Display.js";
-
-let gallery;
+import {GetMediaFile} from "./Display.js";
+import {getGallery, updateGallery} from "./AppInitializer";
 
 let current_remote_type = 1;
 
-export function InitThumb(){
-    gallery = document.querySelector("#gallery");
-}
-
 export function ClearGallery()
 {
-    while (gallery.childNodes.length > 0)
-        gallery.childNodes[0].remove();
-
-    imageList = [];
-}
-
-let imageList = [];
-
-export function getImageList() {
-    return imageList;
+    updateGallery([]);
 }
 
 export function BuildThumbBySrc(thumbUrl, remote_type, openModalUrl = null, tags = null,
@@ -34,17 +19,9 @@ export function BuildThumbBySrc(thumbUrl, remote_type, openModalUrl = null, tags
     if(current_remote_type > 0)
         newDisplayFile.remote_type = current_remote_type;
 
-    imageList.push(newDisplayFile);
-
-    let blockElem = newDisplayFile.GetThumb();
-    blockElem.setAttribute("id-list", imageList.indexOf(newDisplayFile).toString());
-
-    if(newDisplayFile instanceof ImageFile) {
-    }
-    blockElem.onclick = () => {
-        openModal(blockElem, openModalUrl).then();
-    };
-
-    gallery.append(blockElem);
+    let displayList = getGallery();
+    if(!displayList)
+        displayList = [];
+    displayList.push(newDisplayFile);
+    updateGallery(displayList);
 }
-

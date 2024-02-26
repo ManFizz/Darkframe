@@ -1,12 +1,8 @@
-import {AddMedia, GetCurrentSource, InsertTag} from "./r34.js";
-import {getImageList} from "./thumb";
+import {AddMedia, InsertTag} from "./r34.js";
 import {VideoFile} from "./Display";
+import {currentSource} from "./main";
 
 let { createPopper } = require('@popperjs/core');
-
-function sleep(ms) {
-    return new Promise(resolve => setTimeout(resolve, ms));
-}
 
 document.getScroll = function () {
     if (window.scrollX !== undefined) {
@@ -20,14 +16,13 @@ document.getScroll = function () {
         return [sx, sy];
     }
 }
+
 let forceOpenModal = false;
 let dialog;
 let progressBar;
 let seek;
 let popperInstance;
 let modalTags;
-
-let pos = { top: 0, left: 0, x: 0, y: 0 };
 
 export function MaybeForceOpenModal() {
     if(forceOpenModal) {
@@ -69,35 +64,13 @@ export function InitModal() {
 
 let activeDialogElement;
 
-export async function ActivePostNext()
-{
-    skipToSec(0);
-    if (activeDialogElement.nextElementSibling == null)
-    {
-        if(forceOpenModal)
-            return;
+function setActiveCurrent() {
 
-        forceOpenModal = true;
-        AddMedia(null);
-        return;
-    }
-
-    activeDialogElement = activeDialogElement.nextElementSibling;
-    activeDialogElement.scrollIntoView();
-    await openModal();
+    const old = document.querySelector(".modal-active");
+    if(old !== null)
+        old.classList.remove("modal-active");
+    activeDialogElement.classList.add("modal-active");
 }
-
-export async function ActivePostPrev()
-{
-    if(activeDialogElement.previousElementSibling == null || activeDialogElement.previousElementSibling.getAttribute("id-list") === null)
-        return;
-
-    activeDialogElement = activeDialogElement.previousElementSibling;
-    activeDialogElement.scrollIntoView();
-    await openModal();
-
-}
-
 
 function GetDataFromThumb(link) {
     let img = dialog.querySelector('img');
@@ -166,6 +139,7 @@ function ParseTags() {
     if(imageList[id].tags === null || imageList[id].tags.length === 0)
         return;
 
+    //
     let tags = imageList[id].tags.split(" ");
     tags.forEach(tag => {
         let span = document.createElement("span");
@@ -178,7 +152,6 @@ function ParseTags() {
     if (lastRequestTagsUpdate !== null)
         lastRequestTagsUpdate.abort();
 
-    const currentSource = GetCurrentSource();
     if(currentSource.remoteType === 4) {
         let stringTags = imageList[id].tags;
 
@@ -218,25 +191,6 @@ function handleTagsResponse(responseText) {
     });
 }
 
-export async function openModal(elem = null, videoLink = null) {
-    if(elem != null)
-        activeDialogElement = elem;
-    const old = document.querySelector(".modal-active");
-    if(old !== null)
-        old.classList.remove("modal-active");
-    activeDialogElement.classList.add("modal-active");
-
-
-    GetDataFromThumb(videoLink);
-
-    document.querySelector('body').style.overflowY = 'hidden';
-    if (!dialog.hasAttribute('open'))
-        dialog.showModal();
-
-    //dialog.scroll();
-    ParseTags(activeDialogElement);
-    document.activeElement.blur();
-}
 function CalcLongClass(img)
 {
     if (img.naturalHeight / img.naturalWidth > 2.5)
@@ -259,36 +213,6 @@ export async function closeModal()
     document.querySelector('body').style.overflowY = 'auto';
 }
 
-export function togglePlay() {
-    let video = dialog.querySelector('video');
-    if (video.paused || video.ended) {
-        video.play().then();
-        dialog.querySelector(".btn-pause").classList.remove('hidden');
-        dialog.querySelector(".btn-play").classList.add('hidden');
-    } else {
-        video.pause();
-        dialog.querySelector(".btn-play").classList.remove('hidden');
-        dialog.querySelector(".btn-pause").classList.add('hidden');
-    }
-}
-
-export function toggleRepeat()
-{
-    let video = dialog.querySelector('video');
-    video.loop = !video.loop;
-
-    dialog.querySelector(".btn-repeat").classList.toggle('hidden');
-    dialog.querySelector(".btn-repeat-1").classList.toggle('hidden');
-}
-
-export function toggleMuted()
-{
-    let video = dialog.querySelector('video');
-    video.muted = !video.muted;
-
-    dialog.querySelector(".btn-volume").classList.toggle('hidden');
-    dialog.querySelector(".btn-mute").classList.toggle('hidden');
-}
 
 function formatTime(timeInSeconds) {
     const result = new Date(timeInSeconds * 1000);
@@ -302,41 +226,6 @@ function formatTime(timeInSeconds) {
 function updateProgress(video) {
     seek.value = Math.floor(video.currentTime);
     progressBar.value = Math.floor(video.currentTime);
-}
-
-export function skipAhead(event) {
-    const skipTo = event.target.dataset.seek ? event.target.dataset.seek : event.target.value;
-    dialog.querySelector('video').currentTime = skipTo;
-    progressBar.value = skipTo;
-    seek.value = skipTo;
-}
-export function skipToSec(skipTo)
-{
-    skipTo = parseInt(skipTo);
-    let vid = dialog.querySelector('video');
-    if(skipTo < 0)
-        skipTo = 0;
-    else if(skipTo > vid.duration || skipTo === -1)
-        skipTo = vid.duration;
-
-    vid.currentTime = skipTo;
-    progressBar.value = skipTo;
-    seek.value = skipTo;
-}
-
-export function skipSec(seconds)
-{
-    seconds = parseInt(seconds);
-    let vid = dialog.querySelector('video');
-    let skipTo = vid.currentTime + seconds;
-    if(skipTo < 0)
-        skipTo = 0;
-    else if(skipTo > vid.duration)
-        skipTo = vid.duration;
-
-    vid.currentTime = skipTo;
-    progressBar.value = skipTo;
-    seek.value = skipTo;
 }
 
 function initializeVideo(video) {

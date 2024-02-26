@@ -1,6 +1,7 @@
 import {addFav, isFav, removeFav} from "./FavController";
 import {WebPInfo} from "webpinfo";
 import Settings from "../../data/settings";
+import {currentSection} from "./main";
 
 class DisplayFile {
     title
@@ -12,6 +13,7 @@ class DisplayFile {
     remote_type = null
     time
     _fav = null
+    _updateFavStatus = null
 
     constructor({ title = '', width = -1, height = -1, sourceUrl = '', thumbUrl = '', tags = [], time = 0}) {
         this.title = title;
@@ -71,6 +73,9 @@ class DisplayFile {
     }
 }
 
+export class Folder extends DisplayFile {}
+export class Return extends DisplayFile {}
+
 export class ImageFile extends DisplayFile {
     ProcessThumb = (el) => {
         let img = document.createElement('img');
@@ -117,7 +122,11 @@ export class VideoFile extends DisplayFile {
         if (IsVideo(this.thumbUrl)) {
             let video = document.createElement("video");
             video.setAttribute('preload', 'metadata');
-            video.autoplay = false;
+            if(currentSection === "section-p365") {
+                video.autoplay = true;
+                video.muted = true;
+                video.loop = true;
+            }
 
             let source = document.createElement("source");
             source.src = this.thumbUrl;
@@ -129,7 +138,8 @@ export class VideoFile extends DisplayFile {
             };
 
             el.appendChild(video);
-            el.appendChild(VideoFile.GetThumbMarkVideo());
+            if(currentSection !== "section-p365")
+                el.appendChild(VideoFile.GetThumbMarkVideo());
             setupCheckRatio(video);
         }
         else if (IsImage(this.thumbUrl))
