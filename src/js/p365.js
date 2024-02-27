@@ -1,8 +1,10 @@
-import {BuildThumbBySrc, ClearGallery} from "./thumb.js";
+import {BuildThumbByData, ClearGallery} from "./thumb.js";
 import Private from "../../data/private";
+import {REMOTE_TYPES} from "./Display";
 
 function P365GetVideoByURL(url)
 {
+    const id = parseInt(url.match(/[^/]+$/));
     const x = new XMLHttpRequest();
     x.overrideMimeType('text/html');
     x.open("GET", url, true);
@@ -12,14 +14,17 @@ function P365GetVideoByURL(url)
 
         let parser = new DOMParser();
         let xmlDoc = parser.parseFromString(x.responseText, "text/html");
-        BuildThumbBySrc(xmlDoc.querySelector("head > meta[property='og:image']").content, 3, xmlDoc.querySelector("head > meta[property='og:video']").content);
+        BuildThumbByData({
+            thumbUrl: xmlDoc.querySelector("head > meta[property='og:image']").content, //P365GetTrailerURL(id),
+            remoteType: REMOTE_TYPES.P365,
+            contentUrl: xmlDoc.querySelector("head > meta[property='og:video']").content,
+        });
     };
     x.send(null);
 }
 
-
 let P365currentDomain = 'wow';
-let P365protocol = 'http://'
+let P365protocol = 'http://';
 
 export function DisplayP365() {
     const url = P365protocol + P365currentDomain + '.porno365.bond/user/' + Private.P365UserId;
@@ -46,11 +51,29 @@ export function DisplayP365() {
     x.send(null);
 }
 
-/*
+const currentDomain = 'vidz365.com';
+const trailersDomainUrl = "http://trailers.porno365.bond";
+const trailersServerN = {};
+trailersServerN[0] = 'trailers11';
+trailersServerN[1] = 'trailers10';
+trailersServerN[2] = 'trailers7';
+trailersServerN[3] = 'trailers8';
+trailersServerN[4] = 'trailers9';
+trailersServerN[5] = 'trailers11';
+trailersServerN[6] = 'trailers10';
+trailersServerN[7] = 'trailers7';
+trailersServerN[8] = 'trailers8';
+trailersServerN[9] = 'trailers9';
+const protocol = 'https:';
+
 function P365GetTrailerURL(id)
 {
-    let trailerUrl = P365protocol + '//' + trailersServerN[n.id % 10] + '.' + P365currentDomain + '/porno365/trailers/' + id[0] + '/' +id[1] + '/' + id + '.webm';
-    if (n.id < 10) {
-        trailerUrl = P365protocol + '//' + trailersServerN[n.id % 10] + '.' + P365currentDomain + '/porno365/trailers/0/' + id + '.webm';
+    const sId = id + "";
+    const trdir = 'trailersz';
+    const extension = 'webm'
+    let trailerUrl = protocol + '//' + trailersServerN[id % 10] + '.' + currentDomain + '/porno365/'+trdir+'/' + sId[0] + '/' + sId[1] + '/' + id + '.' + extension;
+    if (id < 10) {
+        trailerUrl = protocol + '//' + trailersServerN[id % 10] + '.' + currentDomain + '/porno365/'+trdir+'/0/' + id + '.' + extension;
     }
-}*/
+    return trailerUrl;
+}

@@ -1,6 +1,4 @@
-import {AddMedia, InsertTag} from "./r34.js";
-import {VideoFile} from "./Display";
-import {currentSource} from "./main";
+import {FILE_TYPES} from "./Display";
 
 let { createPopper } = require('@popperjs/core');
 
@@ -17,19 +15,11 @@ document.getScroll = function () {
     }
 }
 
-let forceOpenModal = false;
 let dialog;
 let progressBar;
 let seek;
 let popperInstance;
 let modalTags;
-
-export function MaybeForceOpenModal() {
-    if(forceOpenModal) {
-        openModal(activeDialogElement.nextElementSibling).then();
-        forceOpenModal = false;
-    }
-}
 
 let seekTooltip;
 
@@ -84,7 +74,7 @@ function GetDataFromThumb(link) {
         throw "wtf";
 
     let controls = dialog.querySelector('.video-controls');
-    if (imageList[id] instanceof VideoFile || link != null) {
+    if (imageList[id].type === FILE_TYPES.VIDEO || link != null) {
         controls.style.display = "flex";
         if(link != null)
             video.src = link;
@@ -128,89 +118,6 @@ function GetDataFromThumb(link) {
         img.onloadedmetadata = () => { CalcLongClass(img) };
         img.onload = () => { CalcLongClass(img) };
     }
-}
-
-function ParseTags() {
-    while (modalTags.childNodes.length > 0)
-        modalTags.childNodes[0].remove();
-
-    const imageList = getImageList();
-    let id = parseInt(activeDialogElement.getAttribute("id-list"));
-    if(imageList[id].tags === null || imageList[id].tags.length === 0)
-        return;
-
-    //
-    let tags = imageList[id].tags.split(" ");
-    tags.forEach(tag => {
-        let span = document.createElement("span");
-        span.classList.add("badge");
-        span.classList.add("bg-primary");
-        span.classList.add("m-1");
-        span.textContent = tag.toString();
-        modalTags.appendChild(span);
-    });
-    if (lastRequestTagsUpdate !== null)
-        lastRequestTagsUpdate.abort();
-
-    if(currentSource.remoteType === 4) {
-        let stringTags = imageList[id].tags;
-
-        const x = new XMLHttpRequest();
-        const url = currentSource.tagsUrl + stringTags;
-        x.open("GET", url, true);
-        x.onload = function() {
-            handleTagsResponse(x.responseText);
-            lastRequestTagsUpdate = null;
-        };
-        x.send();
-        lastRequestTagsUpdate = x;
-    }
-}
-let lastRequestTagsUpdate = null;
-
-function handleTagsResponse(responseText) {
-    while (modalTags.childNodes.length > 0)
-        modalTags.childNodes[0].remove();
-
-    let array = JSON.parse(responseText).tag;
-    array.sort((a, b) => a.type === b.type ? a.name.localeCompare(b.name) : b.type - a.type);
-    array.forEach(tag => {
-        if(tag.type === 6) //Deprecated
-            return;
-
-        let span = document.createElement("span");
-        span.classList.add("badge");
-        span.classList.add("m-1");
-        span.classList.add("tag-type-" + tag.type);
-        span.textContent = tag.name;
-        span.onclick = (e) => {
-            e.preventDefault();
-            InsertTag(tag.name);
-        };
-        modalTags.appendChild(span);
-    });
-}
-
-function CalcLongClass(img)
-{
-    if (img.naturalHeight / img.naturalWidth > 2.5)
-        dialog.classList.add('long');
-    else
-        dialog.classList.remove('long');
-}
-
-export async function closeModal()
-{
-    const old = document.querySelector(".modal-active");
-    if(old !== null)
-        old.classList.remove("modal-active");
-    dialog.close();
-
-    let videoModal = dialog.querySelector('video');
-    if(!videoModal.paused)
-        videoModal.pause();
-    dialog.querySelector('video').src = "";
-    document.querySelector('body').style.overflowY = 'auto';
 }
 
 

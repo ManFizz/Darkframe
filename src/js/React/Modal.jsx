@@ -1,6 +1,6 @@
 import React, {Component} from 'react';
 import Navigation from "./Modal/Navigation";
-import {ImageFile} from "../Display";
+import {FILE_TYPES, ImageFile} from "../Display";
 import Tags from "./Modal/Tags";
 import Video from "./Modal/Video";
 
@@ -16,7 +16,7 @@ class Modal extends Component {
                     modalUpdater={this.props.modalUpdater}
                     displayArray={this.props.displayArray}
                 />
-                {file instanceof ImageFile ? (
+                {file.type === FILE_TYPES.IMAGE ? (
                     <img alt={file.title} src={file.thumbUrl}/>
                 ) : (
                     <Video file={file} />

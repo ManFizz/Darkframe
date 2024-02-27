@@ -1,15 +1,30 @@
-import { BuildThumbBySrc, ClearGallery } from "./thumb.js";
-import { MaybeForceOpenModal } from './modal.js';
+import {BuildThumbByData, ClearGallery} from "./thumb.js";
 import {currentSource} from "./main";
 import PrivateData from "../../data/private";
+import {REMOTE_TYPES} from "./Display";
 
 const postPerPage = 100;
 
-export function addByIdArray() {
-    const idArray = PrivateData.idArray;
-    for(let i=0; i < idArray.length; i++) {
-        const id = idArray[i];
-        setTimeout(() => AddMedia(`id:=${id}`), i*1000);
+async function fetchHtml(url) {
+    try {
+        const response = await fetch(url);
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        return await response.text();
+    } catch (error) {
+        console.error('Error fetching HTML:', error);
+        return null;
+    }
+}
+
+export async function addByIdArray() {
+    if(currentSource.remoteType === REMOTE_TYPES.GELBOORU || currentSource.remoteType === REMOTE_TYPES.R34) {
+        const idArray = PrivateData.idArray;
+        for (let i = 0; i < idArray.length; i++) {
+            const id = idArray[i];
+            setTimeout(() => AddMedia(`id:=${id}`), i * 250);
+        }
     }
 }
 
@@ -116,23 +131,20 @@ function sendRequest(url, pageNum) {
 
 function handleResponse(responseXML, pageNum) {
     maxPosts = parseInt(responseXML.querySelector('posts').getAttribute('count'));
-    const offset = parseInt(responseXML.querySelector('posts').getAttribute('offset'));
     const posts = responseXML.querySelectorAll("post");
 
-    if (offset === 0) {
-        //handlePagination(posts.length, maxPosts, pageNum);
-    }
-
     const sourceUrl = currentSource.sourceUrl;
+    const bR34 = currentSource.remoteType === REMOTE_TYPES.R34;
     posts.forEach(post => {
-        const file_url = currentSource.name === "Rule 34" ? post.getAttribute('file_url') : post.querySelector('file_url').textContent;
-        const tags = currentSource.name === "Rule 34" ? post.getAttribute('tags') : post.querySelector('tags').textContent;
-        const url = sourceUrl + (currentSource.name === "Rule 34" ? post.getAttribute('id') : post.querySelector('id').textContent);
-        BuildThumbBySrc(file_url, currentSource.remoteType, null, tags, url);
+        BuildThumbByData({
+            thumbUrl: bR34 ? post.getAttribute('file_url') : post.querySelector('file_url').textContent,
+            remoteType: currentSource.remoteType,
+            tags: bR34 ? post.getAttribute('tags') : post.querySelector('tags').textContent,
+            sourceUrl: sourceUrl + (bR34 ? post.getAttribute('id') : post.querySelector('id').textContent),
+        });
     });
 
     lastRequestLoadByURL = null;
-    MaybeForceOpenModal();
 }
 
 function handlePagination(postsLength, max, pageNum) {

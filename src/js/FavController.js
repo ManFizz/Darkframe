@@ -1,4 +1,4 @@
-import {BuildThumbBySrc, ClearGallery} from "./thumb.js";
+import {BuildThumbByData, ClearGallery} from "./thumb.js";
 import {ForceAddFavImage, ForceAddFavTag, ForceRemoveFav} from './backend.js';
 import {ToggleTag} from "./r34.js";
 import {currentSource} from "./main";
@@ -25,7 +25,7 @@ export function removeFav(displayFile)
 
     const indexToDelete = Favorites.findIndex(fav =>
         fav.source === displayFile.sourceUrl &&
-        fav.remote_type === displayFile.remote_type);
+        fav.remoteType === displayFile.remoteType);
 
     if (indexToDelete !== -1) {
         Favorites.splice(indexToDelete, 1);
@@ -67,10 +67,8 @@ export function BuildFavoriteTags() {
     while (tagList.childNodes.length)
         tagList.childNodes[0].remove();
 
-    let currentRemote = currentSource.remoteType;
-
     FavTags.forEach( tag => {
-        if(tag.remote_type !== currentRemote)
+        if(tag.remoteType !== currentSource.remoteType)
             return;
 
         let div = document.createElement('div');
@@ -86,12 +84,19 @@ export function BuildFavoriteTags() {
     });
 }
 
-
 export function DisplayFavorites()
 {
     ClearGallery();
 
     Favorites.forEach( fav => {
-        BuildThumbBySrc(fav.url, fav.remote_type, null, fav.tags, fav.source, fav.name);
+        const {name, url, display, source, tags, remote_type} = fav;
+        BuildThumbByData({
+            thumbUrl: url,
+            remoteType: remote_type,
+            tags: tags,
+            sourceUrl: source,
+            title: name,
+            priority: display,
+        });
     });
 }

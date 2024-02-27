@@ -5,6 +5,7 @@ import Folder from "./Thumb/Folder";
 import Return from "./Thumb/Return";
 import * as Display from "../Display";
 import {addFav, removeFav} from "../FavController";
+import {FILE_TYPES} from "../Display";
 
 class Thumb extends Component {
     constructor(props) {
@@ -27,7 +28,7 @@ class Thumb extends Component {
 
     handleThumbClick = () => {
         const { file, modalUpdater } = this.props;
-        if(file instanceof Display.ImageFile || file instanceof Display.VideoFile)
+        if(file.type === FILE_TYPES.IMAGE || file.type === FILE_TYPES.VIDEO)
             modalUpdater(file);
     }
 
@@ -43,7 +44,7 @@ class Thumb extends Component {
                 className="card thumb bg-dark"
                 onClick={this.handleThumbClick}
             >
-                {(file instanceof Display.ImageFile || file instanceof Display.VideoFile) && (
+                {(file.type === FILE_TYPES.IMAGE || file.type === FILE_TYPES.VIDEO) && (
                     <div className="overlay">
                         {this.state.isFav ? (
                             <i className="bi bi-ban" onClick={this.handleLikeClick}></i>
@@ -52,11 +53,11 @@ class Thumb extends Component {
                         )}
                     </div>
                 )}
-                {file instanceof Display.ImageFile ? (
+                {file.type === FILE_TYPES.IMAGE ? (
                     <Image file={file}/>
-                ) : file instanceof Display.VideoFile ? (
+                ) : file.type === FILE_TYPES.VIDEO ? (
                     <Video file={file}/>
-                ) : file instanceof Display.Folder ? (
+                ) : file.type === FILE_TYPES.FOLDER ? (
                     <Folder file={file}/>
                 ) : (
                     <Return file={file}/>

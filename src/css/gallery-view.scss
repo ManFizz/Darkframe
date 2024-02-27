@@ -26,6 +26,9 @@
   grid-template-columns: repeat(8, auto);
   grid-auto-flow: row dense;
   width: 100%;
+  .thumb {
+    max-height: 600px;
+  }
 }
 
 

@@ -35,6 +35,7 @@ class Main extends Component {
     }
 
     updateMainArray(newArray) {
+        newArray.sort((a, b) => b.priority - a.priority);
         this.setState({ mainArray: newArray });
 
         const { displayArray } = this.state
@@ -45,9 +46,6 @@ class Main extends Component {
 
         const containsAll = displayArray.every(item => newArray.includes(item));
         if(containsAll) {
-            if (displayArray.length === Settings.maxThumbsPerPage)
-                return;
-            
             const startPost = newArray.indexOf(displayArray[0]);
             this.setState({displayArray: newArray.slice(startPost, startPost + Settings.maxThumbsPerPage)});
         }

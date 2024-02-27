@@ -1,8 +1,7 @@
 import {GetFiles} from "./backend";
-import {BuildThumbBySrc, ClearGallery} from "./thumb";
+import {BuildThumbByData, ClearGallery} from "./thumb";
 import {sortFolderArray} from "./foldersSort";
-import {getGallery, updateGallery} from "./AppInitializer";
-import {Folder, Return} from "./Display";
+import {FILE_TYPES, REMOTE_TYPES} from "./Display";
 
 export async function DisplayImagesByPath(path)
 {
@@ -29,46 +28,32 @@ export async function DisplayImagesByPath(path)
 
         if(!name.includes('.')) //is folder (or file without ext TODO check?)
         {
-            BuildThumbFolder(path, name);
+            BuildThumbByData({
+                type: FILE_TYPES.FOLDER,
+                title: name,
+                sourceUrl: path,
+                thumbUrl: name, //for keys in react
+                priority: 1000000,
+            });
             return;
         }
 
-        let absPath = path + "\\" + name;
-        BuildThumbBySrc(absPath, 1, null, null, null, name, time);
+        BuildThumbByData({
+            thumbUrl: path + "\\" + name,
+            remoteType: REMOTE_TYPES.FOLDER,
+            title: name,
+            time: time,
+        });
     });
-    BuildThumbReturn(path);
-}
-
-export function BuildThumbFolder(path, name) {
-    let displayList = getGallery();
-    if(!displayList)
-        displayList = [];
-
-    const folderDisplay = new Folder({
-        title: name,
-        sourceUrl: path,
-        thumbUrl: name,
-    });
-    displayList.unshift(folderDisplay);
-
-    updateGallery(displayList);
-}
-
-
-export function BuildThumbReturn(path) {
-    let displayList = getGallery();
-    if(!displayList)
-        displayList = [];
 
     const pathParts = path.split('\\');
-    path = pathParts.slice(0, -1).join('\\');
+    const newPath = pathParts.slice(0, -1).join('\\');
     const name = pathParts[pathParts.length - 2];
-    const folderDisplay = new Return({
+    BuildThumbByData({
+        type: FILE_TYPES.RETURN,
         title: name,
-        sourceUrl: path,
-        thumbUrl: name,
+        sourceUrl: newPath,
+        thumbUrl: name, //for keys in react
+        priority: 100000000,
     });
-    displayList.unshift(folderDisplay);
-
-    updateGallery(displayList);
 }

@@ -1,4 +1,5 @@
 import PrivateData from "../../data/private";
+import {REMOTE_TYPES} from "./Display";
 
 const sources = {
     r34: {
@@ -6,7 +7,7 @@ const sources = {
         mainUrl: "https://api.rule34.xxx/index.php?page=dapi&s=post&q=index",
         tagUrl: "https://api.rule34.xxx/autocomplete.php?q=",
         sourceUrl: "https://rule34.xxx/index.php?page=post&s=view&id=",
-        remoteType: 2,
+        remoteType: REMOTE_TYPES.R34,
     },
     gelbooru: {
         name: "Gelbooru",
@@ -17,16 +18,16 @@ const sources = {
             PrivateData.api_gelbooru + "&names=",
         sourceUrl: "https://gelbooru.com/index.php?page=dapi&s=post&q=index" +
             PrivateData.api_gelbooru + "&id=",
-        remoteType: 4,
+        remoteType: REMOTE_TYPES.GELBOORU,
     }
 };
 
 export let currentSource = sources.r34;
 
-export function SetSource(name) {
-    if(name === sources.r34.name)
+export function SetSource(sourceType) {
+    if(sourceType === sources.r34.remoteType)
         currentSource = sources.r34;
-    else if(name === sources.gelbooru.name)
+    else if(sourceType === sources.gelbooru.remoteType)
         currentSource = sources.gelbooru;
     else throw new Error("undefined source: " + name);
 }

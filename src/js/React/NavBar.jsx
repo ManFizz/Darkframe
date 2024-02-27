@@ -1,12 +1,13 @@
 import React, {Component} from 'react';
 import {BuildFavoriteTags, DisplayFavorites} from "../FavController";
-import {ChangeSection, currentSection, SetSource, ToggleView} from "../main";
+import {ChangeSection, currentSection, currentSource, SetSource, ToggleView} from "../main";
 import {DisplayImagesByPath} from "../folders";
 import PrivateData from "../../../data/private";
 import {SetTypeSort, ToggleOrderSort} from "../foldersSort";
 import {AddMedia} from "../r34";
 import {DisplayP365} from "../p365";
 import {ClearGallery} from "../thumb";
+import {REMOTE_TYPES} from "../Display";
 
 export class NavBar extends Component {
 
@@ -24,11 +25,11 @@ export class NavBar extends Component {
         DisplayImagesByPath(PrivateData.startPath).then();
     }
 
-    clickR34Handler = (sourceName) => {
+    clickR34Handler = (sourceType) => {
         ClearGallery();
         ChangeSection('section-r34');
-        SetSource(sourceName);
-        document.querySelector("#section-r34 .h1").innerText = sourceName;
+        SetSource(sourceType);
+        document.querySelector("#section-r34 .h1").innerText = currentSource.name;
         BuildFavoriteTags();
     }
 
@@ -87,12 +88,12 @@ export class NavBar extends Component {
                             <input type="radio" className="btn-check" name="btnradio" id="btnradio1" autoComplete="off"
                                    defaultChecked/>
                             <label className="btn btn-outline-primary" htmlFor="btnradio1"
-                                   onClick={() => this.clickR34Handler("Rule 34")}>Rule 34</label>
+                                   onClick={() => this.clickR34Handler(REMOTE_TYPES.R34)}>Rule 34</label>
 
                             <input type="radio" className="btn-check" name="btnradio" id="btnradio2"
                                    autoComplete="off"/>
                             <label className="btn btn-outline-primary" htmlFor="btnradio2"
-                                   onClick={() => this.clickR34Handler("Gelbooru")}>Gelbooru</label>
+                                   onClick={() => this.clickR34Handler(REMOTE_TYPES.GELBOORU)}>Gelbooru</label>
 
                             <input type="radio" className="btn-check" name="btnradio" id="btnradio3"
                                    autoComplete="off"/>
