@@ -21,13 +21,16 @@
 }
 
 .gallery-view-2 {
-  display: grid;
+  display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  grid-template-columns: repeat(8, auto);
-  grid-auto-flow: row dense;
-  width: 100%;
+
   .thumb {
     max-height: 600px;
+    min-height: 100px;
+    min-width: 200px;
+    max-width: 235px;
+    flex: 12.5% 1 1;
   }
 }
 

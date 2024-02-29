@@ -1,17 +1,9 @@
 import {BuildThumbByData, ClearGallery} from "./thumb.js";
 import {ForceAddFavImage, ForceAddFavTag, ForceRemoveFav} from './backend.js';
-import {ToggleTag} from "./r34.js";
-import {currentSource} from "./main";
 
-let Favorites = null;
+export let Favorites = [];
 export function OnUpdateFavorites(arr) {
     Favorites = arr;
-}
-
-let FavTags = null;
-export function OnUpdateFavoritesTags(arr) {
-    FavTags = arr;
-    BuildFavoriteTags();
 }
 
 export function AddFavTag(tag, remoteType) {
@@ -60,28 +52,6 @@ export function isFav(url)
             return true;
 
     return false;
-}
-
-export function BuildFavoriteTags() {
-    let tagList = document.getElementById('tags-fav-select') ;
-    while (tagList.childNodes.length)
-        tagList.childNodes[0].remove();
-
-    FavTags.forEach( tag => {
-        if(tag.remoteType !== currentSource.remoteType)
-            return;
-
-        let div = document.createElement('div');
-        div.classList.add("btn-group");
-        let btn = document.createElement('button');
-        btn.type = 'button';
-        btn.classList.add('btn');
-        btn.classList.add('btn-primary');
-        btn.onclick = () => ToggleTag(tag.tag);
-        btn.textContent = tag.tag;
-        div.appendChild(btn);
-        tagList.appendChild(div);
-    });
 }
 
 export function DisplayFavorites()

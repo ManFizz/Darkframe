@@ -8,11 +8,12 @@ export const FILE_TYPES = {
     RETURN: 4
 };
 
-export const REMOTE_TYPES = {
+export const SOURCE_TYPES = {
     FOLDER: 1,
     R34: 2,
     P365: 3,
-    GELBOORU: 4
+    GELBOORU: 4,
+    FAVORITE: 5, //NOT FOR FILES
 };
 
 export class DisplayFile {
@@ -66,19 +67,19 @@ export class DisplayFile {
 const imageExtensions = /\.(jpg|jpeg|png|webp|gif|jfif)$/i;
 const videoExtensions = /\.(webm|mp4|avi)$/i;
 const gifExtension = /\.(gif)$/i;
-const webmExtension = /\.(webm)$/i;
+const webpExtension = /\.(webp)$/i;
 
 export function IsImage(path){
     return imageExtensions.test(path.toLowerCase());
 }
 
-export async function isAnimated(path) {
-    path = path.toLowerCase();
-    if (gifExtension.test(path))
+export async function IsAnimated(path) {
+    if(gifExtension.test(path.toLowerCase()))
         return true;
 
-    if (webmExtension.test(path))
+    if(webpExtension.test(path.toLowerCase())) {
         return await WebPInfo.isAnimated(path.replace(/^file:\/\/\//, ''));
+    }
 
     return false;
 }

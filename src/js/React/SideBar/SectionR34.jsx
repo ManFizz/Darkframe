@@ -1,20 +1,38 @@
 import React, { Component } from 'react';
-import FavoriteTagsForm from "./FavoriteTagsForm";
+import FavoriteTagsForm from "./SectionR34/FavoriteTagsForm";
 import TagSearch from "./SectionR34/TagSearch";
-import { ChangeSection } from "../../main";
-import {addByIdArray, SetSource} from "../../r34";
-import {BuildFavoriteTags} from "../../FavController";
+import {addByIdArray, currentR34Source} from "../../r34";
 
 class SectionR34 extends Component {
+    constructor(props) {
+        super(props);
+        this.state = {
+            name: null,
+        }
+    }
+
+    componentDidMount() {
+        this.setState({name: currentR34Source.name});
+    }
+
+    componentDidUpdate(prevProps, prevState, snapshot) {
+        if(this.props.currentSource !== prevProps.currentSource)
+            this.setState({name: currentR34Source.name});
+    }
 
     render() {
+        const { name } = this.state;
+        const { favTagsArray, currentSource } = this.props;
         return (
-            <section id="section-r34">
-                <p className="h1" onClick={addByIdArray}>Rule 34</p>
+            <section>
+                <p className="h1" onClick={addByIdArray}>{name}</p>
                 <p className="h6">Search by tags</p>
                 <TagSearch/>
                 <hr/>
-                <FavoriteTagsForm/>
+                <FavoriteTagsForm
+                    currentSource={currentSource}
+                    favTagsArray={favTagsArray}
+                />
             </section>
         );
     }

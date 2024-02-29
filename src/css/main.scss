@@ -27,6 +27,7 @@
   top: calc(50% - 47px);
   position: absolute;
   left: calc(50% - 35px);
+  filter: drop-shadow(1px 1px 1px black);
 }
 
 body {
@@ -59,12 +60,9 @@ body {
   position: fixed;
 }
 
-#btn-order-sort {
-  .bi-caret-down-fill::before {
-    transition: .2s linear;
-  }
-
-  &.flip .bi-caret-down-fill::before {
+.btn-order svg::before {
+  transition: .2s linear;
+  &.flip{
     transform: rotateX(180deg);
   }
 }

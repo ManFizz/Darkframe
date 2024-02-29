@@ -1,8 +1,8 @@
 import React, {Component} from 'react';
 import Pagination from 'react-bootstrap/Pagination';
 import Settings from "../../../data/settings";
-import {currentSection} from "../main";
 import {AddMedia} from "../r34";
+import {SOURCE_TYPES} from "../Display";
 
 const MAX_PAGES = 7;
 
@@ -28,14 +28,15 @@ class CustomPagination extends Component {
     }
 
     handleClick(page) {
-        const { mainArray } = this.props;
+        const { mainArray, currentSource } = this.props;
         this.setState({currentPage: page});
         const startIndex = (page - 1) * Settings.maxThumbsPerPage;
         const endIndex = Math.min(page * Settings.maxThumbsPerPage, mainArray.length);
 
         this.props.updateDisplayArray(mainArray.slice(startIndex, endIndex));
 
-        if((endIndex + Settings.maxThumbsPerPage) >= mainArray.length  && currentSection === "section-r34") {
+        const isR34 = (currentSource === SOURCE_TYPES.R34 || currentSource === SOURCE_TYPES.GELBOORU);
+        if((endIndex + Settings.maxThumbsPerPage) >= mainArray.length  && isR34) {
             AddMedia(null);
         }
     }

@@ -1,10 +1,10 @@
-import {getGallery, updateGallery} from "./AppInitializer";
+import {getGallery, setGallery} from "./AppInitializer";
 import {DisplayFile} from "./Display";
 
 
 export function ClearGallery()
 {
-    updateGallery([]);
+    setGallery([]);
 }
 
 export function BuildThumbByData(data){
@@ -17,7 +17,10 @@ export function BuildThumbByData(data){
             console.error('invalid type object for display: ' + data.thumbUrl);
     }
 
+    if(newDisplayFile === null)
+        return;
+
     let displayList = getGallery();
     displayList.push(newDisplayFile);
-    updateGallery(displayList);
+    setGallery(displayList);
 }

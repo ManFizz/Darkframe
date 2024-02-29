@@ -1,25 +1,42 @@
 import {BuildThumbByData, ClearGallery} from "./thumb.js";
-import {currentSource} from "./main";
 import PrivateData from "../../data/private";
-import {REMOTE_TYPES} from "./Display";
+import {SOURCE_TYPES} from "./Display";
 
 const postPerPage = 100;
 
-async function fetchHtml(url) {
-    try {
-        const response = await fetch(url);
-        if (!response.ok) {
-            throw new Error('Network response was not ok');
-        }
-        return await response.text();
-    } catch (error) {
-        console.error('Error fetching HTML:', error);
-        return null;
+const sources = {
+    r34: {
+        name: "Rule 34",
+        mainUrl: "https://api.rule34.xxx/index.php?page=dapi&s=post&q=index",
+        tagUrl: "https://api.rule34.xxx/autocomplete.php?q=",
+        sourceUrl: "https://rule34.xxx/index.php?page=post&s=view&id=",
+        remoteType: SOURCE_TYPES.R34,
+    },
+    gelbooru: {
+        name: "Gelbooru",
+        mainUrl: "https://gelbooru.com/index.php?page=dapi&s=post&q=index" + PrivateData.api_gelbooru,
+        tagUrl: "https://gelbooru.com/index.php?page=dapi&s=tag&q=index&json=1&limit=8&orderby=count" +
+            PrivateData.api_gelbooru + "&name_pattern=",
+        tagsUrl: "https://gelbooru.com/index.php?page=dapi&s=tag&q=index&json=1" +
+            PrivateData.api_gelbooru + "&names=",
+        sourceUrl: "https://gelbooru.com/index.php?page=dapi&s=post&q=index" +
+            PrivateData.api_gelbooru + "&id=",
+        remoteType: SOURCE_TYPES.GELBOORU,
     }
+};
+
+export let currentR34Source = sources.r34;
+
+export function updateR34Source(sourceId) {
+    if(sourceId === SOURCE_TYPES.R34)
+        currentR34Source = sources.r34;
+    else if(sourceId === SOURCE_TYPES.GELBOORU)
+        currentR34Source = sources.gelbooru;
+    else currentR34Source = null;
 }
 
 export async function addByIdArray() {
-    if(currentSource.remoteType === REMOTE_TYPES.GELBOORU || currentSource.remoteType === REMOTE_TYPES.R34) {
+    if(currentR34Source.remoteType === SOURCE_TYPES.GELBOORU || currentR34Source.remoteType === SOURCE_TYPES.R34) {
         const idArray = PrivateData.idArray;
         for (let i = 0; i < idArray.length; i++) {
             const id = idArray[i];
@@ -47,7 +64,7 @@ export function AddMedia(stringTags, pageNum= 1) {
     const tags = currentTags.split(' ');
     UpdateFormTags(tags);
 
-    const inputPageUrl = `${currentSource.mainUrl}&limit=${postPerPage}&pid=${currentPage - 1}&tags=${tags.join('+')}`;
+    const inputPageUrl = `${currentR34Source.mainUrl}&limit=${postPerPage}&pid=${currentPage - 1}&tags=${tags.join('+')}`;
     AddToGalleryByURL(inputPageUrl, currentPage).then();
 }
 
@@ -133,12 +150,12 @@ function handleResponse(responseXML, pageNum) {
     maxPosts = parseInt(responseXML.querySelector('posts').getAttribute('count'));
     const posts = responseXML.querySelectorAll("post");
 
-    const sourceUrl = currentSource.sourceUrl;
-    const bR34 = currentSource.remoteType === REMOTE_TYPES.R34;
+    const sourceUrl = currentR34Source.sourceUrl;
+    const bR34 = currentR34Source.remoteType === SOURCE_TYPES.R34;
     posts.forEach(post => {
         BuildThumbByData({
             thumbUrl: bR34 ? post.getAttribute('file_url') : post.querySelector('file_url').textContent,
-            remoteType: currentSource.remoteType,
+            remoteType: currentR34Source.remoteType,
             tags: bR34 ? post.getAttribute('tags') : post.querySelector('tags').textContent,
             sourceUrl: sourceUrl + (bR34 ? post.getAttribute('id') : post.querySelector('id').textContent),
         });
@@ -146,31 +163,6 @@ function handleResponse(responseXML, pageNum) {
 
     lastRequestLoadByURL = null;
 }
-
-function handlePagination(postsLength, max, pageNum) {
-    if (max !== postsLength) {
-        const pagination = document.getElementById('pagination');
-        if (pagination && pagination.classList) {
-            pagination.classList.remove('hidden');
-            $(pagination).twbsPagination({
-                startPag: pageNum,
-                totalPages: (max + postPerPage - 1) / postPerPage,
-                visiblePages: 7,
-                initiateStartPageClick: false,
-                onPageClick: function (event, page) {
-                    ClearGallery();
-                    AddMedia(currentTags, page);
-                }
-            });
-        }
-    } else {
-        const pagination = document.getElementById('pagination');
-        if (pagination && pagination.classList) {
-            pagination.classList.add('hidden');
-        }
-    }
-}
-
 
 let lastRequestTagFind = null;
 
@@ -188,7 +180,7 @@ export function FindTag(tag) {
     const lastWord = match[0];
 
     const x = new XMLHttpRequest();
-    const url = currentSource.tagUrl + lastWord + (currentSource.name === "Gelbooru" ? "%" : "");
+    const url = currentR34Source.tagUrl + lastWord + (currentR34Source.name === "Gelbooru" ? "%" : "");
     x.open("GET", url, true);
     x.onload = function() {
         handleTagResponse(x.responseText, tagUl);
@@ -200,7 +192,7 @@ export function FindTag(tag) {
 
 function handleTagResponse(responseText, tagUl) {
     let list = JSON.parse(responseText);
-    if(currentSource.name === "Gelbooru")
+    if(currentR34Source.name === "Gelbooru")
         list = list.tag;
 
     tagUl.innerHTML = ''; // Clear tags list
@@ -211,9 +203,9 @@ function handleTagResponse(responseText, tagUl) {
 
         const a = document.createElement('a');
         a.classList.add('dropdown-item');
-        a.textContent = (currentSource.name === "Rule 34") ? elem.label : `${elem.name} (${elem.count})`;
+        a.textContent = (currentR34Source.name === "Rule 34") ? elem.label : `${elem.name} (${elem.count})`;
         a.onclick = () => {
-            const tagValue = (currentSource.name === "Rule 34") ? elem.value : elem.name;
+            const tagValue = (currentR34Source.name === "Rule 34") ? elem.value : elem.name;
             InsertTag(tagValue);
         };
 

@@ -1,6 +1,6 @@
 import {BuildThumbByData, ClearGallery} from "./thumb.js";
 import Private from "../../data/private";
-import {REMOTE_TYPES} from "./Display";
+import {SOURCE_TYPES} from "./Display";
 
 function P365GetVideoByURL(url)
 {
@@ -16,7 +16,7 @@ function P365GetVideoByURL(url)
         let xmlDoc = parser.parseFromString(x.responseText, "text/html");
         BuildThumbByData({
             thumbUrl: xmlDoc.querySelector("head > meta[property='og:image']").content, //P365GetTrailerURL(id),
-            remoteType: REMOTE_TYPES.P365,
+            remoteType: SOURCE_TYPES.P365,
             contentUrl: xmlDoc.querySelector("head > meta[property='og:video']").content,
         });
     };

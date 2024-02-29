@@ -1,5 +1,6 @@
 import React, { Component } from "react";
 import { BiSolidVideo } from "react-icons/bi";
+import Settings from "../../../../data/settings";
 
 const loadingUrl = "./images/loading.gif";
 
@@ -7,12 +8,14 @@ class Video extends Component {
     constructor(props) {
         super(props);
         this.state = {
-            isLoading: true,
+            isLoading: Settings.resize,
         };
+        this.handleVideoLoad = this.handleVideoLoad.bind(this);
     }
 
-    handleVideoLoad = () => {
-        this.setState({ isLoading: false });
+    handleVideoLoad() {
+        if(this.state.isLoading !== false)
+            this.setState({ isLoading: false });
     };
 
     render() {

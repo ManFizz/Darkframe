@@ -37,11 +37,10 @@ class Thumb extends Component {
     };
 
     render() {
-        const { file } = this.props;
+        const { file, isModal } = this.props;
         return (
             <div
-                key={this.props.index}
-                className="card thumb bg-dark"
+                className={`card thumb bg-dark ${isModal ? 'modal-active' : ''}`}
                 onClick={this.handleThumbClick}
             >
                 {(file.type === FILE_TYPES.IMAGE || file.type === FILE_TYPES.VIDEO) && (

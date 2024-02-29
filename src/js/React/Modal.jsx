@@ -14,10 +14,10 @@ class Modal extends Component {
                 <Navigation
                     file={file}
                     modalUpdater={this.props.modalUpdater}
-                    displayArray={this.props.displayArray}
+                    mainArray={this.props.mainArray}
                 />
                 {file.type === FILE_TYPES.IMAGE ? (
-                    <img alt={file.title} src={file.thumbUrl}/>
+                    <img key={file.thumbUrl} alt={file.title} src={file.thumbUrl}/>
                 ) : (
                     <Video file={file} />
                 )}

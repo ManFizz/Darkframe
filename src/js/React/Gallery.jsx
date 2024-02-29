@@ -1,12 +1,19 @@
 import React, {Component} from "react";
 import Thumb from "./Thumb";
 
+
 class Gallery extends Component {
     render() {
+        const {displayFiles, modalUpdater, modalFile, typeView} = this.props;
         return <>
-            <div className="gallery-view-2" id="gallery">
-                {this.props.displayFiles.map((file, index) => (
-                    <Thumb key={file.thumbUrl} file={file} index={index} modalUpdater={this.props.modalUpdater}/>
+            <div className={`gallery-view-${typeView}`}>
+                {displayFiles.map((file, index) => (
+                    <Thumb
+                        key={index}
+                        file={file}
+                        modalUpdater={modalUpdater}
+                        isModal={modalFile === file}
+                    />
                 ))}
             </div>
         </>;

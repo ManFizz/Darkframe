@@ -1,114 +1,117 @@
 import React, {Component} from 'react';
-import {BuildFavoriteTags, DisplayFavorites} from "../FavController";
-import {ChangeSection, currentSection, currentSource, SetSource, ToggleView} from "../main";
+import {DisplayFavorites} from "../FavController";
 import {DisplayImagesByPath} from "../folders";
 import PrivateData from "../../../data/private";
-import {SetTypeSort, ToggleOrderSort} from "../foldersSort";
 import {AddMedia} from "../r34";
 import {DisplayP365} from "../p365";
 import {ClearGallery} from "../thumb";
-import {REMOTE_TYPES} from "../Display";
+import {SOURCE_TYPES} from "../Display";
+import {SORT_ORDER, SORT_TYPE} from "../AppInitializer";
+import {BsCaretDownFill, BsFillGrid1X2Fill, BsSearch} from "react-icons/bs";
 
 export class NavBar extends Component {
 
     constructor(props) {
         super(props);
         this.state = {
-            sortOption: 'name',
             searchValue: '',
         };
+
+        this.clickFolderHandler = this.clickFolderHandler.bind(this);
+        this.clickR34Handler = this.clickR34Handler.bind(this);
+        this.clickP365Handler = this.clickP365Handler.bind(this);
+        this.clickFavoriteHandler = this.clickFavoriteHandler.bind(this);
+        this.handleSearchInputChange = this.handleSearchInputChange.bind(this);
+        this.clickSortTypeHandler = this.clickSortTypeHandler.bind(this);
+        this.clickSortOrderHandler = this.clickSortOrderHandler.bind(this);
+        this.clickSearchHandler = this.clickSearchHandler.bind(this);
+        this.ToggleView = this.ToggleView.bind(this);
     }
 
-    clickFolderHandler = () => {
+    clickFolderHandler() {
         ClearGallery();
-        ChangeSection('section-folders');
+        this.props.setSource(SOURCE_TYPES.FOLDER);
         DisplayImagesByPath(PrivateData.startPath).then();
     }
 
-    clickR34Handler = (sourceType) => {
+    clickR34Handler(sourceType) {
         ClearGallery();
-        ChangeSection('section-r34');
-        SetSource(sourceType);
-        document.querySelector("#section-r34 .h1").innerText = currentSource.name;
-        BuildFavoriteTags();
+        this.props.setSource(sourceType);
     }
 
-    clickP365Handler = () => {
+    clickP365Handler() {
         ClearGallery();
-        ChangeSection('section-p365');
+        this.props.setSource(SOURCE_TYPES.P365);
         DisplayP365();
     }
 
-    clickFavoriteHandler = () => {
+    clickFavoriteHandler() {
         ClearGallery();
-        ChangeSection('section-favorite');
+        this.props.setSource(SOURCE_TYPES.FAVORITE);
         DisplayFavorites();
     }
 
-    clickSortHandler = (value) => {
-        SetTypeSort(value);
-        this.setState({ sortOption: value });
+    clickSortTypeHandler(newType) {
+        const { setSortInfo } = this.props;
+        setSortInfo({ type: newType });
     };
 
-    handleSearchInputChange = (event) => {
-        this.setState({
-            searchValue: event.target.value
-        });
+    clickSortOrderHandler() {
+        const { sortInfo, setSortInfo } = this.props;
+        setSortInfo({ order: sortInfo.order * -1 });
+    };
+    handleSearchInputChange(event) {
+        this.setState({ searchValue: event.target.value });
     }
 
-    clickSearchHandler = () => {
-        const searchValue = this.state.searchValue;
-        switch (currentSection) {
-            case "section-r34": {
+    clickSearchHandler() {
+        const { searchValue } = this.state;
+        const { currentSource } = this.props;
+
+        switch (currentSource) {
+            case SOURCE_TYPES.R34:
+            case SOURCE_TYPES.GELBOORU:
+            {
                 ClearGallery();
                 AddMedia(searchValue);
                 break;
             }
-            case "section-p365": {
-                //Nothing
-                break;
-            }
-            case "section-favorite": {
-                //Nothing
-                break;
-            }
-            case "section-folders": {
+            case SOURCE_TYPES.FOLDER:
+            {
                 DisplayImagesByPath(searchValue).then();
                 break;
             }
         }
     };
 
+    ToggleView() {
+        this.props.setTypeView(null);
+    }
+
     render() {
+        const renderRadioButtons = (buttons) => {
+            return buttons.map((button, index) => (
+                <React.Fragment key={index}>
+                    <input type="radio" className="btn-check" name="btnradio" id={`btnradio${index + 1}`} autoComplete="off" defaultChecked={index === 0}/>
+                    <label className="btn btn-outline-primary" htmlFor={`btnradio${index + 1}`} onClick={button.onClick}>
+                        {button.label}
+                    </label>
+                </React.Fragment>
+            ));
+        };
+
         return <>
             <header className="navbar navbar-expand-lg sticky-top navbar-dark text-white bg-dark">
                 <div className="container-xxl">
                     <div className="navbar-nav flex-row flex-wrap bd-navbar-nav">
                         <div className="btn-group">
-                            <input type="radio" className="btn-check" name="btnradio" id="btnradio1" autoComplete="off"
-                                   defaultChecked/>
-                            <label className="btn btn-outline-primary" htmlFor="btnradio1"
-                                   onClick={() => this.clickR34Handler(REMOTE_TYPES.R34)}>Rule 34</label>
-
-                            <input type="radio" className="btn-check" name="btnradio" id="btnradio2"
-                                   autoComplete="off"/>
-                            <label className="btn btn-outline-primary" htmlFor="btnradio2"
-                                   onClick={() => this.clickR34Handler(REMOTE_TYPES.GELBOORU)}>Gelbooru</label>
-
-                            <input type="radio" className="btn-check" name="btnradio" id="btnradio3"
-                                   autoComplete="off"/>
-                            <label className="btn btn-outline-primary" htmlFor="btnradio3"
-                                   onClick={this.clickP365Handler}>P365</label>
-
-                            <input type="radio" className="btn-check" name="btnradio" id="btnradio4"
-                                   autoComplete="off"/>
-                            <label className="btn btn-outline-primary" htmlFor="btnradio4"
-                                   onClick={this.clickFavoriteHandler}>Favorites</label>
-
-                            <input type="radio" className="btn-check" name="btnradio" id="btnradio5"
-                                   autoComplete="off"/>
-                            <label className="btn btn-outline-primary" htmlFor="btnradio5"
-                                   onClick={this.clickFolderHandler}>Folders</label>
+                            {renderRadioButtons([
+                                { label: 'Rule 34', onClick: () => this.clickR34Handler(SOURCE_TYPES.R34) },
+                                { label: 'Gelbooru', onClick: () => this.clickR34Handler(SOURCE_TYPES.GELBOORU) },
+                                { label: 'P365', onClick: this.clickP365Handler },
+                                { label: 'Favorites', onClick: this.clickFavoriteHandler },
+                                { label: 'Folders', onClick: this.clickFolderHandler },
+                            ])}
                         </div>
                     </div>
                     <form className="d-flex col-5" role="search">
@@ -123,7 +126,7 @@ export class NavBar extends Component {
                             type="button"
                             onClick={this.clickSearchHandler}
                         >
-                            <i className="bi bi-search"></i>
+                            <BsSearch />
                         </button>
                     </form>
 
@@ -134,23 +137,31 @@ export class NavBar extends Component {
                                aria-expanded="false"
                                data-bs-display="static"
                             >
-                                Sort by {this.state.sortOption}
+                                Sort by {this.props.sortInfo.type === SORT_TYPE.NAME ? "name" : "time"}
                             </a>
                             <ul className="dropdown-menu dropdown-menu-end">
                                 <li>
-                                    <a className="dropdown-item" onClick={() => this.clickSortHandler('name')}>Name</a>
+                                    <a className="dropdown-item" onClick={() => this.clickSortTypeHandler(SORT_TYPE.NAME)}>Name</a>
                                 </li>
                                 <li>
-                                    <a className="dropdown-item" onClick={() => this.clickSortHandler('time')}>Time</a>
+                                    <a className="dropdown-item" onClick={() => this.clickSortTypeHandler(SORT_TYPE.TIME)}>Time</a>
                                 </li>
                             </ul>
                         </div>
-                        <a className="btn btn-outline-secondary" onClick={ToggleOrderSort} id="btn-order-sort">
+                        <a
+                            className="btn btn-outline-secondary btn-order"
+                            onClick={this.clickSortOrderHandler}
+                        >
                             Sort order
-                            <i className="bi bi-caret-down-fill"/>
+                            <BsCaretDownFill
+                                className={`${this.props.sortInfo.order === SORT_ORDER.ASC ? "flip" : ""}`}
+                            />
                         </a>
-                        <a className="btn btn-outline-secondary" onClick={ToggleView}>
-                            <i className="bi bi-grid-1x2-fill"/>
+                        <a
+                            className="btn btn-outline-secondary"
+                            onClick={this.ToggleView}
+                        >
+                            <BsFillGrid1X2Fill />
                         </a>
                     </form>
                 </div>

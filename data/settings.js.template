@@ -2,6 +2,8 @@ const Settings = {
     safeView: false,
     backgroundImg: true,
     checkRatio: true,
+    maxThumbsPerPage: 32,
+    resize: true,
 };
 
 export default Settings;

@@ -18,7 +18,7 @@ class Tags extends Component {
             >
 
                 {tags.map((tag, index) => (
-                        <span key={tag} className="badge bg-primary m-1">{tag}</span>
+                        <span key={index+tag} className="badge bg-primary m-1">{tag}</span>
                 ))}
             </div>
         </>;

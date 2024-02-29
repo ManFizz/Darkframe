@@ -1,9 +1,7 @@
 // noinspection ES6UnusedImports
 
-import './node_modules/jquery/jquery.min.js';
 import './node_modules/popper.js/dist/umd/popper.min.js';
 import './node_modules/bootstrap/dist/js/bootstrap.bundle.min.js';
-import './node_modules/twbs-pagination/jquery.twbsPagination.min.js';
 
 import './node_modules/react/cjs/react.development.js';
 import './node_modules/react-dom/cjs/react-dom.development.js';
@@ -20,7 +18,6 @@ import './src/css/modal.css';
 import './src/css/sidebar.css';
 import './src/css/video-controls.css';
 
-import './src/js/main.js';
 import './src/js/r34.js';
 import './src/js/modal.js';
 import './src/js/backend.js';

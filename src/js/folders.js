@@ -1,7 +1,6 @@
 import {GetFiles} from "./backend";
 import {BuildThumbByData, ClearGallery} from "./thumb";
-import {sortFolderArray} from "./foldersSort";
-import {FILE_TYPES, REMOTE_TYPES} from "./Display";
+import {FILE_TYPES, SOURCE_TYPES} from "./Display";
 
 export async function DisplayImagesByPath(path)
 {
@@ -18,16 +17,19 @@ export async function DisplayImagesByPath(path)
     }
 
     ClearGallery();
-    let arr = JSON.parse(responseText);
-    const sortedArr = sortFolderArray(arr);
+    const arr = JSON.parse(responseText);
 
-    sortedArr.forEach(item => {
-        const { name, time } = item;
-        if(name.includes('.nomedia'))
+    // noinspection SpellCheckingInspection
+    const skippedNames = ['.nomedia', '_gsdata_'];
+    arr.forEach(item => {
+        const { name, time, isDir } = item;
+
+        if (skippedNames.includes(name)) {
             return;
+        }
 
-        if(!name.includes('.')) //is folder (or file without ext TODO check?)
-        {
+
+        if(isDir) {
             BuildThumbByData({
                 type: FILE_TYPES.FOLDER,
                 title: name,
@@ -40,7 +42,7 @@ export async function DisplayImagesByPath(path)
 
         BuildThumbByData({
             thumbUrl: path + "\\" + name,
-            remoteType: REMOTE_TYPES.FOLDER,
+            remoteType: SOURCE_TYPES.FOLDER,
             title: name,
             time: time,
         });
