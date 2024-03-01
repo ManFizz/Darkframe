@@ -59,7 +59,6 @@ class Main extends Component {
 
     updateMainArray(newArray) {
         const { displayArray, sortInfo } = this.state;
-        const sortFunc =
         newArray.sort((a, b) => {
             if (a.priority !== b.priority)
                 return b.priority - a.priority;
