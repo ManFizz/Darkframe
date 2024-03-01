@@ -119,6 +119,7 @@ class Main extends Component {
         if(order !== undefined) info.order = order;
         if(type !== undefined) info.type = type;
         this.setState({sortInfo: info});
+        this.updateMainArray(this.state.mainArray);
     }
 
     render() {
