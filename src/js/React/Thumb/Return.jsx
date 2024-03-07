@@ -1,5 +1,4 @@
 import React, { Component } from "react";
-import { ClearGallery } from "../../thumb";
 import {DisplayImagesByPath} from "../../folders";
 
 const pathToImage = "images/return.png";
@@ -7,7 +6,6 @@ const pathToImage = "images/return.png";
 class Return extends Component {
     handleClick = () => {
         const { file } = this.props;
-        ClearGallery();
         DisplayImagesByPath(file.sourceUrl).then();
     };
 

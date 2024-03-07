@@ -98,6 +98,7 @@ class Video extends Component {
             />
             <VideoControls
                 video={video}
+                key={file.thumbUrl+"vc"}
                 isLooped={isLooped}
                 isMuted={isMuted}
                 isPaused={isPaused}

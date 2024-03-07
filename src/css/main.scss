@@ -79,6 +79,7 @@ $tag-colors: (
 @each $class, $color in $tag-colors {
   .tag-type-#{$class} {
     background-color: rgb(var(--bs-#{$color}-rgb));
+    order: -#{$class};
   }
 }
 

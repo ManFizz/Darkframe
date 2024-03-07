@@ -9,7 +9,7 @@ class Gallery extends Component {
             <div className={`gallery-view-${typeView}`}>
                 {displayFiles.map((file, index) => (
                     <Thumb
-                        key={index}
+                        key={file.thumbUrl + index}
                         file={file}
                         modalUpdater={modalUpdater}
                         isModal={modalFile === file}

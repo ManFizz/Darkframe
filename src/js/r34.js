@@ -1,8 +1,10 @@
-import {BuildThumbByData, ClearGallery} from "./thumb.js";
+import { GetThumbByData } from "./GalleryController.js";
 import PrivateData from "../../data/private";
 import {SOURCE_TYPES} from "./Display";
+import {NotifyCustomPaginationR34} from "./React/CustomPagination";
+import { getGallery, getTags, setGallery, updateTags } from "./AppInitializer";
 
-const postPerPage = 100;
+const postPerPage = 100; //MAX in API
 
 const sources = {
     r34: {
@@ -49,13 +51,17 @@ let maxPosts = 0;
 let currentPage;
 let currentTags;
 
+export function CanMoreMedia() {
+    const maxPages = Math.ceil(maxPosts/postPerPage);
+    return maxPages > currentPage;
+}
+
 export function AddMedia(stringTags, pageNum= 1) {
     if(stringTags !== null) {
         currentPage = pageNum;
         currentTags = stringTags;
     } else {
-        const maxPages = Math.ceil(maxPosts/postPerPage);
-        if(maxPages <= currentPage)
+        if(!CanMoreMedia())
             return;
 
         currentPage += 1;
@@ -65,7 +71,7 @@ export function AddMedia(stringTags, pageNum= 1) {
     UpdateFormTags(tags);
 
     const inputPageUrl = `${currentR34Source.mainUrl}&limit=${postPerPage}&pid=${currentPage - 1}&tags=${tags.join('+')}`;
-    AddToGalleryByURL(inputPageUrl, currentPage).then();
+    AddToGalleryByURL(inputPageUrl).then();
 }
 
 export function UpdateFormTags(tags = null) {
@@ -126,42 +132,48 @@ export function ToggleTag(tag) {
 }
 
 let lastRequestLoadByURL = null;
-async function AddToGalleryByURL(url, pageNum) {
+async function AddToGalleryByURL(url) {
     if (lastRequestLoadByURL !== null)
         lastRequestLoadByURL.abort();
 
-    lastRequestLoadByURL = sendRequest(url, pageNum);
+    lastRequestLoadByURL = sendRequest(url);
 }
 
-function sendRequest(url, pageNum) {
+function sendRequest(url) {
     const x = new XMLHttpRequest();
     x.open("GET", url, true);
     x.onreadystatechange = function () {
         if (x.readyState !== 4 || x.status !== 200)
             return;
 
-        handleResponse(x.responseXML, pageNum);
+        handleResponse(x.responseXML);
     };
     x.send(null);
     return x;
 }
 
-function handleResponse(responseXML, pageNum) {
+function handleResponse(responseXML) {
     maxPosts = parseInt(responseXML.querySelector('posts').getAttribute('count'));
     const posts = responseXML.querySelectorAll("post");
 
     const sourceUrl = currentR34Source.sourceUrl;
+    let array = [];
     const bR34 = currentR34Source.remoteType === SOURCE_TYPES.R34;
     posts.forEach(post => {
-        BuildThumbByData({
+        const thumbFile = GetThumbByData({
             thumbUrl: bR34 ? post.getAttribute('file_url') : post.querySelector('file_url').textContent,
             remoteType: currentR34Source.remoteType,
             tags: bR34 ? post.getAttribute('tags') : post.querySelector('tags').textContent,
             sourceUrl: sourceUrl + (bR34 ? post.getAttribute('id') : post.querySelector('id').textContent),
         });
+        array.push(thumbFile);
     });
+    setGallery(array);
+    if(!bR34)
+        LoadTagsData(array);
 
     lastRequestLoadByURL = null;
+    NotifyCustomPaginationR34();
 }
 
 let lastRequestTagFind = null;
@@ -196,6 +208,10 @@ function handleTagResponse(responseText, tagUl) {
         list = list.tag;
 
     tagUl.innerHTML = ''; // Clear tags list
+    if(list === undefined) {
+        tagUl.classList.remove('show');
+        return;
+    }
 
     list.forEach(elem => {
         const li = document.createElement('li');
@@ -234,4 +250,49 @@ export function InsertTag(tag) {
     tagUl.classList.remove('show');
 
     UpdateFormTags();
+}
+
+let inWorkTags = null;
+let lastRequestTagsUpdate = null;
+export function LoadTagsData(gallery = null) {
+    if(currentR34Source === null || currentR34Source.remoteType !== SOURCE_TYPES.GELBOORU)
+        return;
+
+    if(lastRequestTagsUpdate !== null)
+        lastRequestTagsUpdate.abort();
+
+    if(gallery !== null)
+        UpdateTagsInWork(gallery);
+
+    const x = new XMLHttpRequest();
+    const url = currentR34Source.tagsUrl + inWorkTags.join(' ');
+    x.open("GET", url, true);
+    x.onload = function() {
+        responseTags(JSON.parse(x.responseText).tag);
+
+        lastRequestTagsUpdate = null;
+    };
+    x.send();
+    lastRequestTagsUpdate = x;
+}
+
+function responseTags(tags) {
+    inWorkTags = inWorkTags.filter(obj1 => !tags.some(obj2 => obj1 === obj2.name));
+    updateTags(tags);
+    setTimeout(() => LoadTagsData(), 1000);
+}
+
+function UpdateTagsInWork(gallery) {
+    const existedTags = getTags();
+    const uniqueTags = {};
+    gallery.forEach(thumb => {
+        if (thumb.tags === null) //???
+            return;
+
+        thumb.tags.split(' ').forEach(tag => {
+            uniqueTags[tag] = true;
+        });
+    });
+    const splitTags = Object.keys(uniqueTags);
+    inWorkTags = splitTags.filter(obj1 => !existedTags.some(obj2 => obj1.name === obj2.name));
 }

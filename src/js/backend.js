@@ -1,6 +1,6 @@
 // noinspection JSIgnoredPromiseFromCall
 
-import {OnUpdateFavoritesTags, OnUpdateFavorites} from "./FavController.js";
+import { OnUpdateFavorites} from "./FavController.js";
 import {setFavTagsArray} from "./AppInitializer";
 let { ipcRenderer } = require("electron");
 
@@ -14,7 +14,7 @@ export async function GetFavTags() {
     return await ipcRenderer.invoke("getFavTags");
 }
 
-ipcRenderer.on('getFavTags', (tags) => {
+ipcRenderer.on('getFavTags', (event, tags) => {
     setFavTagsArray(tags);
 });
 

@@ -1,6 +1,7 @@
 import {GetFiles} from "./backend";
-import {BuildThumbByData, ClearGallery} from "./thumb";
+import { GetThumbByData } from "./GalleryController";
 import {FILE_TYPES, SOURCE_TYPES} from "./Display";
+import { setGallery } from "./AppInitializer";
 
 export async function DisplayImagesByPath(path)
 {
@@ -16,46 +17,48 @@ export async function DisplayImagesByPath(path)
         return;
     }
 
-    ClearGallery();
     const arr = JSON.parse(responseText);
 
     // noinspection SpellCheckingInspection
     const skippedNames = ['.nomedia', '_gsdata_'];
+    let array = [];
     arr.forEach(item => {
         const { name, time, isDir } = item;
-
         if (skippedNames.includes(name)) {
             return;
         }
 
-
         if(isDir) {
-            BuildThumbByData({
+            const thumbFile = GetThumbByData({
                 type: FILE_TYPES.FOLDER,
                 title: name,
                 sourceUrl: path,
                 thumbUrl: name, //for keys in react
                 priority: 1000000,
             });
+            array.push(thumbFile);
             return;
         }
 
-        BuildThumbByData({
+        const thumbFile = GetThumbByData({
             thumbUrl: path + "\\" + name,
             remoteType: SOURCE_TYPES.FOLDER,
             title: name,
             time: time,
         });
+        array.push(thumbFile);
     });
 
     const pathParts = path.split('\\');
     const newPath = pathParts.slice(0, -1).join('\\');
     const name = pathParts[pathParts.length - 2];
-    BuildThumbByData({
+    const thumbFile = GetThumbByData({
         type: FILE_TYPES.RETURN,
         title: name,
         sourceUrl: newPath,
         thumbUrl: name, //for keys in react
         priority: 100000000,
     });
+    array.push(thumbFile);
+    setGallery(array);
 }

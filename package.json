@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "main": "main.js",
   "scripts": {
-    "build": "webpack && electron . --enable-logging",
+    "build": "webpack && electron .",
     "view": "electron ."
   },
   "license": "MIT",
@@ -22,6 +22,7 @@
     "react-bootstrap": "^2.10.1",
     "react-dom": "^18.2.0",
     "react-icons": "^5.0.1",
+    "react-popper": "^2.3.0",
     "sqlite3": "5.1.7",
     "webpinfo": "^2.0.0"
   },

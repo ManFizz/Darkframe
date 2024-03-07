@@ -1,5 +1,4 @@
 import React, {Component} from "react";
-import {ClearGallery} from "../../../thumb";
 import {FindTag, UpdateFormTags, AddMedia} from "../../../r34";
 
 class TagSearch extends Component {
@@ -14,7 +13,6 @@ class TagSearch extends Component {
     }
 
     Search() {
-        ClearGallery();
         AddMedia(this.searchInputRef.current.value + " score:>=" + this.rateInputRef.current.value);
     }
 

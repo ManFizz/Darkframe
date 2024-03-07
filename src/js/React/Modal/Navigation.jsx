@@ -2,7 +2,6 @@ import React, {Component} from 'react';
 import {FILE_TYPES} from "../../Display";
 
 class Navigation extends Component {
-
     constructor(props) {
         super(props);
         this.state = {
@@ -12,15 +11,18 @@ class Navigation extends Component {
         this.OpenShift = this.OpenShift.bind(this);
         this.handleKeyDown = this.handleKeyDown.bind(this);
         this.updateIndex = this.updateIndex.bind(this);
+        this.handleMousePressButtons = this.handleMousePressButtons.bind(this);
     }
 
     componentDidMount() {
         this.updateIndex();
         document.addEventListener('keydown', this.handleKeyDown);
+        document.addEventListener('mousedown', this.handleMousePressButtons);
     }
 
     componentWillUnmount() {
         document.removeEventListener('keydown', this.handleKeyDown);
+        document.removeEventListener('mousedown', this.handleMousePressButtons);
     }
 
     componentDidUpdate(prevProps, prevState, snapshot) {
@@ -38,9 +40,20 @@ class Navigation extends Component {
     }
 
     handleKeyDown(event) {
-        if (event.key === 'ArrowLeft') {
+        if(event.ctrlKey) {
+            if (event.key === 'ArrowLeft') {
+                this.OpenShift(-1);
+            } else if (event.key === 'ArrowRight') {
+                this.OpenShift(1);
+            }
+        }
+    }
+
+    handleMousePressButtons(ev) {
+        if((ev.buttons & 8) !== 0) {
             this.OpenShift(-1);
-        } else if (event.key === 'ArrowRight') {
+        }
+        else if ((ev.buttons & 16) !== 0) {
             this.OpenShift(1);
         }
     }

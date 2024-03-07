@@ -4,9 +4,8 @@ import {DisplayImagesByPath} from "../folders";
 import PrivateData from "../../../data/private";
 import {AddMedia} from "../r34";
 import {DisplayP365} from "../p365";
-import {ClearGallery} from "../thumb";
 import {SOURCE_TYPES} from "../Display";
-import {SORT_ORDER, SORT_TYPE} from "../AppInitializer";
+import {SORT_ORDER, SORT_TYPE} from "../AppLogic";
 import {BsCaretDownFill, BsFillGrid1X2Fill, BsSearch} from "react-icons/bs";
 
 export class NavBar extends Component {
@@ -29,24 +28,20 @@ export class NavBar extends Component {
     }
 
     clickFolderHandler() {
-        ClearGallery();
         this.props.setSource(SOURCE_TYPES.FOLDER);
         DisplayImagesByPath(PrivateData.startPath).then();
     }
 
     clickR34Handler(sourceType) {
-        ClearGallery();
         this.props.setSource(sourceType);
     }
 
     clickP365Handler() {
-        ClearGallery();
         this.props.setSource(SOURCE_TYPES.P365);
         DisplayP365();
     }
 
     clickFavoriteHandler() {
-        ClearGallery();
         this.props.setSource(SOURCE_TYPES.FAVORITE);
         DisplayFavorites();
     }
@@ -72,7 +67,6 @@ export class NavBar extends Component {
             case SOURCE_TYPES.R34:
             case SOURCE_TYPES.GELBOORU:
             {
-                ClearGallery();
                 AddMedia(searchValue);
                 break;
             }

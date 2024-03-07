@@ -1,10 +1,12 @@
 import React, {Component} from 'react';
 import Pagination from 'react-bootstrap/Pagination';
 import Settings from "../../../data/settings";
-import {AddMedia} from "../r34";
+import {AddMedia, CanMoreMedia} from "../r34";
 import {SOURCE_TYPES} from "../Display";
 
 const MAX_PAGES = 7;
+
+export let NotifyCustomPaginationR34 = () => {};
 
 class CustomPagination extends Component {
     constructor(props) {
@@ -14,6 +16,40 @@ class CustomPagination extends Component {
             pages: 1,
         };
         this.handleClick = this.handleClick.bind(this);
+
+        this.NotifyCustomPaginationR34 = this.NotifyCustomPaginationR34.bind(this);
+        NotifyCustomPaginationR34 = this.NotifyCustomPaginationR34;
+
+        this.handleKeyDown = this.handleKeyDown.bind(this);
+    }
+
+    componentDidMount() {
+        document.addEventListener('keydown', this.handleKeyDown);
+    }
+    componentWillUnmount() {
+        document.removeEventListener('keydown', this.handleKeyDown);
+    }
+
+    handleKeyDown(event) {
+        const { pages, currentPage } = this.state;
+        if(event.ctrlKey && this.props.modalFile === null) {
+            if (event.key === 'ArrowLeft') {
+                if(currentPage > 1)
+                    this.handleClick(currentPage-1);
+            }
+            else if (event.key === 'ArrowRight') {
+                if(currentPage < pages)
+                    this.handleClick(currentPage+1);
+            }
+            else if (event.key === 'ArrowUp') {
+                Settings.maxThumbsPerPage = Math.min(Settings.maxThumbsPerPage + 8, 160);
+                this.props.updateDisplayArray(this.props.mainArray); //rerender
+            }
+            else if (event.key === 'ArrowDown') {
+                Settings.maxThumbsPerPage = Math.max(Settings.maxThumbsPerPage - 8, 16);
+                this.props.updateDisplayArray(this.props.mainArray); //rerender
+            }
+        }
     }
 
     componentDidUpdate(prevProps, prevState, snapshot) {
@@ -28,15 +64,19 @@ class CustomPagination extends Component {
     }
 
     handleClick(page) {
-        const { mainArray, currentSource } = this.props;
+        const { mainArray } = this.props;
         this.setState({currentPage: page});
+
         const startIndex = (page - 1) * Settings.maxThumbsPerPage;
         const endIndex = Math.min(page * Settings.maxThumbsPerPage, mainArray.length);
-
         this.props.updateDisplayArray(mainArray.slice(startIndex, endIndex));
+    }
 
+    NotifyCustomPaginationR34() {
+        const { currentSource } = this.props;
+        const { pages, currentPage } = this.state;
         const isR34 = (currentSource === SOURCE_TYPES.R34 || currentSource === SOURCE_TYPES.GELBOORU);
-        if((endIndex + Settings.maxThumbsPerPage) >= mainArray.length  && isR34) {
+        if(isR34 && (pages - currentPage <= 1) && CanMoreMedia()) {
             AddMedia(null);
         }
     }

@@ -9,6 +9,7 @@ import {
     BsRepeat,
     BsRepeat1
 } from "react-icons/bs";
+import { Popper } from "react-popper";
 
 class VideoControls extends Component {
     constructor(props) {
@@ -21,8 +22,27 @@ class VideoControls extends Component {
         this.skipSec = this.skipSec.bind(this);
         this.handleSeekMouseUp = this.handleSeekMouseUp.bind(this);
         this.handleSeekMouseDown = this.handleSeekMouseDown.bind(this);
+        this.handleKeyDown = this.handleKeyDown.bind(this);
 
         this.lastStateVideo = false;
+    }
+
+    componentDidMount() {
+        document.addEventListener('keydown', this.handleKeyDown);
+    }
+
+    componentWillUnmount() {
+        document.removeEventListener('keydown', this.handleKeyDown);
+    }
+
+    handleKeyDown(event) {
+        if(!event.ctrlKey) {
+            if (event.key === 'ArrowLeft') {
+                this.skipSec(-10);
+            } else if (event.key === 'ArrowRight') {
+                this.skipSec(10);
+            }
+        }
     }
 
     toggleMute() {
@@ -76,7 +96,6 @@ class VideoControls extends Component {
         this.lastStateVideo = video.paused;
         video.pause();
     }
-
 
     render() {
         const { isLooped, isMuted, isPaused, currentTime, videoDuration, toggleLoop } = this.props;

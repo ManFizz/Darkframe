@@ -1,12 +1,12 @@
 import React, {Component} from 'react';
 import Navigation from "./Modal/Navigation";
-import {FILE_TYPES, ImageFile} from "../Display";
+import {FILE_TYPES} from "../Display";
 import Tags from "./Modal/Tags";
 import Video from "./Modal/Video";
 
 class Modal extends Component {
     render() {
-        const { file } = this.props;
+        const { file, tagsData } = this.props;
         if(!file) return <></>;
 
         return <>
@@ -21,7 +21,7 @@ class Modal extends Component {
                 ) : (
                     <Video file={file} />
                 )}
-                <Tags file={file}/>
+                <Tags file={file} tagsData={tagsData}/>
             </dialog>
         </>;
     };

@@ -1,5 +1,6 @@
-import {BuildThumbByData, ClearGallery} from "./thumb.js";
+import { GetThumbByData } from "./GalleryController.js";
 import {ForceAddFavImage, ForceAddFavTag, ForceRemoveFav} from './backend.js';
+import { setGallery } from "./AppInitializer";
 
 export let Favorites = [];
 export function OnUpdateFavorites(arr) {
@@ -56,11 +57,10 @@ export function isFav(url)
 
 export function DisplayFavorites()
 {
-    ClearGallery();
-
-    Favorites.forEach( fav => {
-        const {name, url, display, source, tags, remote_type} = fav;
-        BuildThumbByData({
+    let array = [];
+    Favorites.forEach( favData => {
+        const {name, url, display, source, tags, remote_type} = favData;
+        const thumbFile = GetThumbByData({
             thumbUrl: url,
             remoteType: remote_type,
             tags: tags,
@@ -68,5 +68,7 @@ export function DisplayFavorites()
             title: name,
             priority: display,
         });
+        array.push(thumbFile);
     });
+    setGallery(array);
 }

@@ -1,10 +1,24 @@
 import React, {Component} from 'react';
 
 class Tags extends Component {
+    constructor(props) {
+        super(props);
+        this.renderTag = this.renderTag.bind(this);
+    }
+
+    renderTag(tag, tagsData) {
+        const foundTag = tagsData.find(item => item.name === tag);
+        if(foundTag && foundTag.type === 6)
+            return null;
+
+        const tagTypeClass = foundTag ? `tag-type-${foundTag.type}` : 'bg-primary';
+        const className = `badge m-1 ${tagTypeClass}`;
+        return <span key={tag} className={className}>{tag}</span>;
+    }
 
     render() {
-        const { file } = this.props;
-        if(!file.tags || typeof file.tags !== 'string')
+        const {file, tagsData} = this.props;
+        if (!file.tags || typeof file.tags !== 'string')
             return <></>;
 
         let tags = file.tags.split(" ")
@@ -17,8 +31,8 @@ class Tags extends Component {
                 id="modal-tags"
             >
 
-                {tags.map((tag, index) => (
-                        <span key={index+tag} className="badge bg-primary m-1">{tag}</span>
+                {tags.map((tag) => (
+                  this.renderTag(tag, tagsData)
                 ))}
             </div>
         </>;
