@@ -55,20 +55,23 @@ export function isFav(url)
     return false;
 }
 
+export function favToDisplayFile(favData) {
+    const {name, url, display, source, tags, remote_type} = favData;
+    return GetThumbByData({
+        thumbUrl: url,
+        remoteType: remote_type,
+        tags: tags,
+        sourceUrl: source,
+        title: name,
+        priority: display,
+    });
+}
+
 export function DisplayFavorites()
 {
     let array = [];
     Favorites.forEach( favData => {
-        const {name, url, display, source, tags, remote_type} = favData;
-        const thumbFile = GetThumbByData({
-            thumbUrl: url,
-            remoteType: remote_type,
-            tags: tags,
-            sourceUrl: source,
-            title: name,
-            priority: display,
-        });
-        array.push(thumbFile);
+        array.push(favToDisplayFile(favData));
     });
     setGallery(array);
 }

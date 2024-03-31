@@ -7,6 +7,7 @@ import {DisplayP365} from "../p365";
 import {SOURCE_TYPES} from "../Display";
 import {SORT_ORDER, SORT_TYPE} from "../AppLogic";
 import {BsCaretDownFill, BsFillGrid1X2Fill, BsSearch} from "react-icons/bs";
+import { DisplayCollections } from "../CollectionLogic";
 
 export class NavBar extends Component {
 
@@ -25,6 +26,7 @@ export class NavBar extends Component {
         this.clickSortOrderHandler = this.clickSortOrderHandler.bind(this);
         this.clickSearchHandler = this.clickSearchHandler.bind(this);
         this.ToggleView = this.ToggleView.bind(this);
+        this.clickCollectionHandler = this.clickCollectionHandler.bind(this);
     }
 
     clickFolderHandler() {
@@ -78,6 +80,11 @@ export class NavBar extends Component {
         }
     };
 
+    clickCollectionHandler() {
+        this.props.setSource(SOURCE_TYPES.COLLECTION);
+        DisplayCollections();
+    }
+
     ToggleView() {
         this.props.setTypeView(null);
     }
@@ -96,7 +103,7 @@ export class NavBar extends Component {
 
         return <>
             <header className="navbar navbar-expand-lg sticky-top navbar-dark text-white bg-dark">
-                <div className="container-xxl">
+                <div className="container-fluid">
                     <div className="navbar-nav flex-row flex-wrap bd-navbar-nav">
                         <div className="btn-group">
                             {renderRadioButtons([
@@ -105,6 +112,7 @@ export class NavBar extends Component {
                                 { label: 'P365', onClick: this.clickP365Handler },
                                 { label: 'Favorites', onClick: this.clickFavoriteHandler },
                                 { label: 'Folders', onClick: this.clickFolderHandler },
+                                { label: 'Collections', onClick: this.clickCollectionHandler },
                             ])}
                         </div>
                     </div>

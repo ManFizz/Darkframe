@@ -1,5 +1,9 @@
 import React, {Component} from 'react';
 
+function isEmptyOrSpaces(str){
+    return str === null || str.match(/^ *$/) !== null;
+}
+
 class Tags extends Component {
     constructor(props) {
         super(props);
@@ -7,6 +11,9 @@ class Tags extends Component {
     }
 
     renderTag(tag, tagsData) {
+        if(isEmptyOrSpaces(tag))
+            return null;
+
         const foundTag = tagsData.find(item => item.name === tag);
         if(foundTag && foundTag.type === 6)
             return null;

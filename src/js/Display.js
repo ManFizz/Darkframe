@@ -1,11 +1,13 @@
-import {isFav} from "./FavController";
+import { addFav, isFav, removeFav } from "./FavController";
 import {WebPInfo} from "webpinfo";
 
 export const FILE_TYPES = {
     IMAGE: 1,
     VIDEO: 2,
+
     FOLDER: 3,
-    RETURN: 4
+    RETURN: 4,
+    COLLECTION: 5,
 };
 
 export const SOURCE_TYPES = {
@@ -14,7 +16,16 @@ export const SOURCE_TYPES = {
     P365: 3,
     GELBOORU: 4,
     FAVORITE: 5, //NOT FOR FILES
+    COLLECTION: 6,
 };
+
+const getMeta = (url) =>
+  new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = (err) => reject(err);
+    img.src = url;
+  });
 
 export class DisplayFile {
     constructor({
@@ -29,6 +40,7 @@ export class DisplayFile {
                     remoteType = null,
                     type = null,
                     priority = 1,
+                    collectionsIds = [],
                     _fav = null,
                     _updateFavStatus = null,
                 })
@@ -52,6 +64,7 @@ export class DisplayFile {
         this.time = time;
         this.type = type;
         this.priority = priority;
+        this.collectionsIds = collectionsIds;
         this._fav = _fav;
         this._updateFavStatus = _updateFavStatus;
     }
@@ -61,6 +74,32 @@ export class DisplayFile {
             this._fav = isFav(this.thumbUrl);
 
         return this._fav;
+    }
+
+    ToggleFav() {
+      if(this.isFav())
+        removeFav(this);
+      else
+        addFav(this);
+    }
+
+    async getSize() {
+      let res = [0, 0];
+      if (this.width <= 0 || this.height <= 0) {
+        if(this.type === FILE_TYPES.IMAGE) {
+          const img = await getMeta(this.thumbUrl);
+          this.width = img.naturalWidth;
+          this.height = img.naturalHeight;
+        }
+      }
+
+      if(this.width <= 0 || this.height <= 0)
+        return null;
+
+      return {
+        width: this.width,
+        height: this.height
+      };
     }
 }
 

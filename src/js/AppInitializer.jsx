@@ -6,7 +6,7 @@ import SideBar from "./React/SideBar.jsx";
 import Gallery from "./React/Gallery";
 import CustomPagination from "./React/CustomPagination";
 import {SOURCE_TYPES} from "./Display";
-import {GetFavTags} from "./backend";
+import { GetFavTags, UpdateCollections } from "./backend";
 import {
     SORT_ORDER,
     SORT_TYPE,
@@ -16,14 +16,16 @@ import {
 } from "./AppLogic";
 
 
-
+export let setCollections = () => {};
 export let setGallery = () => {};
+export let addToGallery = () => {};
 export let getGallery = () => {};
 export let getCurrentSource = () => {};
 export let setFavTagsArray = () => {};
 export let updateTags = () => {};
-
 export let getTags = () => {};
+
+export let getCollections = () => {};
 
 class Main extends Component {
 
@@ -40,10 +42,19 @@ class Main extends Component {
                 order: SORT_ORDER.DESC,
                 type: SORT_TYPE.TIME,
             },
-            tagsData: []
+            tagsData: [],
+            collections: [],
         };
 
         setGallery = updateMainArray.bind(this);
+        addToGallery = (array) => {
+            setGallery([...this.state.mainArray, ...array]);
+        };
+        setCollections = collections => {
+            this.setState({ collections: collections });
+            UpdateCollections(collections).then();
+        }
+        getCollections = () => this.state.collections;
         this.updateDisplayArray = newArray => this.setState({ displayArray: newArray });
         this.updateModalFile = (file) => this.setState({modalFile: file});
         this.setSource = setSource.bind(this);
@@ -59,7 +70,8 @@ class Main extends Component {
     }
 
     render() {
-        const { displayArray, modalFile, mainArray, currentSource, favTagsArray, typeView, sortInfo, tagsData} = this.state;
+        const { displayArray, modalFile, mainArray, currentSource, favTagsArray, typeView, sortInfo, tagsData,
+            collections } = this.state;
         return (<>
             <NavBar
                 currentSource={currentSource}
@@ -86,10 +98,6 @@ class Main extends Component {
                         modalUpdater={this.updateModalFile}
                         modalFile={modalFile}
                         typeView={typeView}
-                    />
-                    <ul
-                        id="pagination"
-                        className="pagination-sm fixed-bottom justify-content-center"
                     />
                 </div>
                 <CustomPagination

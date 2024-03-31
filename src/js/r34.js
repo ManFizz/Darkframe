@@ -2,7 +2,7 @@ import { GetThumbByData } from "./GalleryController.js";
 import PrivateData from "../../data/private";
 import {SOURCE_TYPES} from "./Display";
 import {NotifyCustomPaginationR34} from "./React/CustomPagination";
-import { getGallery, getTags, setGallery, updateTags } from "./AppInitializer";
+import { addToGallery, getGallery, getTags, setGallery, updateTags } from "./AppInitializer";
 
 const postPerPage = 100; //MAX in API
 
@@ -11,6 +11,7 @@ const sources = {
         name: "Rule 34",
         mainUrl: "https://api.rule34.xxx/index.php?page=dapi&s=post&q=index",
         tagUrl: "https://api.rule34.xxx/autocomplete.php?q=",
+        tagsUrl: "https://api.rule34.xxx/index.php?page=dapi&s=tag&q=index&name=",
         sourceUrl: "https://rule34.xxx/index.php?page=post&s=view&id=",
         remoteType: SOURCE_TYPES.R34,
     },
@@ -56,14 +57,17 @@ export function CanMoreMedia() {
     return maxPages > currentPage;
 }
 
+let stateOfClear = true;
+
 export function AddMedia(stringTags, pageNum= 1) {
     if(stringTags !== null) {
         currentPage = pageNum;
         currentTags = stringTags;
+        stateOfClear = true;
     } else {
         if(!CanMoreMedia())
             return;
-
+        stateOfClear = false;
         currentPage += 1;
     }
 
@@ -168,7 +172,10 @@ function handleResponse(responseXML) {
         });
         array.push(thumbFile);
     });
-    setGallery(array);
+    if(stateOfClear)
+        setGallery(array);
+    else
+        addToGallery(array);
     if(!bR34)
         LoadTagsData(array);
 
@@ -223,6 +230,7 @@ function handleTagResponse(responseText, tagUl) {
         a.onclick = () => {
             const tagValue = (currentR34Source.name === "Rule 34") ? elem.value : elem.name;
             InsertTag(tagValue);
+            tagUl.classList.remove('show');
         };
 
         li.appendChild(a);

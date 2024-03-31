@@ -1,2 +1,10 @@
 node_modules\*
 /node_modules/
+/dist
+/.idea
+*.css
+*.css.map
+/data/*.js
+*.db
+package-lock.json
+/backup

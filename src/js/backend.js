@@ -1,14 +1,14 @@
 // noinspection JSIgnoredPromiseFromCall
 
-import { OnUpdateFavorites} from "./FavController.js";
+import { Favorites, OnUpdateFavorites } from "./FavController.js";
 import {setFavTagsArray} from "./AppInitializer";
+import Collection from "./Collection";
 let { ipcRenderer } = require("electron");
 
 ipcRenderer.invoke("getFavorites");
 ipcRenderer.on('getFavorites', (event, arg) => {
     OnUpdateFavorites(arg);
 });
-
 
 export async function GetFavTags() {
     return await ipcRenderer.invoke("getFavTags");
@@ -33,4 +33,36 @@ export function ForceAddFavTag(tag, remoteType) {
 export function ForceAddFavImage(displayFile) {
     ipcRenderer.invoke("addFavorites", displayFile.thumbUrl, displayFile.title, displayFile.sourceUrl,
         displayFile.tags, 1 /* display */, displayFile.remoteType);
+}
+
+export async function GetCollections() {
+    const dataFromDatabase = await ipcRenderer.invoke("GetCollections");
+    const collections = {};
+
+    dataFromDatabase.forEach(item => {
+        if (!collections[item.colId]) {
+            collections[item.colId] = new Collection(item.colName, item.colId);
+        }
+
+        const favorite = Favorites.find(fav => fav.id === item.id);
+        if (favorite) {
+            if(!favorite.collectionsIds)
+                favorite.collectionsIds = [];
+
+            favorite.collectionsIds.push(item.colId);
+            collections[item.colId].addImage(favorite);
+        } else {
+            console.log('Error: favorite not found', item.id);
+        }
+    });
+
+    return Object.values(collections);
+}
+
+export async function UpdateCollections(collections) {
+    try {
+        await ipcRenderer.invoke("UpdateCollections", collections);
+    } catch (error) {
+        console.error("Error updating collections:", error);
+    }
 }

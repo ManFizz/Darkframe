@@ -3,9 +3,10 @@ import Image from "./Thumb/Image";
 import Video from "./Thumb/Video";
 import Folder from "./Thumb/Folder";
 import Return from "./Thumb/Return";
-import * as Display from "../Display";
 import {addFav, removeFav} from "../FavController";
 import {FILE_TYPES} from "../Display";
+import DropMenu from "./Thumb/DropMenu";
+import Collection from "./Thumb/Collection";
 
 class Thumb extends Component {
     constructor(props) {
@@ -44,23 +45,26 @@ class Thumb extends Component {
                 onClick={this.handleThumbClick}
             >
                 {(file.type === FILE_TYPES.IMAGE || file.type === FILE_TYPES.VIDEO) && (
-                    <div className="overlay">
-                        {this.state.isFav ? (
-                            <i className="bi bi-ban" onClick={this.handleLikeClick}></i>
-                        ) : (
-                            <i className="bi bi-heart-fill" onClick={this.handleLikeClick}></i>
-                        )}
-                    </div>
+                  <div className="overlay">
+                      <DropMenu file={file}/>
+                      {this.state.isFav ? (
+                        <i className="bi bi-ban" onClick={this.handleLikeClick}></i>
+                      ) : (
+                        <i className="bi bi-heart-fill" onClick={this.handleLikeClick}></i>
+                      )}
+                  </div>
                 )}
                 {file.type === FILE_TYPES.IMAGE ? (
-                    <Image file={file}/>
+                  <Image file={file}/>
                 ) : file.type === FILE_TYPES.VIDEO ? (
-                    <Video file={file}/>
+                  <Video file={file}/>
                 ) : file.type === FILE_TYPES.FOLDER ? (
-                    <Folder file={file}/>
-                ) : (
-                    <Return file={file}/>
-                )}
+                  <Folder file={file}/>
+                ) : file.type === FILE_TYPES.RETURN ? (
+                  <Return file={file}/>
+                ) : file.type === FILE_TYPES.COLLECTION ? (
+                  <Collection file={file}/>
+                ) : null}
             </div>
         );
     }

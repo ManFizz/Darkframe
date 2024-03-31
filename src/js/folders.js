@@ -46,7 +46,8 @@ export async function DisplayImagesByPath(path)
             title: name,
             time: time,
         });
-        array.push(thumbFile);
+        if(thumbFile !== null)
+            array.push(thumbFile);
     });
 
     const pathParts = path.split('\\');

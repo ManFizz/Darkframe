@@ -6,11 +6,15 @@
   min-height: 100vh;
   min-width: 100vw;
   padding: 0;
-  background: linear-gradient(45deg, #380036b0, #010202c9);
+  background: linear-gradient(45deg, #380036b0, #010202c7);
   margin: 0;
   max-width: 100vw;
   max-height: 100vh;
   border: 0;
+  transition: .5s linear;
+  &.favorite {
+    background: linear-gradient(45deg, #890384b0, #010202c7);
+  }
 
   img, video {
     height: 100%;
@@ -77,4 +81,26 @@
 .arrow-left {
   left: 0;
   top: 50%;
+}
+
+.modal img.long {
+  width: 700px;
+  height: auto;
+  display: block;
+  margin: 0 auto;
+  border: orange 4px solid;
+}
+
+.modal i.bi.bi-ban, .modal i.bi.bi-heart-fill {
+  left: 64px;
+  font-size: 40px;
+  top: 13px;
+  cursor: pointer;
+}
+
+i.bi.bi-arrow-clockwise {
+  left: 116px;
+  font-size: 40px;
+  top: 13px;
+  cursor: pointer;
 }

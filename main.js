@@ -1,5 +1,5 @@
 const {app, BrowserWindow} = require('electron');
-const fs = require('fs');
+const { backupDatabase } = require('./backup');
 
 const { ipcMain } = require('./ipcHandlers');
 
@@ -32,3 +32,5 @@ function createWindow() {
 app.on('ready', async () => {
     createWindow();
 });
+
+backupDatabase();

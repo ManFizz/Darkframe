@@ -99,7 +99,7 @@ $tag-colors: (
   background-color: transparent !important;
   transition: .4s ease-out;
   position: relative;
-  overflow: hidden;
+  overflow: visible;
   border-color: transparent;
 
   img, video{
@@ -142,4 +142,14 @@ $tag-colors: (
     cursor: pointer;
     filter: drop-shadow(1px 1px 1px black);
   }
+}
+
+.overlay svg {
+  height: 22px;
+  width: auto;
+  margin: 4px;
+}
+
+.overlay .dropdown-toggle:after {
+  content: none !important;
 }

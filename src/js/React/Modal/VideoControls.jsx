@@ -5,15 +5,18 @@ import {
     BsFillRewindFill, BsFillSkipEndFill,
     BsFillSkipStartFill,
     BsFillVolumeMuteFill,
-    BsFillVolumeUpFill,
+    BsFillVolumeUpFill, BsRecordCircle, BsRecordCircleFill, BsRecycle,
     BsRepeat,
     BsRepeat1
 } from "react-icons/bs";
-import { Popper } from "react-popper";
 
 class VideoControls extends Component {
     constructor(props) {
         super(props);
+        this.state = {
+            startRec: null,
+            endRec: null,
+        };
 
         this.toggleMute = this.toggleMute.bind(this);
         this.togglePlay = this.togglePlay.bind(this);
@@ -23,8 +26,21 @@ class VideoControls extends Component {
         this.handleSeekMouseUp = this.handleSeekMouseUp.bind(this);
         this.handleSeekMouseDown = this.handleSeekMouseDown.bind(this);
         this.handleKeyDown = this.handleKeyDown.bind(this);
+        this.clearRecord = this.clearRecord.bind(this);
+        this.setStart = this.setStart.bind(this);
+        this.setEnd = this.setEnd.bind(this);
+        this.handleTimeUpdate = this.handleTimeUpdate .bind(this);
 
         this.lastStateVideo = false;
+    }
+
+    handleTimeUpdate() {
+        const { startRec, endRec } = this.state;
+        if(startRec !== null && endRec !== null) {
+            const { video } = this.props;
+            if(video.currentTime > endRec)
+                this.skipToSec(startRec);
+        }
     }
 
     componentDidMount() {
@@ -33,10 +49,11 @@ class VideoControls extends Component {
 
     componentWillUnmount() {
         document.removeEventListener('keydown', this.handleKeyDown);
+        this.props.video.removeEventListener('timeupdate', this.handleTimeUpdate);
     }
 
     handleKeyDown(event) {
-        if(!event.ctrlKey) {
+        if(event.ctrlKey) {
             if (event.key === 'ArrowLeft') {
                 this.skipSec(-10);
             } else if (event.key === 'ArrowRight') {
@@ -97,8 +114,28 @@ class VideoControls extends Component {
         video.pause();
     }
 
+    setStart() {
+        const { video } = this.props;
+        this.setState({ startRec: video.currentTime});
+        if(video)
+            video.addEventListener('timeupdate', this.handleTimeUpdate);
+    }
+
+    setEnd() {
+        const { video } = this.props;
+        this.setState({ endRec: video.currentTime});
+    }
+
+    clearRecord() {
+        const { video } = this.props;
+        this.setState({ startRec: null, endRec: null});
+        if(video)
+            video.removeEventListener('timeupdate', this.handleTimeUpdate);
+    }
+
     render() {
         const { isLooped, isMuted, isPaused, currentTime, videoDuration, toggleLoop } = this.props;
+        const { startRec, endRec } = this.state;
         return <>
             <div className="video-controls">
                 <div className="video-misc">
@@ -106,6 +143,9 @@ class VideoControls extends Component {
                     <BsRepeat onClick={toggleLoop} style={{ display: !isLooped ? 'block' : 'none' }}/>
                     <BsFillVolumeMuteFill onClick={this.toggleMute} style={{ display: isMuted ? 'block' : 'none' }}/>
                     <BsFillVolumeUpFill onClick={this.toggleMute} style={{ display: !isMuted ? 'block' : 'none' }}/>
+                    <BsRecordCircle onClick={this.setStart} style={{ display: !startRec ? 'block' : 'none' }}/>
+                    <BsRecordCircleFill onClick={this.setEnd} style={{ display: startRec && !endRec ? 'block' : 'none' }}/>
+                    <BsRecycle onClick={this.clearRecord} style={{ display: startRec && endRec ? 'block' : 'none' }}/>
                 </div>
                 <div className="time-control">
                     <time id="time-elapsed">{this.formatTime(currentTime)}</time>

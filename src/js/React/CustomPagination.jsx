@@ -65,11 +65,12 @@ class CustomPagination extends Component {
 
     handleClick(page) {
         const { mainArray } = this.props;
-        this.setState({currentPage: page});
 
         const startIndex = (page - 1) * Settings.maxThumbsPerPage;
         const endIndex = Math.min(page * Settings.maxThumbsPerPage, mainArray.length);
         this.props.updateDisplayArray(mainArray.slice(startIndex, endIndex));
+
+        this.setState({currentPage: page}, NotifyCustomPaginationR34);
     }
 
     NotifyCustomPaginationR34() {
