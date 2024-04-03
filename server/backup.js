@@ -3,8 +3,8 @@ const path = require('path');
 const crypto = require('crypto');
 
 function backupDatabase() {
-	const sourceFilePath = 'data.db';
-	const backupFolderPath = 'backup/';
+	const sourceFilePath = '../data/data.db';
+	const backupFolderPath = '../data/backup/';
 
 	const needDelete = false;
 

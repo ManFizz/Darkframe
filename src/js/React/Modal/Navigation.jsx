@@ -89,8 +89,9 @@ class Navigation extends Component {
     };
 
     clickFavHandler() {
+        const isFav = this.props.file.isFav();
         this.props.file.ToggleFav();
-        this.setState({isFav: !this.state.isFav});
+        this.setState({isFav: !isFav});
     }
 
     handleRotateClick = (e) => {

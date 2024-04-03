@@ -4,7 +4,11 @@ import { setGallery } from "./AppInitializer";
 
 export let Favorites = [];
 export function OnUpdateFavorites(arr) {
-    Favorites = arr;
+    Favorites = [];
+    arr.forEach( el => {
+        const displayFile = GetThumbByData(el);
+        Favorites.push(displayFile);
+    });
 }
 
 export function AddFavTag(tag, remoteType) {
@@ -17,17 +21,20 @@ export function removeFav(displayFile)
         throw new Error('removeFav :: error');
 
     const indexToDelete = Favorites.findIndex(fav =>
-        fav.source === displayFile.sourceUrl &&
-        fav.remoteType === displayFile.remoteType);
+        fav.id === displayFile.id);
 
     if (indexToDelete !== -1) {
         Favorites.splice(indexToDelete, 1);
         displayFile._fav = false;
+    } else {
+        console.error("not found", displayFile);
     }
     ForceRemoveFav(displayFile);
 
     if(displayFile._updateFavStatus)
         displayFile._updateFavStatus();
+
+    console.log(Favorites);
 }
 
 export function addFav(displayFile)
@@ -37,7 +44,9 @@ export function addFav(displayFile)
 
     Favorites.push(displayFile);
     displayFile._fav = true;
-    ForceAddFavImage(displayFile);
+    ForceAddFavImage(displayFile).then(id => {
+        displayFile.id = id;
+    });
 
     if(displayFile._updateFavStatus)
         displayFile._updateFavStatus();
@@ -49,7 +58,7 @@ export function isFav(url)
         return false;
 
     for(let i = 0; i < Favorites.length; i++)
-        if(Favorites[i].url.toString().localeCompare(url.toString()) === 0)
+        if(Favorites[i].thumbUrl.toString().localeCompare(url.toString()) === 0)
             return true;
 
     return false;
@@ -71,7 +80,7 @@ export function DisplayFavorites()
 {
     let array = [];
     Favorites.forEach( favData => {
-        array.push(favToDisplayFile(favData));
+        array.push(favData);
     });
     setGallery(array);
 }

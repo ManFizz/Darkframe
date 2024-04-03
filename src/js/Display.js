@@ -29,6 +29,7 @@ const getMeta = (url) =>
 
 export class DisplayFile {
     constructor({
+                    id = null,
                     title = null,
                     width = null,
                     height = null,
@@ -52,7 +53,7 @@ export class DisplayFile {
                 type = FILE_TYPES.VIDEO;
             else throw new Error();
         }
-
+        this.id = id; //for favs
         this.title = title;
         this.width = width;
         this.height = height;

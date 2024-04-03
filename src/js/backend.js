@@ -30,9 +30,9 @@ export function ForceAddFavTag(tag, remoteType) {
     ipcRenderer.invoke("AddFavTags", tag, remoteType);
 }
 
-export function ForceAddFavImage(displayFile) {
-    ipcRenderer.invoke("addFavorites", displayFile.thumbUrl, displayFile.title, displayFile.sourceUrl,
-        displayFile.tags, 1 /* display */, displayFile.remoteType);
+export async function ForceAddFavImage(displayFile) {
+    return await ipcRenderer.invoke("addFavorites", displayFile.thumbUrl, displayFile.title, displayFile.sourceUrl,
+        displayFile.tags, 1, displayFile.remoteType);
 }
 
 export async function GetCollections() {

@@ -1,7 +1,6 @@
 const {app, BrowserWindow} = require('electron');
-const { backupDatabase } = require('./backup');
-
-const { ipcMain } = require('./ipcHandlers');
+const { backupDatabase } = require('./server/backup');
+const { setupIpcHandlers } = require('./server/ipcManager');
 
 let openDevTools = false;
 for (let i = 0; i < process.argv.length; i++) {
@@ -29,8 +28,13 @@ function createWindow() {
     }
 }
 
-app.on('ready', async () => {
+backupDatabase();
+
+app.whenReady().then(() => {
+    setupIpcHandlers();
     createWindow();
 });
 
-backupDatabase();
+app.on('window-all-closed', () => {
+    app.quit();
+});
