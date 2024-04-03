@@ -284,10 +284,23 @@ export function LoadTagsData(gallery = null) {
     lastRequestTagsUpdate = x;
 }
 
+function decode(text) {
+    const textarea = document.createElement('textarea');
+    textarea.innerHTML = text;
+    return textarea.value;
+}
+
 function responseTags(tags) {
-    inWorkTags = inWorkTags.filter(obj1 => !tags.some(obj2 => obj1 === obj2.name));
+    tags = tags.map(tag => ({
+        ...tag,
+        name: decode(tag.name),
+    }));
     updateTags(tags);
-    setTimeout(() => LoadTagsData(), 1000);
+
+    inWorkTags = inWorkTags.filter(obj1 => !tags.some(obj2 => obj1 === obj2.name));
+    if(inWorkTags.length > 0)
+        setTimeout(() => LoadTagsData(), 1000);
+    console.log('call');
 }
 
 function UpdateTagsInWork(gallery) {
