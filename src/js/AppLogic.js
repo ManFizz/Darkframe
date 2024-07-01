@@ -41,14 +41,6 @@ export function updateMainArray(newArray) {
 	});
 }
 
-export function updateTagsData(data) {
-	const combinedArray = [...data, ...this.state.tagsData];
-	const uniqueArray = combinedArray.filter((item, index, array) =>
-		index === array.findIndex(obj => obj.name === item.name)
-	);
-	this.setState({tagsData: uniqueArray});
-}
-
 export function setSource(source) {
 	updateR34Source(source);
 	this.setState({currentSource: source});

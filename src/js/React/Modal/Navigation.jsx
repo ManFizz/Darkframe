@@ -1,7 +1,7 @@
-import React, {Component} from 'react';
-import {FILE_TYPES} from "../../Display";
-import { NotifyCustomPaginationR34 } from "../CustomPagination";
-import { isFav } from "../../FavController";
+import React, { Component } from 'react';
+import { FILE_TYPES, SOURCE_TYPES } from "../../Display";
+import { LoadNextPage } from "../CustomPagination";
+import { AddMedia, CanMoreMedia } from "../../r34";
 
 class Navigation extends Component {
     constructor(props) {
@@ -9,13 +9,8 @@ class Navigation extends Component {
         this.state = {
             currentIndex: 0,
             isFav: false,
+            nextPageBlockTimer: null,
         }
-
-        this.OpenShift = this.OpenShift.bind(this);
-        this.handleKeyDown = this.handleKeyDown.bind(this);
-        this.updateIndex = this.updateIndex.bind(this);
-        this.handleMousePressButtons = this.handleMousePressButtons.bind(this);
-        this.clickFavHandler = this.clickFavHandler.bind(this);
     }
 
     componentDidMount() {
@@ -32,7 +27,7 @@ class Navigation extends Component {
     }
 
     componentDidUpdate(prevProps, prevState, snapshot) {
-        const { file } = this.props;
+        const { file, modalFile } = this.props;
         if(prevProps.file !== file) {
             this.updateIndex();
             if(file.isFav() !== this.state.isFav)
@@ -40,14 +35,16 @@ class Navigation extends Component {
         }
     }
 
-    updateIndex() {
+    updateIndex = () => {
         const index = this.props.mainArray.indexOf(this.props.file);
         if(index !== this.state.currentIndex) {
             this.setState({currentIndex: index});
+            if(this.props.file.thumbUrl.localeCompare(this.props.displayFiles[0].thumbUrl) === 0)
+                LoadNextPage();
         }
     }
 
-    handleKeyDown(event) {
+    handleKeyDown = (event) => {
         if(!event.ctrlKey) {
             if (event.key === 'ArrowLeft') {
                 this.OpenShift(-1);
@@ -57,9 +54,12 @@ class Navigation extends Component {
                 this.clickFavHandler();
             }
         }
+        if(event.key === 'Escape') {
+            this.props.modalUpdater(null);
+        }
     }
 
-    handleMousePressButtons(ev) {
+    handleMousePressButtons = (ev) => {
         if((ev.buttons & 8) !== 0) {
             this.OpenShift(-1);
         }
@@ -68,7 +68,7 @@ class Navigation extends Component {
         }
     }
 
-    CanShift(index) {
+    CanShift = (index) => {
         if(index < 0 || index >= this.props.mainArray.length)
             return null;
 
@@ -80,15 +80,24 @@ class Navigation extends Component {
         return null;
     }
 
-    OpenShift(value) {
+    OpenShift = (value) => {
         const newFile = this.CanShift(this.state.currentIndex + value);
         if(newFile !== null) {
             this.props.modalUpdater(newFile);
-        } else if(value > 0)
-            NotifyCustomPaginationR34();
+        } else if(value > 0) {
+            const { currentSource } = this.props;
+            const isR34 = (currentSource === SOURCE_TYPES.R34 || currentSource === SOURCE_TYPES.GELBOORU);
+            if(isR34 && CanMoreMedia() && this.state.nextPageBlockTimer === null) {
+                const timer = setTimeout(() => {
+                    this.setState({ nextPageBlockTimer: null })
+                }, 5000);
+                this.setState({ nextPageBlockTimer: timer });
+                AddMedia(null);
+            }
+        }
     };
 
-    clickFavHandler() {
+    clickFavHandler = () => {
         const isFav = this.props.file.isFav();
         this.props.file.ToggleFav();
         this.setState({isFav: !isFav});

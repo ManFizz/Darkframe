@@ -1,8 +1,9 @@
 import { GetThumbByData } from "./GalleryController.js";
 import PrivateData from "../../data/private";
-import {SOURCE_TYPES} from "./Display";
-import {NotifyCustomPaginationR34} from "./React/CustomPagination";
-import { addToGallery, getGallery, getTags, setGallery, updateTags } from "./AppInitializer";
+import { SOURCE_TYPES } from "./Display";
+import { NotifyCustomPaginationR34 } from "./React/CustomPagination";
+import { addToGallery, setGallery } from "./AppInitializer";
+import { GetTags, UpdateTagsData } from "./TagsController";
 
 const postPerPage = 100; //MAX in API
 
@@ -14,17 +15,25 @@ const sources = {
         tagsUrl: "https://api.rule34.xxx/index.php?page=dapi&s=tag&q=index&name=",
         sourceUrl: "https://rule34.xxx/index.php?page=post&s=view&id=",
         remoteType: SOURCE_TYPES.R34,
+        tagsLimit: 1,
     },
     gelbooru: {
         name: "Gelbooru",
-        mainUrl: "https://gelbooru.com/index.php?page=dapi&s=post&q=index" + PrivateData.api_gelbooru,
-        tagUrl: "https://gelbooru.com/index.php?page=dapi&s=tag&q=index&json=1&limit=8&orderby=count" +
-            PrivateData.api_gelbooru + "&name_pattern=",
-        tagsUrl: "https://gelbooru.com/index.php?page=dapi&s=tag&q=index&json=1" +
-            PrivateData.api_gelbooru + "&names=",
-        sourceUrl: "https://gelbooru.com/index.php?page=dapi&s=post&q=index" +
-            PrivateData.api_gelbooru + "&id=",
+        mainUrl: "https://gelbooru.com/index.php?page=dapi&s=post&q=index",
+        tagUrl: "https://gelbooru.com/index.php?page=dapi&s=tag&q=index&json=1&limit=8&orderby=count&name_pattern=",
+        tagsUrl: "https://gelbooru.com/index.php?page=dapi&s=tag&q=index&json=1&names=",
+        sourceUrl: "https://gelbooru.com/index.php?page=dapi&s=post&q=index&id=",
         remoteType: SOURCE_TYPES.GELBOORU,
+        tagsLimit: 100,
+    },
+    realbooru: {
+        name: "Realbooru",
+        mainUrl: "https://realbooru.com/index.php?page=dapi&s=post&q=index",
+        tagUrl: "https://realbooru.com/index.php?page=dapi&s=tag&q=index&json=1&limit=8&orderby=count&name_pattern=",
+        tagsUrl: "https://realbooru.com/index.php?page=dapi&s=tag&q=index&json=1&names=",
+        sourceUrl: "https://realbooru.com/index.php?page=dapi&s=post&q=index&id=",
+        remoteType: SOURCE_TYPES.REALBOORU,
+        tagsLimit: 100,
     }
 };
 
@@ -35,11 +44,17 @@ export function updateR34Source(sourceId) {
         currentR34Source = sources.r34;
     else if(sourceId === SOURCE_TYPES.GELBOORU)
         currentR34Source = sources.gelbooru;
+    else if(sourceId === SOURCE_TYPES.REALBOORU)
+        currentR34Source = sources.realbooru;
     else currentR34Source = null;
 }
 
+function isR34Family(type) {
+    return type === SOURCE_TYPES.GELBOORU || type === SOURCE_TYPES.R34 || type === SOURCE_TYPES.REALBOORU;
+}
+
 export async function addByIdArray() {
-    if(currentR34Source.remoteType === SOURCE_TYPES.GELBOORU || currentR34Source.remoteType === SOURCE_TYPES.R34) {
+    if(isR34Family(currentR34Source.remoteType)) {
         const idArray = PrivateData.idArray;
         for (let i = 0; i < idArray.length; i++) {
             const id = idArray[i];
@@ -156,6 +171,20 @@ function sendRequest(url) {
     return x;
 }
 
+function GetData(post, dataName) {
+    switch (currentR34Source.remoteType) {
+        case SOURCE_TYPES.R34: {
+            return post.getAttribute(dataName);
+        }
+        case SOURCE_TYPES.REALBOORU: {
+            return post.getAttribute(dataName);
+        }
+        case SOURCE_TYPES.GELBOORU: {
+            return post.querySelector(dataName).textContent;
+        }
+    }
+}
+
 function handleResponse(responseXML) {
     maxPosts = parseInt(responseXML.querySelector('posts').getAttribute('count'));
     const posts = responseXML.querySelectorAll("post");
@@ -164,18 +193,22 @@ function handleResponse(responseXML) {
     let array = [];
     const bR34 = currentR34Source.remoteType === SOURCE_TYPES.R34;
     posts.forEach(post => {
+        console.log(post);
         const thumbFile = GetThumbByData({
-            thumbUrl: bR34 ? post.getAttribute('file_url') : post.querySelector('file_url').textContent,
+            previewUrl: GetData(post, 'preview_url'),
+            thumbUrl: GetData(post,'file_url'),
             remoteType: currentR34Source.remoteType,
-            tags: bR34 ? post.getAttribute('tags') : post.querySelector('tags').textContent,
-            sourceUrl: sourceUrl + (bR34 ? post.getAttribute('id') : post.querySelector('id').textContent),
+            tags: GetData(post,'tags'),
+            sourceUrl: sourceUrl + GetData(post,'id'),
         });
         array.push(thumbFile);
     });
+    console.log(array);
     if(stateOfClear)
         setGallery(array);
     else
         addToGallery(array);
+
     if(!bR34)
         LoadTagsData(array);
 
@@ -185,7 +218,7 @@ function handleResponse(responseXML) {
 
 let lastRequestTagFind = null;
 
-export function FindTag(tag) {
+export function FindTagByPart(tag) {
     if (lastRequestTagFind !== null)
         lastRequestTagFind.abort();
 
@@ -199,19 +232,19 @@ export function FindTag(tag) {
     const lastWord = match[0];
 
     const x = new XMLHttpRequest();
-    const url = currentR34Source.tagUrl + lastWord + (currentR34Source.name === "Gelbooru" ? "%" : "");
+    const url = currentR34Source.tagUrl + lastWord + (currentR34Source.remoteType === SOURCE_TYPES.R34 ? "" : "%");
     x.open("GET", url, true);
     x.onload = function() {
-        handleTagResponse(x.responseText, tagUl);
+        handleFindTagByPartResponse(x.responseText, tagUl);
         lastRequestTagFind = null;
     };
     x.send();
     lastRequestTagFind = x;
 }
 
-function handleTagResponse(responseText, tagUl) {
+function handleFindTagByPartResponse(responseText, tagUl) {
     let list = JSON.parse(responseText);
-    if(currentR34Source.name === "Gelbooru")
+    if(currentR34Source.remoteType === SOURCE_TYPES.GELBOORU)
         list = list.tag;
 
     tagUl.innerHTML = ''; // Clear tags list
@@ -226,9 +259,9 @@ function handleTagResponse(responseText, tagUl) {
 
         const a = document.createElement('a');
         a.classList.add('dropdown-item');
-        a.textContent = (currentR34Source.name === "Rule 34") ? elem.label : `${elem.name} (${elem.count})`;
+        a.textContent = (currentR34Source.remoteType === SOURCE_TYPES.GELBOORU) ? `${elem.name} (${elem.count})` : elem.label;
         a.onclick = () => {
-            const tagValue = (currentR34Source.name === "Rule 34") ? elem.value : elem.name;
+            const tagValue = (currentR34Source.remoteType === SOURCE_TYPES.GELBOORU) ? elem.name : elem.value;
             InsertTag(tagValue);
             tagUl.classList.remove('show');
         };
@@ -261,23 +294,26 @@ export function InsertTag(tag) {
 }
 
 let inWorkTags = null;
+let inWorkSource = null;
 let lastRequestTagsUpdate = null;
-export function LoadTagsData(gallery = null) {
-    if(currentR34Source === null || currentR34Source.remoteType !== SOURCE_TYPES.GELBOORU)
+export function LoadTagsData(displayFiles = null) {
+    if(currentR34Source === null || currentR34Source.remoteType === SOURCE_TYPES.R34)
         return;
 
     if(lastRequestTagsUpdate !== null)
         lastRequestTagsUpdate.abort();
 
-    if(gallery !== null)
-        UpdateTagsInWork(gallery);
+    if(displayFiles !== null)
+        UpdateTagsInWork(displayFiles);
+
+    const slicedArray = inWorkTags.slice(0, postPerPage);
+    inWorkTags = inWorkTags.slice(postPerPage);
 
     const x = new XMLHttpRequest();
-    const url = currentR34Source.tagsUrl + inWorkTags.join(' ');
+    const url = currentR34Source.tagsUrl + slicedArray.join(' ');
     x.open("GET", url, true);
     x.onload = function() {
         responseTags(JSON.parse(x.responseText).tag);
-
         lastRequestTagsUpdate = null;
     };
     x.send();
@@ -294,19 +330,18 @@ function responseTags(tags) {
     tags = tags.map(tag => ({
         ...tag,
         name: decode(tag.name),
+        remoteType: inWorkSource,
     }));
-    updateTags(tags);
+    UpdateTagsData(tags);
 
-    inWorkTags = inWorkTags.filter(obj1 => !tags.some(obj2 => obj1 === obj2.name));
     if(inWorkTags.length > 0)
         setTimeout(() => LoadTagsData(), 1000);
-    console.log('call');
 }
 
-function UpdateTagsInWork(gallery) {
-    const existedTags = getTags();
+function UpdateTagsInWork(displayFiles) {
+    const existedTags = GetTags();
     const uniqueTags = {};
-    gallery.forEach(thumb => {
+    displayFiles.forEach(thumb => {
         if (thumb.tags === null) //???
             return;
 
@@ -315,5 +350,10 @@ function UpdateTagsInWork(gallery) {
         });
     });
     const splitTags = Object.keys(uniqueTags);
-    inWorkTags = splitTags.filter(obj1 => !existedTags.some(obj2 => obj1.name === obj2.name));
+    inWorkTags = splitTags.filter(obj1 =>
+      !existedTags.some(obj2 =>
+        obj1 === obj2.name && (obj2.type !== null && obj2.type !== undefined)
+      )
+    );
+    inWorkSource = currentR34Source.remoteType;
 }

@@ -1,5 +1,5 @@
 import { addFav, isFav, removeFav } from "./FavController";
-import {WebPInfo} from "webpinfo";
+import { WebPInfo } from "webpinfo";
 
 export const FILE_TYPES = {
     IMAGE: 1,
@@ -17,6 +17,7 @@ export const SOURCE_TYPES = {
     GELBOORU: 4,
     FAVORITE: 5, //NOT FOR FILES
     COLLECTION: 6,
+    REALBOORU: 7,
 };
 
 const getMeta = (url) =>
@@ -33,6 +34,7 @@ export class DisplayFile {
                     title = null,
                     width = null,
                     height = null,
+                    previewUrl = null,
                     thumbUrl = null,
                     contentUrl = null,
                     sourceUrl = null,
@@ -57,6 +59,7 @@ export class DisplayFile {
         this.title = title;
         this.width = width;
         this.height = height;
+        this.previewUrl = previewUrl;
         this.thumbUrl = thumbUrl;
         this.contentUrl = contentUrl;
         this.sourceUrl = sourceUrl;

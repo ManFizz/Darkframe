@@ -1,4 +1,5 @@
-import React, {Component} from 'react';
+import React, { Component } from 'react';
+import { GetTags } from "../../TagsController";
 
 function isEmptyOrSpaces(str){
     return str === null || str.match(/^ *$/) !== null;
@@ -7,14 +8,13 @@ function isEmptyOrSpaces(str){
 class Tags extends Component {
     constructor(props) {
         super(props);
-        this.renderTag = this.renderTag.bind(this);
     }
 
-    renderTag(tag, tagsData) {
+    renderTag = (tag) => {
         if(isEmptyOrSpaces(tag))
             return null;
 
-        const foundTag = tagsData.find(item => item.name === tag);
+        const foundTag = GetTags().find(item => item.name === tag);
         if(foundTag && foundTag.type === 6)
             return null;
 
@@ -24,7 +24,7 @@ class Tags extends Component {
     }
 
     render() {
-        const {file, tagsData} = this.props;
+        const {file} = this.props;
         if (!file.tags || typeof file.tags !== 'string')
             return <></>;
 
@@ -39,7 +39,7 @@ class Tags extends Component {
             >
 
                 {tags.map((tag) => (
-                  this.renderTag(tag, tagsData)
+                  this.renderTag(tag)
                 ))}
             </div>
         </>;

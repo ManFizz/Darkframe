@@ -1,19 +1,14 @@
-import React, {Component} from 'react';
+import React, { Component } from 'react';
 import ReactDOM from 'react-dom/client';
 import NavBar from "./React/NavBar.jsx";
 import Modal from "./React/Modal.jsx";
 import SideBar from "./React/SideBar.jsx";
 import Gallery from "./React/Gallery";
 import CustomPagination from "./React/CustomPagination";
-import {SOURCE_TYPES} from "./Display";
+import { SOURCE_TYPES } from "./Display";
 import { GetFavTags, UpdateCollections } from "./backend";
-import {
-    SORT_ORDER,
-    SORT_TYPE,
-    updateMainArray,
-    updateTagsData,
-    setSource, setTypeView, setSortInfo
-} from "./AppLogic";
+import { setSortInfo, setSource, setTypeView, SORT_ORDER, SORT_TYPE, updateMainArray } from "./AppLogic";
+import Settings from "../../data/settings";
 
 
 export let setCollections = () => {};
@@ -22,8 +17,6 @@ export let addToGallery = () => {};
 export let getGallery = () => {};
 export let getCurrentSource = () => {};
 export let setFavTagsArray = () => {};
-export let updateTags = () => {};
-export let getTags = () => {};
 
 export let getCollections = () => {};
 
@@ -42,8 +35,8 @@ class Main extends Component {
                 order: SORT_ORDER.DESC,
                 type: SORT_TYPE.TIME,
             },
-            tagsData: [],
             collections: [],
+            safeMode: Settings.safeView,
         };
 
         setGallery = updateMainArray.bind(this);
@@ -61,8 +54,6 @@ class Main extends Component {
         setFavTagsArray = (tags) => this.setState({favTagsArray: tags});
         this.setTypeView = setTypeView.bind(this);
         this.setSortInfo = setSortInfo.bind(this);
-        updateTags = updateTagsData.bind(this);
-        getTags = () => this.state.tagsData;
         getGallery = () => this.state.mainArray;
         getCurrentSource = () => this.state.currentSource;
 
@@ -70,9 +61,9 @@ class Main extends Component {
     }
 
     render() {
-        const { displayArray, modalFile, mainArray, currentSource, favTagsArray, typeView, sortInfo, tagsData,
-            collections } = this.state;
-        return (<>
+        const { displayArray, modalFile, mainArray, currentSource, favTagsArray, typeView, sortInfo,
+            collections, safeMode } = this.state;
+        return (<div className={`${safeMode ? " safe-view":""}`}>
             <NavBar
                 currentSource={currentSource}
                 setSource={this.setSource}
@@ -80,12 +71,14 @@ class Main extends Component {
                 setTypeView={this.setTypeView}
                 sortInfo={sortInfo}
                 setSortInfo={this.setSortInfo}
+                setProps={(data) => this.setState(data)}
             />
             <Modal
                 file={modalFile}
                 modalUpdater={this.updateModalFile}
                 mainArray={mainArray}
-                tagsData={tagsData}
+                currentSource={currentSource}
+                displayFiles={displayArray}
             />
             <div className="wrapper d-flex align-items-stretch main-split overflow-auto">
                 <SideBar
@@ -108,7 +101,7 @@ class Main extends Component {
                     modalFile={modalFile}
                 />
             </div>
-        </>);
+        </div>);
     }
 }
 

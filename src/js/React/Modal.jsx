@@ -1,6 +1,6 @@
-import React, {Component} from 'react';
+import React, { Component } from 'react';
 import Navigation from "./Modal/Navigation";
-import {FILE_TYPES} from "../Display";
+import { FILE_TYPES } from "../Display";
 import Tags from "./Modal/Tags";
 import Video from "./Modal/Video";
 
@@ -34,10 +34,16 @@ class Modal extends Component {
                         this.setState({isLong: true});
                 })
                 if(file.type === FILE_TYPES.IMAGE) {
-                    const index = mainArray.indexOf(file) + 1;
-                    if(index < mainArray.length) {
-                        const nextMedia = new Image();
-                        nextMedia.src = mainArray[index].thumbUrl;
+                    const nextIndex = mainArray.indexOf(file) + 1;
+                    if(nextIndex < mainArray.length) {
+                        const media = new Image();
+                        media.src = mainArray[nextIndex].thumbUrl;
+                    }
+
+                    const prevIndex = mainArray.indexOf(file) - 1;
+                    if(prevIndex >= 0) {
+                        const media = new Image();
+                        media.src = mainArray[prevIndex].thumbUrl;
                     }
                 }
             }
@@ -46,7 +52,7 @@ class Modal extends Component {
     }
 
     render() {
-        const { file, tagsData } = this.props;
+        const { file } = this.props;
         if(!file) return <></>;
         return <>
             <dialog className={`modal ${file._fav ? "favorite" : ""}`} open ref={this.modal}>
@@ -55,6 +61,8 @@ class Modal extends Component {
                     modalUpdater={this.props.modalUpdater}
                     mainArray={this.props.mainArray}
                     setProps={(data) => this.setState(data)}
+                    currentSource={this.props.currentSource}
+                    displayFiles={this.props.displayFiles}
                 />
                 {file.type === FILE_TYPES.IMAGE ? (
                     <img
@@ -67,7 +75,7 @@ class Modal extends Component {
                 ) : (
                     <Video file={file} />
                 )}
-                <Tags file={file} tagsData={tagsData}/>
+                <Tags file={file}/>
             </dialog>
         </>;
     };

@@ -1,5 +1,5 @@
-import React, {Component} from "react";
-import {FindTag, UpdateFormTags, AddMedia} from "../../../r34";
+import React, { Component } from "react";
+import { AddMedia, FindTagByPart, UpdateFormTags } from "../../../r34";
 
 class TagSearch extends Component {
     constructor(props) {
@@ -18,7 +18,7 @@ class TagSearch extends Component {
 
     inputHandler() {
         const value = this.searchInputRef.current.value;
-        FindTag(value);
+        FindTagByPart(value);
         UpdateFormTags(value.split(' '));
     }
 

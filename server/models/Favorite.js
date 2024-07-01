@@ -32,6 +32,11 @@ const Favorite = sequelize.define('Favorite', {
 		type: DataTypes.INTEGER,
 		allowNull: false
 	},
+	createdAt: {
+		type: DataTypes.INTEGER,
+		defaultValue: Math.floor(Date.now() / 1000),
+		allowNull: true
+	},
 }, {
 	timestamps: false
 });

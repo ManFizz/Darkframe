@@ -10,9 +10,9 @@
   transition: all 0.3s;
   margin-left: -320px;
   padding: 10px;
-  position: sticky;
-  z-index: 2;
-  top: 0;
+  position: fixed;
+  z-index: 100;
+  top: 58px;
 }
 
 .custom-menu {

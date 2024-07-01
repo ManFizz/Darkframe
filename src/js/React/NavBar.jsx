@@ -1,12 +1,12 @@
-import React, {Component} from 'react';
-import {DisplayFavorites} from "../FavController";
-import {DisplayImagesByPath} from "../folders";
+import React, { Component } from 'react';
+import { DisplayFavorites } from "../FavController";
+import { DisplayImagesByPath } from "../folders";
 import PrivateData from "../../../data/private";
-import {AddMedia} from "../r34";
-import {DisplayP365} from "../p365";
-import {SOURCE_TYPES} from "../Display";
-import {SORT_ORDER, SORT_TYPE} from "../AppLogic";
-import {BsCaretDownFill, BsFillGrid1X2Fill, BsSearch} from "react-icons/bs";
+import { AddMedia } from "../r34";
+import { DisplayP365 } from "../p365";
+import { SOURCE_TYPES } from "../Display";
+import { SORT_ORDER, SORT_TYPE } from "../AppLogic";
+import { BsCaretDownFill, BsFillGrid1X2Fill, BsSearch, BsShieldShaded } from "react-icons/bs";
 import { DisplayCollections } from "../CollectionLogic";
 
 export class NavBar extends Component {
@@ -89,6 +89,10 @@ export class NavBar extends Component {
         this.props.setTypeView(null);
     }
 
+    handleSafeClick = () => {
+        this.props.setProps(prevProps => ({ safeMode: !prevProps.safeMode }));
+    }
+
     render() {
         const renderRadioButtons = (buttons) => {
             return buttons.map((button, index) => (
@@ -109,6 +113,7 @@ export class NavBar extends Component {
                             {renderRadioButtons([
                                 { label: 'Rule 34', onClick: () => this.clickR34Handler(SOURCE_TYPES.R34) },
                                 { label: 'Gelbooru', onClick: () => this.clickR34Handler(SOURCE_TYPES.GELBOORU) },
+                                { label: 'Realbooru', onClick: () => this.clickR34Handler(SOURCE_TYPES.REALBOORU) },
                                 { label: 'P365', onClick: this.clickP365Handler },
                                 { label: 'Favorites', onClick: this.clickFavoriteHandler },
                                 { label: 'Folders', onClick: this.clickFolderHandler },
@@ -150,8 +155,7 @@ export class NavBar extends Component {
                                 </li>
                             </ul>
                         </div>
-                        <a
-                            className="btn btn-outline-secondary btn-order"
+                        <a className="btn btn-outline-secondary btn-order"
                             onClick={this.clickSortOrderHandler}
                         >
                             Sort order
@@ -159,11 +163,14 @@ export class NavBar extends Component {
                                 className={`${this.props.sortInfo.order === SORT_ORDER.ASC ? "flip" : ""}`}
                             />
                         </a>
-                        <a
-                            className="btn btn-outline-secondary"
+                        <a className="btn btn-outline-secondary"
                             onClick={this.ToggleView}
                         >
                             <BsFillGrid1X2Fill />
+                        </a>
+                        <a className="btn btn-outline-secondary btn-order"
+                           onClick={this.handleSafeClick}>
+                            <BsShieldShaded/>
                         </a>
                     </form>
                 </div>

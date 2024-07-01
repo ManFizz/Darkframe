@@ -3,13 +3,19 @@ const fs = require("fs");
 
 const dbFilePath = 'data/data.db';
 
+function customLogger(message) {
+	if(!message.includes("SELECT ") && !message.includes("PRAGMA INDEX_LIST")) {}
+		fs.appendFileSync('sequelize.log', message + '\n');
+}
+
 if (!fs.existsSync(dbFilePath)) {
 	fs.closeSync(fs.openSync(dbFilePath, 'w'));
 }
 
 const sequelize = new Sequelize({
 	dialect: 'sqlite',
-	storage: dbFilePath
+	storage: dbFilePath,
+	logging: customLogger,
 });
 
 sequelize.sync()

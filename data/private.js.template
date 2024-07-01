@@ -1,5 +1,4 @@
 const PrivateData = {
-    api_gelbooru: "&api_key=REPLACE&user_id=REPLACE",
     startPath: "D:\\REPLACE\\REPLACE",
     P365UserId: "REPLACE",
     idArray: [],

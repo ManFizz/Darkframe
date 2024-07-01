@@ -16,6 +16,9 @@ const Tag = sequelize.define('Tag', {
 	},
 	remoteType: {
 		type: DataTypes.INTEGER
+	},
+	count: {
+		type: DataTypes.INTEGER
 	}
 }, {
 	timestamps: false

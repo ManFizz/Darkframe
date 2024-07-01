@@ -1,8 +1,10 @@
 // noinspection JSIgnoredPromiseFromCall
 
 import { Favorites, OnUpdateFavorites } from "./FavController.js";
-import {setFavTagsArray} from "./AppInitializer";
+import { setFavTagsArray } from "./AppInitializer";
 import Collection from "./Collection";
+import { GetTags, UpdateTagsData } from "./TagsController";
+
 let { ipcRenderer } = require("electron");
 
 ipcRenderer.invoke("getFavorites");
@@ -65,4 +67,16 @@ export async function UpdateCollections(collections) {
     } catch (error) {
         console.error("Error updating collections:", error);
     }
+}
+
+export function SaveTags() {
+    const tags = GetTags();
+    ipcRenderer.invoke("setTags", tags);
+}
+
+GetTagsFromDataBase();
+export function GetTagsFromDataBase() {
+    ipcRenderer.invoke("getTags").then(r => {
+        UpdateTagsData(r, true);
+    });
 }

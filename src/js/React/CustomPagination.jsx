@@ -1,18 +1,22 @@
-import React, {Component} from 'react';
+import React, { Component } from 'react';
 import Pagination from 'react-bootstrap/Pagination';
 import Settings from "../../../data/settings";
-import {AddMedia, CanMoreMedia} from "../r34";
-import {SOURCE_TYPES} from "../Display";
+import { AddMedia, CanMoreMedia } from "../r34";
+import { SOURCE_TYPES } from "../Display";
+import { setGallery } from "../AppInitializer";
 
 const MAX_PAGES = 7;
 
 export let NotifyCustomPaginationR34 = () => {};
+
+export let LoadNextPage = () => {};
 
 class CustomPagination extends Component {
     constructor(props) {
         super(props);
         this.state = {
             currentPage: 1, //Not 0
+            maxPage: 1,
             pages: 1,
         };
         this.handleClick = this.handleClick.bind(this);
@@ -21,6 +25,21 @@ class CustomPagination extends Component {
         NotifyCustomPaginationR34 = this.NotifyCustomPaginationR34;
 
         this.handleKeyDown = this.handleKeyDown.bind(this);
+        LoadNextPage = this.LoadNextPage.bind(this);
+    }
+
+    LoadNextPage() {
+        const { maxPage, currentPage, pages } = this.state;
+        let newPage = maxPage + 1;
+        if(newPage < pages) {
+            const { mainArray } = this.props;
+
+            const startIndex = (currentPage - 1) * Settings.maxThumbsPerPage;
+            const endIndex = Math.min(newPage * Settings.maxThumbsPerPage, mainArray.length);
+            this.props.updateDisplayArray(mainArray.slice(startIndex, endIndex));
+
+            this.setState({maxPage: newPage}, NotifyCustomPaginationR34);
+        }
     }
 
     componentDidMount() {
@@ -43,23 +62,25 @@ class CustomPagination extends Component {
             }
             else if (event.key === 'ArrowUp') {
                 Settings.maxThumbsPerPage = Math.min(Settings.maxThumbsPerPage + 8, 160);
-                this.props.updateDisplayArray(this.props.mainArray); //rerender
+                setGallery(this.props.mainArray); //rerender
             }
             else if (event.key === 'ArrowDown') {
                 Settings.maxThumbsPerPage = Math.max(Settings.maxThumbsPerPage - 8, 16);
-                this.props.updateDisplayArray(this.props.mainArray); //rerender
+                setGallery(this.props.mainArray); //rerender
             }
         }
     }
 
     componentDidUpdate(prevProps, prevState, snapshot) {
         const { mainArray} = this.props;
-        const pages = Math.ceil(mainArray.length / Settings.maxThumbsPerPage);
-        if(pages !== this.state.pages) {
-            if(this.state.currentPage > pages)
-                this.setState({currentPage: 1});
+        if(mainArray.length !== prevProps.mainArray.length){
+            const pages = Math.ceil(mainArray.length / Settings.maxThumbsPerPage);
+            if(pages !== this.state.pages) {
+                if(mainArray.length === 0 || mainArray[0].thumbUrl.localeCompare(mainArray[0].thumbUrl) !== 0)
+                    this.setState({currentPage: 1, maxPage: 1});
 
-            this.setState({pages: pages});
+                this.setState({pages: pages});
+            }
         }
     }
 
@@ -70,20 +91,21 @@ class CustomPagination extends Component {
         const endIndex = Math.min(page * Settings.maxThumbsPerPage, mainArray.length);
         this.props.updateDisplayArray(mainArray.slice(startIndex, endIndex));
 
-        this.setState({currentPage: page}, NotifyCustomPaginationR34);
+        this.setState({currentPage: page, maxPage: page}, NotifyCustomPaginationR34);
     }
 
     NotifyCustomPaginationR34() {
         const { currentSource } = this.props;
-        const { pages, currentPage } = this.state;
+        const { pages, maxPage } = this.state;
         const isR34 = (currentSource === SOURCE_TYPES.R34 || currentSource === SOURCE_TYPES.GELBOORU);
-        if(isR34 && (pages - currentPage <= 1) && CanMoreMedia()) {
+        if(isR34 && (pages - maxPage <= 1) && CanMoreMedia()) {
             AddMedia(null);
         }
     }
 
     render() {
-        const { currentPage, pages } = this.state;
+        const { currentPage, pages, maxPage } = this.state;
+        const { currentSource } = this.props;
         if (pages <= 1) return null;
 
         const paginationItems = [];
@@ -98,7 +120,7 @@ class CustomPagination extends Component {
             paginationItems.push(
                 <Pagination.Item
                     key={i}
-                    active={i === currentPage}
+                    active={i >= currentPage && i <= maxPage}
                     onClick={() => this.handleClick(i)}
                 >
                     {i}
@@ -111,34 +133,24 @@ class CustomPagination extends Component {
                 size="sm"
                 className="fixed-bottom justify-content-center"
             >
-                <Pagination.First
-                    key="first"
-                    onClick={() => this.handleClick(1)}
-                    disabled={currentPage === 1}
-                />
-                {startPage !== 1 && (<>
-                    <Pagination.Item
-                        key={1}
-                        onClick={() => this.handleClick(1)}
-                    >
+                {startPage !== 1 && (
+                    <Pagination.Item key={1} onClick={() => this.handleClick(1)}>
                         {1}
                     </Pagination.Item>
-                </>)}
+                )}
                 {startPage - 1 > 1 && (<Pagination.Ellipsis />)}
                 {paginationItems}
                 {pages - endPage > 1 && (<Pagination.Ellipsis />)}
                 {endPage !== pages && ( <>
-                    <Pagination.Item
-                        key={pages}
-                        onClick={() => this.handleClick(pages)}
-                    >
+                    <Pagination.Item key={pages} onClick={() => this.handleClick(pages)} >
                         {pages}
                     </Pagination.Item>
                 </>)}
+                <Pagination.Next key="next" onClick={LoadNextPage} disabled={pages === maxPage} />
                 <Pagination.Last
                     key="last"
-                    onClick={() => this.handleClick(pages)}
-                    disabled={currentPage === pages}
+                    onClick={() => CanMoreMedia() && AddMedia(null)}
+                    disabled={currentSource !== SOURCE_TYPES.R34 && currentSource !== SOURCE_TYPES.GELBOORU && !CanMoreMedia()}
                 />
             </Pagination>
         );
