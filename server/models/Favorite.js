@@ -37,10 +37,14 @@ const Favorite = sequelize.define('Favorite', {
 		defaultValue: Math.floor(Date.now() / 1000),
 		allowNull: true
 	},
+	localUrl: {
+		type: DataTypes.STRING(512),
+		allowNull: true,
+	},
 }, {
 	timestamps: false
 });
 
-Favorite.sync().then();
+Favorite.sync({ alter: true }).then();
 
 module.exports = Favorite;
