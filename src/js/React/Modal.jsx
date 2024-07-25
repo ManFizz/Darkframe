@@ -1,6 +1,6 @@
-import React, { Component } from 'react';
+import React, {Component} from 'react';
 import Navigation from "./Modal/Navigation";
-import { FILE_TYPES } from "../Display";
+import {FILE_TYPES} from "../Display";
 import Tags from "./Modal/Tags";
 import Video from "./Modal/Video";
 
@@ -37,13 +37,13 @@ class Modal extends Component {
                     const nextIndex = mainArray.indexOf(file) + 1;
                     if(nextIndex < mainArray.length) {
                         const media = new Image();
-                        media.src = mainArray[nextIndex].thumbUrl;
+                        media.src = mainArray[nextIndex].GetUrlLarge();
                     }
 
                     const prevIndex = mainArray.indexOf(file) - 1;
                     if(prevIndex >= 0) {
                         const media = new Image();
-                        media.src = mainArray[prevIndex].thumbUrl;
+                        media.src = mainArray[prevIndex].GetUrlLarge();
                     }
                 }
             }
@@ -66,9 +66,9 @@ class Modal extends Component {
                 />
                 {file.type === FILE_TYPES.IMAGE ? (
                     <img
-                        key={file.thumbUrl}
+                        key={file.GetUrlLarge()}
                         alt={file.title}
-                        src={file.thumbUrl}
+                        src={file.GetUrlLarge()}
                         className={this.state.isLong ? "long" : ""}
                         style={{transform: `rotate(${this.state.degree}deg)`}}
                     />

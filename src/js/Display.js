@@ -1,5 +1,5 @@
-import { addFav, isFav, removeFav } from "./FavController";
-import { WebPInfo } from "webpinfo";
+import {addFav, isFav, removeFav} from "./FavController";
+import {WebPInfo} from "webpinfo";
 
 export const FILE_TYPES = {
     IMAGE: 1,
@@ -44,6 +44,7 @@ export class DisplayFile {
                     type = null,
                     priority = 1,
                     collectionsIds = [],
+                    localUrl = null,
                     _fav = null,
                     _updateFavStatus = null,
                 })
@@ -69,6 +70,7 @@ export class DisplayFile {
         this.type = type;
         this.priority = priority;
         this.collectionsIds = collectionsIds;
+        this.localUrl = localUrl;
         this._fav = _fav;
         this._updateFavStatus = _updateFavStatus;
     }
@@ -104,6 +106,14 @@ export class DisplayFile {
         width: this.width,
         height: this.height
       };
+    }
+
+    GetUrlSmall() {
+      return this.localUrl || this.thumbUrl;
+    }
+
+    GetUrlLarge() {
+      return this.localUrl || this.thumbUrl;
     }
 }
 

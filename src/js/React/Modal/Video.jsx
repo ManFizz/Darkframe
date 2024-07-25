@@ -84,11 +84,11 @@ class Video extends Component {
         return (<>
             <video
                 ref={this.videoRef}
-                key={file.thumbUrl}
+                key={file.GetUrlLarge()}
                 autoPlay={true}
                 loop={isLooped}
                 muted={isMuted}
-                src={file.thumbUrl}
+                src={file.GetUrlLarge()}
                 onPause={this.handlePause}
                 onEnded={this.handleEnded}
                 onPlay={this.handlePlay}
@@ -98,7 +98,7 @@ class Video extends Component {
             />
             <VideoControls
                 video={video}
-                key={file.thumbUrl+"vc"}
+                key={file.GetUrlLarge()+"vc"}
                 isLooped={isLooped}
                 isMuted={isMuted}
                 isPaused={isPaused}
