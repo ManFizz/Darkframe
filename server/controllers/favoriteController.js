@@ -2,6 +2,7 @@ const { ipcMain } = require('electron');
 const {removeFavorite, getFavorites, addFavorite} = require("../services/favoriteService");
 const {downloadFile, deleteFile, findFile} = require("./fileManager");
 const path = require('path');
+const fs = require('fs');
 
 async function updateFavoriteLocalUrl(id, localUrl) {
 	try {
@@ -36,6 +37,50 @@ async function handleAddFavorites(event, url, name, source, tags, display, remot
 	}
 }
 
+// Асинхронная функция для перемещения файла
+async function moveFile(source, destination) {
+	await fs.promises.rename(source, destination);
+}
+
+async function download(favorite) {
+	const cachePath = path.join(__dirname, '../../cache');
+	const downloadPath = path.join(__dirname, '../../downloads');
+
+	try {
+		// Сначала скачиваем файл в папку cache
+		const cachedFilePath = await downloadFile(favorite.thumbUrl, cachePath);
+		if (!cachedFilePath) {
+			console.log(`Не удалось скачать файл: ${favorite.thumbUrl}`);
+			await updateFavoriteLocalUrl(favorite.id, null);
+		} else {
+			const finalFilePath = path.join(downloadPath, path.basename(cachedFilePath));
+			await moveFile(cachedFilePath, finalFilePath);
+			console.log(`Файл успешно перемещен в: ${finalFilePath}`);
+			await updateFavoriteLocalUrl(favorite.id, finalFilePath);
+		}
+	} catch (downloadError) {
+		console.error('Error downloading or moving file:', downloadError.message);
+	}
+}
+
+async function downloadMissingFavorites() {
+	try {
+		const favorites = await getFavorites(); // Предполагается, что эта функция возвращает список избранного
+		for (let favorite of favorites) {
+			if(favorite.remoteType === 1)
+				continue;
+
+			if (favorite.localUrl !== null && fs.existsSync(favorite.localUrl))
+				continue;
+
+			console.log(`Файл ${favorite.thumbUrl} не найден. Начинаем скачивание.`);
+			await download(favorite);
+		}
+	} catch (error) {
+		console.error('Ошибка при обработке избранного:', error);
+	}
+}
+
 const Favorite = require("../models/Favorite");
 async function handleRemoveFavorites(event, url) {
 	try {
@@ -59,18 +104,6 @@ async function handleRemoveFavorites(event, url) {
 async function handleGetFavorites(event) {
 	try {
 		const favorites = await getFavorites();
-		for (let favorite of favorites) {
-			if (favorite.localUrl && !fs.existsSync(favorite.localUrl)) {
-				console.log(`Файл ${favorite.localUrl} не найден. Начинаем скачивание.`);
-				const downloadedPath = await downloadFile(favorite.thumbUrl, favorite.localUrl);
-				if (!downloadedPath) {
-					console.log(`Не удалось скачать файл: ${favorite.thumbUrl}`);
-					favorite.localUrl = null; // Обновляем или очищаем localUrl, если файл не удалось скачать
-				} else {
-					console.log(`Файл ${favorite.localUrl} успешно скачан.`);
-				}
-			}
-		}
 		event.sender.send('getFavorites', favorites);
 	} catch (error) {
 		console.error('Ошибка при получении избранного:', error);
@@ -84,4 +117,4 @@ function registerHandlers() {
 	ipcMain.handle('getFavorites', handleGetFavorites);
 }
 
-module.exports = { registerHandlers };
+module.exports = { registerHandlers, downloadMissingFavorites };
