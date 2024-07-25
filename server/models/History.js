@@ -1,7 +1,7 @@
 const {DataTypes} = require("sequelize");
 const sequelize = require('../database');
 
-const History = sequelize.define('History', {
+const History = sequelize.define('Histories', {
 	id: {
 		type: DataTypes.INTEGER,
 		primaryKey: true,

@@ -1,7 +1,7 @@
 const {DataTypes} = require("sequelize");
 const sequelize = require('../database');
 
-const RemoteType = sequelize.define('RemoteType', {
+const RemoteType = sequelize.define('RemoteTypes', {
 	id: {
 		type: DataTypes.INTEGER,
 		primaryKey: true,
