@@ -3,6 +3,7 @@ import Navigation from "./Modal/Navigation";
 import {FILE_TYPES} from "../Display";
 import Tags from "./Modal/Tags";
 import Video from "./Modal/Video";
+import Settings from "../../../data/settings";
 
 class Modal extends Component {
     constructor(props) {
@@ -69,7 +70,7 @@ class Modal extends Component {
                         key={file.GetUrlLarge()}
                         alt={file.title}
                         src={file.GetUrlLarge()}
-                        className={this.state.isLong ? "long" : ""}
+                        className={Settings.longView && this.state.isLong ? "long" : ""}
                         style={{transform: `rotate(${this.state.degree}deg)`}}
                     />
                 ) : (
