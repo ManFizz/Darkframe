@@ -1,13 +1,14 @@
-import React, { Component } from 'react';
-import { DisplayFavorites } from "../FavController";
-import { DisplayImagesByPath } from "../folders";
+import React, {Component} from 'react';
+import {DisplayFavorites} from "../FavController";
+import {DisplayImagesByPath} from "../folders";
 import PrivateData from "../../../data/private";
-import { AddMedia } from "../r34";
-import { DisplayP365 } from "../p365";
-import { SOURCE_TYPES } from "../Display";
-import { SORT_ORDER, SORT_TYPE } from "../AppLogic";
-import { BsCaretDownFill, BsFillGrid1X2Fill, BsSearch, BsShieldShaded } from "react-icons/bs";
-import { DisplayCollections } from "../CollectionLogic";
+import {AddMedia} from "../r34";
+import {DisplayP365} from "../p365";
+import {SOURCE_TYPES} from "../Display";
+import {SORT_ORDER, SORT_TYPE} from "../AppLogic";
+import {BsCaretDownFill, BsFillGrid1X2Fill, BsSearch, BsShieldShaded} from "react-icons/bs";
+import {DisplayCollections} from "../CollectionLogic";
+import {WorkRealBooru} from "../realbooru";
 
 export class NavBar extends Component {
 
@@ -113,7 +114,7 @@ export class NavBar extends Component {
                             {renderRadioButtons([
                                 { label: 'Rule 34', onClick: () => this.clickR34Handler(SOURCE_TYPES.R34) },
                                 { label: 'Gelbooru', onClick: () => this.clickR34Handler(SOURCE_TYPES.GELBOORU) },
-                                { label: 'Realbooru', onClick: () => this.clickR34Handler(SOURCE_TYPES.REALBOORU) },
+                                { label: 'Realbooru', onClick: () => WorkRealBooru() },
                                 { label: 'P365', onClick: this.clickP365Handler },
                                 { label: 'Favorites', onClick: this.clickFavoriteHandler },
                                 { label: 'Folders', onClick: this.clickFolderHandler },

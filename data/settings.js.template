@@ -4,6 +4,7 @@ const Settings = {
     checkRatio: true,
     maxThumbsPerPage: 32,
     resize: true,
+    longView: true,
 };
 
 export default Settings;
