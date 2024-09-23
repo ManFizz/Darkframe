@@ -59,6 +59,11 @@ app.whenReady().then(() => {
     })
 
     process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+
+    return;
+    downloadMissingFavorites().then(r => {
+        console.log("Все файлы проверены и недостающие скачаны.");
+    });
 });
 
 app.on('window-all-closed', () => {
