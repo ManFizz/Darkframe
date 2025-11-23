@@ -2,6 +2,8 @@ const PrivateData = {
     startPath: "D:\\REPLACE\\REPLACE",
     P365UserId: "REPLACE",
     RealBooruId: "REPLACE",
+    R34ApiKey: "REPLACE",
+    R34UserId: "REPLACE",
     idArray: [],
 };
 

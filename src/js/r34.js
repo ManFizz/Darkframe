@@ -1,9 +1,9 @@
-import { GetThumbByData } from "./GalleryController.js";
+import {GetThumbByData} from "./GalleryController.js";
 import PrivateData from "../../data/private";
-import { SOURCE_TYPES } from "./Display";
-import { NotifyCustomPaginationR34 } from "./React/CustomPagination";
-import { addToGallery, setGallery } from "./AppInitializer";
-import { GetTags, UpdateTagsData } from "./TagsController";
+import {SOURCE_TYPES} from "./Display";
+import {NotifyCustomPaginationR34} from "./React/CustomPagination";
+import {addToGallery, setGallery} from "./AppInitializer";
+import {GetTags, UpdateTagsData} from "./TagsController";
 
 const postPerPage = 100; //MAX in API
 
@@ -89,7 +89,7 @@ export function AddMedia(stringTags, pageNum= 1) {
     const tags = currentTags.split(' ');
     UpdateFormTags(tags);
 
-    const inputPageUrl = `${currentR34Source.mainUrl}&limit=${postPerPage}&pid=${currentPage - 1}&tags=${tags.join('+')}`;
+    const inputPageUrl = `${currentR34Source.mainUrl}&limit=${postPerPage}&pid=${currentPage - 1}&tags=${tags.join('+')}&api_key=${PrivateData.R34ApiKey}&user_id=${PrivateData.R34UserId}`;
     AddToGalleryByURL(inputPageUrl).then();
 }
 
