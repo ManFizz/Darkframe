@@ -1,11 +1,16 @@
 import React, {Component} from 'react';
 import {
     BsFastForwardFill,
-    BsFillPauseFill, BsFillPlayFill,
-    BsFillRewindFill, BsFillSkipEndFill,
+    BsFillPauseFill,
+    BsFillPlayFill,
+    BsFillRewindFill,
+    BsFillSkipEndFill,
     BsFillSkipStartFill,
     BsFillVolumeMuteFill,
-    BsFillVolumeUpFill, BsRecordCircle, BsRecordCircleFill, BsRecycle,
+    BsFillVolumeUpFill,
+    BsRecordCircle,
+    BsRecordCircleFill,
+    BsRecycle,
     BsRepeat,
     BsRepeat1
 } from "react-icons/bs";
@@ -32,6 +37,7 @@ class VideoControls extends Component {
         this.handleTimeUpdate = this.handleTimeUpdate .bind(this);
 
         this.lastStateVideo = false;
+        this.isSpacePressed = false;
     }
 
     handleTimeUpdate() {
@@ -45,12 +51,20 @@ class VideoControls extends Component {
 
     componentDidMount() {
         document.addEventListener('keydown', this.handleKeyDown);
+        document.addEventListener('keyup', this.handleKeyUp);
     }
 
     componentWillUnmount() {
         document.removeEventListener('keydown', this.handleKeyDown);
+        document.removeEventListener('keyup', this.handleKeyUp);
         this.props.video.removeEventListener('timeupdate', this.handleTimeUpdate);
     }
+
+    handleKeyUp = (event) => {
+        if (event.code === 'Space' || event.key === ' ') {
+            this.isSpacePressed = false;
+        }
+    };
 
     handleKeyDown(event) {
         if(event.ctrlKey) {
@@ -59,6 +73,26 @@ class VideoControls extends Component {
             } else if (event.key === 'ArrowRight') {
                 this.skipSec(10);
             }
+        }
+
+        if (event.code === 'Space' || event.key === ' ') {
+            const activeElement = document.activeElement;
+            if (
+                activeElement?.tagName === 'INPUT' ||
+                activeElement?.tagName === 'TEXTAREA' ||
+                activeElement?.contentEditable === 'true'
+            ) {
+                return;
+            }
+
+            event.preventDefault();
+
+            if (this.isSpacePressed) {
+                return;
+            }
+
+            this.isSpacePressed = true;
+            this.togglePlay();
         }
     }
 
