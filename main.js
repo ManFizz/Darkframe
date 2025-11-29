@@ -28,7 +28,8 @@ function createWindow() {
             contextIsolation: false,
             allowDisplayingInsecureContent: true,
             allowRunningInsecureContent: true,
-        }
+        },
+        autoHideMenuBar: true,
     });
     win.maximize();
     win.loadFile('dist/index.html').then();
