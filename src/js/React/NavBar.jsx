@@ -9,6 +9,7 @@ import {SORT_ORDER, SORT_TYPE} from "../AppLogic";
 import {BsCaretDownFill, BsFillGrid1X2Fill, BsSearch, BsShieldShaded} from "react-icons/bs";
 import {DisplayCollections} from "../CollectionLogic";
 import {WorkRealBooru} from "../realbooru";
+import {DisplayRemoteFavoriteR34} from "../r34Favorite";
 
 export class NavBar extends Component {
 
@@ -28,6 +29,12 @@ export class NavBar extends Component {
         this.clickSearchHandler = this.clickSearchHandler.bind(this);
         this.ToggleView = this.ToggleView.bind(this);
         this.clickCollectionHandler = this.clickCollectionHandler.bind(this);
+        this.clickRemoteFavoriteHandler = this.clickRemoteFavoriteHandler.bind(this);
+    }
+
+    clickRemoteFavoriteHandler() {
+        this.props.setSource(SOURCE_TYPES.R34);
+        DisplayRemoteFavoriteR34().then();
     }
 
     clickFolderHandler() {
@@ -112,12 +119,13 @@ export class NavBar extends Component {
                     <div className="navbar-nav flex-row flex-wrap bd-navbar-nav">
                         <div className="btn-group">
                             {renderRadioButtons([
-                                { label: 'Rule 34', onClick: () => this.clickR34Handler(SOURCE_TYPES.R34) },
+                                { label: 'R34', onClick: () => this.clickR34Handler(SOURCE_TYPES.R34) },
                                 { label: 'Gelbooru', onClick: () => this.clickR34Handler(SOURCE_TYPES.GELBOORU) },
                                 { label: 'Realbooru', onClick: () => WorkRealBooru() },
                                 { label: 'P365', onClick: this.clickP365Handler },
                                 { label: 'Favorites', onClick: this.clickFavoriteHandler },
                                 { label: 'Folders', onClick: this.clickFolderHandler },
+                                { label: 'R34 Favs', onClick: this.clickRemoteFavoriteHandler },
                                 { label: 'Collections', onClick: this.clickCollectionHandler },
                             ])}
                         </div>
