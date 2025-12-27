@@ -1,67 +1,63 @@
-import { GetThumbByData } from "./GalleryController.js";
+import {GetThumbByData} from "./GalleryController.js";
 import {ForceAddFavImage, ForceAddFavTag, ForceRemoveFav} from './backend.js';
-import { setGallery } from "./AppInitializer";
+import {getGallery, setGallery} from "./AppInitializer";
+import {ThumbFile} from "./ThumbFile";
 
 export let Favorites = [];
+
+const refreshUIIfNecessary = () => {
+    const currentImages = getGallery();
+    if (Array.isArray(currentImages)) {
+        const updatedImages = currentImages.map(img => new ThumbFile(img));
+        setGallery(updatedImages);
+    }
+};
+
 export function OnUpdateFavorites(arr) {
-    Favorites = [];
-    arr.forEach( el => {
-        const displayFile = GetThumbByData(el);
-        Favorites.push(displayFile);
-    });
+    if (!arr || !Array.isArray(arr)) {
+        Favorites = [];
+        return;
+    }
+
+    Favorites = arr.map(el => new ThumbFile(el));
 }
 
 export function AddFavTag(tag, remoteType) {
     ForceAddFavTag(tag, remoteType);
 }
 
-export function removeFav(displayFile)
-{
-    if(displayFile.isFav() !== true)
-        throw new Error('removeFav :: error');
+export function removeFav(displayFile) {
+    if (!displayFile.isFav()) throw new Error('removeFav :: error');
 
-    const indexToDelete = Favorites.findIndex(fav =>
-        fav.id === displayFile.id);
+    const indexToDelete = Favorites.findIndex(fav => fav.id === displayFile.id);
 
     if (indexToDelete !== -1) {
         Favorites.splice(indexToDelete, 1);
+
         displayFile._fav = false;
-    } else {
-        console.error("not found", displayFile);
+
+        ForceRemoveFav(displayFile);
+        refreshUIIfNecessary();
     }
-    ForceRemoveFav(displayFile);
-
-    if(displayFile._updateFavStatus)
-        displayFile._updateFavStatus();
-
-    console.log(Favorites);
 }
 
-export function addFav(displayFile)
-{
-    if(displayFile.isFav() !== false)
-        throw new Error('addFav :: error');
+export function addFav(displayFile) {
+    if (displayFile.isFav()) throw new Error('addFav :: error');
 
-    Favorites.push(displayFile);
     displayFile._fav = true;
+    Favorites.push(displayFile);
+
     ForceAddFavImage(displayFile).then(id => {
         displayFile.id = id;
     });
 
-    if(displayFile._updateFavStatus)
-        displayFile._updateFavStatus();
+    refreshUIIfNecessary();
 }
 
-export function isFav(url)
-{
-    if(url == null || Favorites == null)
-        return false;
-
-    for(let i = 0; i < Favorites.length; i++)
-        if(Favorites[i].thumbUrl.toString().localeCompare(url.toString()) === 0)
-            return true;
-
-    return false;
+export function isFav(url) {
+    if (!url || !Favorites) return false;
+    const searchUrl = url.toString();
+    return Favorites.some(fav => fav.thumbUrl.toString() === searchUrl);
 }
 
 export function favToDisplayFile(favData) {
@@ -76,11 +72,6 @@ export function favToDisplayFile(favData) {
     });
 }
 
-export function DisplayFavorites()
-{
-    let array = [];
-    Favorites.forEach( favData => {
-        array.push(favData);
-    });
-    setGallery(array);
+export function DisplayFavorites() {
+    setGallery([...Favorites]);
 }

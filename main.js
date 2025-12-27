@@ -28,6 +28,7 @@ function createWindow() {
             contextIsolation: false,
             allowDisplayingInsecureContent: true,
             allowRunningInsecureContent: true,
+            webSecurity: false,
         },
         autoHideMenuBar: true,
     });

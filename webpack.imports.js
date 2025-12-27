@@ -17,6 +17,5 @@ import ('/src/css/modal.css');
 import ('/src/css/sidebar.css');
 import ('/src/css/video-controls.css');
 
-import ('/src/js/r34.js');
 import ('/src/js/backend.js');
 import ('/src/js/GalleryController.js');

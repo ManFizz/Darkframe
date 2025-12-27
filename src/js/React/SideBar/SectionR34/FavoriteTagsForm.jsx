@@ -1,7 +1,6 @@
 import React, {Component} from "react";
 import {AddFavTag} from "../../../FavController";
 import {BsPlusLg} from "react-icons/bs";
-import {ToggleTag} from "../../../r34";
 
 class FavoriteTagsForm extends Component {
     constructor(props) {
@@ -22,14 +21,13 @@ class FavoriteTagsForm extends Component {
         return <>
             <form className="tag-list" id="tags-fav-select">
                 {favTagsArray.map((tag, index) => {
-                    // noinspection JSUnresolvedReference
                     if(tag.remote_type !== currentSource)
                         return null;
 
                     return (<div className="btn-group" key={index}>
                         <button
                             className="btn btn-primary"
-                            onClick={() => ToggleTag(tag.tag)}
+                            onClick={() => this.props.onToggle(tag.tag)}
                             type="button"
                         >
                             {tag.tag}

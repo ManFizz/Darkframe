@@ -1,9 +1,9 @@
-import React, { Component } from 'react';
+import React, {Component} from 'react';
 import Pagination from 'react-bootstrap/Pagination';
 import Settings from "../../../data/settings";
-import { AddMedia, CanMoreMedia } from "../r34";
-import { SOURCE_TYPES } from "../Display";
-import { setGallery } from "../AppInitializer";
+import {CanMoreMedia, LoadMoreMedia} from "../R34Controller";
+import {SOURCE_TYPES} from "../ThumbFile";
+import {setGallery} from "../AppInitializer";
 
 const MAX_PAGES = 7;
 
@@ -76,7 +76,7 @@ class CustomPagination extends Component {
         if(mainArray.length !== prevProps.mainArray.length){
             const pages = Math.ceil(mainArray.length / Settings.maxThumbsPerPage);
             if(pages !== this.state.pages) {
-                if(mainArray.length === 0 || mainArray[0].thumbUrl.localeCompare(mainArray[0].thumbUrl) !== 0)
+                if(mainArray.length === 0 || prevProps.mainArray[0] == null || prevProps.mainArray[0].uniqueId.localeCompare(mainArray[0]?.uniqueId) !== 0)
                     this.setState({currentPage: 1, maxPage: 1});
 
                 this.setState({pages: pages});
@@ -99,7 +99,7 @@ class CustomPagination extends Component {
         const { pages, maxPage } = this.state;
         const isR34 = (currentSource === SOURCE_TYPES.R34 || currentSource === SOURCE_TYPES.GELBOORU);
         if(isR34 && (pages - maxPage <= 1) && CanMoreMedia()) {
-            AddMedia(null);
+            LoadMoreMedia();
         }
     }
 
@@ -149,7 +149,7 @@ class CustomPagination extends Component {
                 <Pagination.Next key="next" onClick={LoadNextPage} disabled={pages === maxPage} />
                 <Pagination.Last
                     key="last"
-                    onClick={() => CanMoreMedia() && AddMedia(null)}
+                    onClick={() => CanMoreMedia() && LoadMoreMedia()}
                     disabled={currentSource !== SOURCE_TYPES.R34 && currentSource !== SOURCE_TYPES.GELBOORU && !CanMoreMedia()}
                 />
             </Pagination>

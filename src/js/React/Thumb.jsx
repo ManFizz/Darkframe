@@ -1,74 +1,70 @@
-import React, {Component} from "react";
+import React from "react";
 import Image from "./Thumb/Image";
 import Video from "./Thumb/Video";
 import Folder from "./Thumb/Folder";
 import Return from "./Thumb/Return";
 import {addFav, removeFav} from "../FavController";
-import {FILE_TYPES} from "../Display";
+import {FILE_TYPES, SOURCE_TYPES} from "../ThumbFile";
 import DropMenu from "./Thumb/DropMenu";
 import Collection from "./Thumb/Collection";
+import {getCurrentSource} from "../AppInitializer";
 
-class Thumb extends Component {
-    constructor(props) {
-        super(props);
-        this.state = {
-            isFav: props.file.isFav()
-        };
-        props.file._updateFavStatus = this.updateFavStatus;
-    }
+const Thumb = React.memo((props) => {
+    const { file, isModal, modalUpdater } = props;
 
-    handleLikeClick = (event) => {
+    const isFav = file.isFav();
+
+    const handleLikeClick = (event) => {
         event.stopPropagation();
-        const file = this.props.file;
-        if (file.isFav()) {
+        if (isFav) {
             removeFav(file);
         } else {
             addFav(file);
         }
     };
 
-    handleThumbClick = () => {
-        const { file, modalUpdater } = this.props;
-        if(file.type === FILE_TYPES.IMAGE || file.type === FILE_TYPES.VIDEO)
+    const handleThumbClick = () => {
+        if (file.type === FILE_TYPES.IMAGE || file.type === FILE_TYPES.VIDEO) {
             modalUpdater(file);
-    }
-
-    updateFavStatus = () => {
-        this.setState({ isFav: this.props.file.isFav() });
+        }
     };
 
-    render() {
-        const { file, isModal } = this.props;
-        return (
-            <div
-                className={`card thumb bg-dark ${isModal ? 'modal-active' : ''}`}
-                onClick={this.handleThumbClick}
-            >
-                {(file.type === FILE_TYPES.IMAGE || file.type === FILE_TYPES.VIDEO) && (
-                  <div className="overlay">
-                      <DropMenu file={file}/>
-                      {this.state.isFav ? (
-                        <i className="bi bi-ban" onClick={this.handleLikeClick}></i>
-                      ) : (
-                        <i className="bi bi-heart-fill" onClick={this.handleLikeClick}></i>
-                      )}
-                  </div>
-                )}
-                {file.type === FILE_TYPES.IMAGE ? (
-                  <Image file={file}/>
-                ) : file.type === FILE_TYPES.VIDEO ? (
-                  <Video file={file}/>
-                ) : file.type === FILE_TYPES.FOLDER ? (
-                  <Folder file={file}/>
-                ) : file.type === FILE_TYPES.RETURN ? (
-                  <Return file={file}/>
-                ) : file.type === FILE_TYPES.COLLECTION ? (
-                  <Collection file={file}/>
-                ) : null}
-            </div>
-        );
-    }
+    const renderContent = () => {
+        switch (file.type) {
+            case FILE_TYPES.IMAGE: return <Image file={file} />;
+            case FILE_TYPES.VIDEO: return <Video file={file} />;
+            case FILE_TYPES.FOLDER: return <Folder file={file} />;
+            case FILE_TYPES.RETURN: return <Return file={file} />;
+            case FILE_TYPES.COLLECTION: return <Collection file={file} />;
+            default: return null;
+        }
+    };
 
-}
+    const hasOverlay = file.type === FILE_TYPES.IMAGE || file.type === FILE_TYPES.VIDEO;
+    const isRemovedInFavs = !isFav && getCurrentSource() === SOURCE_TYPES.FAVORITE;
+    return (
+        <div
+            className={`card thumb bg-dark ${isModal ? 'modal-active' : ''} ${isRemovedInFavs ? 'opacity-50' : ''}`}
+            onClick={handleThumbClick}
+        >
+            {hasOverlay && (
+                <div className="overlay">
+                    <DropMenu file={file} />
+                    <i
+                        className={`bi ${isFav ? 'bi-ban' : 'bi-heart-fill'}`}
+                        onClick={handleLikeClick}
+                    ></i>
+                </div>
+            )}
+            {renderContent()}
+        </div>
+    );
+}, (prevProps, nextProps) => {
+    return (
+        prevProps.file === nextProps.file &&
+        prevProps.isModal === nextProps.isModal &&
+        prevProps.file.isFav() === nextProps.file.isFav()
+    );
+});
 
 export default Thumb;

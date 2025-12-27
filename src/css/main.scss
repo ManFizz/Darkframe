@@ -153,3 +153,22 @@ $tag-colors: (
 .overlay .dropdown-toggle:after {
   content: none !important;
 }
+
+.main-root  .pagination {
+  z-index: 50;
+}
+
+.tag-search-container {
+  .input-group {
+    position: relative;
+
+    .dropdown-menu {
+      top: 100%;
+      left: 0;
+      margin-top: 2px;
+      overflow-y: auto;
+      z-index: 1050;
+      display: block;
+    }
+  }
+}

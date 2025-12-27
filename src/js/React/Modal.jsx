@@ -1,85 +1,83 @@
-import React, {Component} from 'react';
+import React, {useEffect, useRef, useState} from 'react';
 import Navigation from "./Modal/Navigation";
-import {FILE_TYPES} from "../Display";
+import {FILE_TYPES} from "../ThumbFile";
 import Tags from "./Modal/Tags";
 import Video from "./Modal/Video";
 import Settings from "../../../data/settings";
 
-class Modal extends Component {
-    constructor(props) {
-        super(props);
-        this.state = {
-            isLong: false,
-            degree: 0,
-        };
-        this.modal = React.createRef();
-    }
+const Modal = ({ file, mainArray, modalUpdater, currentSource, displayFiles }) => {
+    const [isLong, setIsLong] = useState(false);
+    const [degree, setDegree] = useState(0);
+    const modalRef = useRef(null);
 
-    componentDidUpdate(prevProps, prevState, snapshot) {
-        const { file, mainArray } = this.props;
-        if(file !== null) {
-            if(prevProps.file === null) {
-                this.modal.current.focus();
-                return;
-            }
+    const fileId = file?.remoteId;
 
-            if(prevProps.file !== file) {
-                this.setState({isLong: false});
-                this.modal.current.scrollTo(0,0);
+    useEffect(() => {
+        if (!fileId) return;
 
-                file.getSize().then((size) => {
-                    if(size === null)
-                        return;
+        setIsLong(false);
+        setDegree(0);
 
-                    if(size.height / size.width > 2.0)
-                        this.setState({isLong: true});
-                })
-                if(file.type === FILE_TYPES.IMAGE) {
-                    const nextIndex = mainArray.indexOf(file) + 1;
-                    if(nextIndex < mainArray.length) {
-                        const media = new Image();
-                        media.src = mainArray[nextIndex].GetUrlLarge();
-                    }
-
-                    const prevIndex = mainArray.indexOf(file) - 1;
-                    if(prevIndex >= 0) {
-                        const media = new Image();
-                        media.src = mainArray[prevIndex].GetUrlLarge();
-                    }
-                }
-            }
+        if (modalRef.current) {
+            modalRef.current.scrollTo(0, 0);
+            modalRef.current.focus();
         }
 
-    }
+        file.getSize().then((size) => {
+            if (size && size.height / size.width > 2.0) {
+                setIsLong(true);
+            }
+        });
 
-    render() {
-        const { file } = this.props;
-        if(!file) return <></>;
-        return <>
-            <dialog className={`modal ${file._fav ? "favorite" : ""}`} open ref={this.modal}>
-                <Navigation
-                    file={file}
-                    modalUpdater={this.props.modalUpdater}
-                    mainArray={this.props.mainArray}
-                    setProps={(data) => this.setState(data)}
-                    currentSource={this.props.currentSource}
-                    displayFiles={this.props.displayFiles}
-                />
+        if (file.type === FILE_TYPES.IMAGE) {
+            const index = mainArray.findIndex(f => String(f.remoteId) === String(fileId));
+            if (index !== -1) {
+                [index - 1, index + 1].forEach(i => {
+                    const neighbor = mainArray[i];
+                    if (neighbor && neighbor.type === FILE_TYPES.IMAGE) {
+                        const img = new window.Image();
+                        img.src = neighbor.getUrl();
+                    }
+                });
+            }
+        }
+    }, [fileId]);
+
+    if (!file) return null;
+
+    return (
+        <dialog
+            className={`modal ${file.isFav() ? "favorite" : ""}`}
+            open
+            ref={modalRef}
+            tabIndex="-1"
+        >
+            <Navigation
+                file={file}
+                modalUpdater={modalUpdater}
+                mainArray={mainArray}
+                setDegree={setDegree}
+                currentSource={currentSource}
+                displayFiles={displayFiles}
+            />
+
+            <div className="modal-content-wrapper">
                 {file.type === FILE_TYPES.IMAGE ? (
                     <img
-                        key={file.GetUrlLarge()}
+                        key={fileId}
                         alt={file.title}
-                        src={file.GetUrlLarge()}
-                        className={Settings.longView && this.state.isLong ? "long" : ""}
-                        style={{transform: `rotate(${this.state.degree}deg)`}}
+                        src={file.getUrl()}
+                        className={Settings.longView && isLong ? "long" : ""}
+                        style={{ transform: `rotate(${degree}deg)` }}
                     />
                 ) : (
                     <Video file={file} />
                 )}
-                <Tags file={file}/>
-            </dialog>
-        </>;
-    };
-}
+            </div>
+
+            <Tags file={file} />
+        </dialog>
+    );
+};
 
 export default Modal;

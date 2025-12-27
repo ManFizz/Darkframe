@@ -1,5 +1,5 @@
 import {getGallery, setGallery} from "./AppInitializer";
-import {DisplayFile} from "./Display";
+import {ThumbFile} from "./ThumbFile";
 
 export function ClearGallery()
 {
@@ -7,8 +7,11 @@ export function ClearGallery()
 }
 
 export function GetThumbByData(data) {
+    if (data.thumbUrl && data.thumbUrl.includes('.stfolder'))
+        return null;
+
     try {
-        return new DisplayFile(data);
+        return new ThumbFile(data);
     } catch(e) {
         const extArrayForSkip = ['txt', 'log', 'bat'];
         if(!data.thumbUrl.toLowerCase().match(`.*.(${extArrayForSkip.join('|')})$`))

@@ -1,5 +1,5 @@
-import React, { Component } from "react";
-import {DisplayImagesByPath} from "../../folders";
+import React, {Component} from "react";
+import {DisplayImagesByPath} from "../../FoldersController";
 
 const pathToImage = "images/return.png";
 

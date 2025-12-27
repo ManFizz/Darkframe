@@ -1,110 +1,159 @@
-import React, { Component } from 'react';
+import React, {useCallback, useEffect, useState} from 'react';
 import ReactDOM from 'react-dom/client';
 import NavBar from "./React/NavBar.jsx";
 import Modal from "./React/Modal.jsx";
 import SideBar from "./React/SideBar.jsx";
 import Gallery from "./React/Gallery";
 import CustomPagination from "./React/CustomPagination";
-import { SOURCE_TYPES } from "./Display";
-import { GetFavTags, UpdateCollections } from "./backend";
-import { setSortInfo, setSource, setTypeView, SORT_ORDER, SORT_TYPE, updateMainArray } from "./AppLogic";
+
+import {SOURCE_TYPES} from "./ThumbFile";
+import {GetFavTags, InitDatabaseData, UpdateCollections} from "./backend";
+import {getNextViewType, getSortedArray, SORT_ORDER, SORT_TYPE} from "./AppLogic";
 import Settings from "../../data/settings";
+import {updateR34Source} from "./R34Controller";
+import {StopR34Loading} from "./r34Favorite";
 
 
 export let setCollections = () => {};
 export let setGallery = () => {};
 export let addToGallery = () => {};
-export let getGallery = () => {};
+export let getGallery = () => [];
 export let getCurrentSource = () => {};
 export let setFavTagsArray = () => {};
+export let getCollections = () => [];
+export let setTypeView = () => {};
 
-export let getCollections = () => {};
+const Main = () => {
+    // Состояние компонента
+    const [tagsVersion, setTagsVersion] = useState(0);
+    const [mainArray, setMainArray] = useState([]);
+    const [displayArray, setDisplayArray] = useState([]);
+    const [modalFile, setModalFile] = useState(null);
+    const [currentSource, setCurrentSource] = useState(SOURCE_TYPES.R34);
+    const [favTagsArray, setFavTagsArrayState] = useState([]);
+    const [typeView, updateTypeView] = useState(2);
+    const [sortInfo, setSortInfoState] = useState({ order: SORT_ORDER.DESC, type: SORT_TYPE.TIME });
+    const [collections, setCollectionsState] = useState([]);
+    const [safeMode, setSafeMode] = useState(Settings.safeView);
 
-class Main extends Component {
-
-    constructor(props) {
-        super(props);
-        this.state = {
-            displayArray: [],
-            mainArray: [],
-            modalFile: null,
-            currentSource: SOURCE_TYPES.R34,
-            favTagsArray: [],
-            typeView: 2,
-            sortInfo: {
-                order: SORT_ORDER.DESC,
-                type: SORT_TYPE.TIME,
-            },
-            collections: [],
-            safeMode: Settings.safeView,
-        };
-
-        setGallery = updateMainArray.bind(this);
-        addToGallery = (array) => {
-            setGallery([...this.state.mainArray, ...array]);
-        };
-        setCollections = collections => {
-            this.setState({ collections: collections });
-            UpdateCollections(collections).then();
+    // Обернутая логика переключения вида
+    const handleTypeViewChange = useCallback((newValue) => {
+        if ([1, 2, 3].includes(newValue)) {
+            updateTypeView(newValue);
+        } else if (newValue === null) {
+            updateTypeView(prev => getNextViewType(prev));
         }
-        getCollections = () => this.state.collections;
-        this.updateDisplayArray = newArray => this.setState({ displayArray: newArray });
-        this.updateModalFile = (file) => this.setState({modalFile: file});
-        this.setSource = setSource.bind(this);
-        setFavTagsArray = (tags) => this.setState({favTagsArray: tags});
-        this.setTypeView = setTypeView.bind(this);
-        this.setSortInfo = setSortInfo.bind(this);
-        getGallery = () => this.state.mainArray;
-        getCurrentSource = () => this.state.currentSource;
+    }, []);
 
-        GetFavTags().then(setFavTagsArray);
-    }
+    // Аналог componentDidMount + связывание внешних функций
+    useEffect(() => {
+        // Инициализация данных
+        InitDatabaseData().then();
+        GetFavTags().then(setFavTagsArrayState);
 
-    render() {
-        const { displayArray, modalFile, mainArray, currentSource, favTagsArray, typeView, sortInfo,
-            collections, safeMode } = this.state;
-        return (<div className={`${safeMode ? " safe-view":""}`}>
+        // Когда TagsController скачает новые типы тегов, он вызовет этот callback
+        import('./TagsController').then(module => {
+            module.setOnTagsUpdate(() => {
+                setTagsVersion(v => v + 1);
+            });
+        });
+
+        // Связываем внешние переменные с внутренними функциями один раз
+        setFavTagsArray = (tags) => setFavTagsArrayState(tags);
+        getCurrentSource = () => currentSource;
+        getCollections = () => collections;
+        getGallery = () => mainArray;
+        setTypeView = handleTypeViewChange;
+
+        setCollections = (newCollections) => {
+            setCollectionsState(newCollections);
+            UpdateCollections(newCollections).then();
+        };
+
+        addToGallery = (newItems) => setMainArray(prev => [...prev, ...newItems]);
+
+        // Переопределяем setGallery с учетом сортировки
+        setGallery = (newArray) => {
+            const sorted = getSortedArray(newArray, sortInfo);
+            let startPost = sorted.findIndex(item => item?.id === displayArray[0]?.id);
+            if (startPost === -1) startPost = 0;
+
+            setMainArray(sorted);
+            setDisplayArray(sorted.slice(startPost, startPost + Settings.maxThumbsPerPage));
+        };
+
+        // Очистка при размонтировании
+        return () => {
+            import('./TagsController').then(module => module.setOnTagsUpdate(() => {}));
+        };
+
+    }, [mainArray, displayArray, sortInfo, collections, currentSource, handleTypeViewChange]);
+
+    // Обработчики действий
+    const handleSetSortInfo = (newInfo) => {
+        const updatedSortInfo = { ...sortInfo, ...newInfo };
+        setSortInfoState(updatedSortInfo);
+
+        const sorted = getSortedArray(mainArray, updatedSortInfo);
+        setMainArray(sorted);
+        setDisplayArray(sorted.slice(0, Settings.maxThumbsPerPage));
+    };
+
+    const handleSetSource = (newSource) => {
+        StopR34Loading();
+        updateR34Source(newSource);
+        setCurrentSource(newSource);
+        setMainArray([]);
+        setDisplayArray([]);
+    };
+
+    return (
+        <div className={`main-root ${safeMode ? "safe-view" : ""}`}>
             <NavBar
                 currentSource={currentSource}
-                setSource={this.setSource}
+                setSource={handleSetSource}
                 typeView={typeView}
-                setTypeView={this.setTypeView}
+                setTypeView={setTypeView}
                 sortInfo={sortInfo}
-                setSortInfo={this.setSortInfo}
-                setProps={(data) => this.setState(data)}
+                setSortInfo={handleSetSortInfo}
+                safeMode={safeMode}
+                setSafeMode={setSafeMode}
             />
+
             <Modal
                 file={modalFile}
-                modalUpdater={this.updateModalFile}
+                modalUpdater={setModalFile}
                 mainArray={mainArray}
                 currentSource={currentSource}
                 displayFiles={displayArray}
             />
+
             <div className="wrapper d-flex align-items-stretch main-split overflow-auto">
                 <SideBar
                     currentSource={currentSource}
                     favTagsArray={favTagsArray}
                 />
+
                 <div className="container-fluid">
                     <Gallery
                         displayFiles={displayArray}
-                        modalUpdater={this.updateModalFile}
+                        modalUpdater={setModalFile}
                         modalFile={modalFile}
                         typeView={typeView}
                     />
                 </div>
+
                 <CustomPagination
                     displayArray={displayArray}
                     mainArray={mainArray}
-                    updateDisplayArray={this.updateDisplayArray}
+                    updateDisplayArray={setDisplayArray}
                     currentSource={currentSource}
                     modalFile={modalFile}
                 />
             </div>
-        </div>);
-    }
-}
+        </div>
+    );
+};
 
-const domContainer = document.querySelector('#root');
-const root = ReactDOM.createRoot(domContainer);
-root.render(React.createElement(Main));
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(<Main />);

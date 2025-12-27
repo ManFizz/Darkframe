@@ -1,49 +1,45 @@
-import React, { Component } from 'react';
-import { GetTags } from "../../TagsController";
+import React, {useMemo} from 'react';
+import {GetTags} from "../../TagsController";
 
-function isEmptyOrSpaces(str){
-    return str === null || str.match(/^ *$/) !== null;
-}
+const isTagInvalid = (tag) => !tag || tag.trim().length === 0;
 
-class Tags extends Component {
-    constructor(props) {
-        super(props);
-    }
+const Tags = ({ file }) => {
+    const allTagsMetadata = GetTags();
 
-    renderTag = (tag) => {
-        if(isEmptyOrSpaces(tag))
-            return null;
+    const visibleTags = useMemo(() => {
+        const tagsMap = new Map(allTagsMetadata.map(t => [t.name, t]));
 
-        const foundTag = GetTags().find(item => item.name === tag);
-        if(foundTag && foundTag.type === 6)
-            return null;
+        const tagsArray = Array.isArray(file.tags) ? file.tags : [];
 
-        const tagTypeClass = foundTag ? `tag-type-${foundTag.type}` : 'bg-primary';
-        const className = `badge m-1 ${tagTypeClass}`;
-        return <span key={tag} className={className}>{tag}</span>;
-    }
+        return tagsArray
+            .filter(tag => tag && tag.trim())
+            .map(name => ({
+                name,
+                metadata: tagsMap.get(name)
+            }))
+            .filter(item => !item.metadata || item.metadata.type !== 6);
+    }, [file.tags, allTagsMetadata]);
 
-    render() {
-        const {file} = this.props;
-        if (!file.tags || typeof file.tags !== 'string')
-            return <></>;
+    if (visibleTags.length === 0) return null;
 
-        let tags = file.tags.split(" ")
-        if(tags.length === 0)
-            return <></>;
-
-        return <>
-            <div
-                className="col-md-6 d-flex flex-wrap justify-content-center mx-auto"
-                id="modal-tags"
-            >
-
-                {tags.map((tag) => (
-                  this.renderTag(tag)
-                ))}
-            </div>
-        </>;
-    };
-}
+    return (
+        <div
+            className="col-md-6 d-flex flex-wrap justify-content-center mx-auto"
+            id="modal-tags"
+        >
+            {visibleTags.map(({ name, metadata }) => {
+                const tagTypeClass = metadata ? `tag-type-${metadata.type}` : 'bg-primary';
+                return (
+                    <span
+                        key={name}
+                        className={`badge m-1 ${tagTypeClass}`}
+                    >
+                        {name}
+                    </span>
+                );
+            })}
+        </div>
+    );
+};
 
 export default Tags;

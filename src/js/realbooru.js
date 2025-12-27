@@ -1,5 +1,5 @@
 import {GetThumbByData} from "./GalleryController";
-import {SOURCE_TYPES} from "./Display";
+import {SOURCE_TYPES} from "./ThumbFile";
 import {setGallery} from "./AppInitializer";
 import PrivateData from "../../data/private";
 
@@ -43,6 +43,7 @@ async function endResult() {
         let src = await parseThumb(id);
 
         let c = GetThumbByData({
+            remoteId: id,
             thumbUrl: src,
             remoteType: SOURCE_TYPES.REALBOORU,
             sourceUrl: urlThumb + id,

@@ -1,7 +1,7 @@
 import {GetFiles} from "./backend";
-import { GetThumbByData } from "./GalleryController";
-import {FILE_TYPES, SOURCE_TYPES} from "./Display";
-import { setGallery } from "./AppInitializer";
+import {GetThumbByData} from "./GalleryController";
+import {FILE_TYPES, SOURCE_TYPES} from "./ThumbFile";
+import {setGallery} from "./AppInitializer";
 
 export async function DisplayImagesByPath(path)
 {
@@ -36,7 +36,8 @@ export async function DisplayImagesByPath(path)
                 thumbUrl: name, //for keys in react
                 priority: 1000000,
             });
-            array.push(thumbFile);
+            if(thumbFile !== null)
+                array.push(thumbFile);
             return;
         }
 
@@ -45,6 +46,7 @@ export async function DisplayImagesByPath(path)
             remoteType: SOURCE_TYPES.FOLDER,
             title: name,
             time: time,
+            remoteId: name,
         });
         if(thumbFile !== null)
             array.push(thumbFile);
@@ -60,6 +62,7 @@ export async function DisplayImagesByPath(path)
         thumbUrl: name, //for keys in react
         priority: 100000000,
     });
-    array.push(thumbFile);
+    if(thumbFile !== null)
+        array.push(thumbFile);
     setGallery(array);
 }

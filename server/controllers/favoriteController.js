@@ -1,113 +1,90 @@
 const { ipcMain } = require('electron');
-const {removeFavorite, getFavorites, addFavorite} = require("../services/favoriteService");
-const {downloadFile, deleteFile, findFile} = require("./fileManager");
+const { removeFavorite, getFavorites, addFavorite } = require("../services/favoriteService");
+const { downloadFile } = require("./fileManager");
+const Favorite = require("../models/Favorite"); // Переместил наверх
 const path = require('path');
-const fs = require('fs');
+const fs = require('fs').promises; // Используем промисы для fs
 
+/**
+ * Вспомогательная функция обновления URL
+ */
 async function updateFavoriteLocalUrl(id, localUrl) {
 	try {
-		await Favorite.update({ localUrl }, {
-			where: { id }
-		});
-		console.log(`Local URL updated for favorite with ID: ${id}`);
+		await Favorite.update({ localUrl }, { where: { id } });
 	} catch (error) {
 		console.error('Error updating local URL:', error);
-		throw error;
 	}
 }
 
 async function handleAddFavorites(event, url, name, source, tags, display, remoteType) {
 	try {
 		const newFavorite = await addFavorite(event, url, name, source, tags, display, remoteType);
-		if (remoteType !== 1) {
-			const localPath = path.join(__dirname, '../../downloads');
-			try {
-				const localUrl = await downloadFile(url, localPath);
-				if (localUrl) {
-					await updateFavoriteLocalUrl(newFavorite.id, localUrl);
-				}
-			} catch (downloadError) {
-				console.error('Error downloading file:', downloadError.message);
-			}
+		const favoriteId = newFavorite.id || (newFavorite.dataValues ? newFavorite.dataValues.id : null);
+
+		if (!favoriteId) {
+			console.error("Не удалось получить ID созданной записи. Загрузка файла отменена.");
+			return null;
 		}
-		return newFavorite.id;
+
+		if (remoteType !== 1) {
+			const downloadPath = path.join(__dirname, '../../downloads');
+
+			downloadFile(url, downloadPath).then(async (localUrl) => {
+				if (localUrl) {
+					await updateFavoriteLocalUrl(favoriteId, localUrl);
+				}
+			}).catch(err => console.error('Background download error:', err.message));
+		}
+
+		return favoriteId;
 	} catch (error) {
 		console.error('Error handling addFavorites:', error);
 		throw error;
 	}
 }
 
-// Асинхронная функция для перемещения файла
-async function moveFile(source, destination) {
-	await fs.promises.rename(source, destination);
+async function handleRemoveFavorites(event, url) {
+	try {
+		const favorite = await Favorite.findOne({ where: { thumbUrl: url } });
+
+		if (favorite && favorite.localUrl) {
+			await fs.unlink(favorite.localUrl).catch(() => {}); // Удаляем файл
+		}
+
+		await removeFavorite(url);
+		return true; // Подтверждаем успех
+	} catch (error) {
+		console.error('Error handling removeFavorites:', error);
+		throw error;
+	}
 }
 
-async function download(favorite) {
-	const cachePath = path.join(__dirname, '../../cache');
-	const downloadPath = path.join(__dirname, '../../downloads');
-
+async function handleGetFavorites() {
 	try {
-		// Сначала скачиваем файл в папку cache
-		const cachedFilePath = await downloadFile(favorite.thumbUrl, cachePath);
-		if (!cachedFilePath) {
-			console.log(`Не удалось скачать файл: ${favorite.thumbUrl}`);
-			await updateFavoriteLocalUrl(favorite.id, null);
-		} else {
-			const finalFilePath = path.join(downloadPath, path.basename(cachedFilePath));
-			await moveFile(cachedFilePath, finalFilePath);
-			console.log(`Файл успешно перемещен в: ${finalFilePath}`);
-			await updateFavoriteLocalUrl(favorite.id, finalFilePath);
-		}
-	} catch (downloadError) {
-		console.error('Error downloading or moving file:', downloadError.message);
+		const favorites = await getFavorites();
+		return favorites; // ВАЖНО: теперь возвращаем массив напрямую
+	} catch (error) {
+		console.error('Ошибка при получении избранного:', error);
+		throw error;
 	}
 }
 
 async function downloadMissingFavorites() {
 	try {
-		const favorites = await getFavorites(); // Предполагается, что эта функция возвращает список избранного
-		for (let favorite of favorites) {
-			if(favorite.remoteType === 1)
-				continue;
-
-			if (favorite.localUrl !== null && fs.existsSync(favorite.localUrl))
-				continue;
-
-			console.log(`Файл ${favorite.thumbUrl} не найден. Начинаем скачивание.`);
-			await download(favorite);
-		}
-	} catch (error) {
-		console.error('Ошибка при обработке избранного:', error);
-	}
-}
-
-const Favorite = require("../models/Favorite");
-async function handleRemoveFavorites(event, url) {
-	try {
-		const favorite = await Favorite.findOne({
-			where: {thumbUrl: url}
-		});
-		if (favorite && favorite.localUrl) {
-			fs.unlink(favorite.localUrl, (err) => {
-				if (err) console.error('Ошибка при удалении локального файла:', err);
-				else console.log('Локальный файл удален:', favorite.localUrl);
-			});
-		}
-		await removeFavorite(url);
-		event.sender.send("removeFavoritesSuccess", await getFavorites(event));
-	} catch (error) {
-		console.error('Error handling removeFavorites:', error);
-		event.sender.send("removeFavoritesError", error.message);
-	}
-}
-
-async function handleGetFavorites(event) {
-	try {
 		const favorites = await getFavorites();
-		event.sender.send('getFavorites', favorites);
+		const downloadPath = path.join(__dirname, '../../downloads');
+
+		for (let favorite of favorites) {
+			if (favorite.remoteType === 1 || (favorite.localUrl && (await fs.access(favorite.localUrl).then(() => true).catch(() => false)))) {
+				continue;
+			}
+
+			console.log(`Скачивание отсутствующего файла: ${favorite.thumbUrl}`);
+			const localUrl = await downloadFile(favorite.thumbUrl, downloadPath);
+			if (localUrl) await updateFavoriteLocalUrl(favorite.id, localUrl);
+		}
 	} catch (error) {
-		console.error('Ошибка при получении избранного:', error);
-		event.sender.send('getFavoritesError', error.message);
+		console.error('Ошибка при проверке локальных копий:', error);
 	}
 }
 

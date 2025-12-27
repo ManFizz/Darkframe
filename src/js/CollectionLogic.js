@@ -1,8 +1,8 @@
-import { GetCollections } from "./backend";
-import { GetThumbByData } from "./GalleryController";
-import { FILE_TYPES } from "./Display";
-import { setCollections, setGallery } from "./AppInitializer";
-import { favToDisplayFile } from "./FavController";
+import {GetCollections} from "./backend";
+import {GetThumbByData} from "./GalleryController";
+import {FILE_TYPES} from "./ThumbFile";
+import {setCollections, setGallery} from "./AppInitializer";
+import {favToDisplayFile} from "./FavController";
 
 export function DisplayCollections() {
 	GetCollections().then( res => {

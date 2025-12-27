@@ -4,7 +4,6 @@ const PrivateData = {
     RealBooruId: "REPLACE",
     R34ApiKey: "REPLACE",
     R34UserId: "REPLACE",
-    idArray: [],
 };
 
 export default PrivateData;

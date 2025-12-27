@@ -1,7 +1,6 @@
-import React, { Component } from 'react';
-import FavoriteTagsForm from "./SectionR34/FavoriteTagsForm";
+import React, {Component} from 'react';
 import TagSearch from "./SectionR34/TagSearch";
-import {addByIdArray, currentR34Source} from "../../r34";
+import {currentR34Source} from "../../R34Controller";
 
 class SectionR34 extends Component {
     constructor(props) {
@@ -22,17 +21,11 @@ class SectionR34 extends Component {
 
     render() {
         const { name } = this.state;
-        const { favTagsArray, currentSource } = this.props;
         return (
             <section>
-                <p className="h1" onClick={addByIdArray}>{name}</p>
+                <p className="h1">{name}</p>
                 <p className="h6">Search by tags</p>
-                <TagSearch/>
-                <hr/>
-                <FavoriteTagsForm
-                    currentSource={currentSource}
-                    favTagsArray={favTagsArray}
-                />
+                <TagSearch currentR34Source={this.props.currentSource} favTagsArray={this.props.favTagsArray} />
             </section>
         );
     }

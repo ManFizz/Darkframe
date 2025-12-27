@@ -1,191 +1,87 @@
-import React, {Component} from 'react';
-import {DisplayFavorites} from "../FavController";
-import {DisplayImagesByPath} from "../folders";
-import PrivateData from "../../../data/private";
-import {AddMedia} from "../r34";
-import {DisplayP365} from "../p365";
-import {SOURCE_TYPES} from "../Display";
-import {SORT_ORDER, SORT_TYPE} from "../AppLogic";
+import React, {useState} from 'react';
 import {BsCaretDownFill, BsFillGrid1X2Fill, BsSearch, BsShieldShaded} from "react-icons/bs";
+import PrivateData from "../../../data/private";
+import {SOURCE_TYPES} from "../ThumbFile";
+import {SORT_ORDER, SORT_TYPE} from "../AppLogic";
+
+import {DisplayFavorites} from "../FavController";
+import {DisplayImagesByPath} from "../FoldersController";
+import {DisplayP365} from "../p365";
 import {DisplayCollections} from "../CollectionLogic";
-import {WorkRealBooru} from "../realbooru";
 import {DisplayRemoteFavoriteR34} from "../r34Favorite";
 
-export class NavBar extends Component {
+const NavBar = ({ setSource, setSortInfo, sortInfo, setTypeView, currentSource, safeMode, setSafeMode }) => {
+    const [searchValue, setSearchValue] = useState('');
 
-    constructor(props) {
-        super(props);
-        this.state = {
-            searchValue: '',
-        };
-
-        this.clickFolderHandler = this.clickFolderHandler.bind(this);
-        this.clickR34Handler = this.clickR34Handler.bind(this);
-        this.clickP365Handler = this.clickP365Handler.bind(this);
-        this.clickFavoriteHandler = this.clickFavoriteHandler.bind(this);
-        this.handleSearchInputChange = this.handleSearchInputChange.bind(this);
-        this.clickSortTypeHandler = this.clickSortTypeHandler.bind(this);
-        this.clickSortOrderHandler = this.clickSortOrderHandler.bind(this);
-        this.clickSearchHandler = this.clickSearchHandler.bind(this);
-        this.ToggleView = this.ToggleView.bind(this);
-        this.clickCollectionHandler = this.clickCollectionHandler.bind(this);
-        this.clickRemoteFavoriteHandler = this.clickRemoteFavoriteHandler.bind(this);
-    }
-
-    clickRemoteFavoriteHandler() {
-        this.props.setSource(SOURCE_TYPES.R34);
-        DisplayRemoteFavoriteR34().then();
-    }
-
-    clickFolderHandler() {
-        this.props.setSource(SOURCE_TYPES.FOLDER);
-        DisplayImagesByPath(PrivateData.startPath).then();
-    }
-
-    clickR34Handler(sourceType) {
-        this.props.setSource(sourceType);
-    }
-
-    clickP365Handler() {
-        this.props.setSource(SOURCE_TYPES.P365);
-        DisplayP365();
-    }
-
-    clickFavoriteHandler() {
-        this.props.setSource(SOURCE_TYPES.FAVORITE);
-        DisplayFavorites();
-    }
-
-    clickSortTypeHandler(newType) {
-        const { setSortInfo } = this.props;
-        setSortInfo({ type: newType });
+    const handleNavigation = (sourceType, action = null) => {
+        setSource(sourceType);
+        if (action) action();
     };
 
-    clickSortOrderHandler() {
-        const { sortInfo, setSortInfo } = this.props;
-        setSortInfo({ order: sortInfo.order * -1 });
-    };
-    handleSearchInputChange(event) {
-        this.setState({ searchValue: event.target.value });
-    }
-
-    clickSearchHandler() {
-        const { searchValue } = this.state;
-        const { currentSource } = this.props;
-
-        switch (currentSource) {
-            case SOURCE_TYPES.R34:
-            case SOURCE_TYPES.GELBOORU:
-            {
-                AddMedia(searchValue);
-                break;
-            }
-            case SOURCE_TYPES.FOLDER:
-            {
-                DisplayImagesByPath(searchValue).then();
-                break;
-            }
+    const handleSearch = () => {
+        if (currentSource === SOURCE_TYPES.R34 || currentSource === SOURCE_TYPES.GELBOORU) {
+            //SearchMedia(searchValue);
+        } else if (currentSource === SOURCE_TYPES.FOLDER) {
+            DisplayImagesByPath(searchValue);
         }
     };
 
-    clickCollectionHandler() {
-        this.props.setSource(SOURCE_TYPES.COLLECTION);
-        DisplayCollections();
-    }
+    const navButtons = [
+        { label: 'R34', type: SOURCE_TYPES.R34 },
+        { label: 'Gelbooru', type: SOURCE_TYPES.GELBOORU },
+        //{ label: 'Realbooru', type: SOURCE_TYPES.REALBOORU, action: WorkRealBooru },
+        { label: 'P365', type: SOURCE_TYPES.P365, action: DisplayP365 },
+        { label: 'Favorites', type: SOURCE_TYPES.FAVORITE, action: DisplayFavorites },
+        { label: 'Folders', type: SOURCE_TYPES.FOLDER, action: () => DisplayImagesByPath(PrivateData.startPath) },
+        { label: 'R34 Favs', type: SOURCE_TYPES.R34, action: DisplayRemoteFavoriteR34 },
+        { label: 'Collections', type: SOURCE_TYPES.COLLECTION, action: DisplayCollections },
+    ];
 
-    ToggleView() {
-        this.props.setTypeView(null);
-    }
-
-    handleSafeClick = () => {
-        this.props.setProps(prevProps => ({ safeMode: !prevProps.safeMode }));
-    }
-
-    render() {
-        const renderRadioButtons = (buttons) => {
-            return buttons.map((button, index) => (
-                <React.Fragment key={index}>
-                    <input type="radio" className="btn-check" name="btnradio" id={`btnradio${index + 1}`} autoComplete="off" defaultChecked={index === 0}/>
-                    <label className="btn btn-outline-primary" htmlFor={`btnradio${index + 1}`} onClick={button.onClick}>
-                        {button.label}
-                    </label>
-                </React.Fragment>
-            ));
-        };
-
-        return <>
-            <header className="navbar navbar-expand-lg sticky-top navbar-dark text-white bg-dark">
-                <div className="container-fluid">
-                    <div className="navbar-nav flex-row flex-wrap bd-navbar-nav">
-                        <div className="btn-group">
-                            {renderRadioButtons([
-                                { label: 'R34', onClick: () => this.clickR34Handler(SOURCE_TYPES.R34) },
-                                { label: 'Gelbooru', onClick: () => this.clickR34Handler(SOURCE_TYPES.GELBOORU) },
-                                { label: 'Realbooru', onClick: () => WorkRealBooru() },
-                                { label: 'P365', onClick: this.clickP365Handler },
-                                { label: 'Favorites', onClick: this.clickFavoriteHandler },
-                                { label: 'Folders', onClick: this.clickFolderHandler },
-                                { label: 'R34 Favs', onClick: this.clickRemoteFavoriteHandler },
-                                { label: 'Collections', onClick: this.clickCollectionHandler },
-                            ])}
-                        </div>
+    return (
+        <header className="navbar navbar-expand-lg sticky-top navbar-dark text-white bg-dark">
+            <div className="container-fluid">
+                <div className="navbar-nav flex-row flex-wrap">
+                    <div className="btn-group">
+                        {navButtons.map((btn, idx) => (
+                            <React.Fragment key={btn.label}>
+                                <input type="radio" className="btn-check" name="nav-radio" id={`nav-${idx}`} defaultChecked={idx === 0} />
+                                <label className="btn btn-outline-primary" htmlFor={`nav-${idx}`} onClick={() => handleNavigation(btn.type, btn.action)}>
+                                    {btn.label}
+                                </label>
+                            </React.Fragment>
+                        ))}
                     </div>
-                    <form className="d-flex col-5" role="search">
-                        <input className="form-control me-2"
-                               type="search"
-                               placeholder="Search"
-                               aria-label="Search"
-                               onChange={this.handleSearchInputChange}
-                        />
-                        <button
-                            className="btn btn-outline-success"
-                            type="button"
-                            onClick={this.clickSearchHandler}
-                        >
-                            <BsSearch />
-                        </button>
-                    </form>
-
-                    <form className="d-flex btn-group">
-                        <div className="btn-group dropdown">
-                            <a className="btn btn-outline-secondary py-2 px-0 px-lg-2 dropdown-toggle"
-                               data-bs-toggle="dropdown"
-                               aria-expanded="false"
-                               data-bs-display="static"
-                            >
-                                Sort by {this.props.sortInfo.type === SORT_TYPE.NAME ? "name" : "time"}
-                            </a>
-                            <ul className="dropdown-menu dropdown-menu-end">
-                                <li>
-                                    <a className="dropdown-item" onClick={() => this.clickSortTypeHandler(SORT_TYPE.NAME)}>Name</a>
-                                </li>
-                                <li>
-                                    <a className="dropdown-item" onClick={() => this.clickSortTypeHandler(SORT_TYPE.TIME)}>Time</a>
-                                </li>
-                            </ul>
-                        </div>
-                        <a className="btn btn-outline-secondary btn-order"
-                            onClick={this.clickSortOrderHandler}
-                        >
-                            Sort order
-                            <BsCaretDownFill
-                                className={`${this.props.sortInfo.order === SORT_ORDER.ASC ? "flip" : ""}`}
-                            />
-                        </a>
-                        <a className="btn btn-outline-secondary"
-                            onClick={this.ToggleView}
-                        >
-                            <BsFillGrid1X2Fill />
-                        </a>
-                        <a className="btn btn-outline-secondary btn-order"
-                           onClick={this.handleSafeClick}>
-                            <BsShieldShaded/>
-                        </a>
-                    </form>
                 </div>
-            </header>
-        </>
-    };
-}
+
+                <form className="d-flex col-5">
+                    <input className="form-control me-2" type="search" placeholder="Search" onChange={(e) => setSearchValue(e.target.value)} />
+                    <button className="btn btn-outline-success" type="button" onClick={handleSearch}><BsSearch /></button>
+                </form>
+
+                <div className="d-flex btn-group">
+                    <div className="btn-group dropdown">
+                        <button className="btn btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">
+                            Sort by {sortInfo.type === SORT_TYPE.NAME ? "name" : "time"}
+                        </button>
+                        <ul className="dropdown-menu dropdown-menu-end">
+                            <li><button className="dropdown-item" onClick={() => setSortInfo({ type: SORT_TYPE.NAME })}>Name</button></li>
+                            <li><button className="dropdown-item" onClick={() => setSortInfo({ type: SORT_TYPE.TIME })}>Time</button></li>
+                        </ul>
+                    </div>
+
+                    <button className="btn btn-outline-secondary" onClick={() => setSortInfo({ order: sortInfo.order * -1 })}>
+                        Order <BsCaretDownFill className={sortInfo.order === SORT_ORDER.ASC ? "flip" : ""} />
+                    </button>
+
+                    <button className="btn btn-outline-secondary" onClick={() => setTypeView(null)}><BsFillGrid1X2Fill /></button>
+
+                    <button className={`btn ${safeMode ? 'btn-success' : 'btn-outline-secondary'}`} onClick={() => setSafeMode(!safeMode)}>
+                        <BsShieldShaded />
+                    </button>
+                </div>
+            </div>
+        </header>
+    );
+};
 
 export default NavBar;
