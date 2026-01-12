@@ -1,5 +1,7 @@
 import React, {Component} from "react";
 import Thumb from "./Thumb";
+import ScrollSensor from "./ScrollSensor";
+import {LoadNextPage} from "./CustomPagination";
 
 class Gallery extends Component {
     shouldComponentUpdate(nextProps) {
@@ -20,6 +22,13 @@ class Gallery extends Component {
                         isModal={modalFile === file}
                     />
                 ))}
+                <ScrollSensor
+                    enabled={modalFile === null}
+                    onVisible={() => {
+                        console.log("Scroll reached end, loading next...");
+                        LoadNextPage();
+                    }}
+                />
             </div>
         );
     }

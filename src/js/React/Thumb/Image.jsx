@@ -1,7 +1,7 @@
 import React, {useEffect, useRef, useState} from "react";
 
 const loadingUrl = "./images/loading.gif";
-const PREVIEW_WIDTH = 300;
+const PREVIEW_WIDTH = 400;
 const MAX_PREVIEW_HEIGHT = 600;
 
 const Image = ({ file }) => {
