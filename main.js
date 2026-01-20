@@ -3,6 +3,7 @@ const { backupDatabase } = require('./server/backup');
 const { setupIpcHandlers } = require('./server/ipcManager');
 const { downloadMissingFavorites } = require('./server/controllers/favoriteController');
 const { session } = require('electron')
+const Settings = require("./data/settings");
 
 app.commandLine.appendSwitch('disable-quic');
 app.commandLine.appendSwitch('disable-http2');
@@ -18,7 +19,7 @@ for (let i = 0; i < process.argv.length; i++) {
 }
 
 let win;
-function createWindow() {
+async function createWindow() {
     win = new BrowserWindow({
         width: 700,
         height: 500,
@@ -32,6 +33,17 @@ function createWindow() {
         },
         autoHideMenuBar: true,
     });
+    if(Settings.HttpProxy) {
+        try {
+            await session.defaultSession.setProxy({
+                proxyRules: `http://${PrivateData.HttpProxy.ip}:${PrivateData.HttpProxy.port}`
+            });
+            console.log("HttpProxy bypass: ", "<-loopback>");
+        } catch (e) {
+            console.error("Failed to set HttpProxy:", e);
+        }
+    }
+
     win.maximize();
     win.loadFile('dist/index.html').then();
     if (openDevTools) {
@@ -70,4 +82,11 @@ app.whenReady().then(() => {
 
 app.on('window-all-closed', () => {
     app.quit();
+});
+
+app.on('login', (event, webContents, request, authInfo, callback) => {
+    if (authInfo.isProxy) {
+        event.preventDefault();
+        callback(PrivateData.HttpProxy.login, PrivateData.HttpProxy.password);
+    }
 });

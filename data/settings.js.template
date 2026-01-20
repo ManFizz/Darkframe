@@ -1,10 +1,11 @@
 const Settings = {
-    safeView: false,
-    backgroundImg: true,
-    checkRatio: true,
-    maxThumbsPerPage: 32,
-    resize: true,
-    longView: true,
+    SafeView: false,
+    BackgroundImg: true,
+    CheckRatio: true,
+    MaxThumbsPerPage: 32,
+    Resize: true,
+    LongView: true,
+    HttpProxy: false,
 };
 
 export default Settings;

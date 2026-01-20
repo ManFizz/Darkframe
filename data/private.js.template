@@ -4,6 +4,12 @@ const PrivateData = {
     RealBooruId: "REPLACE",
     R34ApiKey: "REPLACE",
     R34UserId: "REPLACE",
+    HttpProxy: {
+        ip: "",
+        port: "",
+        login: "",
+        password: "",
+    }
 };
 
 export default PrivateData;
