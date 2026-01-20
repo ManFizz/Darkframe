@@ -24,7 +24,6 @@ export let getCollections = () => [];
 export let setTypeView = () => {};
 
 const Main = () => {
-    // Состояние компонента
     const [tagsVersion, setTagsVersion] = useState(0);
     const [mainArray, setMainArray] = useState([]);
     const [displayArray, setDisplayArray] = useState([]);
@@ -34,9 +33,8 @@ const Main = () => {
     const [typeView, updateTypeView] = useState(2);
     const [sortInfo, setSortInfoState] = useState({ order: SORT_ORDER.DESC, type: SORT_TYPE.TIME });
     const [collections, setCollectionsState] = useState([]);
-    const [safeMode, setSafeMode] = useState(Settings.safeView);
+    const [safeMode, setSafeMode] = useState(Settings.SafeView);
 
-    // Обернутая логика переключения вида
     const handleTypeViewChange = useCallback((newValue) => {
         if ([1, 2, 3].includes(newValue)) {
             updateTypeView(newValue);
@@ -45,20 +43,16 @@ const Main = () => {
         }
     }, []);
 
-    // Аналог componentDidMount + связывание внешних функций
     useEffect(() => {
-        // Инициализация данных
         InitDatabaseData().then();
         GetFavTags().then(setFavTagsArrayState);
 
-        // Когда TagsController скачает новые типы тегов, он вызовет этот callback
         import('./TagsController').then(module => {
             module.setOnTagsUpdate(() => {
                 setTagsVersion(v => v + 1);
             });
         });
 
-        // Связываем внешние переменные с внутренними функциями один раз
         setFavTagsArray = (tags) => setFavTagsArrayState(tags);
         getCurrentSource = () => currentSource;
         getCollections = () => collections;
@@ -72,17 +66,15 @@ const Main = () => {
 
         addToGallery = (newItems) => setMainArray(prev => [...prev, ...newItems]);
 
-        // Переопределяем setGallery с учетом сортировки
         setGallery = (newArray) => {
             const sorted = getSortedArray(newArray, sortInfo);
-            let startPost = sorted.findIndex(item => item?.id === displayArray[0]?.id);
+            let startPost = sorted.findIndex(item => item?.uniqueId === displayArray[0]?.uniqueId);
             if (startPost === -1) startPost = 0;
 
             setMainArray(sorted);
-            setDisplayArray(sorted.slice(startPost, startPost + Settings.maxThumbsPerPage));
+            setDisplayArray(sorted.slice(startPost, startPost + Settings.MaxThumbsPerPage));
         };
 
-        // Очистка при размонтировании
         return () => {
             import('./TagsController').then(module => module.setOnTagsUpdate(() => {}));
         };
@@ -96,7 +88,7 @@ const Main = () => {
 
         const sorted = getSortedArray(mainArray, updatedSortInfo);
         setMainArray(sorted);
-        setDisplayArray(sorted.slice(0, Settings.maxThumbsPerPage));
+        setDisplayArray(sorted.slice(0, Settings.MaxThumbsPerPage));
     };
 
     const handleSetSource = (newSource) => {

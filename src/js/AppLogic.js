@@ -1,3 +1,6 @@
+import {SOURCE_TYPES} from "./ThumbFile";
+import {getCurrentSource} from "./AppInitializer";
+
 export const SORT_ORDER = { ASC: 1, DESC: -1 };
 export const SORT_TYPE = { NAME: 0, TIME: 1 };
 
@@ -12,7 +15,13 @@ const SORT_STRATEGIES = {
 };
 
 export function getSortedArray(array, sortInfo) {
+	if(getCurrentSource() !== SOURCE_TYPES.FOLDER)
+		return array;
+
 	if (!Array.isArray(array)) return [];
+
+	if(getCurrentSource() === SOURCE_TYPES.FAVORITE)
+		return [...array].sort((a, b) => (a.id - b.id)*sortInfo.order);
 
 	return [...array].sort((a, b) => {
 		if (a.priority !== b.priority) {
