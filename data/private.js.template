@@ -12,4 +12,4 @@ const PrivateData = {
     }
 };
 
-export default PrivateData;
+module.exports = PrivateData;

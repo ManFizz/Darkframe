@@ -1,9 +1,9 @@
 const { ipcMain } = require('electron');
 const { removeFavorite, getFavorites, addFavorite } = require("../services/favoriteService");
 const { downloadFile } = require("./fileManager");
-const Favorite = require("../models/Favorite"); // Переместил наверх
+const Favorite = require("../models/Favorite");
 const path = require('path');
-const fs = require('fs').promises; // Используем промисы для fs
+const fs = require('fs').promises;
 
 /**
  * Вспомогательная функция обновления URL
@@ -52,7 +52,7 @@ async function handleRemoveFavorites(event, url) {
 		}
 
 		await removeFavorite(url);
-		return true; // Подтверждаем успех
+		return true;
 	} catch (error) {
 		console.error('Error handling removeFavorites:', error);
 		throw error;
@@ -62,7 +62,7 @@ async function handleRemoveFavorites(event, url) {
 async function handleGetFavorites() {
 	try {
 		const favorites = await getFavorites();
-		return favorites; // ВАЖНО: теперь возвращаем массив напрямую
+		return favorites;
 	} catch (error) {
 		console.error('Ошибка при получении избранного:', error);
 		throw error;

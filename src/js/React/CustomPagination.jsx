@@ -31,11 +31,11 @@ class CustomPagination extends Component {
     LoadNextPage() {
         const { maxPage, currentPage, pages } = this.state;
         let newPage = maxPage + 1;
-        if(newPage < pages) {
+        if(newPage <= pages) {
             const { mainArray } = this.props;
 
-            const startIndex = (currentPage - 1) * Settings.maxThumbsPerPage;
-            const endIndex = Math.min(newPage * Settings.maxThumbsPerPage, mainArray.length);
+            const startIndex = (currentPage - 1) * Settings.MaxThumbsPerPage;
+            const endIndex = Math.min(newPage * Settings.MaxThumbsPerPage, mainArray.length);
             this.props.updateDisplayArray(mainArray.slice(startIndex, endIndex));
 
             this.setState({maxPage: newPage}, NotifyCustomPaginationR34);
@@ -61,11 +61,11 @@ class CustomPagination extends Component {
                     this.handleClick(currentPage+1);
             }
             else if (event.key === 'ArrowUp') {
-                Settings.maxThumbsPerPage = Math.min(Settings.maxThumbsPerPage + 8, 160);
+                Settings.MaxThumbsPerPage = Math.min(Settings.MaxThumbsPerPage + 8, 160);
                 setGallery(this.props.mainArray); //rerender
             }
             else if (event.key === 'ArrowDown') {
-                Settings.maxThumbsPerPage = Math.max(Settings.maxThumbsPerPage - 8, 16);
+                Settings.MaxThumbsPerPage = Math.max(Settings.MaxThumbsPerPage - 8, 16);
                 setGallery(this.props.mainArray); //rerender
             }
         }
@@ -74,7 +74,7 @@ class CustomPagination extends Component {
     componentDidUpdate(prevProps, prevState, snapshot) {
         const { mainArray} = this.props;
         if(mainArray.length !== prevProps.mainArray.length){
-            const pages = Math.ceil(mainArray.length / Settings.maxThumbsPerPage);
+            const pages = Math.ceil(mainArray.length / Settings.MaxThumbsPerPage);
             if(pages !== this.state.pages) {
                 if(mainArray.length === 0 || prevProps.mainArray[0] == null || prevProps.mainArray[0].uniqueId.localeCompare(mainArray[0]?.uniqueId) !== 0)
                     this.setState({currentPage: 1, maxPage: 1});
@@ -87,8 +87,8 @@ class CustomPagination extends Component {
     handleClick(page) {
         const { mainArray } = this.props;
 
-        const startIndex = (page - 1) * Settings.maxThumbsPerPage;
-        const endIndex = Math.min(page * Settings.maxThumbsPerPage, mainArray.length);
+        const startIndex = (page - 1) * Settings.MaxThumbsPerPage;
+        const endIndex = Math.min(page * Settings.MaxThumbsPerPage, mainArray.length);
         this.props.updateDisplayArray(mainArray.slice(startIndex, endIndex));
 
         this.setState({currentPage: page, maxPage: page}, NotifyCustomPaginationR34);

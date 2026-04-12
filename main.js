@@ -4,6 +4,7 @@ const { setupIpcHandlers } = require('./server/ipcManager');
 const { downloadMissingFavorites } = require('./server/controllers/favoriteController');
 const { session } = require('electron')
 const Settings = require("./data/settings");
+const PrivateData = require("./data/private");
 
 app.commandLine.appendSwitch('disable-quic');
 app.commandLine.appendSwitch('disable-http2');
@@ -36,7 +37,8 @@ async function createWindow() {
     if(Settings.HttpProxy) {
         try {
             await session.defaultSession.setProxy({
-                proxyRules: `http://${PrivateData.HttpProxy.ip}:${PrivateData.HttpProxy.port}`
+                proxyRules: `http://${PrivateData.HttpProxy.ip}:${PrivateData.HttpProxy.port}`,
+                proxyBypassRules: "localhost,127.0.0.1"
             });
             console.log("HttpProxy bypass: ", "<-loopback>");
         } catch (e) {
@@ -58,21 +60,32 @@ app.whenReady().then(() => {
     createWindow();
 
     const filter = {
-        urls: ['*']
-    }
+        urls: [
+            '*://*.rule34.xxx/*',
+            '*://*.gelbooru.com/*',
+            '*://*.realbooru.com/*'
+        ]
+    };
 
     session.defaultSession.webRequest.onBeforeSendHeaders(filter, (details, callback) => {
         details.requestHeaders['User-Agent'] = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36 Edg/126.0.0.0'
         callback({ requestHeaders: details.requestHeaders })
-    })
+    });
 
     app.on('certificate-error', (event, webContents, url, error, certificate, callback) => {
         event.preventDefault()
         callback(true)
 
-    })
+    });
 
     process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+
+    app.on('login', (event, webContents, request, authInfo, callback) => {
+        if (authInfo.isProxy) {
+            event.preventDefault();
+            callback(PrivateData.HttpProxy.login, PrivateData.HttpProxy.password);
+        }
+    });
 
     return;
     downloadMissingFavorites().then(r => {
@@ -82,11 +95,4 @@ app.whenReady().then(() => {
 
 app.on('window-all-closed', () => {
     app.quit();
-});
-
-app.on('login', (event, webContents, request, authInfo, callback) => {
-    if (authInfo.isProxy) {
-        event.preventDefault();
-        callback(PrivateData.HttpProxy.login, PrivateData.HttpProxy.password);
-    }
 });

@@ -68,10 +68,13 @@ const Main = () => {
 
         setGallery = (newArray) => {
             const sorted = getSortedArray(newArray, sortInfo);
-            let startPost = sorted.findIndex(item => item?.uniqueId === displayArray[0]?.uniqueId);
-            if (startPost === -1) startPost = 0;
-
             setMainArray(sorted);
+
+            let startPost = 0;
+            if(displayArray[0] !== null) {
+                startPost = sorted.findIndex(item => item?.uniqueId === displayArray[0]?.uniqueId);
+                if (startPost === -1) startPost = 0;
+            }
             setDisplayArray(sorted.slice(startPost, startPost + Settings.MaxThumbsPerPage));
         };
 

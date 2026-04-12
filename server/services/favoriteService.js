@@ -8,7 +8,8 @@ async function addFavorite(event, url, name, source, tags, display, remoteType) 
 			sourceUrl: source,
 			tags: tags,
 			priority: display,
-			remoteType: remoteType
+			remoteType: remoteType,
+			createdAt: new Date().toISOString(),
 		});
 	} catch (error) {
 		console.error('Error adding favorite:', error);

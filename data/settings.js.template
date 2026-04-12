@@ -8,4 +8,4 @@ const Settings = {
     HttpProxy: false,
 };
 
-export default Settings;
+module.exports = Settings;

@@ -24,7 +24,7 @@ const Modal = ({ file, mainArray, modalUpdater, currentSource, displayFiles }) =
         }
 
         file.getSize().then((size) => {
-            if (size && size.height / size.width > 2.0) {
+            if (size && size.height >= 1200 && size.height / size.width > 2.25) {
                 setIsLong(true);
             }
         });
@@ -67,7 +67,7 @@ const Modal = ({ file, mainArray, modalUpdater, currentSource, displayFiles }) =
                         key={fileId}
                         alt={file.title}
                         src={file.getUrl()}
-                        className={Settings.longView && isLong ? "long" : ""}
+                        className={Settings.LongView && isLong ? "long" : ""}
                         style={{ transform: `rotate(${degree}deg)` }}
                     />
                 ) : (

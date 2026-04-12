@@ -51,11 +51,12 @@ export class ThumbFile {
             this.tags = [];
         }
         this.tags = [...new Set(this.tags.map(t => t.toLowerCase()).filter(t => t !== ""))];
-        this.time = data.time || Date.now();
+        this.time = data.time || null;
         this.remoteType = data.remoteType || null;
         this.priority = data.priority ?? 1;
         this.collectionsIds = data.collectionsIds || [];
         this.localUrl = data.localUrl || null;
+        this.createdAt = data.createdAt || null;
 
         this._fav = data._fav ?? (this.id ? true : null);
 
