@@ -15,32 +15,36 @@ const SORT_STRATEGIES = {
 };
 
 export function getSortedArray(array, sortInfo) {
-	if(getCurrentSource() !== SOURCE_TYPES.FOLDER)
-		return array;
+	if (!Array.isArray(array)) {
+		return [];
+	}
 
-	if (!Array.isArray(array)) return [];
+	if(getCurrentSource() === SOURCE_TYPES.FAVORITE) {
+		return [...array].sort((a, b) => ((a.id - b.id) * sortInfo.order));
+	}
 
-	if(getCurrentSource() === SOURCE_TYPES.FAVORITE)
-		return [...array].sort((a, b) => (a.id - b.id)*sortInfo.order);
+	if(getCurrentSource() === SOURCE_TYPES.FOLDER) {
+		return [...array].sort((a, b) => {
+			if (a.priority !== b.priority) {
+				return (b.priority || 0) - (a.priority || 0);
+			}
 
-	return [...array].sort((a, b) => {
-		if (a.priority !== b.priority) {
-			return (b.priority || 0) - (a.priority || 0);
-		}
+			const strategy = SORT_STRATEGIES[sortInfo.type];
+			let result = strategy ? strategy(a, b) : 0;
 
-		const strategy = SORT_STRATEGIES[sortInfo.type];
-		let result = strategy ? strategy(a, b) : 0;
+			result *= (sortInfo.order || 1);
 
-		result *= (sortInfo.order || 1);
+			if (result === 0) {
+				const idA = String(a.uniqueId || "");
+				const idB = String(b.uniqueId || "");
+				return idA.localeCompare(idB);
+			}
 
-		if (result === 0) {
-			const idA = String(a.uniqueId || "");
-			const idB = String(b.uniqueId || "");
-			return idA.localeCompare(idB);
-		}
+			return result;
+		});
+	}
 
-		return result;
-	});
+	return array;
 }
 
 export function getNextViewType(currentType) {
