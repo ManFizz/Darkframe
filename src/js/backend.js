@@ -1,6 +1,7 @@
 import {Favorites, OnUpdateFavorites} from "./FavController.js";
 import Collection from "./Collection";
 import {getAllTags, initTagsFromDB} from "./TagsController";
+import {notify} from "./Services/NotificationService.js";
 
 const { ipcRenderer } = window.require("electron");
 
@@ -10,37 +11,59 @@ export let setFavTagsArray = () => {
 
 let isInitialized = false;
 
+function notifyError(message, error = null) {
+    console.error(message, error);
+
+    try {
+        const audio = new Audio("data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEAESsAACJWAAACABAAZGF0YQAAAAA=");
+        audio.play().catch(() => {});
+    } catch {}
+
+    notify({
+        message: message + " (данные могут быть утеряны)",
+        type: "danger"
+    });
+}
+
+async function safeInvoke(channel, fallback = null, ...args) {
+    try {
+        return await ipcRenderer.invoke(channel, ...args);
+    } catch (e) {
+        notifyError(`Ошибка запроса: ${channel}`, e);
+        return fallback;
+    }
+}
+
 export async function InitDatabaseData() {
     if (isInitialized) return;
     isInitialized = true;
 
-    try {
-        console.log("Инициализация базы данных...");
+    console.log("Инициализация базы данных...");
 
+    try {
         const [favs, tags, favTags] = await Promise.all([
-            ipcRenderer.invoke("getFavorites").catch(() => []),
-            ipcRenderer.invoke("getTags").catch(() => []),
-            ipcRenderer.invoke("getFavTags").catch(() => [])
+            safeInvoke("getFavorites", []),
+            safeInvoke("getTags", []),
+            safeInvoke("getFavTags", [])
         ]);
 
         OnUpdateFavorites(favs);
         initTagsFromDB(tags);
 
-        if (typeof setFavTagsArray === 'function') {
+        if (typeof setFavTagsArray === "function") {
             setFavTagsArray(favTags);
         }
-
     } catch (e) {
-        console.error("Критическая ошибка инициализации:", e);
+        notifyError("Критическая ошибка инициализации", e);
     }
 }
 
 export async function GetFiles(path) {
-    return await ipcRenderer.invoke("getDirFiles", path);
+    return await safeInvoke("getDirFiles", [], path);
 }
 
 export function ForceRemoveFav(displayFile) {
-    ipcRenderer.invoke("removeFavorites", displayFile.thumbUrl).catch(console.error);
+    safeInvoke("removeFavorites", null, displayFile.thumbUrl);
 }
 
 export async function ForceAddFavImage(displayFile) {
@@ -49,8 +72,9 @@ export async function ForceAddFavImage(displayFile) {
             ? displayFile.tags.join(" ")
             : displayFile.tags;
 
-        return await ipcRenderer.invoke(
+        return await safeInvoke(
             "addFavorites",
+            displayFile.id,
             displayFile.thumbUrl,
             displayFile.title,
             displayFile.sourceUrl,
@@ -58,35 +82,36 @@ export async function ForceAddFavImage(displayFile) {
             1,
             displayFile.remoteType
         );
-    } catch (error) {
-        console.warn("Backend error (likely duplicate):", error.message);
+    } catch (e) {
+        notifyError("Ошибка добавления в избранное", e);
         return displayFile.id;
     }
 }
 
 export function ForceAddFavTag(tag, remoteType) {
-    ipcRenderer.invoke("AddFavTags", tag, remoteType).catch(console.error);
+    safeInvoke("AddFavTags", null, tag, remoteType);
 }
 
 export async function GetFavTags() {
-    return await ipcRenderer.invoke("getFavTags");
+    return await safeInvoke("getFavTags", []);
 }
 
 export function SaveTags() {
     const tags = getAllTags();
-    tags.forEach(tag => {
-        if( tag.name === undefined || tag.name === null ||
-            tag.type === undefined || tag.type === null ||
-            tag.count === undefined || tag.count === null
-        ) {
-            console.error("Tag ", tag.name, " can't be saved. Tag:", tag);
-        }
-    })
-    ipcRenderer.invoke("setTags", tags).catch(console.error);
+
+    const invalid = tags.filter(tag =>
+        !tag.name || tag.type == null || tag.count == null
+    );
+
+    if (invalid.length > 0) {
+        notifyError("Некоторые теги невалидны и не будут сохранены", invalid);
+    }
+
+    safeInvoke("setTags", null, tags);
 }
 
 export async function GetCollections() {
-    const dataFromDatabase = await ipcRenderer.invoke("GetCollections");
+    const dataFromDatabase = await safeInvoke("GetCollections", []);
     if (!dataFromDatabase) return [];
 
     const collections = {};
@@ -106,9 +131,11 @@ export async function GetCollections() {
 
         if (favorite) {
             if (!favorite.collectionsIds) favorite.collectionsIds = [];
+
             if (!favorite.collectionsIds.includes(item.colId)) {
                 favorite.collectionsIds.push(item.colId);
             }
+
             collections[item.colId].addImage(favorite);
         }
     });
@@ -117,9 +144,5 @@ export async function GetCollections() {
 }
 
 export async function UpdateCollections(collections) {
-    try {
-        await ipcRenderer.invoke("UpdateCollections", collections);
-    } catch (error) {
-        console.error("Error updating collections:", error);
-    }
+    await safeInvoke("UpdateCollections", null, collections);
 }

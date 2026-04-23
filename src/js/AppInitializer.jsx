@@ -13,6 +13,7 @@ import Settings from "../../data/settings";
 import {updateR34Source} from "./R34Controller";
 import {StopR34Loading} from "./r34Favorite";
 import {SOURCE_TYPES} from "./Constants";
+import Notifications from "./React/Notifications";
 
 export const GalleryContext = createContext(null);
 
@@ -135,6 +136,7 @@ const Main = () => {
         <GalleryContext.Provider value={contextValue}>
             <div className={`main-root ${state.safeMode ? "safe-view" : ""}`}>
                 <NavBar />
+                <Notifications />
                 <Modal
                     fileId={state.modalFileId}
                     modalUpdater={contextValue.setModalFile}
