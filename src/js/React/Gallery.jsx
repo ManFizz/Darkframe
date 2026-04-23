@@ -1,37 +1,43 @@
-import React, {Component} from "react";
+import React, {useContext, useRef} from 'react';
 import Thumb from "./Thumb";
 import ScrollSensor from "./ScrollSensor";
 import {LoadNextPage} from "./CustomPagination";
 
-class Gallery extends Component {
-    shouldComponentUpdate(nextProps) {
-        return nextProps.displayFiles !== this.props.displayFiles ||
-            nextProps.typeView !== this.props.typeView ||
-            nextProps.modalFile !== this.props.modalFile;
-    }
+import {GalleryContext} from '../AppInitializer';
 
-    render() {
-        const { displayFiles, modalUpdater, modalFile, typeView } = this.props;
-        return (
-            <div className={`gallery-view-${typeView}`} tabIndex="0" style={{ outline: 'none' }}>
-                {displayFiles.map((file) => (
-                    <Thumb
-                        key={file.uniqueId}
-                        file={file}
-                        modalUpdater={modalUpdater}
-                        isModal={modalFile === file}
-                    />
-                ))}
-                <ScrollSensor
-                    enabled={modalFile === null}
-                    onVisible={() => {
-                        console.log("Scroll reached end, loading next...");
-                        LoadNextPage();
-                    }}
-                />
-            </div>
-        );
-    }
-}
+const Gallery = () => {
+    const { state, setModalFile } = useContext(GalleryContext);
+    const isLoadingRef = useRef(false);
 
-export default Gallery;
+    const galleryContent = state.displayArray?.map((file) => (
+        <Thumb
+            key={file.uniqueId}
+            file={file}
+            modalUpdater={setModalFile}
+            isModal={state.modalFileId === file.uniqueId}
+        />
+    ));
+
+    return (
+        <div className={`gallery-view-${state.typeView}`} tabIndex="0" style={{ outline: 'none' }}>
+            {galleryContent}
+
+            <ScrollSensor
+                enabled={state.modalFileId === null}
+                onVisible={() => {
+                    if (isLoadingRef.current) return;
+
+                    isLoadingRef.current = true;
+
+                    console.log("Scroll reached end, loading next...");
+
+                    Promise.resolve(LoadNextPage()).finally(() => {
+                        isLoadingRef.current = false;
+                    });
+                }}
+            />
+        </div>
+    );
+};
+
+export default React.memo(Gallery);

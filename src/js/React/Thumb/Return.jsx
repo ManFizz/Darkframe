@@ -1,23 +1,21 @@
-import React, {Component} from "react";
-import {DisplayImagesByPath} from "../../FoldersController";
+import React from "react";
+import {useDisplayImagesByPath} from "../../FoldersController";
 
 const pathToImage = "images/return.png";
 
-class Return extends Component {
-    handleClick = () => {
-        const { file } = this.props;
-        DisplayImagesByPath(file.sourceUrl).then();
+const Return = ({ file }) => {
+    const displayImagesByPath = useDisplayImagesByPath();
+
+    const handleClick = () => {
+        displayImagesByPath(file.sourceUrl);
     };
 
-    render() {
-        const { file } = this.props;
-        return (
-            <div className="card thumb bg-dark" onClick={this.handleClick}>
-                <img src={pathToImage} alt={file.title} />
-                <p className="title">{file.title}</p>
-            </div>
-        );
-    }
-}
+    return (
+        <div className="card thumb bg-dark" onClick={handleClick}>
+            <img src={pathToImage} alt={file.title} />
+            <p className="title">{file.title}</p>
+        </div>
+    );
+};
 
 export default Return;

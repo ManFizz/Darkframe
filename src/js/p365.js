@@ -1,6 +1,7 @@
 import {AddThumbByData, ClearGallery} from "./GalleryController.js";
 import Private from "../../data/private";
-import {SOURCE_TYPES} from "./ThumbFile";
+
+import {SOURCE_TYPES} from "./Constants";
 
 function P365GetVideoByURL(url)
 {

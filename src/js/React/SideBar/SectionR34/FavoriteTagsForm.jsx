@@ -1,54 +1,51 @@
-import React, {Component} from "react";
+import React, {useMemo, useState} from "react";
 import {AddFavTag} from "../../../FavController";
 import {BsPlusLg} from "react-icons/bs";
 
-class FavoriteTagsForm extends Component {
-    constructor(props) {
-        super(props);
+const FavoriteTagsForm = ({ favTagsArray, currentSource, onToggle }) => {
+    const [value, setValue] = useState("");
 
-        this.inputRef = React.createRef();
-        this.addFavTag = this.addFavTag.bind(this);
-    }
+    const filteredTags = useMemo(() => {
+        return favTagsArray.filter(tag => tag.remote_type === currentSource);
+    }, [favTagsArray, currentSource]);
 
-    addFavTag() {
-        let input = this.inputRef.current;
-        AddFavTag(input.value, this.props.currentSource);
-        input.value = "";
-    }
+    const addFavTag = () => {
+        if (!value.trim()) return;
 
-    render() {
-        const { favTagsArray, currentSource } = this.props;
-        return <>
-            <form className="tag-list" id="tags-fav-select">
-                {favTagsArray.map((tag, index) => {
-                    if(tag.remote_type !== currentSource)
-                        return null;
+        AddFavTag(value, currentSource);
+        setValue("");
+    };
 
-                    return (<div className="btn-group" key={index}>
+    return (
+        <>
+            <div className="tag-list">
+                {filteredTags.map(tag => (
+                    <div className="btn-group" key={`${tag.tag}-${tag.remote_type}`}>
                         <button
                             className="btn btn-primary"
-                            onClick={() => this.props.onToggle(tag.tag)}
+                            onClick={() => onToggle?.(tag.tag)}
                             type="button"
                         >
                             {tag.tag}
                         </button>
-                    </div>)
-                })}
-            </form>
+                    </div>
+                ))}
+            </div>
+
             <div className="input-group">
                 <input
                     className="form-control"
                     type="text"
-                    autoFocus=""
                     placeholder="Place tag..."
-                    ref={this.inputRef}
+                    value={value}
+                    onChange={(e) => setValue(e.target.value)}
                 />
-                <button className="btn btn-secondary" type="button" onClick={this.addFavTag}>
+                <button className="btn btn-secondary" type="button" onClick={addFavTag}>
                     <BsPlusLg />
                 </button>
             </div>
-        </>;
-    }
-}
+        </>
+    );
+};
 
-export default FavoriteTagsForm;
+export default React.memo(FavoriteTagsForm);

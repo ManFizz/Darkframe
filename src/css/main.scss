@@ -73,13 +73,13 @@ $tag-colors: (
         2: info,
         3: success,
         4: danger,
-        5: warning
+        5: warning,
+        6: dark
 );
 
 @each $class, $color in $tag-colors {
   .tag-type-#{$class} {
     background-color: rgb(var(--bs-#{$color}-rgb));
-    order: -#{$class};
   }
 }
 

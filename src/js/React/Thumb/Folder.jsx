@@ -1,27 +1,21 @@
-import React, {Component} from "react";
-import {DisplayImagesByPath} from "../../FoldersController";
+import React from "react";
+import {useDisplayImagesByPath} from "../../FoldersController";
 
 const pathToImage = "images/folder.png";
 
-class Folder extends Component {
-    constructor(props) {
-        super(props);
+const Folder = ({ file }) => {
+    const displayImagesByPath = useDisplayImagesByPath();
 
-        this.handleClick = this.handleClick.bind(this);
-    }
-
-    handleClick = () => {
-        const { file } = this.props;
-        DisplayImagesByPath(file.sourceUrl + '\\' + file.title).then();
+    const handleClick = () => {
+        displayImagesByPath(file.sourceUrl + '\\' + file.title);
     };
 
-    render() {
-        const { file } = this.props;
-        return <div className="card thumb bg-dark" onClick={this.handleClick}>
-            <img src={pathToImage} alt={file.title}/>
+    return (
+        <div className="card thumb bg-dark" onClick={handleClick}>
+            <img src={pathToImage} alt={file.title} />
             <p className="title">{file.title}</p>
-        </div>;
-    }
-}
+        </div>
+    );
+};
 
 export default Folder;

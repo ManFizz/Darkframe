@@ -1,5 +1,4 @@
-import {SOURCE_TYPES} from "./ThumbFile";
-import {getCurrentSource} from "./AppInitializer";
+import {SOURCE_TYPES} from "./Constants";
 
 export const SORT_ORDER = { ASC: 1, DESC: -1 };
 export const SORT_TYPE = { NAME: 0, TIME: 1 };
@@ -14,16 +13,17 @@ const SORT_STRATEGIES = {
 	[SORT_TYPE.PRIORITY]: (a, b) => (a.priority || 0) - (b.priority || 0),
 };
 
-export function getSortedArray(array, sortInfo) {
+export function getSortedArray(array, sortInfo, sourceType) {
+	console.log("Сортировщик получил sourceType:", sourceType);
 	if (!Array.isArray(array)) {
 		return [];
 	}
 
-	if(getCurrentSource() === SOURCE_TYPES.FAVORITE) {
+	if(sourceType === SOURCE_TYPES.FAVORITE) {
 		return [...array].sort((a, b) => ((a.id - b.id) * sortInfo.order));
 	}
 
-	if(getCurrentSource() === SOURCE_TYPES.FOLDER) {
+	if(sourceType === SOURCE_TYPES.FOLDER) {
 		return [...array].sort((a, b) => {
 			if (a.priority !== b.priority) {
 				return (b.priority || 0) - (a.priority || 0);

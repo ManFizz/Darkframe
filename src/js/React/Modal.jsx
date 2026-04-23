@@ -1,16 +1,18 @@
-import React, {useEffect, useRef, useState} from 'react';
+import React, {useEffect, useMemo, useRef, useState} from 'react';
 import Navigation from "./Modal/Navigation";
-import {FILE_TYPES} from "../ThumbFile";
 import Tags from "./Modal/Tags";
 import Video from "./Modal/Video";
 import Settings from "../../../data/settings";
+import {FILE_TYPES} from "../Constants";
 
-const Modal = ({ file, mainArray, modalUpdater, currentSource, displayFiles }) => {
+const Modal = ({ fileId, mainArray, modalUpdater, currentSource, displayFiles }) => {
     const [isLong, setIsLong] = useState(false);
     const [degree, setDegree] = useState(0);
     const modalRef = useRef(null);
 
-    const fileId = file?.remoteId;
+    const file = useMemo(() => {
+        return mainArray.find(f => f.uniqueId === fileId);
+    }, [fileId, mainArray]);
 
     useEffect(() => {
         if (!fileId) return;
@@ -23,13 +25,13 @@ const Modal = ({ file, mainArray, modalUpdater, currentSource, displayFiles }) =
             modalRef.current.focus();
         }
 
-        file.getSize().then((size) => {
+        actualFile.getSize().then((size) => {
             if (size && size.height >= 1200 && size.height / size.width > 2.25) {
                 setIsLong(true);
             }
         });
 
-        if (file.type === FILE_TYPES.IMAGE) {
+        if (actualFile.type === FILE_TYPES.IMAGE) {
             const index = mainArray.findIndex(f => String(f.remoteId) === String(fileId));
             if (index !== -1) {
                 [index - 1, index + 1].forEach(i => {
@@ -43,17 +45,23 @@ const Modal = ({ file, mainArray, modalUpdater, currentSource, displayFiles }) =
         }
     }, [fileId]);
 
-    if (!file) return null;
+    const actualFile = useMemo(() => {
+        if (!file) return null;
+
+        return mainArray.find(f => f.uniqueId === file.uniqueId) || file;
+    }, [file, mainArray]);
+
+    if (!actualFile) return null;
 
     return (
         <dialog
-            className={`modal ${file.isFav() ? "favorite" : ""}`}
+            className={`modal ${actualFile.isFav() ? "favorite" : ""}`}
             open
             ref={modalRef}
             tabIndex="-1"
         >
             <Navigation
-                file={file}
+                file={actualFile}
                 modalUpdater={modalUpdater}
                 mainArray={mainArray}
                 setDegree={setDegree}
@@ -62,20 +70,20 @@ const Modal = ({ file, mainArray, modalUpdater, currentSource, displayFiles }) =
             />
 
             <div className="modal-content-wrapper">
-                {file.type === FILE_TYPES.IMAGE ? (
+                {actualFile.type === FILE_TYPES.IMAGE ? (
                     <img
                         key={fileId}
-                        alt={file.title}
-                        src={file.getUrl()}
+                        alt={actualFile.title}
+                        src={actualFile.getUrl()}
                         className={Settings.LongView && isLong ? "long" : ""}
                         style={{ transform: `rotate(${degree}deg)` }}
                     />
                 ) : (
-                    <Video file={file} />
+                    <Video file={actualFile} />
                 )}
             </div>
 
-            <Tags file={file} />
+            <Tags file={actualFile} />
         </dialog>
     );
 };

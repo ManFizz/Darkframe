@@ -3,7 +3,8 @@
   "version": "0.1.0",
   "main": "main.js",
   "scripts": {
-    "build": "webpack && electron .",
+    "build": "webpack --mode production && electron .",
+    "build:dev": "webpack --mode development --watch && electron .",
     "view": "electron ."
   },
   "license": "MIT",

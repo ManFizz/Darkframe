@@ -15,6 +15,12 @@ async function getTags() {
 async function setTags(tagsData) {
 	try {
 		for (const tagData of tagsData) {
+			if(tagData.name === undefined || tagData.name === null ||
+				tagData.type === undefined || tagData.type === null) {
+				console.error("skip tag save:", tagData);
+				continue;
+			}
+
 			const existingTag = await Tag.findOne({ where: { name: tagData.name } });
 			if (existingTag) {
 				await existingTag.update({

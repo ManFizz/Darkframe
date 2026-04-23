@@ -1,39 +1,41 @@
-import React, {useMemo} from 'react';
-import {GetTags} from "../../TagsController";
-
-const isTagInvalid = (tag) => !tag || tag.trim().length === 0;
+import React, {useEffect, useMemo, useState} from "react";
+import {ensureTags, getTag, getTagOrder, subscribe} from "../../TagsController";
 
 const Tags = ({ file }) => {
-    const allTagsMetadata = GetTags();
+    const [version, setVersion] = useState(0);
+
+    useEffect(() => {
+        if (!file?.tags) return;
+
+        ensureTags(file.tags); //TODO current source
+
+        const unsub = subscribe(() => {
+            setVersion(v => v + 1);
+        });
+
+        return unsub;
+    }, [file.tags]);
 
     const visibleTags = useMemo(() => {
-        const tagsMap = new Map(allTagsMetadata.map(t => [t.name, t]));
-
-        const tagsArray = Array.isArray(file.tags) ? file.tags : [];
-
-        return tagsArray
-            .filter(tag => tag && tag.trim())
+        return file.tags
             .map(name => ({
                 name,
-                metadata: tagsMap.get(name)
+                metadata: getTag(name)
             }))
-            .filter(item => !item.metadata || item.metadata.type !== 6);
-    }, [file.tags, allTagsMetadata]);
-
-    if (visibleTags.length === 0) return null;
+            .sort((a, b) => {
+                const ta = getTagOrder(a.metadata?.type);
+                const tb = getTagOrder(b.metadata?.type);
+                return ta - tb;
+            });
+    }, [file.tags, version]);
 
     return (
-        <div
-            className="col-md-6 d-flex flex-wrap justify-content-center mx-auto"
-            id="modal-tags"
-        >
+        <div className="col-7 text-center tags">
             {visibleTags.map(({ name, metadata }) => {
-                const tagTypeClass = metadata ? `tag-type-${metadata.type}` : 'bg-primary';
+                const cls = metadata ? `tag-type-${metadata.type}` : "bg-secondary";
+
                 return (
-                    <span
-                        key={name}
-                        className={`badge m-1 ${tagTypeClass}`}
-                    >
+                    <span key={name} className={`badge m-1 ${cls}`}>
                         {name}
                     </span>
                 );

@@ -1,38 +1,48 @@
-import React, {useState} from 'react';
+import React, {useContext, useState} from 'react';
 import {BsCaretDownFill, BsFillGrid1X2Fill, BsSearch, BsShieldShaded} from "react-icons/bs";
-import PrivateData from "../../../data/private";
-import {SOURCE_TYPES} from "../ThumbFile";
+import {Favorites} from "../FavController";
+
 import {SORT_ORDER, SORT_TYPE} from "../AppLogic";
 
-import {DisplayFavorites} from "../FavController";
-import {DisplayImagesByPath} from "../FoldersController";
+import PrivateData from "../../../data/private";
+import {useDisplayImagesByPath} from "../FoldersController";
 import {DisplayP365} from "../p365";
 import {DisplayCollections} from "../CollectionLogic";
 import {DisplayRemoteFavoriteR34} from "../r34Favorite";
 
-const NavBar = ({ setSource, setSortInfo, sortInfo, setTypeView, currentSource, safeMode, setSafeMode }) => {
+import {GalleryContext} from '../AppInitializer';
+import {SOURCE_TYPES} from "../Constants";
+
+const NavBar = () => {
+    const { state, setCurrentSource, setSortInfo, setTypeView, setSafeMode, setMainArray } = useContext(GalleryContext);
+
     const [searchValue, setSearchValue] = useState('');
 
+    const displayImagesByPath = useDisplayImagesByPath();
+
     const handleNavigation = (sourceType, action = null) => {
-        setSource(sourceType);
+        setCurrentSource(sourceType);
         if (action) action();
     };
 
     const handleSearch = () => {
-        if (currentSource === SOURCE_TYPES.R34 || currentSource === SOURCE_TYPES.GELBOORU) {
+        if (state.currentSource === SOURCE_TYPES.R34 || state.currentSource === SOURCE_TYPES.GELBOORU) {
             //SearchMedia(searchValue);
-        } else if (currentSource === SOURCE_TYPES.FOLDER) {
-            DisplayImagesByPath(searchValue);
+        } else if (state.currentSource === SOURCE_TYPES.FOLDER) {
+            displayImagesByPath(searchValue);
         }
     };
+
+    const DisplayFavorites = () => {
+        setMainArray([...Favorites]);
+    }
 
     const navButtons = [
         { label: 'R34', type: SOURCE_TYPES.R34 },
         { label: 'Gelbooru', type: SOURCE_TYPES.GELBOORU },
-        //{ label: 'Realbooru', type: SOURCE_TYPES.REALBOORU, action: WorkRealBooru },
         { label: 'P365', type: SOURCE_TYPES.P365, action: DisplayP365 },
         { label: 'Favorites', type: SOURCE_TYPES.FAVORITE, action: DisplayFavorites },
-        { label: 'Folders', type: SOURCE_TYPES.FOLDER, action: () => DisplayImagesByPath(PrivateData.startPath) },
+        { label: 'Folders', type: SOURCE_TYPES.FOLDER, action: () => displayImagesByPath(PrivateData.startPath) },
         { label: 'R34 Favs', type: SOURCE_TYPES.R34, action: DisplayRemoteFavoriteR34 },
         { label: 'Collections', type: SOURCE_TYPES.COLLECTION, action: DisplayCollections },
     ];
@@ -44,8 +54,18 @@ const NavBar = ({ setSource, setSortInfo, sortInfo, setTypeView, currentSource, 
                     <div className="btn-group">
                         {navButtons.map((btn, idx) => (
                             <React.Fragment key={btn.label}>
-                                <input type="radio" className="btn-check" name="nav-radio" id={`nav-${idx}`} defaultChecked={idx === 0} />
-                                <label className="btn btn-outline-primary" htmlFor={`nav-${idx}`} onClick={() => handleNavigation(btn.type, btn.action)}>
+                                <input
+                                    type="radio"
+                                    className="btn-check"
+                                    name="nav-radio"
+                                    id={`nav-${idx}`}
+                                    defaultChecked={idx === 0}
+                                />
+                                <label
+                                    className="btn btn-outline-primary"
+                                    htmlFor={`nav-${idx}`}
+                                    onClick={() => handleNavigation(btn.type, btn.action)}
+                                >
                                     {btn.label}
                                 </label>
                             </React.Fragment>
@@ -54,14 +74,21 @@ const NavBar = ({ setSource, setSortInfo, sortInfo, setTypeView, currentSource, 
                 </div>
 
                 <form className="d-flex col-5">
-                    <input className="form-control me-2" type="search" placeholder="Search" onChange={(e) => setSearchValue(e.target.value)} />
-                    <button className="btn btn-outline-success" type="button" onClick={handleSearch}><BsSearch /></button>
+                    <input
+                        className="form-control me-2"
+                        type="search"
+                        placeholder="Search"
+                        onChange={(e) => setSearchValue(e.target.value)}
+                    />
+                    <button className="btn btn-outline-success" type="button" onClick={handleSearch}>
+                        <BsSearch />
+                    </button>
                 </form>
 
                 <div className="d-flex btn-group">
                     <div className="btn-group dropdown">
                         <button className="btn btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">
-                            Sort by {sortInfo.type === SORT_TYPE.NAME ? "name" : "time"}
+                            Sort by {state.sortInfo.type === SORT_TYPE.NAME ? "name" : "time"}
                         </button>
                         <ul className="dropdown-menu dropdown-menu-end">
                             <li><button className="dropdown-item" onClick={() => setSortInfo({ type: SORT_TYPE.NAME })}>Name</button></li>
@@ -69,13 +96,21 @@ const NavBar = ({ setSource, setSortInfo, sortInfo, setTypeView, currentSource, 
                         </ul>
                     </div>
 
-                    <button className="btn btn-outline-secondary" onClick={() => setSortInfo({ order: sortInfo.order * -1 })}>
-                        Order <BsCaretDownFill className={sortInfo.order === SORT_ORDER.ASC ? "flip" : ""} />
+                    <button
+                        className="btn btn-outline-secondary"
+                        onClick={() => setSortInfo({ order: state.sortInfo.order * -1 })}
+                    >
+                        Order <BsCaretDownFill className={state.sortInfo.order === SORT_ORDER.ASC ? "flip" : ""} />
                     </button>
 
-                    <button className="btn btn-outline-secondary" onClick={() => setTypeView(null)}><BsFillGrid1X2Fill /></button>
+                    <button className="btn btn-outline-secondary" onClick={() => setTypeView(null)}>
+                        <BsFillGrid1X2Fill />
+                    </button>
 
-                    <button className={`btn ${safeMode ? 'btn-success' : 'btn-outline-secondary'}`} onClick={() => setSafeMode(!safeMode)}>
+                    <button
+                        className={`btn ${state.safeMode ? 'btn-success' : 'btn-outline-secondary'}`}
+                        onClick={() => setSafeMode(!state.safeMode)}
+                    >
                         <BsShieldShaded />
                     </button>
                 </div>

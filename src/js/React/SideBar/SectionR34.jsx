@@ -1,34 +1,24 @@
-import React, {Component} from 'react';
+import React, {useEffect, useState} from 'react';
 import TagSearch from "./SectionR34/TagSearch";
 import {currentR34Source} from "../../R34Controller";
 
-class SectionR34 extends Component {
-    constructor(props) {
-        super(props);
-        this.state = {
-            name: null,
-        }
-    }
+const SectionR34 = ({ currentSource, favTagsArray }) => {
+    const [name, setName] = useState(null);
 
-    componentDidMount() {
-        this.setState({name: currentR34Source.name});
-    }
+    useEffect(() => {
+        setName(currentR34Source.name);
+    }, [currentSource]);
+    return (
+        <section>
+            <p className="h1">{name}</p>
+            <p className="h6">Search by tags</p>
 
-    componentDidUpdate(prevProps, prevState, snapshot) {
-        if(this.props.currentSource !== prevProps.currentSource)
-            this.setState({name: currentR34Source.name});
-    }
+            <TagSearch
+                currentSource={currentSource}
+                favTagsArray={favTagsArray}
+            />
+        </section>
+    );
+};
 
-    render() {
-        const { name } = this.state;
-        return (
-            <section>
-                <p className="h1">{name}</p>
-                <p className="h6">Search by tags</p>
-                <TagSearch currentR34Source={this.props.currentSource} favTagsArray={this.props.favTagsArray} />
-            </section>
-        );
-    }
-}
-
-export default SectionR34;
+export default React.memo(SectionR34);

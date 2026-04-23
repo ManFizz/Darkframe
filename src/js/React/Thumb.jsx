@@ -4,10 +4,10 @@ import Video from "./Thumb/Video";
 import Folder from "./Thumb/Folder";
 import Return from "./Thumb/Return";
 import {addFav, removeFav} from "../FavController";
-import {FILE_TYPES, SOURCE_TYPES} from "../ThumbFile";
 import DropMenu from "./Thumb/DropMenu";
 import Collection from "./Thumb/Collection";
 import {getCurrentSource} from "../AppInitializer";
+import {FILE_TYPES, SOURCE_TYPES} from "../Constants";
 
 const Thumb = React.memo((props) => {
     const { file, isModal, modalUpdater } = props;

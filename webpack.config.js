@@ -1,38 +1,43 @@
 const path = require('path');
 const HtmlWebpackPlugin = require('html-webpack-plugin')
 const CopyWebpackPlugin = require('copy-webpack-plugin');
-const webpack = require('webpack')
-
 module.exports = {
     target: "electron-renderer",
-    mode: 'development',
+    mode: 'production',
+    devtool: 'source-map',
     entry: './webpack.imports.js',
+    optimization: {
+        splitChunks: {
+            chunks: 'all',
+        },
+        usedExports: true,
+        minimize: true,
+    },
     module: {
         rules: [
             {
-                test: /\.css$/,
+                test: /\.(png|jpe?g|gif|webp|svg)$/i,
+                type: 'asset/resource',
+                generator: {
+                    filename: 'images/[name][ext]',
+                },
+            },
+            {
+                "test": /\.css$/,
                 use: [ 'style-loader', 'css-loader' ]
             },
             {
-                test: /\.(js|jsx)$/,
+                test: /\.js$/,
                 use: 'babel-loader'
             },
             {
-                test: /\.html$/,
-                use: ['html-loader'],
+                test: /\.jsx$/,
+                use: 'babel-loader'
             },
             {
-                test: /\.(png|jpe?g|gif)$/i,
-                use: [
-                    {
-                        loader: 'url-loader',
-                        options: {
-                            limit: 102400, // 100 КБ
-                            fallback: 'file-loader',
-                        },
-                    },
-                ],
-            },
+                "test": /\.html$/,
+                use: ['html-loader'],
+            }
         ]
     },
     output: {

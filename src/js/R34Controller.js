@@ -1,7 +1,7 @@
 import {GetThumbByData} from "./GalleryController.js";
 import {addToGallery, setGallery} from "./AppInitializer";
-import {SOURCE_TYPES} from "./ThumbFile";
 import PrivateData from "../../data/private";
+import {SOURCE_TYPES} from "./Constants";
 
 export const sources = {
     r34: {
@@ -32,6 +32,22 @@ export const sources = {
         tagsLimit: 100,
     }
 };
+
+export function GetSourceDataById(sourceId) {
+    switch(sourceId) {
+        case SOURCE_TYPES.R34:
+            return sources.r34;
+        case SOURCE_TYPES.GELBOORU:
+            return sources.gelbooru;
+        case SOURCE_TYPES.REALBOORU:
+            return sources.realbooru;
+        case SOURCE_TYPES.FOLDER:
+        case SOURCE_TYPES.P365:
+        case SOURCE_TYPES.FAVORITE:
+        case SOURCE_TYPES.COLLECTION:
+            throw new Error("Unknown source type");
+    }
+}
 
 export let currentR34Source = sources.r34;
 
@@ -115,7 +131,6 @@ function getPostAttr(post, attr) {
 }
 
 export async function fetchPosts(source, tags, page) {
-    console.log("work with tags:", tags);
     const tagsParam = Array.isArray(tags)
         ? tags.join('+')
         : tags.trim().replace(/\s+/g, '+');

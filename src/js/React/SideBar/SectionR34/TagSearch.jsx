@@ -1,5 +1,5 @@
 import React, {useEffect, useRef, useState} from "react";
-import {currentR34Source, SearchMedia} from "../../../R34Controller";
+import {SearchMedia} from "../../../R34Controller";
 import FavoriteTagsForm from "./FavoriteTagsForm";
 import {fetchTagSuggestions} from "../../../TagsController";
 
@@ -25,11 +25,17 @@ const TagSearch = ({currentSource, favTagsArray}) => {
         SearchMedia(finalQuery);
     };
 
+    const lastQueryRef = useRef("");
+
     const handleInput = async (e) => {
         const val = e.target.value;
         setInputValue(val);
 
-        const list = await fetchTagSuggestions(val, currentR34Source);
+        lastQueryRef.current = val;
+
+        const list = await fetchTagSuggestions(val, currentSource);
+
+        if (lastQueryRef.current !== val) return; // protect overloading
 
         const words = val.trim().split(/\s+/);
         const lastWord = words[words.length - 1]?.toLowerCase();
@@ -67,6 +73,23 @@ const TagSearch = ({currentSource, favTagsArray}) => {
         });
     };
 
+    const removeTag = (tagToRemove) => {
+        setInputValue(prev =>
+            prev
+                .split(' ')
+                .filter(t => t.trim() && t !== tagToRemove)
+                .join(' ')
+        );
+    };
+
+    const handleKeyDown = (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            onSearch();
+            setShowDropdown(false);
+        }
+    };
+
     return (
         <>
             <div className="tag-search-container">
@@ -77,13 +100,14 @@ const TagSearch = ({currentSource, favTagsArray}) => {
                         value={inputValue}
                         onChange={handleInput}
                         placeholder="Tags..."
+                        onKeyDown={handleKeyDown}
                     />
                     <button className="btn btn-secondary" onClick={onSearch}>
                         <i className="bi bi-search"/>
                     </button>
 
                     {showDropdown && (
-                        <ul className="dropdown-menu show w-100">
+                        <ul ref={dropdownRef} className="dropdown-menu show w-100">
                             {suggestions.map((s, i) => (
                                 <li key={i} className="dropdown-item" onClick={() => insertTag(s.value)}>
                                     {s.label}
@@ -102,7 +126,7 @@ const TagSearch = ({currentSource, favTagsArray}) => {
                         max={2000}
                         step={10}
                         value={score}
-                        onChange={(e) => setScore(e.target.value)}
+                        onChange={(e) => setScore(Number(e.target.value))}
                     />
                 </div>
 

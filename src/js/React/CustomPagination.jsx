@@ -2,8 +2,8 @@ import React, {Component} from 'react';
 import Pagination from 'react-bootstrap/Pagination';
 import Settings from "../../../data/settings";
 import {CanMoreMedia, LoadMoreMedia} from "../R34Controller";
-import {SOURCE_TYPES} from "../ThumbFile";
 import {setGallery} from "../AppInitializer";
+import {SOURCE_TYPES} from "../Constants";
 
 const MAX_PAGES = 7;
 

@@ -1,7 +1,7 @@
 import {GetThumbByData} from "./GalleryController";
-import {SOURCE_TYPES} from "./ThumbFile";
 import {setGallery} from "./AppInitializer";
 import PrivateData from "../../data/private";
+import {SOURCE_TYPES} from "./Constants";
 
 const urlFavs = 'https://realbooru.com/index.php?page=favorites&s=view&id=' + PrivateData.RealBooruId;
 const urlThumb = 'https://realbooru.com/index.php?page=post&s=view&id=';

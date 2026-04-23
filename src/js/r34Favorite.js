@@ -1,7 +1,7 @@
 import PrivateData from "../../data/private";
 import {setGallery} from "./AppInitializer";
-import {FILE_TYPES, SOURCE_TYPES} from "./ThumbFile";
 import {GetThumbByData} from "./GalleryController";
+import {FILE_TYPES, SOURCE_TYPES} from "./Constants";
 
 const favUrl = `https://rule34.xxx/index.php?page=favorites&s=view&id=${PrivateData.R34UserId}`;
 const API_URL = `https://api.rule34.xxx/index.php?page=dapi&s=post&q=index&json=1&api_key=${PrivateData.R34ApiKey}&user_id=${PrivateData.R34UserId}`;

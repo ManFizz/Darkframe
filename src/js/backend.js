@@ -1,12 +1,22 @@
 import {Favorites, OnUpdateFavorites} from "./FavController.js";
-import {setFavTagsArray} from "./AppInitializer";
 import Collection from "./Collection";
-import {GetTags, UpdateTagsData} from "./TagsController";
+import {getAllTags, initTagsFromDB} from "./TagsController";
 
 const { ipcRenderer } = window.require("electron");
 
+export let setFavTagsArray = () => {
+    console.warn("setFavTagsArray ещё не инициализирован");
+};
+
+let isInitialized = false;
+
 export async function InitDatabaseData() {
+    if (isInitialized) return;
+    isInitialized = true;
+
     try {
+        console.log("Инициализация базы данных...");
+
         const [favs, tags, favTags] = await Promise.all([
             ipcRenderer.invoke("getFavorites").catch(() => []),
             ipcRenderer.invoke("getTags").catch(() => []),
@@ -14,8 +24,12 @@ export async function InitDatabaseData() {
         ]);
 
         OnUpdateFavorites(favs);
-        UpdateTagsData(tags, true);
-        setFavTagsArray(favTags);
+        initTagsFromDB(tags);
+
+        if (typeof setFavTagsArray === 'function') {
+            setFavTagsArray(favTags);
+        }
+
     } catch (e) {
         console.error("Критическая ошибка инициализации:", e);
     }
@@ -40,7 +54,7 @@ export async function ForceAddFavImage(displayFile) {
             displayFile.thumbUrl,
             displayFile.title,
             displayFile.sourceUrl,
-            tagsString, // <--- Отправляем строку, а не массив
+            tagsString,
             1,
             displayFile.remoteType
         );
@@ -50,16 +64,24 @@ export async function ForceAddFavImage(displayFile) {
     }
 }
 
-export async function GetFavTags() {
-    return await ipcRenderer.invoke("getFavTags");
-}
-
 export function ForceAddFavTag(tag, remoteType) {
     ipcRenderer.invoke("AddFavTags", tag, remoteType).catch(console.error);
 }
 
+export async function GetFavTags() {
+    return await ipcRenderer.invoke("getFavTags");
+}
+
 export function SaveTags() {
-    const tags = GetTags();
+    const tags = getAllTags();
+    tags.forEach(tag => {
+        if( tag.name === undefined || tag.name === null ||
+            tag.type === undefined || tag.type === null ||
+            tag.count === undefined || tag.count === null
+        ) {
+            console.error("Tag ", tag.name, " can't be saved. Tag:", tag);
+        }
+    })
     ipcRenderer.invoke("setTags", tags).catch(console.error);
 }
 
@@ -68,13 +90,11 @@ export async function GetCollections() {
     if (!dataFromDatabase) return [];
 
     const collections = {};
-
-    // Создаем карту поиска: ключ - ID, значение - объект файла
-    // Это ускоряет поиск с O(N) до O(1)
     const favMap = new Map();
+
     Favorites.forEach(f => {
         favMap.set(f.id, f);
-        favMap.set(f.thumbUrl, f); // На всякий случай для поиска по URL
+        favMap.set(f.thumbUrl, f);
     });
 
     dataFromDatabase.forEach(item => {

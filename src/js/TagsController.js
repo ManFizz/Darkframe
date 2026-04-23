@@ -1,8 +1,10 @@
+import {GetSourceDataById, sources} from "./R34Controller";
+import {SOURCE_TYPES} from "./Constants";
+import PrivateData from "../../data/private";
 import {SaveTags} from "./backend";
-import {SOURCE_TYPES} from "./ThumbFile";
 
 class Tag {
-	constructor({id, name, type, remoteType, count}) {
+	constructor({ id, name, type, count, remoteType }) {
 		this.id = id;
 		this.name = name;
 		this.type = type;
@@ -11,91 +13,252 @@ class Tag {
 	}
 }
 
-let tags = [];
-let tagsMap = new Map();
-let onTagsUpdate = () => {};
+const TAG_PRIORITY = {
+	0: 30, //
+	1: 1, // Artist
+	2: 5, //
+	3: 15, // Franchise
+	4: 20, // Character
+	5: 45, // Metadata
+	6: 40, // Base tags
+};
 
-export function setOnTagsUpdate(callback) {
-	onTagsUpdate = callback;
+export const getTagOrder = (type) => {
+	return TAG_PRIORITY[type] ?? 99;
+};
+
+let tagsLoaded = false;
+
+export function initTagsFromDB(dbTags = []) {
+	if (!Array.isArray(dbTags)) return;
+
+	dbTags.forEach(tag => {
+		if(tag.id === undefined || tag.id === null ||
+			tag.name === undefined || tag.name === null ||
+			tag.type === undefined || tag.type === null ||
+			tag.count === undefined || tag.count === null
+		) {
+			console.error("Init Tag ", tag.name, " can't be load. Tag:", tag);
+			return;
+		}
+		tagsMap.set(tag.name, tag);
+	});
+
+	tagsLoaded = true;
 }
 
-export function UpdateTagsData(data, isDatabaseLoad = false) {
-	const newData = data.map(e => new Tag(e));
-	let hasChanges = false;
+export function areTagsLoaded() {
+	return tagsLoaded;
+}
 
-	if (tagsMap.size === 0 && tags.length > 0) {
-		tags.forEach(t => tagsMap.set(t.name, t));
+const tagsMap = new Map();
+const pendingTags = new Set();
+
+let isFetching = false;
+let listeners = [];
+let updateTimeout = null;
+
+export function getTag(name) {
+	return tagsMap.get(name);
+}
+
+export function getAllTags() {
+	return Array.from(tagsMap.values());
+}
+
+export function subscribe(callback) {
+	listeners.push(callback);
+	return () => {
+		listeners = listeners.filter(cb => cb !== callback);
+	};
+}
+
+export function ensureTags(tags = [], sourceType = SOURCE_TYPES.R34) {
+	if (!Array.isArray(tags)) return;
+
+	tags.forEach(tag => {
+		if (!tag || tagsMap.has(tag)) return;
+		pendingTags.add({ name: tag, sourceType });
+	});
+
+	if (!isFetching) {
+		processQueue();
+	}
+}
+
+async function processQueue() {
+	if (pendingTags.size === 0) return;
+
+	isFetching = true;
+
+	const batch = Array.from(pendingTags).slice(0, 15);
+
+	batch.forEach(t => pendingTags.delete(t));
+
+	const results = await Promise.all(batch.map(fetchTagInfo));
+	updateTags(results.filter(Boolean));
+
+	isFetching = false;
+
+	triggerUpdate();
+
+	if (pendingTags.size > 0) {
+		setTimeout(processQueue, 200);
+	}
+}
+
+function encodeTag(tag) {
+	return tag
+		.trim()
+		.replace(/\s+/g, "_")          // space → _
+		.replace(/'/g, "%27")          // ' → %27
+		.replace(/"/g, "%22")          // " → %22
+		.replace(/:/g, "%3A")          // : → %3A
+		.replace(/\(/g, "%28")         // ( → %28
+		.replace(/\)/g, "%29")         // ) → %29
+		.replace(/\[/g, "%5B")         // [ → %5B
+		.replace(/\]/g, "%5D")         // ] → %5D
+		.replace(/&/g, "%26")          // & → %26
+		.replace(/\+/g, "%2B");       // + → %2B
+}
+
+const { R34ApiKey, R34UserId } = PrivateData;
+async function fetchTagInfo({ name, sourceType }) {
+	try {
+
+		if (sourceType !== SOURCE_TYPES.R34) return;
+
+		const url = `${sources.r34.tagsUrl}${encodeTag(name)}&api_key=${R34ApiKey}&user_id=${R34UserId}`;
+
+		const res = await fetch(url);
+		const text = await res.text();
+
+		const parser = new DOMParser();
+		const xml = parser.parseFromString(text, "text/xml");
+		const tagNode = xml.querySelector("tag");
+
+		if (!tagNode) return;
+
+		const tag = new Tag({
+			id: null,
+			name: tagNode.getAttribute("name"),
+			type: Number(tagNode.getAttribute("type")),
+			count: Number(tagNode.getAttribute("count")),
+			remoteType: sourceType
+		});
+
+		if( tag.name === undefined || tag.name === null ||
+			tag.type === undefined || tag.type === null ||
+			tag.count === undefined || tag.count === null
+		) {
+			console.error("Tag ", name, " not batched. Url, result", url, res);
+			return false;
+		}
+
+		tagsMap.set(tag.name, tag);
+		return true;
+
+	} catch (e) {
+		console.warn("Tag fetch error:", name, e);
+		return false;
+	}
+}
+
+function triggerUpdate() {
+	clearTimeout(updateTimeout);
+
+	updateTimeout = setTimeout(() => {
+		listeners.forEach(cb => cb());
+	}, 100);
+}
+
+const suggestionsCache = new Map();
+
+export async function fetchTagSuggestions(query, sourceId) {
+	if (!query || query.length < 2) return [];
+
+	const match = query.match(/[^ -][^ ]*$/);
+	if (!match) return [];
+
+	const lastWord = match[0].toLowerCase();
+
+	if (suggestionsCache.has(lastWord)) {
+		return suggestionsCache.get(lastWord);
 	}
 
-	newData.forEach(newTag => {
-		const existingTag = tagsMap.get(newTag.name);
+	let sourceData = GetSourceDataById(sourceId);
+	try {
+		const url =
+			sourceData.tagUrl +
+			lastWord +
+			(sourceData.remoteType === SOURCE_TYPES.R34 ? "" : "%"); // R34 fix
 
-		if (existingTag) {
-			if (existingTag.type === null || existingTag.type === undefined) {
-				existingTag.type = newTag.type;
-				existingTag.count = newTag.count;
+		const res = await fetch(url);
+		let data = await res.json();
+
+		if (sourceData.remoteType === 4) {
+			data = data.tag || [];
+		}
+
+		const normalized = data.map(t => ({
+			name: t.name || t.value,
+			count: t.count || 0,
+			type: t.type ?? null,
+			label:
+				sourceData.remoteType === 4
+					? `${t.name} (${t.count})`
+					: t.label,
+			value: t.name || t.value
+		}));
+
+		normalized.forEach(t => {
+			if (!tagsMap.has(t.name)) {
+				tagsMap.set(t.name, t);
+			}
+		});
+
+		suggestionsCache.set(lastWord, normalized);
+
+		return normalized;
+	} catch (e) {
+		console.error("Tag suggestions error:", e);
+		return [];
+	}
+}
+
+let saveTimeout = null;
+
+function scheduleSave() {
+	if (saveTimeout) clearTimeout(saveTimeout);
+
+	saveTimeout = setTimeout(() => {
+		SaveTags();
+	}, 1000);
+}
+
+export function updateTags(newTags = []) {
+	let hasChanges = false;
+
+	newTags.forEach(tag => {
+		const existing = tagsMap.get(tag.name);
+
+		if (!existing) {
+			tagsMap.set(tag.name, tag);
+			hasChanges = true;
+		} else {
+			if (!existing.type && tag.type) {
+				existing.type = tag.type;
 				hasChanges = true;
 			}
-		} else {
-			tags.push(newTag);
-			tagsMap.set(newTag.name, newTag); // Добавляем в карту новый тег
-			hasChanges = true;
+			if (tag.count && tag.count !== existing.count) {
+				existing.count = tag.count;
+				hasChanges = true;
+			}
 		}
 	});
 
 	if (hasChanges) {
-		if (!isDatabaseLoad) {
-			SaveTags();
-		}
-		onTagsUpdate([...tags]);
-	}
-}
-
-export function GetTags() {
-	return tags;
-}
-
-export function getToggledTags(currentString, tagToToggle) {
-	let tags = currentString.split(' ').filter(t => t.trim() !== "");
-
-	if (tagToToggle.startsWith('-')) {
-		const pure = tagToToggle.substring(1);
-		tags = tags.includes(pure) ? tags.filter(t => t !== pure) : [...tags, tagToToggle];
-	} else {
-		const negated = '-' + tagToToggle;
-		if (tags.includes(negated)) {
-			tags = tags.filter(t => t !== negated);
-		} else {
-			tags = tags.includes(tagToToggle) ? tags.filter(t => t !== tagToToggle) : [...tags, tagToToggle];
-		}
-	}
-	return tags.join(' ');
-}
-
-export async function fetchTagSuggestions(tagPart, source) {
-	if (!tagPart || tagPart.length < 2) return [];
-
-	const match = tagPart.match(/[^ -][^ ]*$/);
-	if (!match) return [];
-	const lastWord = match[0];
-
-	const url = source.tagUrl + lastWord + (source.remoteType === SOURCE_TYPES.R34 ? "" : "%");
-
-	try {
-		const response = await fetch(url);
-		let list = await response.json();
-
-		if (source.remoteType === SOURCE_TYPES.GELBOORU) {
-			list = list.tag || [];
-		}
-
-		// Приводим разные API к единому формату { label, value }
-		return list.map(elem => ({
-			label: source.remoteType === SOURCE_TYPES.GELBOORU ? `${elem.name} (${elem.count})` : elem.label,
-			value: source.remoteType === SOURCE_TYPES.GELBOORU ? elem.name : elem.value
-		}));
-	} catch (e) {
-		console.error("Autocomplete error", e);
-		return [];
+		scheduleSave();
+		triggerUpdate();
 	}
 }

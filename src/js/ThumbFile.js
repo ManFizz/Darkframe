@@ -1,23 +1,6 @@
 import {addFav, isFav, removeFav} from "./FavController";
 import {WebPInfo} from "webpinfo";
-
-export const FILE_TYPES = {
-    IMAGE: 1,
-    VIDEO: 2,
-    FOLDER: 3,
-    RETURN: 4,
-    COLLECTION: 5,
-};
-
-export const SOURCE_TYPES = {
-    FOLDER: 1,
-    R34: 2,
-    P365: 3,
-    GELBOORU: 4,
-    FAVORITE: 5,
-    COLLECTION: 6,
-    REALBOORU: 7,
-};
+import {FILE_TYPES} from "./Constants";
 
 const EXT = {
     IMAGE: /\.(jpg|jpeg|png|webp|gif|jfif)$/i,
@@ -90,6 +73,8 @@ export class ThumbFile {
     }
 
     isFav() {
+        if(this.thumbUrl === null)
+            throw "thumbUrl is null";
         if (this._fav === null)
             this._fav = isFav(this.thumbUrl);
 
