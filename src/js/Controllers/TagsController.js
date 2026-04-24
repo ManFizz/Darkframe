@@ -1,7 +1,7 @@
 import {GetSourceDataById, sources} from "./R34Controller";
-import {SOURCE_TYPES} from "./Constants";
-import PrivateData from "../../data/private";
-import {SaveTags} from "./backend";
+import {SOURCE_TYPES} from "../Constants";
+import PrivateData from "../../../data/private";
+import {getTagsByNames, SaveTags} from "../backend";
 
 class Tag {
 	constructor({ id, name, type, count, remoteType }) {
@@ -14,53 +14,43 @@ class Tag {
 }
 
 const TAG_PRIORITY = {
-	0: 30, //
-	1: 1, // Artist
-	2: 5, //
-	3: 15, // Franchise
-	4: 20, // Character
-	5: 45, // Metadata
-	6: 40, // Base tags
+	0: 30,
+	1: 1,
+	2: 5,
+	3: 15,
+	4: 20,
+	5: 45,
+	6: 40,
 };
 
-export const getTagOrder = (type) => {
-	return TAG_PRIORITY[type] ?? 99;
-};
+export const getTagOrder = (type) => TAG_PRIORITY[type] ?? 99;
 
-let tagsLoaded = false;
-
-export function initTagsFromDB(dbTags = []) {
-	if (!Array.isArray(dbTags)) return;
-
-	dbTags.forEach(tag => {
-		if(tag.id === undefined || tag.id === null ||
-			tag.name === undefined || tag.name === null ||
-			tag.type === undefined || tag.type === null ||
-			tag.count === undefined || tag.count === null
-		) {
-			console.error("Init Tag ", tag.name, " can't be load. Tag:", tag);
-			return;
-		}
-		tagsMap.set(tag.name, tag);
-	});
-
-	tagsLoaded = true;
-}
-
-export function areTagsLoaded() {
-	return tagsLoaded;
-}
-
+const MAX_CACHE_SIZE = 10000;
 const tagsMap = new Map();
-const pendingTags = new Set();
 
+function setTagToCache(tag) {
+	if (!tag || !tag.name) return;
+
+	if (tagsMap.size >= MAX_CACHE_SIZE) {
+		const firstKey = tagsMap.keys().next().value;
+		tagsMap.delete(firstKey);
+	}
+
+	tagsMap.set(tag.name, tag);
+}
+
+const dirtyTags = new Set();
+
+function markDirty(tag) {
+	if (tag?.name) {
+		dirtyTags.add(tag.name);
+	}
+}
+
+const pendingTags = new Map();
 let isFetching = false;
 let listeners = [];
 let updateTimeout = null;
-
-export function getTag(name) {
-	return tagsMap.get(name);
-}
 
 export function getAllTags() {
 	return Array.from(tagsMap.values());
@@ -77,8 +67,8 @@ export function ensureTags(tags = [], sourceType = SOURCE_TYPES.R34) {
 	if (!Array.isArray(tags)) return;
 
 	tags.forEach(tag => {
-		if (!tag || tagsMap.has(tag)) return;
-		pendingTags.add({ name: tag, sourceType });
+		if (!tag || tagsMap.has(tag) || pendingTags.has(tag)) return;
+		pendingTags.set(tag, sourceType);
 	});
 
 	if (!isFetching) {
@@ -91,11 +81,35 @@ async function processQueue() {
 
 	isFetching = true;
 
-	const batch = Array.from(pendingTags).slice(0, 15);
+	const batch = Array.from(pendingTags.entries()).slice(0, 20);
+	batch.forEach(([name]) => pendingTags.delete(name));
 
-	batch.forEach(t => pendingTags.delete(t));
+	const names = batch.map(([name]) => name);
 
-	const results = await Promise.all(batch.map(fetchTagInfo));
+	let dbTags = [];
+	let foundInDb = new Set();
+
+	try {
+		dbTags = await getTagsByNames(names);
+
+		if (Array.isArray(dbTags)) {
+			dbTags.forEach(tag => {
+				setTagToCache(tag);
+				foundInDb.add(tag.name);
+			});
+		}
+	} catch (e) {
+		console.warn("SQLite batch fetch failed:", e);
+	}
+
+	const missing = batch.filter(([name]) => !foundInDb.has(name));
+
+	const results = await Promise.all(
+		missing.map(([name, sourceType]) =>
+			fetchTagInfo({ name, sourceType })
+		)
+	);
+
 	updateTags(results.filter(Boolean));
 
 	isFetching = false;
@@ -106,6 +120,8 @@ async function processQueue() {
 		setTimeout(processQueue, 200);
 	}
 }
+
+/* ---------------- ENCODE ---------------- */
 
 function encodeTag(tag) {
 	return tag
@@ -123,12 +139,14 @@ function encodeTag(tag) {
 }
 
 const { R34ApiKey, R34UserId } = PrivateData;
+
 async function fetchTagInfo({ name, sourceType }) {
 	try {
+		if (sourceType !== SOURCE_TYPES.R34) return null;
 
-		if (sourceType !== SOURCE_TYPES.R34) return;
-
-		const url = `${sources.r34.tagsUrl}${encodeTag(name)}&api_key=${R34ApiKey}&user_id=${R34UserId}`;
+		const url =
+			`${sources.r34.tagsUrl}${encodeTag(name)}` +
+			`&api_key=${R34ApiKey}&user_id=${R34UserId}`;
 
 		const res = await fetch(url);
 		const text = await res.text();
@@ -137,7 +155,7 @@ async function fetchTagInfo({ name, sourceType }) {
 		const xml = parser.parseFromString(text, "text/xml");
 		const tagNode = xml.querySelector("tag");
 
-		if (!tagNode) return;
+		if (!tagNode) return null;
 
 		const tag = new Tag({
 			id: null,
@@ -147,20 +165,17 @@ async function fetchTagInfo({ name, sourceType }) {
 			remoteType: sourceType
 		});
 
-		if( tag.name === undefined || tag.name === null ||
-			tag.type === undefined || tag.type === null ||
-			tag.count === undefined || tag.count === null
-		) {
-			console.error("Tag ", name, " not batched. Url, result", url, res);
-			return false;
+		if (!tag.name || tag.type == null || tag.count == null) {
+			console.warn("Invalid tag:", name);
+			return null;
 		}
 
-		tagsMap.set(tag.name, tag);
-		return true;
+		setTagToCache(tag);
+		return tag;
 
 	} catch (e) {
 		console.warn("Tag fetch error:", name, e);
-		return false;
+		return null;
 	}
 }
 
@@ -170,6 +185,56 @@ function triggerUpdate() {
 	updateTimeout = setTimeout(() => {
 		listeners.forEach(cb => cb());
 	}, 100);
+}
+
+export function updateTags(newTags = []) {
+	let hasChanges = false;
+
+	newTags.forEach(tag => {
+		if (!tag?.name) return;
+
+		const existing = tagsMap.get(tag.name);
+
+		if (!existing) {
+			setTagToCache(tag);
+			markDirty(tag);
+			hasChanges = true;
+		} else {
+			if (!existing.type && tag.type) {
+				existing.type = tag.type;
+				hasChanges = true;
+				markDirty(existing);
+			}
+
+			if (tag.count && tag.count !== existing.count) {
+				existing.count = tag.count;
+				hasChanges = true;
+				markDirty(existing);
+			}
+		}
+	});
+
+	if (hasChanges) {
+		scheduleSave();
+		triggerUpdate();
+	}
+}
+
+let saveTimeout = null;
+
+function scheduleSave() {
+	if (saveTimeout) clearTimeout(saveTimeout);
+
+	saveTimeout = setTimeout(() => {
+		const tagsToSave = Array.from(dirtyTags)
+			.map(name => tagsMap.get(name))
+			.filter(Boolean);
+
+		if (tagsToSave.length > 0) {
+			SaveTags(tagsToSave);
+			dirtyTags.clear();
+		}
+	}, 1000);
 }
 
 const suggestionsCache = new Map();
@@ -186,17 +251,18 @@ export async function fetchTagSuggestions(query, sourceId) {
 		return suggestionsCache.get(lastWord);
 	}
 
-	let sourceData = GetSourceDataById(sourceId);
+	const sourceData = GetSourceDataById(sourceId);
+
 	try {
 		const url =
 			sourceData.tagUrl +
 			lastWord +
-			(sourceData.remoteType === SOURCE_TYPES.R34 ? "" : "%"); // R34 fix
+			(sourceData.remoteType === SOURCE_TYPES.R34 ? "" : "%");
 
 		const res = await fetch(url);
 		let data = await res.json();
 
-		if (sourceData.remoteType === 4) {
+		if (sourceData.remoteType === SOURCE_TYPES.GELBOORU) {
 			data = data.tag || [];
 		}
 
@@ -205,17 +271,11 @@ export async function fetchTagSuggestions(query, sourceId) {
 			count: t.count || 0,
 			type: t.type ?? null,
 			label:
-				sourceData.remoteType === 4
+				sourceData.remoteType === SOURCE_TYPES.GELBOORU
 					? `${t.name} (${t.count})`
 					: t.label,
 			value: t.name || t.value
 		}));
-
-		normalized.forEach(t => {
-			if (!tagsMap.has(t.name)) {
-				tagsMap.set(t.name, t);
-			}
-		});
 
 		suggestionsCache.set(lastWord, normalized);
 
@@ -223,42 +283,5 @@ export async function fetchTagSuggestions(query, sourceId) {
 	} catch (e) {
 		console.error("Tag suggestions error:", e);
 		return [];
-	}
-}
-
-let saveTimeout = null;
-
-function scheduleSave() {
-	if (saveTimeout) clearTimeout(saveTimeout);
-
-	saveTimeout = setTimeout(() => {
-		SaveTags();
-	}, 1000);
-}
-
-export function updateTags(newTags = []) {
-	let hasChanges = false;
-
-	newTags.forEach(tag => {
-		const existing = tagsMap.get(tag.name);
-
-		if (!existing) {
-			tagsMap.set(tag.name, tag);
-			hasChanges = true;
-		} else {
-			if (!existing.type && tag.type) {
-				existing.type = tag.type;
-				hasChanges = true;
-			}
-			if (tag.count && tag.count !== existing.count) {
-				existing.count = tag.count;
-				hasChanges = true;
-			}
-		}
-	});
-
-	if (hasChanges) {
-		scheduleSave();
-		triggerUpdate();
 	}
 }

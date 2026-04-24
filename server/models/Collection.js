@@ -14,6 +14,4 @@ const Collection = sequelize.define('Collections', {
 	timestamps: false
 });
 
-Collection.sync().then();
-
 module.exports = Collection;

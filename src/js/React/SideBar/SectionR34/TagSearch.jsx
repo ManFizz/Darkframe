@@ -1,7 +1,7 @@
 import React, {useEffect, useRef, useState} from "react";
-import {SearchMedia} from "../../../R34Controller";
+import {SearchMedia} from "../../../Controllers/R34Controller";
 import FavoriteTagsForm from "./FavoriteTagsForm";
-import {fetchTagSuggestions} from "../../../TagsController";
+import {fetchTagSuggestions} from "../../../Controllers/TagsController";
 
 const TagSearch = ({currentSource, favTagsArray}) => {
     const [inputValue, setInputValue] = useState("");

@@ -5,7 +5,7 @@ import {Favorites} from "../FavController";
 import {SORT_ORDER, SORT_TYPE} from "../AppLogic";
 
 import PrivateData from "../../../data/private";
-import {useDisplayImagesByPath} from "../FoldersController";
+import {useDisplayImagesByPath} from "../Controllers/FoldersController";
 import {DisplayP365} from "../p365";
 import {DisplayCollections} from "../CollectionLogic";
 import {DisplayRemoteFavoriteR34} from "../r34Favorite";

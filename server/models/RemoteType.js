@@ -14,8 +14,6 @@ const RemoteType = sequelize.define('RemoteTypes', {
 	timestamps: false
 });
 
-RemoteType.sync().then();
-
 const remoteTypesData = [
 	{ id: 1, name: 'Folder' },
 	{ id: 2, name: 'Rule34' },

@@ -23,6 +23,4 @@ const History = sequelize.define('Histories', {
 	timestamps: false
 });
 
-History.sync().then();
-
 module.exports = History;

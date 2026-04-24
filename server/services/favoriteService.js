@@ -1,5 +1,15 @@
 const Favorite = require('../models/favorite');
 
+async function updateFavoriteLocalUrl(id, localUrl) {
+	try {
+		await Favorite.update({ localUrl }, { where: { id } });
+		return await Favorite.findByPk(id);
+	} catch (error) {
+		console.error('Error updating local URL:', error);
+		throw error;
+	}
+}
+
 async function addFavorite(event, url, name, source, tags, display, remoteType) {
 	try {
 		return await Favorite.create({
@@ -46,4 +56,5 @@ module.exports = {
 	addFavorite,
 	removeFavorite,
 	getFavorites,
+	updateFavoriteLocalUrl
 };

@@ -1,5 +1,5 @@
 import {GetCollections} from "./backend";
-import {GetThumbByData} from "./GalleryController";
+import {GetThumbByData} from "./Controllers/GalleryController";
 import {setCollections, setGallery} from "./AppInitializer";
 import {favToDisplayFile} from "./FavController";
 import {FILE_TYPES} from "./Constants";

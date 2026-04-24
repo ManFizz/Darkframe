@@ -1,5 +1,5 @@
-import {getGallery, setGallery} from "./AppInitializer";
-import {ThumbFile} from "./ThumbFile";
+import {getGallery, setGallery} from "../AppInitializer";
+import {ThumbFile} from "../ThumbFile";
 
 export function ClearGallery()
 {

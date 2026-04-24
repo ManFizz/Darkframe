@@ -8,10 +8,10 @@ const Favorite = sequelize.define('Favorites', {
 		autoIncrement: true
 	},
 	title: {
-		type: DataTypes.STRING(64)
+		type: DataTypes.STRING(256)
 	},
 	thumbUrl: {
-		type: DataTypes.STRING(512),
+		type: DataTypes.STRING(1024),
 		allowNull: false,
 		unique: true
 	},
@@ -21,7 +21,7 @@ const Favorite = sequelize.define('Favorites', {
 		allowNull: false
 	},
 	sourceUrl: {
-		type: DataTypes.STRING(256),
+		type: DataTypes.STRING(1024),
 		defaultValue: ''
 	},
 	tags: {
@@ -34,7 +34,7 @@ const Favorite = sequelize.define('Favorites', {
 	},
 	createdAt: {
 		type: DataTypes.INTEGER,
-		defaultValue: Math.floor(Date.now() / 1000),
+		defaultValue: () => Math.floor(Date.now() / 1000),
 		allowNull: true
 	},
 	localUrl: {
@@ -44,7 +44,5 @@ const Favorite = sequelize.define('Favorites', {
 }, {
 	timestamps: false
 });
-
-Favorite.sync({ alter: true }).then();
 
 module.exports = Favorite;

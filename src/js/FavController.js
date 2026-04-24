@@ -1,4 +1,4 @@
-import {GetThumbByData} from "./GalleryController.js";
+import {GetThumbByData} from "./Controllers/GalleryController.js";
 import {ForceAddFavImage, ForceAddFavTag, ForceRemoveFav} from './backend.js';
 import {ThumbFile} from "./ThumbFile";
 import {updateGalleryFile} from "./AppInitializer";
@@ -31,7 +31,7 @@ export function removeFav(displayFile) {
     if (indexToDelete !== -1) {
         Favorites.splice(indexToDelete, 1);
 
-        ForceRemoveFav(displayFile);
+        ForceRemoveFav(displayFile);            // TODO: Реализовать согласованность с БД
         updateGalleryFile(updatedFile);
     }
 }
@@ -46,7 +46,7 @@ export function addFav(displayFile) {
 
     Favorites.push(updatedFile);
 
-    ForceAddFavImage(updatedFile).then(id => {
+    ForceAddFavImage(updatedFile).then(id => {  // TODO: Реализовать согласованность с БД
         updatedFile.id = id;
         updatedFile.updateUniqueId();
     });

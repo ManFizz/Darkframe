@@ -1,5 +1,5 @@
 import React, {useCallback, useEffect, useRef, useState} from 'react';
-import {CanMoreMedia, LoadMoreMedia} from "../../R34Controller";
+import {CanMoreMedia, LoadMoreMedia} from "../../Controllers/R34Controller";
 
 const Navigation = ({ file, modalUpdater, mainArray, setDegree, currentSource, displayFiles }) => {
     const [isFav, setIsFav] = useState(file.isFav());

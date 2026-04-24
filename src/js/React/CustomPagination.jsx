@@ -1,7 +1,7 @@
 import React, {Component} from 'react';
 import Pagination from 'react-bootstrap/Pagination';
 import Settings from "../../../data/settings";
-import {CanMoreMedia, LoadMoreMedia} from "../R34Controller";
+import {CanMoreMedia, LoadMoreMedia} from "../Controllers/R34Controller";
 import {setGallery} from "../AppInitializer";
 import {SOURCE_TYPES} from "../Constants";
 

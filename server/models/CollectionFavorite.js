@@ -14,6 +14,4 @@ const CollectionFavorite = sequelize.define('CollectionFavorites', {
 	timestamps: false
 });
 
-CollectionFavorite.sync().then();
-
 module.exports = CollectionFavorite;

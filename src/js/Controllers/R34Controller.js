@@ -1,7 +1,7 @@
 import {GetThumbByData} from "./GalleryController.js";
-import {addToGallery, setGallery} from "./AppInitializer";
-import PrivateData from "../../data/private";
-import {SOURCE_TYPES} from "./Constants";
+import {addToGallery, setGallery} from "../AppInitializer";
+import PrivateData from "../../../data/private";
+import {SOURCE_TYPES} from "../Constants";
 
 export const sources = {
     r34: {

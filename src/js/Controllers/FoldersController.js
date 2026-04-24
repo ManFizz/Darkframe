@@ -1,9 +1,9 @@
 import {useCallback} from "react";
-import {setGallery} from "./AppInitializer";
+import {setGallery} from "../AppInitializer";
 
-import {GetFiles} from "./backend";
+import {GetFiles} from "../backend";
 import {GetThumbByData} from "./GalleryController";
-import {FILE_TYPES, SOURCE_TYPES} from "./Constants";
+import {FILE_TYPES, SOURCE_TYPES} from "../Constants";
 
 export function useDisplayImagesByPath() {
 

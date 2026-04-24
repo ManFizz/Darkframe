@@ -9,7 +9,8 @@ const Tag = sequelize.define('Tags', {
 	},
 	name: {
 		type: DataTypes.STRING,
-		allowNull: false
+		allowNull: false,
+		unique: true
 	},
 	type: {
 		type: DataTypes.INTEGER
@@ -23,7 +24,5 @@ const Tag = sequelize.define('Tags', {
 }, {
 	timestamps: false
 });
-
-Tag.sync().then();
 
 module.exports = Tag;

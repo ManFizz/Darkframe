@@ -1,6 +1,5 @@
 import {Favorites, OnUpdateFavorites} from "./FavController.js";
 import Collection from "./Collection";
-import {getAllTags, initTagsFromDB} from "./TagsController";
 import {notify} from "./Services/NotificationService.js";
 
 const { ipcRenderer } = window.require("electron");
@@ -41,14 +40,12 @@ export async function InitDatabaseData() {
     console.log("Инициализация базы данных...");
 
     try {
-        const [favs, tags, favTags] = await Promise.all([
+        const [favs, favTags] = await Promise.all([
             safeInvoke("getFavorites", []),
-            safeInvoke("getTags", []),
             safeInvoke("getFavTags", [])
         ]);
 
         OnUpdateFavorites(favs);
-        initTagsFromDB(tags);
 
         if (typeof setFavTagsArray === "function") {
             setFavTagsArray(favTags);
@@ -96,20 +93,6 @@ export async function GetFavTags() {
     return await safeInvoke("getFavTags", []);
 }
 
-export function SaveTags() {
-    const tags = getAllTags();
-
-    const invalid = tags.filter(tag =>
-        !tag.name || tag.type == null || tag.count == null
-    );
-
-    if (invalid.length > 0) {
-        notifyError("Некоторые теги невалидны и не будут сохранены", invalid);
-    }
-
-    safeInvoke("setTags", null, tags);
-}
-
 export async function GetCollections() {
     const dataFromDatabase = await safeInvoke("GetCollections", []);
     if (!dataFromDatabase) return [];
@@ -145,4 +128,12 @@ export async function GetCollections() {
 
 export async function UpdateCollections(collections) {
     await safeInvoke("UpdateCollections", null, collections);
+}
+
+export function SaveTags(tags) {
+    safeInvoke("setTags", null, tags);
+}
+
+export function getTagsByNames(names) {
+    return safeInvoke("getTagsByNames", null, names);
 }

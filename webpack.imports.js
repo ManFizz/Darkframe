@@ -18,4 +18,4 @@ import ('/src/css/sidebar.css');
 import ('/src/css/video-controls.css');
 
 import ('/src/js/backend.js');
-import ('/src/js/GalleryController.js');
+import ('/src/js/Controllers/GalleryController.js');

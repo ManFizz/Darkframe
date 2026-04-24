@@ -1,6 +1,6 @@
 import PrivateData from "../../data/private";
 import {setGallery} from "./AppInitializer";
-import {GetThumbByData} from "./GalleryController";
+import {GetThumbByData} from "./Controllers/GalleryController";
 import {FILE_TYPES, SOURCE_TYPES} from "./Constants";
 
 const favUrl = `https://rule34.xxx/index.php?page=favorites&s=view&id=${PrivateData.R34UserId}`;

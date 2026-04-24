@@ -21,6 +21,4 @@ const FavoriteTag = sequelize.define('FavoriteTags', {
 	timestamps: false
 });
 
-FavoriteTag.sync().then();
-
 module.exports = FavoriteTag;

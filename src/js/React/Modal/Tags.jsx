@@ -1,13 +1,13 @@
 import React, {useEffect, useMemo, useState} from "react";
-import {ensureTags, getTag, getTagOrder, subscribe} from "../../TagsController";
+import {ensureTags, getAllTags, getTagOrder, subscribe} from "../../Controllers/TagsController";
 
 const Tags = ({ file }) => {
     const [version, setVersion] = useState(0);
 
     useEffect(() => {
-        if (!file?.tags) return;
+        if (!file?.tags?.length) return;
 
-        ensureTags(file.tags); //TODO current source
+        ensureTags(file.tags);
 
         const unsub = subscribe(() => {
             setVersion(v => v + 1);
@@ -16,23 +16,39 @@ const Tags = ({ file }) => {
         return unsub;
     }, [file.tags]);
 
+    const tagsMap = useMemo(() => {
+        const map = new Map();
+        getAllTags().forEach(tag => {
+            map.set(tag.name, tag);
+        });
+        return map;
+    }, [version]);
+
     const visibleTags = useMemo(() => {
+        if (!file?.tags) return [];
+
         return file.tags
-            .map(name => ({
-                name,
-                metadata: getTag(name)
-            }))
-            .sort((a, b) => {
-                const ta = getTagOrder(a.metadata?.type);
-                const tb = getTagOrder(b.metadata?.type);
-                return ta - tb;
-            });
-    }, [file.tags, version]);
+            .filter(name => name && name.trim())
+            .map(name => {
+                const metadata = tagsMap.get(name);
+
+                return {
+                    name,
+                    metadata,
+                    order: getTagOrder(metadata?.type)
+                };
+            })
+            .sort((a, b) => a.order - b.order);
+    }, [file.tags, tagsMap]);
+
+    if (visibleTags.length === 0) return null;
 
     return (
         <div className="col-7 text-center tags">
             {visibleTags.map(({ name, metadata }) => {
-                const cls = metadata ? `tag-type-${metadata.type}` : "bg-secondary";
+                const cls = metadata
+                    ? `tag-type-${metadata.type}`
+                    : "bg-secondary";
 
                 return (
                     <span key={name} className={`badge m-1 ${cls}`}>

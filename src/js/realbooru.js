@@ -1,4 +1,4 @@
-import {GetThumbByData} from "./GalleryController";
+import {GetThumbByData} from "./Controllers/GalleryController";
 import {setGallery} from "./AppInitializer";
 import PrivateData from "../../data/private";
 import {SOURCE_TYPES} from "./Constants";

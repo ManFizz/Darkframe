@@ -1,42 +1,22 @@
 const { ipcMain } = require('electron');
 const { removeFavorite, getFavorites, addFavorite } = require("../services/favoriteService");
-const { downloadFile } = require("./fileManager");
 const Favorite = require("../models/Favorite");
 const path = require('path');
 const fs = require('fs').promises;
-
-/**
- * Вспомогательная функция обновления URL
- */
-async function updateFavoriteLocalUrl(id, localUrl) {
-	try {
-		await Favorite.update({ localUrl }, { where: { id } });
-	} catch (error) {
-		console.error('Error updating local URL:', error);
-	}
-}
+const { queueDownload } = require("../services/downloadService");
 
 async function handleAddFavorites(event, url, name, source, tags, display, remoteType) {
 	try {
 		const newFavorite = await addFavorite(event, url, name, source, tags, display, remoteType);
-		const favoriteId = newFavorite.id || (newFavorite.dataValues ? newFavorite.dataValues.id : null);
+		const id = newFavorite?.id;
 
-		if (!favoriteId) {
-			console.error("Не удалось получить ID созданной записи. Загрузка файла отменена.");
-			return null;
-		}
+		if (!id) return null;
 
 		if (remoteType !== 1) {
-			const downloadPath = path.join(__dirname, '../../downloads');
-
-			downloadFile(url, downloadPath).then(async (localUrl) => {
-				if (localUrl) {
-					await updateFavoriteLocalUrl(favoriteId, localUrl);
-				}
-			}).catch(err => console.error('Background download error:', err.message));
+			queueDownload({ id, url });
 		}
 
-		return favoriteId;
+		return id;
 	} catch (error) {
 		console.error('Error handling addFavorites:', error);
 		throw error;
@@ -69,19 +49,19 @@ async function handleGetFavorites() {
 	}
 }
 
-async function downloadMissingFavorites() {
+async function downloadMissingFavorites(queueDownload) {
 	try {
 		const favorites = await getFavorites();
-		const downloadPath = path.join(__dirname, '../../downloads');
-
 		for (let favorite of favorites) {
-			if (favorite.remoteType === 1 || (favorite.localUrl && (await fs.access(favorite.localUrl).then(() => true).catch(() => false)))) {
-				continue;
-			}
+			if (favorite.remoteType === 1) continue;
 
-			console.log(`Скачивание отсутствующего файла: ${favorite.thumbUrl}`);
-			const localUrl = await downloadFile(favorite.thumbUrl, downloadPath);
-			if (localUrl) await updateFavoriteLocalUrl(favorite.id, localUrl);
+			const localPath = favorite.localUrl;
+			const exists = localPath ? await fs.access(localPath).then(() => true).catch(() => false) : false;
+
+			if (!exists && typeof queueDownload === 'function') {
+				const url = favorite.thumbUrl || favorite.url;
+				queueDownload({ id: favorite.id, url });
+			}
 		}
 	} catch (error) {
 		console.error('Ошибка при проверке локальных копий:', error);
@@ -94,4 +74,7 @@ function registerHandlers() {
 	ipcMain.handle('getFavorites', handleGetFavorites);
 }
 
-module.exports = { registerHandlers, downloadMissingFavorites };
+module.exports = {
+	registerHandlers,
+	downloadMissingFavorites
+};

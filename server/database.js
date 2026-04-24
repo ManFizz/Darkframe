@@ -18,12 +18,4 @@ const sequelize = new Sequelize({
 	logging: customLogger,
 });
 
-sequelize.sync()
-	.then(() => {
-		console.log('All models were synchronized successfully.');
-	})
-	.catch(err => {
-		console.error('An error occurred while synchronizing the models:', err);
-	});
-
 module.exports = sequelize;

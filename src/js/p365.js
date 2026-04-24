@@ -1,4 +1,4 @@
-import {AddThumbByData, ClearGallery} from "./GalleryController.js";
+import {AddThumbByData, ClearGallery} from "./Controllers/GalleryController.js";
 import Private from "../../data/private";
 
 import {SOURCE_TYPES} from "./Constants";

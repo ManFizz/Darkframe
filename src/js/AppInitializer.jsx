@@ -10,7 +10,7 @@ import CustomPagination from "./React/CustomPagination";
 import {GetFavTags, InitDatabaseData} from "./backend";
 import {getNextViewType, getSortedArray, SORT_ORDER, SORT_TYPE} from "./AppLogic";
 import Settings from "../../data/settings";
-import {updateR34Source} from "./R34Controller";
+import {updateR34Source} from "./Controllers/R34Controller";
 import {StopR34Loading} from "./r34Favorite";
 import {SOURCE_TYPES} from "./Constants";
 import Notifications from "./React/Notifications";
@@ -125,7 +125,7 @@ const Main = () => {
             }
         });
 
-        import('./TagsController').then(module => {
+        import('./Controllers/TagsController').then(module => {
             module.subscribe(() => {
                 dispatch({ type: 'INCREMENT_TAGS_VERSION' });
             });

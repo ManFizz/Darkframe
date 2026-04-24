@@ -1,14 +1,5 @@
 const {ipcMain} = require("electron");
-const {getTags, setTags} = require("../services/tagService");
-
-async function handleGetTags() {
-	try {
-		return await getTags();
-	} catch (error) {
-		console.error('Error fetching tags:', error);
-		throw error;
-	}
-}
+const {setTags, getTagsByNames} = require("../services/tagService");
 
 async function handleSetTags(event, tags) {
 	try {
@@ -19,9 +10,18 @@ async function handleSetTags(event, tags) {
 	}
 }
 
+async function handleGetTagsByNames(event, names) {
+	try {
+		return await getTagsByNames(names);
+	} catch (error) {
+		console.error("Error getTagsByNames:", error);
+		return [];
+	}
+}
+
 function registerHandlers() {
-	ipcMain.handle("getTags", handleGetTags);
 	ipcMain.handle("setTags", handleSetTags);
+	ipcMain.handle("getTagsByNames", handleGetTagsByNames);
 }
 
 module.exports = { registerHandlers };
