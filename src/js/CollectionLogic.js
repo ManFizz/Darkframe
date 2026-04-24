@@ -1,11 +1,10 @@
-import {GetCollections} from "./backend";
+import {getCollections, setCollections, setGallery} from "./Controllers/AppInitializerController";
 import {GetThumbByData} from "./Controllers/GalleryController";
-import {setCollections, setGallery} from "./AppInitializer";
-import {favToDisplayFile} from "./FavController";
+import {favToDisplayFile} from "./Controllers/FavoritesController";
 import {FILE_TYPES} from "./Constants";
 
 export function DisplayCollections() {
-	GetCollections().then( res => {
+	getCollections().then( res => {
 		setCollections(res);
 
 		let array = [];

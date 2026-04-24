@@ -50,7 +50,7 @@ function setupRequestHeaders() {
 
 async function initDatabase() {
     try {
-        await sequelize.sync({ alter: true });
+        await sequelize.sync();
         console.log('Database synchronized');
     } catch (err) {
         console.error('DB sync error:', err);

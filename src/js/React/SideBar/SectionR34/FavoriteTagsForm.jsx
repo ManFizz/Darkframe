@@ -1,5 +1,5 @@
 import React, {useMemo, useState} from "react";
-import {AddFavTag} from "../../../FavController";
+import {AddFavTag} from "../../../Controllers/FavoritesController";
 import {BsPlusLg} from "react-icons/bs";
 
 const FavoriteTagsForm = ({ favTagsArray, currentSource, onToggle }) => {

@@ -1,5 +1,5 @@
 import {GetThumbByData} from "./GalleryController.js";
-import {addToGallery, setGallery} from "../AppInitializer";
+import {addToGallery, setGallery} from "./AppInitializerController";
 import PrivateData from "../../../data/private";
 import {SOURCE_TYPES} from "../Constants";
 

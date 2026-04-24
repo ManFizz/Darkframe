@@ -1,6 +1,6 @@
 import React, {useCallback, useEffect, useMemo, useState} from 'react';
 import {CanMoreMedia, LoadMoreMedia} from "../../Controllers/R34Controller";
-import {subscribeFavorites} from "../../FavController";
+import {subscribeFavorites} from "../../Controllers/FavoritesController";
 
 const DIRECTION = {
     LEFT: -1,

@@ -1,7 +1,6 @@
-import React, { Component } from "react";
-import { BsCollection } from "react-icons/bs";
-import { Dropdown } from 'react-bootstrap';
-import { getCollections, setCollections } from "../../AppInitializer";
+import React, {Component} from "react";
+import {Dropdown} from 'react-bootstrap';
+import {getCollections, setCollections} from "../../Controllers/AppInitializerController";
 
 class DropMenu extends Component {
 	constructor(props) {

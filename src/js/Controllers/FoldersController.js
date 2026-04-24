@@ -1,7 +1,7 @@
 import {useCallback} from "react";
-import {setGallery} from "../AppInitializer";
+import {setGallery} from "./AppInitializerController";
 
-import {GetFiles} from "../backend";
+import {GetFiles} from "../BackendConnect";
 import {GetThumbByData} from "./GalleryController";
 import {FILE_TYPES, SOURCE_TYPES} from "../Constants";
 

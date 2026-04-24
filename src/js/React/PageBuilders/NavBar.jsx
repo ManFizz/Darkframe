@@ -1,17 +1,15 @@
 import React, {useContext, useState} from 'react';
 import {BsCaretDownFill, BsFillGrid1X2Fill, BsSearch, BsShieldShaded} from "react-icons/bs";
-import {Favorites} from "../FavController";
+import {Favorites} from "../../Controllers/FavoritesController";
 
-import {SORT_ORDER, SORT_TYPE} from "../AppLogic";
+import PrivateData from "../../../../data/private";
+import {useDisplayImagesByPath} from "../../Controllers/FoldersController";
+import {DisplayP365} from "../../Controllers/P365Controller";
+import {DisplayCollections} from "../../CollectionLogic";
+import {DisplayRemoteFavoriteR34} from "../../Controllers/R34FavoriteController"
 
-import PrivateData from "../../../data/private";
-import {useDisplayImagesByPath} from "../Controllers/FoldersController";
-import {DisplayP365} from "../p365";
-import {DisplayCollections} from "../CollectionLogic";
-import {DisplayRemoteFavoriteR34} from "../r34Favorite";
-
-import {GalleryContext} from '../AppInitializer';
-import {SOURCE_TYPES} from "../Constants";
+import {GalleryContext} from '../../AppInitializer';
+import {SORT_ORDER, SORT_TYPE, SOURCE_TYPES} from "../../Constants";
 
 const NavBar = () => {
     const { state, setCurrentSource, setSortInfo, setTypeView, setSafeMode, setMainArray } = useContext(GalleryContext);

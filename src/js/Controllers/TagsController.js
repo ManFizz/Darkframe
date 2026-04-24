@@ -1,7 +1,7 @@
 import {GetSourceDataById, sources} from "./R34Controller";
 import {SOURCE_TYPES} from "../Constants";
 import PrivateData from "../../../data/private";
-import {getTagsByNames, SaveTags} from "../backend";
+import {getTagsByNames, SaveTags} from "../BackendConnect";
 
 class Tag {
 	constructor({ id, name, type, count, remoteType }) {

@@ -17,5 +17,5 @@ import ('/src/css/modal.css');
 import ('/src/css/sidebar.css');
 import ('/src/css/video-controls.css');
 
-import ('/src/js/backend.js');
+import ('/src/js/BackendConnect');
 import ('/src/js/Controllers/GalleryController.js');

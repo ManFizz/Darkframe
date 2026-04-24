@@ -1,9 +1,9 @@
 import React, {useEffect, useMemo, useRef, useState} from 'react';
-import Navigation from "./Modal/Navigation";
-import Tags from "./Modal/Tags";
-import Video from "./Modal/Video";
-import Settings from "../../../data/settings";
-import {FILE_TYPES} from "../Constants";
+import Navigation from "./Navigation";
+import Tags from "./Tags";
+import Video from "./Video";
+import Settings from "../../../../data/settings";
+import {FILE_TYPES} from "../../Constants";
 
 const Modal = ({ fileId, mainArray, modalUpdater, displayFiles }) => {
     const [isLong, setIsLong] = useState(false);

@@ -1,5 +1,5 @@
-import {getGallery, setGallery} from "../AppInitializer";
-import {ThumbFile} from "../ThumbFile";
+import {getGallery, setGallery} from "./AppInitializerController";
+import {ThumbFile} from "../Models/ThumbFile";
 
 export function ClearGallery()
 {

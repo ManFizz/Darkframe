@@ -1,6 +1,6 @@
-import {addFav, isFav, removeFav} from "./FavController";
-import {normalizeTags} from "./Controllers/TagsController";
-import {FILE_TYPES} from "./Constants";
+import {addFav, isFav, removeFav} from "../Controllers/FavoritesController";
+import {normalizeTags} from "../Controllers/TagsController";
+import {FILE_TYPES} from "../Constants";
 
 const EXT = {
     IMAGE: /\.(jpg|jpeg|png|webp|gif|jfif)$/i,
@@ -91,6 +91,15 @@ export class ThumbFile {
             }
         }
         return null;
+    }
+
+    _loadMeta(url) {
+        return new Promise((resolve, reject) => {
+            const img = new Image();
+            img.onload = () => resolve(img);
+            img.onerror = reject;
+            img.src = url;
+        });
     }
 
     getUrl() {

@@ -1,7 +1,7 @@
-import {GetThumbByData} from "./Controllers/GalleryController.js";
-import {ForceAddFavImage, ForceAddFavTag, ForceRemoveFav} from './backend.js';
-import {ThumbFile} from "./ThumbFile";
-import {updateGalleryFile} from "./AppInitializer";
+import {GetThumbByData} from "./GalleryController.js";
+import {ForceAddFavImage, ForceAddFavTag, ForceRemoveFav} from '../BackendConnect.js';
+import {ThumbFile} from "../Models/ThumbFile";
+import {updateGalleryFile} from "./AppInitializerController";
 
 export let Favorites = [];
 

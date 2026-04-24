@@ -1,9 +1,9 @@
 import React, {useContext, useRef} from 'react';
-import Thumb from "./Thumb";
-import ScrollSensor from "./ScrollSensor";
-import {LoadNextPage} from "./CustomPagination";
+import Thumb from "../Thumb/Thumb";
+import ScrollSensor from "../Helpers/ScrollSensor";
+import {LoadNextPage} from "../Helpers/CustomPagination";
 
-import {GalleryContext} from '../AppInitializer';
+import {GalleryContext} from '../../AppInitializer';
 
 const Gallery = () => {
     const { state, setModalFile } = useContext(GalleryContext);

@@ -1,6 +1,6 @@
-import {Favorites, OnUpdateFavorites} from "./FavController.js";
+import {Favorites, OnUpdateFavorites} from "./Controllers/FavoritesController";
 import Collection from "./Collection";
-import {notify} from "./Services/NotificationService.js";
+import {notify} from "./Services/NotificationService";
 
 const { ipcRenderer } = window.require("electron");
 

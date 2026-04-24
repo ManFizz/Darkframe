@@ -1,6 +1,6 @@
 import React, {Component} from "react";
-import { DisplayCollection } from "../../CollectionLogic";
-import { getCollections } from "../../AppInitializer";
+import {DisplayCollection} from "../../CollectionLogic";
+import {getCollections} from "../../Controllers/AppInitializerController";
 
 const pathToImage = "images/empty_collection.png";
 

@@ -1,13 +1,13 @@
 import React, {useEffect, useState} from "react";
-import Image from "./Thumb/Image";
-import Video from "./Thumb/Video";
-import Folder from "./Thumb/Folder";
-import Return from "./Thumb/Return";
-import {addFav, removeFav, subscribeFavorites} from "../FavController";
-import DropMenu from "./Thumb/DropMenu";
-import Collection from "./Thumb/Collection";
-import {getCurrentSource} from "../AppInitializer";
-import {FILE_TYPES, SOURCE_TYPES} from "../Constants";
+import Image from "./Image";
+import Video from "./Video";
+import Folder from "./Folder";
+import Return from "./Return";
+import {addFav, removeFav, subscribeFavorites} from "../../Controllers/FavoritesController";
+import DropMenu from "./DropMenu";
+import Collection from "./Collection";
+import {getCurrentSource} from "../../Controllers/AppInitializerController";
+import {FILE_TYPES, SOURCE_TYPES} from "../../Constants";
 
 const Thumb = React.memo(({ file, isModal, modalUpdater }) => {
 
