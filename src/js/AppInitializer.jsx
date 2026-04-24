@@ -141,7 +141,6 @@ const Main = () => {
                     fileId={state.modalFileId}
                     modalUpdater={contextValue.setModalFile}
                     mainArray={state.mainArray}
-                    currentSource={state.currentSource}
                     displayFiles={state.displayArray}
                 />
 

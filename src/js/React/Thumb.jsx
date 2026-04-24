@@ -1,21 +1,29 @@
-import React from "react";
+import React, {useEffect, useState} from "react";
 import Image from "./Thumb/Image";
 import Video from "./Thumb/Video";
 import Folder from "./Thumb/Folder";
 import Return from "./Thumb/Return";
-import {addFav, removeFav} from "../FavController";
+import {addFav, removeFav, subscribeFavorites} from "../FavController";
 import DropMenu from "./Thumb/DropMenu";
 import Collection from "./Thumb/Collection";
 import {getCurrentSource} from "../AppInitializer";
 import {FILE_TYPES, SOURCE_TYPES} from "../Constants";
 
-const Thumb = React.memo((props) => {
-    const { file, isModal, modalUpdater } = props;
+const Thumb = React.memo(({ file, isModal, modalUpdater }) => {
 
-    const isFav = file.isFav();
+    const [isFav, setIsFav] = useState(file.isFav());
+
+    useEffect(() => {
+        const unsub = subscribeFavorites(() => {
+            setIsFav(file.isFav());
+        });
+
+        return unsub;
+    }, [file]);
 
     const handleLikeClick = (event) => {
         event.stopPropagation();
+
         if (isFav) {
             removeFav(file);
         } else {
@@ -42,6 +50,7 @@ const Thumb = React.memo((props) => {
 
     const hasOverlay = file.type === FILE_TYPES.IMAGE || file.type === FILE_TYPES.VIDEO;
     const isRemovedInFavs = !isFav && getCurrentSource() === SOURCE_TYPES.FAVORITE;
+
     return (
         <div
             className={`card thumb bg-dark ${isModal ? 'modal-active' : ''} ${isRemovedInFavs ? 'opacity-50' : ''}`}
@@ -53,18 +62,13 @@ const Thumb = React.memo((props) => {
                     <i
                         className={`bi ${isFav ? 'bi-ban' : 'bi-heart-fill'}`}
                         onClick={handleLikeClick}
-                    ></i>
+                    />
                 </div>
             )}
             {renderContent()}
         </div>
     );
-}, (prevProps, nextProps) => {
-    return (
-        prevProps.file === nextProps.file &&
-        prevProps.isModal === nextProps.isModal &&
-        prevProps.file.isFav() === nextProps.file.isFav()
-    );
+
 });
 
 export default Thumb;

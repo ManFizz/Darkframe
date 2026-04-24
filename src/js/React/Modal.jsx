@@ -5,17 +5,17 @@ import Video from "./Modal/Video";
 import Settings from "../../../data/settings";
 import {FILE_TYPES} from "../Constants";
 
-const Modal = ({ fileId, mainArray, modalUpdater, currentSource, displayFiles }) => {
+const Modal = ({ fileId, mainArray, modalUpdater, displayFiles }) => {
     const [isLong, setIsLong] = useState(false);
     const [degree, setDegree] = useState(0);
     const modalRef = useRef(null);
 
     const file = useMemo(() => {
-        return mainArray.find(f => f.uniqueId === fileId);
+        return mainArray.find(f => f.uniqueId === fileId) || null;
     }, [fileId, mainArray]);
 
     useEffect(() => {
-        if (!fileId) return;
+        if (!file) return;
 
         setIsLong(false);
         setDegree(0);
@@ -25,65 +25,62 @@ const Modal = ({ fileId, mainArray, modalUpdater, currentSource, displayFiles })
             modalRef.current.focus();
         }
 
-        actualFile.getSize().then((size) => {
+        file.getSize().then(size => {
             if (size && size.height >= 1200 && size.height / size.width > 2.25) {
                 setIsLong(true);
             }
         });
 
-        if (actualFile.type === FILE_TYPES.IMAGE) {
-            const index = mainArray.findIndex(f => String(f.remoteId) === String(fileId));
-            if (index !== -1) {
-                [index - 1, index + 1].forEach(i => {
-                    const neighbor = mainArray[i];
-                    if (neighbor && neighbor.type === FILE_TYPES.IMAGE) {
-                        const img = new window.Image();
-                        img.src = neighbor.getUrl();
-                    }
-                });
+    }, [file]);
+
+    useEffect(() => {
+        if (!file || file.type !== FILE_TYPES.IMAGE) return;
+
+        const index = mainArray.findIndex(f => f.uniqueId === file.uniqueId);
+        if (index === -1) return;
+
+        [index - 1, index + 1].forEach(i => {
+            const neighbor = mainArray[i];
+            if (neighbor?.type === FILE_TYPES.IMAGE) {
+                const img = new window.Image();
+                img.src = neighbor.getUrl();
             }
-        }
-    }, [fileId]);
+        });
 
-    const actualFile = useMemo(() => {
-        if (!file) return null;
-
-        return mainArray.find(f => f.uniqueId === file.uniqueId) || file;
     }, [file, mainArray]);
 
-    if (!actualFile) return null;
+    if (!file) return null;
 
     return (
         <dialog
-            className={`modal ${actualFile.isFav() ? "favorite" : ""}`}
+            className={`modal ${file.isFav() ? "favorite" : ""}`}
             open
             ref={modalRef}
             tabIndex="-1"
         >
             <Navigation
-                file={actualFile}
+                file={file}
                 modalUpdater={modalUpdater}
                 mainArray={mainArray}
                 setDegree={setDegree}
-                currentSource={currentSource}
                 displayFiles={displayFiles}
             />
 
             <div className="modal-content-wrapper">
-                {actualFile.type === FILE_TYPES.IMAGE ? (
+                {file.type === FILE_TYPES.IMAGE ? (
                     <img
                         key={fileId}
-                        alt={actualFile.title}
-                        src={actualFile.getUrl()}
+                        alt={file.title}
+                        src={file.getUrl()}
                         className={Settings.LongView && isLong ? "long" : ""}
                         style={{ transform: `rotate(${degree}deg)` }}
                     />
                 ) : (
-                    <Video file={actualFile} />
+                    <Video file={file} />
                 )}
             </div>
 
-            <Tags file={actualFile} />
+            <Tags file={file} />
         </dialog>
     );
 };

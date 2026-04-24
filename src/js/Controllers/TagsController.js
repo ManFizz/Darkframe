@@ -285,3 +285,23 @@ export async function fetchTagSuggestions(query, sourceId) {
 		return [];
 	}
 }
+
+export function normalizeTags(tags) {
+	if (!tags) return [];
+
+	let result;
+
+	if (Array.isArray(tags)) {
+		result = tags;
+	} else if (typeof tags === "string") {
+		result = tags.trim().split(/[\s,]+/)
+	} else {
+		return [];
+	}
+
+	return [...new Set(
+		result
+			.map(t => (t || "").toString().trim().toLowerCase())
+			.filter(t => t.length > 0)
+	)];
+}

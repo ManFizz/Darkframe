@@ -5,13 +5,28 @@ import {updateGalleryFile} from "./AppInitializer";
 
 export let Favorites = [];
 
+let listeners = [];
+
+export function subscribeFavorites(cb) {
+    listeners.push(cb);
+    return () => {
+        listeners = listeners.filter(l => l !== cb);
+    };
+}
+
+function notify() {
+    listeners.forEach(cb => cb(Favorites));
+}
+
 export function OnUpdateFavorites(arr) {
-    if (!arr || !Array.isArray(arr)) {
+    if (!Array.isArray(arr)) {
         Favorites = [];
+        notify();
         return;
     }
 
-    Favorites = arr.map(el => new ThumbFile(el));
+    Favorites = arr.map(el => new ThumbFile({ ...el, _fav: true }));
+    notify();
 }
 
 export function AddFavTag(tag, remoteType) {
@@ -19,53 +34,58 @@ export function AddFavTag(tag, remoteType) {
 }
 
 export function removeFav(displayFile) {
-    if (!displayFile.isFav()) throw new Error('removeFav :: error');
+    if (!displayFile?.thumbUrl) return;
 
-    const updatedFile = new ThumbFile({
-        ...displayFile,
-        _fav: false
-    });
+    const index = Favorites.findIndex(f => f.thumbUrl === displayFile.thumbUrl);
+    if (index === -1) return;
 
-    const indexToDelete = Favorites.findIndex(fav => fav.id === displayFile.id);
+    const fav = Favorites[index];
 
-    if (indexToDelete !== -1) {
-        Favorites.splice(indexToDelete, 1);
+    Favorites.splice(index, 1);
 
-        ForceRemoveFav(displayFile);            // TODO: Реализовать согласованность с БД
-        updateGalleryFile(updatedFile);
-    }
+    fav.setFavState(false);
+    displayFile.setFavState(false);
+
+    ForceRemoveFav(displayFile);
+
+    updateGalleryFile(displayFile);
+    notify();
 }
 
 export function addFav(displayFile) {
-    if (displayFile.isFav()) throw new Error('addFav :: error');
+    if (!displayFile?.thumbUrl) return;
 
-    const updatedFile = new ThumbFile({
-        ...displayFile,
-        _fav: true
-    });
+    if (isFav(displayFile.thumbUrl)) return;
 
-    Favorites.push(updatedFile);
+    displayFile.setFavState(true);
 
-    ForceAddFavImage(updatedFile).then(id => {  // TODO: Реализовать согласованность с БД
-        updatedFile.id = id;
-        updatedFile.updateUniqueId();
-    });
+    Favorites.push(displayFile);
 
-    updateGalleryFile(updatedFile);
+    ForceAddFavImage(displayFile)
+        .then(id => {
+            displayFile.id = id;
+            displayFile.updateUniqueId();
+        })
+        .catch(console.error);
+
+    updateGalleryFile(displayFile);
+    notify();
 }
 
 export function isFav(url) {
-    if (!url || !Favorites) return false;
-    const searchUrl = url.toString();
-    return Favorites.some(fav => fav.thumbUrl.toString() === searchUrl);
+    if (!url) return false;
+
+    const str = url.toString();
+    return Favorites.some(f => f.thumbUrl.toString() === str);
 }
 
 export function favToDisplayFile(favData) {
-    const {name, url, display, source, tags, remote_type} = favData;
+    const { name, url, display, source, tags, remote_type } = favData;
+
     return GetThumbByData({
         thumbUrl: url,
         remoteType: remote_type,
-        tags: tags,
+        tags,
         sourceUrl: source,
         title: name,
         priority: display,
