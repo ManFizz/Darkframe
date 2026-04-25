@@ -1,10 +1,19 @@
 import React, {useCallback, useEffect, useMemo, useState} from 'react';
 import {CanMoreMedia, LoadMoreMedia} from "../../Controllers/R34Controller";
 import {subscribeFavorites} from "../../Controllers/FavoritesController";
+import {FILE_TYPES} from "../../Constants";
 
 const DIRECTION = {
     LEFT: -1,
     RIGHT: 1,
+};
+
+const isCanDisplayedByIdx = (mainArray, nextIdx) => {
+    if (!mainArray || nextIdx < 0 || nextIdx >= mainArray.length)
+        return false;
+
+    const item = mainArray[nextIdx];
+    return item.type === FILE_TYPES.VIDEO || item.type === FILE_TYPES.IMAGE;
 };
 
 const Navigation = ({ file, modalUpdater, mainArray, setDegree }) => {
@@ -19,22 +28,27 @@ const Navigation = ({ file, modalUpdater, mainArray, setDegree }) => {
     const openShift = useCallback((direction) => {
         const nextIdx = currentIndex + direction;
 
-        if (nextIdx >= 0 && nextIdx < mainArray.length) {
-            modalUpdater(mainArray[nextIdx]);
-        } else if (direction > 0 && CanMoreMedia()) {
+        if (nextIdx < 0) return;
+
+        if (nextIdx >= mainArray.length && CanMoreMedia()) {
             LoadMoreMedia();
+            return;
+        }
+
+        if (isCanDisplayedByIdx(mainArray, nextIdx)) {
+            modalUpdater(mainArray[nextIdx]);
         }
     }, [currentIndex, mainArray, modalUpdater]);
 
     const toggleFav = useCallback(() => {
         file.ToggleFav();
+        setIsFav(file.isFav());
     }, [file]);
 
     useEffect(() => {
         const unsub = subscribeFavorites(() => {
             setIsFav(file.isFav());
         });
-
         return unsub;
     }, [file]);
 
@@ -74,6 +88,9 @@ const Navigation = ({ file, modalUpdater, mainArray, setDegree }) => {
         };
     }, [openShift, toggleFav, modalUpdater]);
 
+    const canGoLeft = isCanDisplayedByIdx(mainArray, currentIndex - 1);
+    const canGoRight = isCanDisplayedByIdx(mainArray, currentIndex + 1);
+
     return (
         <div className="modal-nav-container">
             <i
@@ -89,14 +106,14 @@ const Navigation = ({ file, modalUpdater, mainArray, setDegree }) => {
                 onClick={() => modalUpdater(null)}
             />
 
-            {currentIndex > 0 && (
+            {canGoLeft && (
                 <i
                     className="bi bi-chevron-compact-left arrow arrow-left"
                     onClick={() => openShift(DIRECTION.LEFT)}
                 />
             )}
 
-            {(currentIndex < mainArray.length - 1 || CanMoreMedia()) && (
+            {(canGoRight || CanMoreMedia()) && (
                 <i
                     className="bi bi-chevron-compact-right arrow arrow-right"
                     onClick={() => openShift(DIRECTION.RIGHT)}
