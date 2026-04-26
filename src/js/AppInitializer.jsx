@@ -125,7 +125,12 @@ const Main = () => {
                     />
 
                     <div className="container-fluid">
-                        <Gallery />
+                        <Gallery
+                            modalFileId={state.modalFileId}
+                            modalUpdater={contextValue.setModalFile}
+                            displayArray={state.displayArray}
+                            typeView={state.typeView}
+                        />
                     </div>
 
                     <CustomPagination

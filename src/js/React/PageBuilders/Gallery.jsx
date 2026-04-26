@@ -1,29 +1,26 @@
-import React, {useContext, useRef} from 'react';
+import React, {useRef} from 'react';
 import Thumb from "../Thumb/Thumb";
 import ScrollSensor from "../Helpers/ScrollSensor";
 import {LoadNextPage} from "../Helpers/CustomPagination";
 
-import {GalleryContext} from '../../AppInitializer';
-
-const Gallery = () => {
-    const { state, setModalFile } = useContext(GalleryContext);
+const Gallery = ({modalFileId, modalUpdater, displayArray, typeView}) => {
     const isLoadingRef = useRef(false);
 
-    const galleryContent = state.displayArray?.map((file) => (
+    const galleryContent = displayArray.map((file) => (
         <Thumb
             key={file.uniqueId}
             file={file}
-            modalUpdater={setModalFile}
-            isModal={state.modalFileId === file.uniqueId}
+            modalUpdater={modalUpdater}
+            isModal={modalFileId === file.uniqueId}
         />
     ));
 
     return (
-        <div className={`gallery-view-${state.typeView}`} tabIndex="0" style={{ outline: 'none' }}>
+        <div className={`gallery-view-${typeView}`} tabIndex="0" style={{ outline: 'none' }}>
             {galleryContent}
 
             <ScrollSensor
-                enabled={state.modalFileId === null}
+                enabled={modalFileId === null}
                 onVisible={() => {
                     if (isLoadingRef.current) return;
 
