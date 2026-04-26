@@ -1,8 +1,9 @@
-import React, {useEffect, useMemo, useState} from "react";
+import React, {useCallback, useEffect, useMemo, useState} from "react";
 import {ensureTags, getAllTags, getTagOrder, subscribe} from "../../Controllers/TagsController";
 
 const Tags = ({ file }) => {
     const [version, setVersion] = useState(0);
+    const [activeTag, setActiveTag] = useState(null);
 
     useEffect(() => {
         if (!file?.tags?.length) return;
@@ -41,6 +42,17 @@ const Tags = ({ file }) => {
             .sort((a, b) => a.order - b.order);
     }, [file.tags, tagsMap]);
 
+    const handleClick = useCallback((name) => {
+        navigator.clipboard.writeText(name).catch(console.error);
+
+        setActiveTag(name);
+        setTimeout(() => setActiveTag(null), 500);
+
+        setTimeout(() => {
+            setActiveTag(null);
+        }, 200);
+    }, []);
+
     if (visibleTags.length === 0) return null;
 
     return (
@@ -50,8 +62,14 @@ const Tags = ({ file }) => {
                     ? `tag-type-${metadata.type}`
                     : "bg-secondary";
 
+                const isActive = activeTag === name;
+
                 return (
-                    <span key={name} className={`badge m-1 ${cls}`}>
+                    <span
+                        key={name}
+                        className={`badge m-1 ${cls} tag ${isActive ? "tag-active" : ""}`}
+                        onClick={() => handleClick(name)}
+                    >
                         {name}
                     </span>
                 );
