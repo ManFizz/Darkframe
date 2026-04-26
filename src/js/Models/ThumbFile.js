@@ -30,8 +30,6 @@ export class ThumbFile {
         this.localUrl = data.localUrl || null;
         this.createdAt = data.createdAt || null;
 
-        this._fav = data._fav;
-
         this.type = data.type || this._detectType(this.thumbUrl);
 
         this.updateUniqueId();
@@ -53,26 +51,14 @@ export class ThumbFile {
     isFav() {
         if (!this.thumbUrl) throw "thumbUrl is null";
 
-        const current = isFav(this.thumbUrl);
-
-        if (this._fav !== current) {
-            this._fav = current;
-        }
-
-        return this._fav;
-    }
-
-    setFavState(value) {
-        this._fav = value;
+        return isFav(this.thumbUrl);
     }
 
     ToggleFav() {
         if (this.isFav()) {
             removeFav(this);
-            this._fav = false;
         } else {
             addFav(this);
-            this._fav = true;
         }
     }
 

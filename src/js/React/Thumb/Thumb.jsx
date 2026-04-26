@@ -3,7 +3,7 @@ import Image from "./Image";
 import Video from "./Video";
 import Folder from "./Folder";
 import Return from "./Return";
-import {addFav, removeFav, subscribeFavorites} from "../../Controllers/FavoritesController";
+import {subscribeFavorites} from "../../Controllers/FavoritesController";
 import DropMenu from "./DropMenu";
 import Collection from "./Collection";
 import {getCurrentSource} from "../../Controllers/AppInitializerController";
@@ -23,12 +23,7 @@ const Thumb = React.memo(({ file, isModal, modalUpdater }) => {
 
     const handleLikeClick = (event) => {
         event.stopPropagation();
-
-        if (isFav) {
-            removeFav(file);
-        } else {
-            addFav(file);
-        }
+        file.ToggleFav();
     };
 
     const handleThumbClick = () => {

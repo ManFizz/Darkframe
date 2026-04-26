@@ -1,6 +1,5 @@
 import React, {useCallback, useEffect, useMemo, useState} from 'react';
 import {CanMoreMedia, LoadMoreMedia} from "../../Controllers/R34Controller";
-import {subscribeFavorites} from "../../Controllers/FavoritesController";
 import {FILE_TYPES} from "../../Constants";
 
 const DIRECTION = {
@@ -42,15 +41,12 @@ const Navigation = ({ file, modalUpdater, mainArray, setDegree }) => {
 
     const toggleFav = useCallback(() => {
         file.ToggleFav();
-        setIsFav(file.isFav());
+        setIsFav(prev => !prev);
     }, [file]);
 
     useEffect(() => {
-        const unsub = subscribeFavorites(() => {
-            setIsFav(file.isFav());
-        });
-        return unsub;
-    }, [file]);
+        setIsFav(file.isFav());
+    }, [file.uniqueId, file._fav]);
 
     useEffect(() => {
         const handleKeyDown = (e) => {

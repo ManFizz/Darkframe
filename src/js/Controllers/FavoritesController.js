@@ -39,12 +39,7 @@ export function removeFav(displayFile) {
     const index = Favorites.findIndex(f => f.thumbUrl === displayFile.thumbUrl);
     if (index === -1) return;
 
-    const fav = Favorites[index];
-
     Favorites.splice(index, 1);
-
-    fav.setFavState(false);
-    displayFile.setFavState(false);
 
     ForceRemoveFav(displayFile);
 
@@ -56,8 +51,6 @@ export function addFav(displayFile) {
     if (!displayFile?.thumbUrl) return;
 
     if (isFav(displayFile.thumbUrl)) return;
-
-    displayFile.setFavState(true);
 
     Favorites.push(displayFile);
 
