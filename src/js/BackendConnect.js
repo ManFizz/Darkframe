@@ -1,5 +1,4 @@
-import {Favorites, OnUpdateFavorites} from "./Controllers/FavoritesController";
-import Collection from "./Collection";
+import {OnUpdateFavorites} from "./Controllers/FavoritesController";
 import {notify} from "./Services/NotificationService";
 
 const { ipcRenderer } = window.require("electron");
@@ -89,43 +88,6 @@ export function ForceAddFavTag(tag, remoteType) {
 
 export async function GetFavTags() {
     return await safeInvoke("getFavTags", []);
-}
-
-export async function GetCollections() {
-    const dataFromDatabase = await safeInvoke("GetCollections", []);
-    if (!dataFromDatabase) return [];
-
-    const collections = {};
-    const favMap = new Map();
-
-    Favorites.forEach(f => {
-        favMap.set(f.id, f);
-        favMap.set(f.thumbUrl, f);
-    });
-
-    dataFromDatabase.forEach(item => {
-        if (!collections[item.colId]) {
-            collections[item.colId] = new Collection(item.colName, item.colId);
-        }
-
-        const favorite = favMap.get(item.id) || favMap.get(item.url);
-
-        if (favorite) {
-            if (!favorite.collectionsIds) favorite.collectionsIds = [];
-
-            if (!favorite.collectionsIds.includes(item.colId)) {
-                favorite.collectionsIds.push(item.colId);
-            }
-
-            collections[item.colId].addImage(favorite);
-        }
-    });
-
-    return Object.values(collections);
-}
-
-export async function UpdateCollections(collections) {
-    await safeInvoke("UpdateCollections", null, collections);
 }
 
 export function SaveTags(tags) {

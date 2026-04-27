@@ -5,7 +5,6 @@ import {Favorites} from "../../Controllers/FavoritesController";
 import PrivateData from "../../../../data/private";
 import {useDisplayImagesByPath} from "../../Controllers/FoldersController";
 import {DisplayP365} from "../../Controllers/P365Controller";
-import {DisplayCollections} from "../../CollectionLogic";
 import {DisplayRemoteFavoriteR34} from "../../Controllers/R34FavoriteController"
 
 import {GalleryContext} from '../../AppInitializer';
@@ -42,7 +41,6 @@ const NavBar = () => {
         { label: 'Favorites', type: SOURCE_TYPES.FAVORITE, action: DisplayFavorites },
         { label: 'Folders', type: SOURCE_TYPES.FOLDER, action: () => displayImagesByPath(PrivateData.startPath) },
         { label: 'R34 Favs', type: SOURCE_TYPES.R34, action: DisplayRemoteFavoriteR34 },
-        { label: 'Collections', type: SOURCE_TYPES.COLLECTION, action: DisplayCollections },
     ];
 
     return (

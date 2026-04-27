@@ -35,9 +35,6 @@ const Main = () => {
         setFavTagsArray: (tags) =>
             dispatch({ type: 'SET_FAV_TAGS', payload: tags }),
 
-        setCollections: (cols) =>
-            dispatch({ type: 'SET_COLLECTIONS', payload: cols }),
-
         setCurrentSource: (source) => {
             StopR34Loading();
             updateR34Source(source);
@@ -74,18 +71,15 @@ const Main = () => {
         state.typeView,
         state.sortInfo,
         state.safeMode,
-        state.collections
     ]);
 
     useEffect(() => {
         AppController.setFavTagsArray = contextValue.setFavTagsArray;
-        AppController.setCollections = contextValue.setCollections;
         AppController.setGallery = contextValue.setMainArray;
         AppController.addToGallery = contextValue.addToGallery;
 
         AppController.getGallery = () => state.mainArray;
         AppController.getCurrentSource = () => state.currentSource;
-        AppController.getCollections = () => state.collections;
 
         AppController.setTypeView = contextValue.setTypeView;
         AppController.updateGalleryFile = contextValue.updateFile;

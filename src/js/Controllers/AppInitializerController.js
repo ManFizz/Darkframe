@@ -54,7 +54,6 @@ export const initialState = {
     mainArray: [],
     displayArray: [],
     favTagsArray: [],
-    collections: [],
     currentSource: SOURCE_TYPES.FOLDER,
     typeView: 2,
     sortInfo: { order: SORT_ORDER.DESC, type: SORT_TYPE.TIME },
@@ -84,9 +83,6 @@ export function galleryReducer(state, action) {
 
         case 'SET_FAV_TAGS':
             return { ...state, favTagsArray: action.payload };
-
-        case 'SET_COLLECTIONS':
-            return { ...state, collections: action.payload };
 
         case 'SET_CURRENT_SOURCE':
             return { ...state, currentSource: action.payload, mainArray: [], displayArray: [] };
@@ -130,19 +126,14 @@ export function galleryReducer(state, action) {
 }
 
 export const AppController = {
-    setCollections: () => {},
     setGallery: () => {},
     addToGallery: () => {},
     getGallery: () => [],
     getCurrentSource: () => {},
     setFavTagsArray: () => {},
-    getCollections: () => [],
     setTypeView: () => {},
     updateGalleryFile: () => {},
 };
-
-export const setCollections = (...args) =>
-    AppController.setCollections(...args);
 
 export const setGallery = (...args) =>
     AppController.setGallery(...args);
@@ -158,9 +149,6 @@ export const getCurrentSource = (...args) =>
 
 export const setFavTagsArray = (...args) =>
     AppController.setFavTagsArray(...args);
-
-export const getCollections = (...args) =>
-    AppController.getCollections(...args);
 
 export const setTypeView = (...args) =>
     AppController.setTypeView(...args);

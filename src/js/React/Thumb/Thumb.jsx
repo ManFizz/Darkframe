@@ -4,8 +4,6 @@ import Video from "./Video";
 import Folder from "./Folder";
 import Return from "./Return";
 import {subscribeFavorites} from "../../Controllers/FavoritesController";
-import DropMenu from "./DropMenu";
-import Collection from "./Collection";
 import {getCurrentSource} from "../../Controllers/AppInitializerController";
 import {FILE_TYPES, SOURCE_TYPES} from "../../Constants";
 
@@ -38,7 +36,6 @@ const Thumb = React.memo(({ file, isModal, modalUpdater }) => {
             case FILE_TYPES.VIDEO: return <Video file={file} />;
             case FILE_TYPES.FOLDER: return <Folder file={file} />;
             case FILE_TYPES.RETURN: return <Return file={file} />;
-            case FILE_TYPES.COLLECTION: return <Collection file={file} />;
             default: return null;
         }
     };
@@ -53,7 +50,6 @@ const Thumb = React.memo(({ file, isModal, modalUpdater }) => {
         >
             {hasOverlay && (
                 <div className="overlay">
-                    <DropMenu file={file} />
                     <i
                         className={`bi ${isFav ? 'bi-ban' : 'bi-heart-fill'}`}
                         onClick={handleLikeClick}

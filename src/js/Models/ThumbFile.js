@@ -26,7 +26,6 @@ export class ThumbFile {
         this.time = data.time || null;
         this.remoteType = data.remoteType || null;
         this.priority = data.priority ?? 1;
-        this.collectionsIds = data.collectionsIds || [];
         this.localUrl = data.localUrl || null;
         this.createdAt = data.createdAt || null;
 
