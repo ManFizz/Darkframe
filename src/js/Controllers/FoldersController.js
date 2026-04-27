@@ -65,7 +65,6 @@ export function useDisplayImagesByPath() {
 
             if (backItem) array.push(backItem);
         }
-        console.log(array);
         setGallery(array);
 
     }, [setGallery]);

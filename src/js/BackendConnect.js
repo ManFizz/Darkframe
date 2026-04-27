@@ -37,8 +37,6 @@ export async function InitDatabaseData() {
     if (isInitialized) return;
     isInitialized = true;
 
-    console.log("Инициализация базы данных...");
-
     try {
         const [favs, favTags] = await Promise.all([
             safeInvoke("getFavorites", []),

@@ -33,10 +33,6 @@ class Video extends Component {
             this.setState({video: this.videoRef.current});
     }
 
-    handleEvent(event) {
-        console.log(event);
-    }
-
     handleVolumeChange() {
         const video = this.videoRef.current;
         if (this.state.isMuted !== video.muted)

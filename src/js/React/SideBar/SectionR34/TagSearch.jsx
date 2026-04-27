@@ -37,22 +37,25 @@ const TagSearch = ({currentSource, favTagsArray}) => {
 
         if (lastQueryRef.current !== val) return; // protect overloading
 
-        const words = val.trim().split(/\s+/);
-        const lastWord = words[words.length - 1]?.toLowerCase();
-
-        const hasExactMatch = list.some(suggestion =>
-            suggestion.value.toLowerCase() === lastWord
-        );
-
         setSuggestions(list);
-        setShowDropdown(list.length > 0 && !hasExactMatch);
+        setShowDropdown(list.length > 0);
     };
 
     const insertTag = (tag) => {
         const match = inputValue.match(/[^ -][^ ]*$/);
-        const newValue = match
-            ? inputValue.replace(match[0], tag + " ")
-            : inputValue + (inputValue ? " " : "") + tag + " ";
+
+        if (!match) {
+            setInputValue(inputValue + (inputValue ? " " : "") + tag + " ");
+            setShowDropdown(false);
+            return;
+        }
+
+        const startIndex = match.index;
+
+        const newValue =
+            inputValue.slice(0, startIndex) +
+            tag +
+            " ";
 
         setInputValue(newValue);
         setShowDropdown(false);

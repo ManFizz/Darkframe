@@ -47,9 +47,7 @@ function deleteFile(path) {
 	fs.unlink(path, (err) => {
 		if (err) {
 			console.error('Ошибка при удалении файла:', err);
-			return;
 		}
-		console.log('Файл удалён:', path);
 	});
 }
 

@@ -26,8 +26,6 @@ const Gallery = ({modalFileId, modalUpdater, displayArray, typeView}) => {
 
                     isLoadingRef.current = true;
 
-                    console.log("Scroll reached end, loading next...");
-
                     Promise.resolve(LoadNextPage()).finally(() => {
                         isLoadingRef.current = false;
                     });

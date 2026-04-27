@@ -28,7 +28,6 @@ async function processQueue() {
             if (localUrl) {
                 try {
                     await updateFavoriteLocalUrl(id, localUrl);
-                    console.log(`Favorite ${id} updated with localUrl: ${localUrl}`);
                 } catch (err) {
                     console.error(`Failed to update favorite ${id}:`, err);
                 }

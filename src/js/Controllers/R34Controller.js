@@ -139,7 +139,6 @@ export async function fetchPosts(source, tags, page) {
     const { R34ApiKey, R34UserId } = PrivateData;
 
     const url = `${mainUrl}&limit=${postPerPage}&pid=${page}&tags=${tagsParam}&api_key=${R34ApiKey}&user_id=${R34UserId}`;
-    console.log(url);
     const response = await fetch(url);
     const text = await response.text();
     return new window.DOMParser().parseFromString(text, "text/xml");
