@@ -92,7 +92,7 @@ async function processResponse(responseXML, isNewSearch) {
     else addToGallery(array);
 
     if (currentR34Source.remoteType !== SOURCE_TYPES.R34) {
-        LoadTagsData(array);
+        ensureTags(array);
     }
 }
 

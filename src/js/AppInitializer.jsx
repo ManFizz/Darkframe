@@ -6,6 +6,7 @@ import Modal from "./React/Modal/Modal.jsx";
 import SideBar from "./React/PageBuilders/SideBar.jsx";
 import Gallery from "./React/PageBuilders/Gallery";
 import CustomPagination from "./React/Helpers/CustomPagination";
+import usePagination from "./Hooks/usePagination";
 
 import {InitDatabaseData} from "./BackendConnect";
 import {updateR34Source} from "./Controllers/R34Controller";
@@ -69,6 +70,13 @@ const Main = () => {
         state.safeMode,
     ]);
 
+    const { currentPage, maxPage, pages, goToPage, loadNextPage } = usePagination({
+        mainArray: state.mainArray,
+        currentSource: state.currentSource,
+        updateDisplayArray: contextValue.setDisplayArray,
+        modalFile: state.modalFileId,
+    });
+
     useEffect(() => {
         AppController.setGallery = contextValue.setMainArray;
         AppController.addToGallery = contextValue.addToGallery;
@@ -111,13 +119,16 @@ const Main = () => {
                             modalUpdater={contextValue.setModalFile}
                             displayArray={state.displayArray}
                             typeView={state.typeView}
+                            loadNextPage={loadNextPage}
                         />
                     </div>
 
                     <CustomPagination
-                        displayArray={state.displayArray}
-                        mainArray={state.mainArray}
-                        updateDisplayArray={contextValue.setDisplayArray}
+                        currentPage={currentPage}
+                        maxPage={maxPage}
+                        pages={pages}
+                        goToPage={goToPage}
+                        loadNextPage={loadNextPage}
                         currentSource={state.currentSource}
                     />
                 </div>

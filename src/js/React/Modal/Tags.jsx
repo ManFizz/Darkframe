@@ -1,5 +1,5 @@
 import React, {useCallback, useEffect, useMemo, useState} from "react";
-import {ensureTags, getAllTags, getTagOrder} from "../../Controllers/TagsController";
+import {ensureTags, getAllTags, getTagOrder, subscribe} from "../../Controllers/TagsController";
 
 const Tags = ({ file }) => {
     const [version, setVersion] = useState(0);
@@ -10,6 +10,10 @@ const Tags = ({ file }) => {
 
         ensureTags(file.tags);
     }, [file.tags]);
+
+    useEffect(() => {
+        return subscribe(() => setVersion(v => v + 1));
+    }, []);
 
     const tagsMap = useMemo(() => {
         const map = new Map();

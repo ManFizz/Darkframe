@@ -17,7 +17,7 @@ export function useDisplayImagesByPath() {
 
         const arr = JSON.parse(responseText);
 
-        const skippedNames = ['.nomedia', '_gsdata_'];
+        const skippedNames = ['.nomedia', '_gsdata_', '.stignore'];
         let array = [];
 
         arr.forEach(item => {
@@ -66,5 +66,5 @@ export function useDisplayImagesByPath() {
         }
         setGallery(array);
 
-    }, [setGallery]);
+    }, []);
 }

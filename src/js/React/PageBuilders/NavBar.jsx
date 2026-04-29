@@ -2,7 +2,6 @@ import React, {useContext, useState} from 'react';
 import {BsCaretDownFill, BsFillGrid1X2Fill, BsSearch, BsShieldShaded} from "react-icons/bs";
 import PrivateData from "../../../../data/private";
 import {useDisplayImagesByPath} from "../../Controllers/FoldersController";
-import {DisplayP365} from "../../Controllers/P365Controller";
 import {DisplayRemoteFavoriteR34} from "../../Controllers/R34FavoriteController"
 
 import {GalleryContext} from '../../AppInitializer';
@@ -37,7 +36,6 @@ const NavBar = () => {
     const navButtons = [
         { label: 'R34', type: SOURCE_TYPES.R34 },
         { label: 'Gelbooru', type: SOURCE_TYPES.GELBOORU },
-        { label: 'P365', type: SOURCE_TYPES.P365, action: DisplayP365 },
         { label: 'Favorites', type: SOURCE_TYPES.FAVORITE, action: DisplayFavorites },
         { label: 'Folders', type: SOURCE_TYPES.FOLDER, action: () => displayImagesByPath(PrivateData.startPath) },
         { label: 'R34 Favs', type: SOURCE_TYPES.R34, action: DisplayRemoteFavoriteR34 },

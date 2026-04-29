@@ -1,11 +1,6 @@
 import {getGallery, setGallery} from "./AppInitializerController";
 import {ThumbFile} from "../Models/ThumbFile";
 
-export function ClearGallery()
-{
-    setGallery([]);
-}
-
 export function GetThumbByData(data) {
     if (data.thumbUrl && data.thumbUrl.includes('.stfolder'))
         return null;
