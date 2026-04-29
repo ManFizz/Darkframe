@@ -3,7 +3,7 @@ import {SearchMedia} from "../../../Controllers/R34Controller";
 import FavoriteTagsForm from "./FavoriteTagsForm";
 import {fetchTagSuggestions} from "../../../Controllers/TagsController";
 
-const TagSearch = ({currentSource, favTagsArray}) => {
+const TagSearch = ({currentSource}) => {
     const [inputValue, setInputValue] = useState("");
     const [suggestions, setSuggestions] = useState([]);
     const [score, setScore] = useState(0);
@@ -149,7 +149,6 @@ const TagSearch = ({currentSource, favTagsArray}) => {
             <hr/>
             <FavoriteTagsForm
                 currentSource={currentSource}
-                favTagsArray={favTagsArray}
                 onToggle={handleToggle}
             />
         </>

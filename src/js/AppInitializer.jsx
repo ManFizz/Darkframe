@@ -6,9 +6,8 @@ import Modal from "./React/Modal/Modal.jsx";
 import SideBar from "./React/PageBuilders/SideBar.jsx";
 import Gallery from "./React/PageBuilders/Gallery";
 import CustomPagination from "./React/Helpers/CustomPagination";
-import Notifications from "./React/Helpers/Notifications";
 
-import {GetFavTags, InitDatabaseData} from "./BackendConnect";
+import {InitDatabaseData} from "./BackendConnect";
 import {updateR34Source} from "./Controllers/R34Controller";
 import {StopR34Loading} from "./Controllers/R34FavoriteController"
 
@@ -31,9 +30,6 @@ const Main = () => {
 
         setDisplayArray: (arr) =>
             dispatch({ type: 'SET_DISPLAY_ARRAY', payload: arr }),
-
-        setFavTagsArray: (tags) =>
-            dispatch({ type: 'SET_FAV_TAGS', payload: tags }),
 
         setCurrentSource: (source) => {
             StopR34Loading();
@@ -74,7 +70,6 @@ const Main = () => {
     ]);
 
     useEffect(() => {
-        AppController.setFavTagsArray = contextValue.setFavTagsArray;
         AppController.setGallery = contextValue.setMainArray;
         AppController.addToGallery = contextValue.addToGallery;
 
@@ -85,12 +80,6 @@ const Main = () => {
         AppController.updateGalleryFile = contextValue.updateFile;
 
         InitDatabaseData();
-
-        GetFavTags().then(tags => {
-            if (tags?.length) {
-                AppController.setFavTagsArray(tags);
-            }
-        });
 
         import('./Controllers/TagsController').then(module => {
             module.subscribe(() => {
@@ -103,7 +92,6 @@ const Main = () => {
         <GalleryContext.Provider value={contextValue}>
             <div className={`main-root ${state.safeMode ? "safe-view" : ""}`}>
                 <NavBar />
-                <Notifications />
 
                 <Modal
                     fileId={state.modalFileId}
@@ -115,7 +103,6 @@ const Main = () => {
                 <div className="wrapper d-flex align-items-stretch main-split overflow-auto">
                     <SideBar
                         currentSource={state.currentSource}
-                        favTagsArray={state.favTagsArray}
                     />
 
                     <div className="container-fluid">

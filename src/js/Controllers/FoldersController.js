@@ -1,14 +1,13 @@
 import {useCallback} from "react";
 import {setGallery} from "./AppInitializerController";
-
-import {GetFiles} from "../BackendConnect";
 import {GetThumbByData} from "./GalleryController";
 import {FILE_TYPES, SOURCE_TYPES} from "../Constants";
+import FileService from "../Services/FilesService";
 
 export function useDisplayImagesByPath() {
 
     return useCallback(async (path) => {
-        const responseText = await GetFiles(path);
+        const responseText = await FileService.getFilesByPath(path);
 
         if (!responseText) {
             console.error("Path not found:", path);

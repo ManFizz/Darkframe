@@ -10,14 +10,14 @@ async function updateFavoriteLocalUrl(id, localUrl) {
 	}
 }
 
-async function addFavorite(event, url, name, source, tags, display, remoteType) {
+async function addFavorite(event, thumbUrl, title, sourceUrl, tags, priority, remoteType) {
 	try {
 		return await Favorite.create({
-			title: name,
-			thumbUrl: url,
-			sourceUrl: source,
+			title: title,
+			thumbUrl: thumbUrl,
+			sourceUrl: sourceUrl,
 			tags: tags,
-			priority: display,
+			priority: priority,
 			remoteType: remoteType,
 			createdAt: new Date().toISOString(),
 		});

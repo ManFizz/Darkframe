@@ -2,7 +2,7 @@ import React, {useEffect, useState} from 'react';
 import TagSearch from "./SectionR34/TagSearch";
 import {currentR34Source} from "../../Controllers/R34Controller";
 
-const SectionR34 = ({ currentSource, favTagsArray }) => {
+const SectionR34 = ({ currentSource }) => {
     const [name, setName] = useState(null);
 
     useEffect(() => {
@@ -15,7 +15,6 @@ const SectionR34 = ({ currentSource, favTagsArray }) => {
 
             <TagSearch
                 currentSource={currentSource}
-                favTagsArray={favTagsArray}
             />
         </section>
     );

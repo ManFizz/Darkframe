@@ -1,4 +1,3 @@
-import {addFav, isFav, removeFav} from "../Controllers/FavoritesController";
 import {normalizeTags} from "../Controllers/TagsController";
 import {FILE_TYPES} from "../Constants";
 
@@ -31,34 +30,27 @@ export class ThumbFile {
 
         this.type = data.type || this._detectType(this.thumbUrl);
 
-        this.updateUniqueId();
+        this.uniqueId = this._buildUniqueId();
     }
 
     uniqueId = null;
 
-    updateUniqueId() {
-        this.uniqueId = (
-            this.id ||
+    _buildUniqueId() {
+        return (this.id ||
             (this.remoteId ? `remoteId-${this.remoteId}` : this.thumbUrl)
-        )?.toString();
+        )?.toString() || null;
+    }
 
-        if (!this.uniqueId) {
-            console.warn("UniqueId is null for file:", this);
-        }
+    updateUniqueId() {
+        this.uniqueId = this._buildUniqueId();
     }
 
     isFav() {
-        if (!this.thumbUrl) throw "thumbUrl is null";
-
-        return isFav(this.thumbUrl);
+        throw new Error("Deprecated");
     }
 
     ToggleFav() {
-        if (this.isFav()) {
-            removeFav(this);
-        } else {
-            addFav(this);
-        }
+        throw new Error("Deprecated");
     }
 
     async getSize() {

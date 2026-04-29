@@ -6,8 +6,6 @@ import {SOURCE_TYPES} from "../Constants";
 const urlFavs = 'https://realbooru.com/index.php?page=favorites&s=view&id=' + PrivateData.RealBooruId;
 const urlThumb = 'https://realbooru.com/index.php?page=post&s=view&id=';
 
-let sources = null;
-
 async function parseThumb(id) {
     try {
         let response = await fetch(urlThumb + id);
@@ -34,7 +32,7 @@ async function loadUrl(url) {
     }
 }
 
-var result = [];
+let result = [];
 async function endResult() {
     let arr = [];
 
@@ -54,9 +52,9 @@ async function endResult() {
     setGallery(arr);
 }
 
-var currentPid = 0;
+let currentPid = 0;
 function parse(html) {
-    var r = html.querySelectorAll('.thumb');
+    let r = html.querySelectorAll('.thumb');
     result = [...result, ...r];
     if (r.length >= 50) {
         currentPid += 50;

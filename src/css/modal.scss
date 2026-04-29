@@ -1,4 +1,4 @@
-.modal {
+.modal-view {
   position: fixed;
   top: 54px;
   left: 0;
@@ -112,7 +112,7 @@
   z-index: 3;
 }
 
-.modal img.long {
+.modal-view img.long {
   width: 700px;
   height: auto;
   display: block;
@@ -121,7 +121,7 @@
   max-height: unset;
 }
 
-.modal.long {
+.modal-view.long {
   height: fit-content;
 
   img {

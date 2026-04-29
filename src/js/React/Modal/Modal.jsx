@@ -4,11 +4,13 @@ import Tags from "./Tags";
 import Video from "./Video";
 import Settings from "../../../../data/settings";
 import {FILE_TYPES} from "../../Constants";
+import {useFavorites} from "../../Hooks/useFavorites";
 
 const Modal = ({ fileId, mainArray, modalUpdater, displayFiles }) => {
     const [isLong, setIsLong] = useState(false);
     const [degree, setDegree] = useState(0);
     const modalRef = useRef(null);
+    const { isFav } = useFavorites();
 
     const file = useMemo(() => {
         return mainArray.find(f => f.uniqueId === fileId) || null;
@@ -53,7 +55,7 @@ const Modal = ({ fileId, mainArray, modalUpdater, displayFiles }) => {
 
     return (
         <dialog
-            className={`modal ${file.isFav() ? "favorite" : ""}`}
+            className={`modal-view ${isFav(file.thumbUrl) ? "favorite" : ""}`}
             open
             ref={modalRef}
             tabIndex="-1"

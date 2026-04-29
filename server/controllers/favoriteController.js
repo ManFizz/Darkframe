@@ -1,19 +1,31 @@
 const { ipcMain } = require('electron');
 const { removeFavorite, getFavorites, addFavorite } = require("../services/favoriteService");
 const Favorite = require("../models/Favorite");
-const path = require('path');
 const fs = require('fs').promises;
 const { queueDownload } = require("../services/downloadService");
 
-async function handleAddFavorites(event, url, name, source, tags, display, remoteType) {
+const tagsToDb = (tags) =>
+	Array.isArray(tags) ? tags.join(' ') : (tags || '');
+
+const tagsFromDb = (tags) =>
+	tags ? tags.split(' ').filter(Boolean) : [];
+
+async function handleAddFavorites(event, data) {
 	try {
-		const newFavorite = await addFavorite(event, url, name, source, tags, display, remoteType);
+		const newFavorite = await addFavorite(event,
+			data.thumbUrl,
+			data.title,
+			data.sourceUrl,
+			tagsToDb(data.tags),
+			data.priority,
+			data.remoteType
+		);
 		const id = newFavorite?.id;
 
 		if (!id) return null;
 
 		if (remoteType !== 1) {
-			queueDownload({ id, url });
+			queueDownload({ id, thumbUrl });
 		}
 
 		return id;
@@ -42,7 +54,10 @@ async function handleRemoveFavorites(event, url) {
 async function handleGetFavorites() {
 	try {
 		const favorites = await getFavorites();
-		return favorites;
+		return favorites.map(row => ({
+			...row,
+			tags: tagsFromDb(row.tags),
+		}));
 	} catch (error) {
 		console.error('Ошибка при получении избранного:', error);
 		throw error;

@@ -1,7 +1,5 @@
 import React, {useContext, useState} from 'react';
 import {BsCaretDownFill, BsFillGrid1X2Fill, BsSearch, BsShieldShaded} from "react-icons/bs";
-import {Favorites} from "../../Controllers/FavoritesController";
-
 import PrivateData from "../../../../data/private";
 import {useDisplayImagesByPath} from "../../Controllers/FoldersController";
 import {DisplayP365} from "../../Controllers/P365Controller";
@@ -9,9 +7,11 @@ import {DisplayRemoteFavoriteR34} from "../../Controllers/R34FavoriteController"
 
 import {GalleryContext} from '../../AppInitializer';
 import {SORT_ORDER, SORT_TYPE, SOURCE_TYPES} from "../../Constants";
+import {useFavorites} from "../../Hooks/useFavorites";
 
 const NavBar = () => {
     const { state, setCurrentSource, setSortInfo, setTypeView, setSafeMode, setMainArray } = useContext(GalleryContext);
+    const { favorites } = useFavorites();
 
     const [searchValue, setSearchValue] = useState('');
 
@@ -31,7 +31,7 @@ const NavBar = () => {
     };
 
     const DisplayFavorites = () => {
-        setMainArray([...Favorites]);
+        setMainArray([...favorites]);
     }
 
     const navButtons = [

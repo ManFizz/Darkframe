@@ -1,7 +1,7 @@
 import {GetSourceDataById, sources} from "./R34Controller";
 import {SOURCE_TYPES} from "../Constants";
 import PrivateData from "../../../data/private";
-import {getTagsByNames, SaveTags} from "../BackendConnect";
+import TagsService from "../Services/TagsService";
 
 class Tag {
 	constructor({ id, name, type, count, remoteType }) {
@@ -90,7 +90,7 @@ async function processQueue() {
 	let foundInDb = new Set();
 
 	try {
-		dbTags = await getTagsByNames(names);
+		dbTags = await TagsService.getByNames(names);
 
 		if (Array.isArray(dbTags)) {
 			dbTags.forEach(tag => {
@@ -231,7 +231,7 @@ function scheduleSave() {
 			.filter(Boolean);
 
 		if (tagsToSave.length > 0) {
-			SaveTags(tagsToSave);
+			TagsService.saveTags(tagsToSave);
 			dirtyTags.clear();
 		}
 	}, 1000);

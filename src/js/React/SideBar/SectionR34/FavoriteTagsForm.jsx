@@ -1,18 +1,19 @@
 import React, {useMemo, useState} from "react";
-import {AddFavTag} from "../../../Controllers/FavoritesController";
 import {BsPlusLg} from "react-icons/bs";
+import useFavoriteTags from "../../../Hooks/useFavoriteTags";
 
-const FavoriteTagsForm = ({ favTagsArray, currentSource, onToggle }) => {
+const FavoriteTagsForm = ({ currentSource, onToggle }) => {
     const [value, setValue] = useState("");
+    const { favoriteTags, addFavTag } = useFavoriteTags();
 
     const filteredTags = useMemo(() => {
-        return favTagsArray.filter(tag => tag.remote_type === currentSource);
-    }, [favTagsArray, currentSource]);
+        return favoriteTags.filter(tag => tag.remote_type === currentSource);
+    }, [favoriteTags, currentSource]);
 
-    const addFavTag = () => {
+    const handleClickAddFavTag = () => {
         if (!value.trim()) return;
 
-        AddFavTag(value, currentSource);
+        addFavTag(value, currentSource);
         setValue("");
     };
 
@@ -40,7 +41,7 @@ const FavoriteTagsForm = ({ favTagsArray, currentSource, onToggle }) => {
                     value={value}
                     onChange={(e) => setValue(e.target.value)}
                 />
-                <button className="btn btn-secondary" type="button" onClick={addFavTag}>
+                <button className="btn btn-secondary" type="button" onClick={handleClickAddFavTag}>
                     <BsPlusLg />
                 </button>
             </div>

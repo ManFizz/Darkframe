@@ -49,6 +49,6 @@ async function getTagsByNames(names) {
 
 module.exports = {
 	getTags,
-	setTags,
+	saveTags: setTags,
 	getTagsByNames
 };

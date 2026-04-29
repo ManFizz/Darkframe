@@ -1,6 +1,7 @@
-import React, {useCallback, useEffect, useMemo, useState} from 'react';
+import React, {useCallback, useEffect, useMemo} from 'react';
 import {CanMoreMedia, LoadMoreMedia} from "../../Controllers/R34Controller";
 import {FILE_TYPES} from "../../Constants";
+import {useFavorites} from "../../Hooks/useFavorites";
 
 const DIRECTION = {
     LEFT: -1,
@@ -16,7 +17,7 @@ const isCanDisplayedByIdx = (mainArray, nextIdx) => {
 };
 
 const Navigation = ({ file, modalUpdater, mainArray, setDegree }) => {
-    const [isFav, setIsFav] = useState(file.isFav());
+    const { isFav, toggleFav } = useFavorites();
 
     const currentIndex = useMemo(() => {
         return mainArray.findIndex(f =>
@@ -39,14 +40,9 @@ const Navigation = ({ file, modalUpdater, mainArray, setDegree }) => {
         }
     }, [currentIndex, mainArray, modalUpdater]);
 
-    const toggleFav = useCallback(() => {
-        file.ToggleFav();
-        setIsFav(prev => !prev);
+    const handleToggleFav = useCallback(() => {
+        toggleFav(file);
     }, [file]);
-
-    useEffect(() => {
-        setIsFav(file.isFav());
-    }, [file.uniqueId, file._fav]);
 
     useEffect(() => {
         const handleKeyDown = (e) => {
@@ -62,7 +58,7 @@ const Navigation = ({ file, modalUpdater, mainArray, setDegree }) => {
                     openShift(DIRECTION.RIGHT);
                     break;
                 case 'Enter':
-                    toggleFav();
+                    handleToggleFav();
                     break;
                 case 'Escape':
                     modalUpdater(null);
@@ -82,7 +78,7 @@ const Navigation = ({ file, modalUpdater, mainArray, setDegree }) => {
             document.removeEventListener('keydown', handleKeyDown);
             document.removeEventListener('mousedown', handleMouse);
         };
-    }, [openShift, toggleFav, modalUpdater]);
+    }, [openShift, modalUpdater]);
 
     const canGoLeft = isCanDisplayedByIdx(mainArray, currentIndex - 1);
     const canGoRight = isCanDisplayedByIdx(mainArray, currentIndex + 1);
@@ -90,8 +86,8 @@ const Navigation = ({ file, modalUpdater, mainArray, setDegree }) => {
     return (
         <div className="modal-nav-container">
             <i
-                className={`bi ${isFav ? "bi-heart-fill" : "bi-heart"}`}
-                onClick={toggleFav}
+                className={`bi ${isFav(file.thumbUrl) ? "bi-heart-fill" : "bi-heart"}`}
+                onClick={() => handleToggleFav}
             />
             <i
                 className="bi bi-arrow-clockwise"

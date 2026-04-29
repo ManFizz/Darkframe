@@ -21,7 +21,7 @@ export function GetThumbByData(data) {
 }
 
 export function AddThumbByData(data){
-    const newDisplayFile = GetThumbByData();
+    const newDisplayFile = GetThumbByData(data);
     if(newDisplayFile === null)
         return;
 

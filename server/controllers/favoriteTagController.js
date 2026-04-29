@@ -1,7 +1,7 @@
 const {ipcMain} = require("electron");
 const FavoriteTag = require("../models/FavoriteTag");
 
-async function getFavoriteTags(event) {
+async function getFavoriteTags() {
 	try {
 		return await FavoriteTag.findAll({
 			order: [['display', 'ASC']],

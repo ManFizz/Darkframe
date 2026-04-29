@@ -83,7 +83,7 @@ async function processResponse(responseXML, isNewSearch) {
         previewUrl: getPostAttr(post, 'preview_url'),
         thumbUrl: getPostAttr(post, 'file_url'),
         remoteType: currentR34Source.remoteType,
-        tags: getPostAttr(post, 'tags'),
+        tags: getPostAttr(post, 'tags').split(' ').filter(Boolean),
         sourceUrl: currentR34Source.sourceUrl + getPostAttr(post, 'id'),
         remoteId: getPostAttr(post, 'id'),
     })).filter(item => item !== null);

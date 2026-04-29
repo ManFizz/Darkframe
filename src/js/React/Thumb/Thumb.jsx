@@ -1,27 +1,19 @@
-import React, {useEffect, useState} from "react";
+import React from "react";
 import Image from "./Image";
 import Video from "./Video";
 import Folder from "./Folder";
 import Return from "./Return";
-import {subscribeFavorites} from "../../Controllers/FavoritesController";
 import {getCurrentSource} from "../../Controllers/AppInitializerController";
 import {FILE_TYPES, SOURCE_TYPES} from "../../Constants";
+import {useFavorites} from "../../Hooks/useFavorites";
 
 const Thumb = React.memo(({ file, isModal, modalUpdater }) => {
 
-    const [isFav, setIsFav] = useState(file.isFav());
-
-    useEffect(() => {
-        const unsub = subscribeFavorites(() => {
-            setIsFav(file.isFav());
-        });
-
-        return unsub;
-    }, [file]);
+    const { isFav, toggleFav } = useFavorites();
 
     const handleLikeClick = (event) => {
         event.stopPropagation();
-        file.ToggleFav();
+        toggleFav(file);
     };
 
     const handleThumbClick = () => {
@@ -41,7 +33,7 @@ const Thumb = React.memo(({ file, isModal, modalUpdater }) => {
     };
 
     const hasOverlay = file.type === FILE_TYPES.IMAGE || file.type === FILE_TYPES.VIDEO;
-    const isRemovedInFavs = !isFav && getCurrentSource() === SOURCE_TYPES.FAVORITE;
+    const isRemovedInFavs = !isFav(file.thumbUrl) && getCurrentSource() === SOURCE_TYPES.FAVORITE;
 
     return (
         <div
@@ -51,7 +43,7 @@ const Thumb = React.memo(({ file, isModal, modalUpdater }) => {
             {hasOverlay && (
                 <div className="overlay">
                     <i
-                        className={`bi ${isFav ? 'bi-ban' : 'bi-heart-fill'}`}
+                        className={`bi ${isFav(file.thumbUrl) ? 'bi-ban' : 'bi-heart-fill'}`}
                         onClick={handleLikeClick}
                     />
                 </div>

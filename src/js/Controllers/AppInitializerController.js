@@ -130,7 +130,6 @@ export const AppController = {
     addToGallery: () => {},
     getGallery: () => [],
     getCurrentSource: () => {},
-    setFavTagsArray: () => {},
     setTypeView: () => {},
     updateGalleryFile: () => {},
 };
@@ -146,9 +145,6 @@ export const getGallery = (...args) =>
 
 export const getCurrentSource = (...args) =>
     AppController.getCurrentSource(...args);
-
-export const setFavTagsArray = (...args) =>
-    AppController.setFavTagsArray(...args);
 
 export const setTypeView = (...args) =>
     AppController.setTypeView(...args);

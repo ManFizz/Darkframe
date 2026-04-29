@@ -4,7 +4,7 @@ import {BsList} from "react-icons/bs";
 
 import {SOURCE_TYPES} from "../../Constants";
 
-const SideBar = ({ currentSource, favTagsArray }) => {
+const SideBar = ({ currentSource }) => {
     const isR34Family = [SOURCE_TYPES.R34, SOURCE_TYPES.GELBOORU, SOURCE_TYPES.REALBOORU].includes(currentSource);
     const [sidebarOpen, setSidebarOpen] = useState(isR34Family);
 
@@ -20,7 +20,7 @@ const SideBar = ({ currentSource, favTagsArray }) => {
                 </button>
             </div>
             {isR34Family && (
-                <SectionR34 currentSource={currentSource} favTagsArray={favTagsArray} />
+                <SectionR34 currentSource={currentSource} />
             )}
         </nav>
     );
