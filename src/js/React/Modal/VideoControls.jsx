@@ -1,4 +1,4 @@
-import React, {Component} from 'react';
+import React, {useCallback, useEffect, useRef, useState} from 'react';
 import {
     BsFastForwardFill,
     BsFillPauseFill,
@@ -15,210 +15,156 @@ import {
     BsRepeat1
 } from "react-icons/bs";
 
-class VideoControls extends Component {
-    constructor(props) {
-        super(props);
-        this.state = {
-            startRec: null,
-            endRec: null,
-        };
+const formatTime = (timeInSeconds) => {
+    const date = new Date(timeInSeconds * 1000);
+    const m = date.getMinutes();
+    const s = String(date.getSeconds()).padStart(2, '0');
+    return `${m}:${s}`;
+};
 
-        this.toggleMute = this.toggleMute.bind(this);
-        this.togglePlay = this.togglePlay.bind(this);
-        this.skipAhead = this.skipAhead.bind(this);
-        this.skipToSec = this.skipToSec.bind(this);
-        this.skipSec = this.skipSec.bind(this);
-        this.handleSeekMouseUp = this.handleSeekMouseUp.bind(this);
-        this.handleSeekMouseDown = this.handleSeekMouseDown.bind(this);
-        this.handleKeyDown = this.handleKeyDown.bind(this);
-        this.clearRecord = this.clearRecord.bind(this);
-        this.setStart = this.setStart.bind(this);
-        this.setEnd = this.setEnd.bind(this);
-        this.handleTimeUpdate = this.handleTimeUpdate .bind(this);
+const VideoControls = ({ video, isLooped, isMuted, isPaused, currentTime, videoDuration, toggleLoop }) => {
+    const [startRec, setStartRec] = useState(null);
+    const [endRec, setEndRec] = useState(null);
+    const isSpacePressed = useRef(false);
+    const lastStateVideo = useRef(false);
 
-        this.lastStateVideo = false;
-        this.isSpacePressed = false;
-    }
+    const skipToSec = useCallback((sec) => {
+        if (!video) return;
+        video.currentTime = Math.max(0, Math.min(sec, video.duration));
+    }, [video]);
 
-    handleTimeUpdate() {
-        const { startRec, endRec } = this.state;
-        if(startRec !== null && endRec !== null) {
-            const { video } = this.props;
-            if(video.currentTime > endRec)
-                this.skipToSec(startRec);
-        }
-    }
-
-    componentDidMount() {
-        document.addEventListener('keydown', this.handleKeyDown);
-        document.addEventListener('keyup', this.handleKeyUp);
-    }
-
-    componentWillUnmount() {
-        document.removeEventListener('keydown', this.handleKeyDown);
-        document.removeEventListener('keyup', this.handleKeyUp);
-        this.props.video.removeEventListener('timeupdate', this.handleTimeUpdate);
-    }
-
-    handleKeyUp = (event) => {
-        if (event.code === 'Space' || event.key === ' ') {
-            this.isSpacePressed = false;
-        }
-    };
-
-    handleKeyDown(event) {
-        if(event.ctrlKey) {
-            if (event.key === 'ArrowLeft') {
-                this.skipSec(-10);
-            } else if (event.key === 'ArrowRight') {
-                this.skipSec(10);
-            }
-        }
-
-        if (event.code === 'Space' || event.key === ' ') {
-            const activeElement = document.activeElement;
-            if (
-                activeElement?.tagName === 'INPUT' ||
-                activeElement?.tagName === 'TEXTAREA' ||
-                activeElement?.contentEditable === 'true'
-            ) {
-                return;
-            }
-
-            event.preventDefault();
-
-            if (this.isSpacePressed) {
-                return;
-            }
-
-            this.isSpacePressed = true;
-            this.togglePlay();
-        }
-    }
-
-    toggleMute() {
-        const { video } = this.props;
-        video.muted = !video.muted;
-    }
-
-    togglePlay() {
-        const { video } = this.props;
-        const isPaused = (video.paused || video.ended);
-        if(isPaused)
-            video.play().then();
-        else
-            video.pause();
-    }
-
-    skipAhead(event) {
-        const { video } = this.props;
-        const newValue = event.target.dataset.seek ? event.target.dataset.seek : event.target.value;
-        if(newValue !== Math.round(video.currentTime))
-            video.currentTime = newValue;
-    }
-
-    skipToSec(skipTo) {
-        const { video } = this.props;
-        video.currentTime = Math.max(0, Math.min(skipTo, video.duration));
-    }
-
-    skipSec(seconds) {
-        const { video } = this.props;
+    const skipSec = useCallback((seconds) => {
+        if (!video) return;
         video.currentTime = Math.max(0, Math.min(video.currentTime + seconds, video.duration));
-    }
+    }, [video]);
 
-    formatTime(timeInSeconds) {
-        const date = new Date(timeInSeconds * 1000);
-        const time = {
-            minutes: date.getMinutes(),
-            seconds: date.getSeconds() < 10 ? "0" + date.getSeconds() : date.getSeconds(),
-        };
-        return `${time.minutes}:${time.seconds}`;
-    }
+    const toggleMute = useCallback(() => {
+        if (video) video.muted = !video.muted;
+    }, [video]);
 
-    handleSeekMouseUp() {
-        const { video } = this.props;
-        if(video.paused && !this.lastStateVideo)
-            video.play().then();
-    }
+    const togglePlay = useCallback(() => {
+        if (!video) return;
+        (video.paused || video.ended) ? video.play() : video.pause();
+    }, [video]);
 
-    handleSeekMouseDown() {
-        const { video } = this.props;
-        this.lastStateVideo = video.paused;
+    const skipAhead = useCallback((e) => {
+        if (!video) return;
+        const val = e.target.dataset.seek ?? e.target.value;
+        if (val !== Math.round(video.currentTime))
+            video.currentTime = val;
+    }, [video]);
+
+    const handleSeekMouseDown = useCallback(() => {
+        if (!video) return;
+        lastStateVideo.current = video.paused;
         video.pause();
-    }
+    }, [video]);
 
-    setStart() {
-        const { video } = this.props;
-        this.setState({ startRec: video.currentTime});
-        if(video)
-            video.addEventListener('timeupdate', this.handleTimeUpdate);
-    }
+    const handleSeekMouseUp = useCallback(() => {
+        if (!video) return;
+        if (video.paused && !lastStateVideo.current) video.play();
+    }, [video]);
 
-    setEnd() {
-        const { video } = this.props;
-        this.setState({ endRec: video.currentTime});
-    }
+    const setStart = useCallback(() => {
+        if (video) setStartRec(video.currentTime);
+    }, [video]);
 
-    clearRecord() {
-        const { video } = this.props;
-        this.setState({ startRec: null, endRec: null});
-        if(video)
-            video.removeEventListener('timeupdate', this.handleTimeUpdate);
-    }
+    const setEnd = useCallback(() => {
+        if (video) setEndRec(video.currentTime);
+    }, [video]);
 
-    render() {
-        const { isLooped, isMuted, isPaused, currentTime, videoDuration, toggleLoop } = this.props;
-        const { startRec, endRec } = this.state;
-        return <>
-            <div className="video-controls">
-                <div className="video-misc">
-                    <BsRepeat1 onClick={toggleLoop} style={{ display: isLooped ? 'block' : 'none' }}/>
-                    <BsRepeat onClick={toggleLoop} style={{ display: !isLooped ? 'block' : 'none' }}/>
-                    <BsFillVolumeMuteFill onClick={this.toggleMute} style={{ display: isMuted ? 'block' : 'none' }}/>
-                    <BsFillVolumeUpFill onClick={this.toggleMute} style={{ display: !isMuted ? 'block' : 'none' }}/>
-                    <BsRecordCircle onClick={this.setStart} style={{ display: !startRec ? 'block' : 'none' }}/>
-                    <BsRecordCircleFill onClick={this.setEnd} style={{ display: startRec && !endRec ? 'block' : 'none' }}/>
-                    <BsRecycle onClick={this.clearRecord} style={{ display: startRec && endRec ? 'block' : 'none' }}/>
-                </div>
-                <div className="time-control">
-                    <time id="time-elapsed">{this.formatTime(currentTime)}</time>
-                    <BsFillSkipStartFill onClick={() => this.skipToSec(0)}/>
-                    <BsFillRewindFill onClick={() => this.skipSec(-10)}/>
-                    <BsFillPauseFill onClick={this.togglePlay} style={{ display: !isPaused ? 'block' : 'none' }}/>
-                    <BsFillPlayFill onClick={this.togglePlay} style={{ display: isPaused ? 'block' : 'none' }}/>
-                    <BsFastForwardFill onClick={() => this.skipSec(10)}/>
-                    <BsFillSkipEndFill onClick={() => this.skipToSec(Number.MAX_VALUE)}/>
-                    <time id="duration">{this.formatTime(videoDuration)}</time>
-                </div>
-                <div className="video-progress">
-                    <progress
-                        value={currentTime}
-                        max={videoDuration}
-                    />
-                    <input
-                        className="seek"
-                        id="seek"
-                        min={0}
-                        type="range"
-                        step={0.25}
-                        onChange={this.skipAhead}
-                        value={currentTime}
-                        max={videoDuration}
-                        onMouseUp={this.handleSeekMouseUp}
-                        onMouseDown={this.handleSeekMouseDown}
-                    />
-                    <div
-                        className="seek-tooltip"
-                    >
-                        <div id="arrow" data-popper-arrow="true">
-                            .
-                        </div>
-                    </div>
-                </div>
+    const clearRecord = useCallback(() => {
+        setStartRec(null);
+        setEndRec(null);
+    }, []);
+
+    useEffect(() => {
+        if (!video || startRec === null || endRec === null) return;
+
+        const handleTimeUpdate = () => {
+            if (video.currentTime > endRec) skipToSec(startRec);
+        };
+
+        video.addEventListener('timeupdate', handleTimeUpdate);
+        return () => video.removeEventListener('timeupdate', handleTimeUpdate);
+    }, [video, startRec, endRec, skipToSec]);
+
+    useEffect(() => {
+        const handleKeyDown = (e) => {
+            if (e.ctrlKey) {
+                if (e.key === 'ArrowLeft') skipSec(-10);
+                if (e.key === 'ArrowRight') skipSec(10);
+                return;
+            }
+
+            if (e.code === 'Space' || e.key === ' ') {
+                const tag = document.activeElement?.tagName;
+                if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+                e.preventDefault();
+                if (isSpacePressed.current) return;
+                isSpacePressed.current = true;
+                togglePlay();
+            }
+        };
+
+        const handleKeyUp = (e) => {
+            if (e.code === 'Space' || e.key === ' ')
+                isSpacePressed.current = false;
+        };
+
+        document.addEventListener('keydown', handleKeyDown);
+        document.addEventListener('keyup', handleKeyUp);
+        return () => {
+            document.removeEventListener('keydown', handleKeyDown);
+            document.removeEventListener('keyup', handleKeyUp);
+        };
+    }, [skipSec, togglePlay]);
+
+    return (
+        <div className="video-controls">
+            <div className="video-misc">
+                {isLooped
+                    ? <BsRepeat1 onClick={toggleLoop} />
+                    : <BsRepeat onClick={toggleLoop} />
+                }
+                {isMuted
+                    ? <BsFillVolumeMuteFill onClick={toggleMute} />
+                    : <BsFillVolumeUpFill onClick={toggleMute} />
+                }
+                {!startRec && <BsRecordCircle onClick={setStart} />}
+                {startRec && !endRec && <BsRecordCircleFill onClick={setEnd} />}
+                {startRec && endRec && <BsRecycle onClick={clearRecord} />}
             </div>
-        </>;
-    }
-}
+
+            <div className="time-control">
+                <time id="time-elapsed">{formatTime(currentTime)}</time>
+                <BsFillSkipStartFill onClick={() => skipToSec(0)} />
+                <BsFillRewindFill onClick={() => skipSec(-10)} />
+                {isPaused
+                    ? <BsFillPlayFill onClick={togglePlay} />
+                    : <BsFillPauseFill onClick={togglePlay} />
+                }
+                <BsFastForwardFill onClick={() => skipSec(10)} />
+                <BsFillSkipEndFill onClick={() => skipToSec(Number.MAX_VALUE)} />
+                <time id="duration">{formatTime(videoDuration)}</time>
+            </div>
+
+            <div className="video-progress">
+                <progress value={currentTime} max={videoDuration} />
+                <input
+                    className="seek"
+                    type="range"
+                    min={0}
+                    max={videoDuration}
+                    step={0.25}
+                    value={currentTime}
+                    onChange={skipAhead}
+                    onMouseDown={handleSeekMouseDown}
+                    onMouseUp={handleSeekMouseUp}
+                />
+            </div>
+        </div>
+    );
+};
 
 export default VideoControls;

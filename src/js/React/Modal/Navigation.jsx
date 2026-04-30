@@ -87,7 +87,7 @@ const Navigation = ({ file, modalUpdater, mainArray, setDegree }) => {
         <div className="modal-nav-container">
             <i
                 className={`bi ${isFav(file.thumbUrl) ? "bi-heart-fill" : "bi-heart"}`}
-                onClick={() => handleToggleFav}
+                onClick={handleToggleFav}
             />
             <i
                 className="bi bi-arrow-clockwise"

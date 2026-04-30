@@ -45,10 +45,6 @@ const Tags = ({ file }) => {
 
         setActiveTag(name);
         setTimeout(() => setActiveTag(null), 500);
-
-        setTimeout(() => {
-            setActiveTag(null);
-        }, 200);
     }, []);
 
     if (visibleTags.length === 0) return null;
