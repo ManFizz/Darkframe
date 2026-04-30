@@ -1,18 +1,20 @@
+@use 'variables';
+
 .sidebar {
   &.open {
     margin-left: 0;
   }
 
-  min-width: 320px;
-  max-width: 320px;
+  min-width: variables.$sidebar-width;
+  max-width: variables.$sidebar-width;
   -webkit-transition: all 0.3s;
   -o-transition: all 0.3s;
   transition: all 0.3s;
-  margin-left: -320px;
+  margin-left: -(variables.$sidebar-width);
   padding: 10px;
   position: fixed;
   z-index: 100;
-  top: 58px;
+  top: variables.$navbar-height;
 }
 
 .custom-menu {

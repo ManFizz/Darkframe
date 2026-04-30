@@ -1,9 +1,11 @@
+@use 'variables';
+
 .modal-view {
   position: fixed;
-  top: 54px;
+  top: variables.$modal-top;
   left: 0;
   width: 100vw;
-  height: calc(100vh - 54px);
+  height: calc(100vh - #{variables.$modal-top});
   border: none;
   padding: 0;
   margin: 0;
@@ -34,12 +36,16 @@
 
   &.long {
     display: block;
+    height: fit-content;
 
     img {
-      width: 800px;
+      width: 700px;
       height: auto;
-      margin: 50px auto;
+      margin: 0 auto;
       display: block;
+      border: orange 4px solid;
+      max-height: unset;
+      max-width: 1000px;
     }
   }
 
@@ -110,22 +116,4 @@
 .thumb.modal-active {
   filter: brightness(0.5);
   z-index: 3;
-}
-
-.modal-view img.long {
-  width: 700px;
-  height: auto;
-  display: block;
-  margin: 0 auto;
-  border: orange 4px solid;
-  max-height: unset;
-}
-
-.modal-view.long {
-  height: fit-content;
-
-  img {
-    max-width: 1000px;
-    margin: auto;
-  }
 }
