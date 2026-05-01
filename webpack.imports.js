@@ -16,6 +16,7 @@ import ('/src/css/gallery-view.css');
 import ('/src/css/modal.css');
 import ('/src/css/sidebar.css');
 import ('/src/css/video-controls.css');
+import ('/src/css/library.css');
 
 import ('/src/js/BackendConnect');
 import ('/src/js/Controllers/GalleryController.js');

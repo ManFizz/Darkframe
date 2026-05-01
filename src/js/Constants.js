@@ -3,7 +3,7 @@ export const FILE_TYPES = {
     VIDEO: 2,
     FOLDER: 3,
     RETURN: 4,
-    COLLECTION: 5,
+    LIBRARY: 5,
 };
 export const SOURCE_TYPES = {
     FOLDER: 1,
@@ -11,7 +11,7 @@ export const SOURCE_TYPES = {
     P365: 3,
     GELBOORU: 4,
     FAVORITE: 5,
-    COLLECTION: 6,
+    LIBRARY: 6,
     REALBOORU: 7,
 };
 export const SORT_ORDER = {ASC: 1, DESC: -1};

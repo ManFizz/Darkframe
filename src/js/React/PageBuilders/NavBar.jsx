@@ -39,6 +39,7 @@ const NavBar = () => {
         { label: 'Favorites', type: SOURCE_TYPES.FAVORITE, action: DisplayFavorites },
         { label: 'Folders', type: SOURCE_TYPES.FOLDER, action: () => displayImagesByPath(PrivateData.startPath) },
         { label: 'R34 Favs', type: SOURCE_TYPES.R34, action: DisplayRemoteFavoriteR34 },
+        { label: 'Library', type: SOURCE_TYPES.LIBRARY, action: () => {} },
     ];
 
     return (

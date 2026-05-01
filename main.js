@@ -3,6 +3,10 @@ const { backupDatabase } = require('./server/backup');
 const { setupIpcHandlers } = require('./server/ipcManager');
 const sequelize = require("./server/database");
 const { downloadMissingFavorites } = require('./server/controllers/favoriteController');
+const { protocol } = require('electron');
+const path = require('path');
+const fs = require('fs');
+const { ITEMS_PATH } = require('./server/services/importService');
 
 app.commandLine.appendSwitch('disable-quic');
 app.commandLine.appendSwitch('disable-http2');
@@ -57,7 +61,54 @@ async function initDatabase() {
     }
 }
 
+function registerLibraryProtocol() {
+    protocol.registerFileProtocol('library', (request, callback) => {
+        try {
+            const url = new URL(request.url);
+            const type = url.hostname;                          // 'thumb' или 'item'
+            const id = url.pathname.replace(/^\//, '');        // uuid
+
+            let filePath;
+
+            if (type === 'thumb') {
+                filePath = path.join(ITEMS_PATH, id, 'thumb.jpg');
+            } else if (type === 'item') {
+                const itemDir = path.join(ITEMS_PATH, id);
+                if (!fs.existsSync(itemDir)) return callback({ error: -6 });
+
+                const files = fs.readdirSync(itemDir);
+                const original = files.find(f => f.startsWith('original'));
+                filePath = original ? path.join(itemDir, original) : null;
+            }
+
+            if (!filePath || !fs.existsSync(filePath)) {
+                console.error('[Protocol] File not found:', filePath);
+                return callback({ error: -6 });
+            }
+
+            callback({ path: filePath });
+        } catch (e) {
+            console.error('[Protocol] Error:', e);
+            callback({ error: -2 });
+        }
+    });
+}
+
+protocol.registerSchemesAsPrivileged([
+    {
+        scheme: 'library',
+        privileges: {
+            secure: true,
+            standard: true,
+            supportFetchAPI: true,
+            corsEnabled: true,
+        }
+    }
+]);
+
 app.whenReady().then(async () => {
+    registerLibraryProtocol();
+
     setupIpcHandlers();
 
     await initDatabase();
@@ -74,6 +125,15 @@ app.whenReady().then(async () => {
     process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
 
     await createWindow();
+
+    win.webContents.on('will-navigate', (e) => e.preventDefault());
+
+    win.webContents.session.on('will-download', (e) => e.preventDefault());
+
+    app.on('open-file', (event, filePath) => {
+        event.preventDefault();
+        win.webContents.send('file-dropped', [filePath]);
+    });
 
     downloadMissingFavorites().then(() => {
         console.log("Все файлы проверены и недостающие скачаны.");
