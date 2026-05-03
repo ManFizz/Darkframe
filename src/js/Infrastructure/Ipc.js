@@ -39,4 +39,5 @@ export const libraryApi = {
     updateCollection:  (data) => invoke('library:updateCollection', data),
     deleteCollection:  (data) => invoke('library:deleteCollection', data),
     searchTags:        (query)=> invoke('library:searchTags', { query }),
+    reorderItems:      (orderedIds) => invoke('library:reorderItems', { orderedIds }),
 };

@@ -18,6 +18,7 @@ const Item = sequelize.define('Item', {
     mimeType:   { type: DataTypes.STRING(128), defaultValue: '' },
     duration:   { type: DataTypes.FLOAT, allowNull: true },
     collectionId: { type: DataTypes.UUID, allowNull: true },
+    order: { type: DataTypes.INTEGER, defaultValue: 0, allowNull: false },
     importedAt: {
         type: DataTypes.INTEGER,
         defaultValue: () => Math.floor(Date.now() / 1000),

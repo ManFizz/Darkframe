@@ -37,7 +37,7 @@ function register() {
                 model: Tag,
                 as: 'tags',
                 through: { attributes: [] },
-                attributes: ['id', 'name', 'type'],
+                order: [['order', 'ASC']],
             }],
         });
         tags = tags || [];
@@ -151,6 +151,15 @@ function register() {
             value: t.name,
             label: t.name,
         }));
+    });
+
+    ipcMain.handle('library:reorderItems', async (_, { orderedIds }) => {
+        await Promise.all(
+            orderedIds.map((id, index) =>
+                Item.update({ order: index }, { where: { id } })
+            )
+        );
+        return { ok: true };
     });
 }
 

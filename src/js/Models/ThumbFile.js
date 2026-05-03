@@ -27,6 +27,8 @@ export class ThumbFile {
         this.priority = data.priority ?? 1;
         this.localUrl = data.localUrl || null;
         this.createdAt = data.createdAt || null;
+        this.order = data.order || null;
+        this.rating = data.rating || null;
 
         this.type = data.type || this._detectType(this.thumbUrl);
 

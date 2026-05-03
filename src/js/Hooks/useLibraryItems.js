@@ -22,6 +22,8 @@ export function useLibraryItems(collectionId) {
             height:     item.height,
             remoteType: SOURCE_TYPES.LIBRARY,
             time:       item.importedAt,
+            order:      item.order,
+            rating:     item.rating,
         }));
 
         setItems(thumbFiles);

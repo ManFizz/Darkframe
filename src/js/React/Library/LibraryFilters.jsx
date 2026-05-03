@@ -105,6 +105,7 @@ const LibraryFilters = ({ filters, onUpdate, onAddTag, onRemoveTag, onReset, tot
                         value={filters.sortBy}
                         onChange={e => onUpdate('sortBy', e.target.value)}
                     >
+                        <option value={SORT_FIELDS.ORDER}>Порядок</option>
                         <option value={SORT_FIELDS.IMPORTED_AT}>Дата добавления</option>
                         <option value={SORT_FIELDS.TITLE}>Название</option>
                         <option value={SORT_FIELDS.RATING}>Рейтинг</option>

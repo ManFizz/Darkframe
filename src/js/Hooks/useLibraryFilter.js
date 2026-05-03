@@ -1,6 +1,7 @@
 import {useCallback, useMemo, useState} from 'react';
 
 export const SORT_FIELDS = {
+    ORDER:       'order',
     IMPORTED_AT: 'importedAt',
     TITLE:       'title',
     RATING:      'rating',
@@ -16,8 +17,8 @@ const initialFilters = {
     search:  '',
     tags:    [],
     rating:  0,
-    sortBy:  SORT_FIELDS.IMPORTED_AT,
-    order:   SORT_ORDER.DESC,
+    sortBy:  SORT_FIELDS.ORDER,
+    order:   SORT_ORDER.ASC,
 };
 
 export function useLibraryFilter(items) {

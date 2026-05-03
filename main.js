@@ -7,6 +7,7 @@ const { protocol } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const { ITEMS_PATH } = require('./server/services/importService');
+const { migration_1 } = require("./server/migrations/migration_1");
 
 app.commandLine.appendSwitch('disable-quic');
 app.commandLine.appendSwitch('disable-http2');
@@ -55,6 +56,8 @@ function setupRequestHeaders() {
 async function initDatabase() {
     try {
         await sequelize.sync();
+
+        await migration_1();
         console.log('Database synchronized');
     } catch (err) {
         console.error('DB sync error:', err);

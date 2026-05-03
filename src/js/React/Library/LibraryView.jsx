@@ -5,10 +5,10 @@ import MetadataPanel from './MetadataPanel';
 import LibraryFilters from './LibraryFilters';
 import {useLibraryItems} from '../../Hooks/useLibraryItems';
 import {useLibraryFilter} from '../../Hooks/useLibraryFilter';
-import Gallery from '../PageBuilders/Gallery';
 import BulkActionBar from "./BulkActionBar";
 import useSelection from "../../Hooks/useSelection";
 import LibraryService from "../../Services/LibraryService"
+import LibraryGallery from "../PageBuilders/LibraryGallery";
 
 const LibraryView = () => {
     const [selectedCollection, setSelectedCollection] = useState(SPECIAL.ALL);
@@ -29,6 +29,15 @@ const LibraryView = () => {
     } = useLibraryFilter(items);
 
     const { selected, selectedItems, toggle, selectAll, clear, isSelected } = useSelection(filtered);
+
+    const [orderedItems, setOrderedItems] = useState([]);
+    useEffect(() => {
+        setOrderedItems(filtered);
+    }, [filtered]);
+
+    const handleReordered = useCallback((reordered) => {
+        setOrderedItems(reordered);
+    }, []);
 
     const handleFileClick = useCallback((file, e) => {
         if (e?.ctrlKey || e?.shiftKey || e?.metaKey) {
@@ -99,13 +108,12 @@ const LibraryView = () => {
                     tabIndex={0}
                     style={{ outline: 'none' }}
                 >
-                    <Gallery
-                        displayArray={filtered}
-                        typeView={2}
-                        modalFileId={null}
-                        modalUpdater={handleFileClick}
-                        loadNextPage={() => {}}
+                    <LibraryGallery
+                        items={orderedItems}
+                        onReordered={handleReordered}
                         isSelected={isSelected}
+                        modalUpdater={handleFileClick}
+                        typeView={2}
                     />
                 </div>
             </div>

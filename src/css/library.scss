@@ -377,3 +377,27 @@
 .library-gallery {
   user-select: none;
 }
+
+.thumb-drag-wrapper {
+  position: relative;
+  transition: opacity 0.15s, transform 0.15s;
+
+  &.dragging {
+    opacity: 0.4;
+    cursor: grabbing;
+  }
+
+  &.drag-over {
+    &::before {
+      content: '';
+      position: absolute;
+      left: -2px;
+      top: 0;
+      bottom: 0;
+      width: 3px;
+      background: var(--bs-primary);
+      border-radius: 2px;
+      z-index: 10;
+    }
+  }
+}
