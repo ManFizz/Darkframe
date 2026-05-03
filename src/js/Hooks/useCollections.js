@@ -27,3 +27,5 @@ export function useCollections() {
         deleteCollection: (id) => LibraryService.deleteCollection(id),
     };
 }
+
+export default useCollections;

@@ -49,6 +49,8 @@ export const LibraryService = {
     // --- Items ---
 
     async getItems({ collectionId } = {}) {
+        console.log('[LibraryService.getItems] collectionId:', collectionId);
+        console.log('[LibraryService.getItems] params:', JSON.stringify({ collectionId: collectionId }));
         if (collectionId !== undefined)
             return libraryApi.getItems({ collectionId: collectionId });
 
@@ -61,6 +63,14 @@ export const LibraryService = {
 
     async importFiles({ filePaths, collectionId, tags = [], sourceUrl = '' }) {
         return libraryApi.importFiles({ filePaths, collectionId, tags, sourceUrl });
+    },
+
+    async importDirectoryDialog(collectionId) {
+        return libraryApi.importDirectoryDialog({ collectionId });
+    },
+
+    async importDirectory({ dirPath, collectionId }) {
+        return libraryApi.importDirectory({ dirPath, collectionId });
     },
 
     async updateItem(id, data) {

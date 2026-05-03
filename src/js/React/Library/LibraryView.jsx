@@ -1,4 +1,4 @@
-import React, {useCallback, useEffect, useState} from 'react';
+import React, {useCallback, useEffect, useMemo, useState} from 'react';
 import CollectionTree, {SPECIAL} from './CollectionTree';
 import ImportButton from './ImportButton';
 import MetadataPanel from './MetadataPanel';
@@ -10,6 +10,7 @@ import useSelection from "../../Hooks/useSelection";
 import LibraryService from "../../Services/LibraryService"
 import LibraryGallery from "../PageBuilders/LibraryGallery";
 import {FILE_TYPES} from "../../Constants";
+import useCollections from "../../Hooks/useCollections"
 
 const LibraryView = () => {
     const [selectedCollection, setSelectedCollection] = useState(SPECIAL.ALL);
@@ -35,6 +36,27 @@ const LibraryView = () => {
     useEffect(() => {
         setOrderedItems(filtered);
     }, [filtered]);
+
+    const { tree } = useCollections();
+
+    const currentCollectionName = useMemo(() => {
+        if (selectedCollection === SPECIAL.ALL ||
+            selectedCollection === SPECIAL.UNCATEGORIZED ||
+            !selectedCollection) return null;
+
+        const findName = (nodes) => {
+            for (const node of nodes) {
+                if (node.id === selectedCollection) return node.name;
+                if (node.children?.length) {
+                    const found = findName(node.children);
+                    if (found) return found;
+                }
+            }
+            return null;
+        };
+
+        return findName(tree);
+    }, [selectedCollection, tree]);
 
     const handleReordered = useCallback((reordered) => {
         setOrderedItems(reordered);
@@ -87,7 +109,12 @@ const LibraryView = () => {
                     onSelect={handleCollectionSelect}
                 />
                 <ImportButton
-                    collectionId={selectedCollection}
+                    collectionId={
+                        selectedCollection === SPECIAL.ALL || selectedCollection === SPECIAL.UNCATEGORIZED
+                            ? null
+                            : selectedCollection
+                    }
+                    collectionName={currentCollectionName}
                     onImported={reload}
                 />
             </div>

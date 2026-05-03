@@ -4,6 +4,8 @@ const { v4: uuidv4 } = require('uuid');
 const sharp = require('sharp');
 const ffmpeg = require('fluent-ffmpeg');
 const ffmpegPath = require('ffmpeg-static');
+const ffprobePath = require('ffprobe-static').path;
+
 const { app } = require('electron');
 const crypto = require('crypto');
 
@@ -17,6 +19,7 @@ const Collection = require("../models/Collection");
 const LIBRARY_REMOTE_TYPE = SOURCE_TYPES.LIBRARY;
 
 ffmpeg.setFfmpegPath(ffmpegPath);
+ffmpeg.setFfprobePath(ffprobePath);
 
 const LIBRARY_PATH = path.join(app.getPath('userData'), 'library');
 const ITEMS_PATH = path.join(LIBRARY_PATH, 'items');
@@ -29,6 +32,11 @@ const MIME_TYPES = {
     '.mp4': 'video/mp4',  '.webm': 'video/webm',
     '.avi': 'video/avi',
 };
+
+const SUPPORTED_EXTENSIONS = new Set([
+    '.jpg', '.jpeg', '.png', '.webp', '.gif', '.jfif',
+    '.mp4', '.webm', '.avi',
+]);
 
 function getFileHash(filePath) {
     return new Promise((resolve, reject) => {
@@ -153,6 +161,10 @@ async function importFile({ filePath, collectionId = null, tags = [], sourceUrl 
     } catch (e) {
         console.error(`Thumb generation failed for ${fileName}:`, e);
     }
+    const safeCollectionId =
+        collectionId === 'ALL' || collectionId === 'UNCATEGORIZED'
+            ? null
+            : collectionId || null;
 
     const item = await sequelize.transaction(async (t) => {
         const created = await Item.create({
@@ -166,7 +178,7 @@ async function importFile({ filePath, collectionId = null, tags = [], sourceUrl 
             size: stat.size,
             duration,
             fileHash,
-            collectionId: collectionId || null,
+            collectionId: safeCollectionId,
             createdAt: Math.floor(stat.birthtimeMs / 1000),
         }, { transaction: t });
 
@@ -233,4 +245,35 @@ async function hashExistingItems() {
     console.log('Hashing complete');
 }
 
-module.exports = { importFiles, importFile, LIBRARY_PATH, ITEMS_PATH, ensureTag, hashExistingItems };
+function collectFiles(dirPath) {
+    const result = [];
+
+    const entries = fs.readdirSync(dirPath, { withFileTypes: true });
+
+    for (const entry of entries) {
+        const fullPath = path.join(dirPath, entry.name);
+
+        if (entry.isDirectory()) {
+            result.push(...collectFiles(fullPath)); // рекурсия
+        } else {
+            const ext = path.extname(entry.name).toLowerCase();
+            if (SUPPORTED_EXTENSIONS.has(ext)) {
+                result.push(fullPath);
+            }
+        }
+    }
+
+    return result;
+}
+
+async function importDirectory({ dirPath, collectionId, tags = [], sourceUrl = '' }) {
+    const filePaths = collectFiles(dirPath);
+
+    if (!filePaths.length) {
+        return { results: [], skipped: [], errors: [], total: 0 };
+    }
+
+    return importFiles({ filePaths, collectionId, tags, sourceUrl });
+}
+
+module.exports = { importFiles, importFile, LIBRARY_PATH, ITEMS_PATH, ensureTag, hashExistingItems, importDirectory };

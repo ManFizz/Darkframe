@@ -40,4 +40,6 @@ export const libraryApi = {
     deleteCollection:  (data) => invoke('library:deleteCollection', data),
     searchTags:        (query)=> invoke('library:searchTags', { query }),
     reorderItems:      (orderedIds) => invoke('library:reorderItems', { orderedIds }),
+    importDirectoryDialog: (data) => invoke('library:importDirectoryDialog', data),
+    importDirectory:   (data) => invoke('library:importDirectory', data),
 };

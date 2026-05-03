@@ -1,5 +1,5 @@
 const { ipcMain, dialog } = require('electron');
-const { importFiles, ITEMS_PATH } = require('../services/importService');
+const { importFiles, ITEMS_PATH, importDirectory  } = require('../services/importService');
 const { Item, Tag, ItemTag } = require('../models/associations');
 const Collection = require('../models/Collection');
 const { Op } = require('sequelize');
@@ -26,6 +26,10 @@ function register() {
     });
 
     ipcMain.handle('library:getItems', async (_, params = {}) => {
+        console.log('[getItems] params:', JSON.stringify(params));
+        console.log('[getItems] hasOwnProperty collectionId:', params.hasOwnProperty('collectionId'));
+        console.log('[getItems] collectionId value:', params.collectionId);
+        console.log('[getItems] collectionId === null:', params.collectionId === null);
         const { collectionId, search, rating } = params;
         const isUncategorized = params.hasOwnProperty('collectionId') && collectionId === null;
 
@@ -177,6 +181,29 @@ function register() {
             )
         );
         return { ok: true };
+    });
+
+    ipcMain.handle('library:importDirectoryDialog', async (_, { collectionId }) => {
+        const { canceled, filePaths } = await dialog.showOpenDialog({
+            properties: ['openDirectory', 'multiSelections'],
+        });
+
+        if (canceled || !filePaths.length) return { results: [], skipped: [], errors: [] };
+
+        const allResults = { results: [], skipped: [], errors: [] };
+
+        for (const dirPath of filePaths) {
+            const result = await importDirectory({ dirPath, collectionId });
+            allResults.results.push(...result.results);
+            allResults.skipped.push(...result.skipped);
+            allResults.errors.push(...result.errors);
+        }
+
+        return allResults;
+    });
+
+    ipcMain.handle('library:importDirectory', async (_, { dirPath, collectionId }) => {
+        return importDirectory({ dirPath, collectionId });
     });
 }
 
