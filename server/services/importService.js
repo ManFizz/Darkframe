@@ -15,13 +15,14 @@ const sequelize = require('../database');
 const Tag = require('../models/Tag');
 const { SOURCE_TYPES } = require('../../src/js/constants');
 const Collection = require("../models/Collection");
+const Settings = require('../../data/settings');
 
 const LIBRARY_REMOTE_TYPE = SOURCE_TYPES.LIBRARY;
 
 ffmpeg.setFfmpegPath(ffmpegPath);
 ffmpeg.setFfprobePath(ffprobePath);
 
-const LIBRARY_PATH = path.join(app.getPath('userData'), 'library');
+const LIBRARY_PATH = Settings.LibraryPath || path.join(app.getPath('userData'), 'library');
 const ITEMS_PATH = path.join(LIBRARY_PATH, 'items');
 const THUMB_SIZE = 400;
 
