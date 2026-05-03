@@ -48,8 +48,11 @@ export const LibraryService = {
 
     // --- Items ---
 
-    async getItems({ collectionId, search, tags, rating } = {}) {
-        return libraryApi.getItems({ collectionId, search, tags, rating });
+    async getItems({ collectionId } = {}) {
+        if (collectionId !== undefined)
+            return libraryApi.getItems({ collectionId: collectionId });
+
+        return libraryApi.getItems({});
     },
 
     async importDialog(collectionId) {

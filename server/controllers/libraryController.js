@@ -25,34 +25,51 @@ function register() {
         return importFiles({ filePaths, collectionId, tags, sourceUrl });
     });
 
-    ipcMain.handle('library:getItems', async (_, { collectionId, search, tags, rating }) => {
+    ipcMain.handle('library:getItems', async (_, params = {}) => {
+        const { collectionId, search, rating } = params;
+        const isUncategorized = params.hasOwnProperty('collectionId') && collectionId === null;
+
         const where = {};
-        if (collectionId !== undefined) where.collectionId = collectionId || null;
+        if (params.hasOwnProperty('collectionId')) {
+            where.collectionId = collectionId;
+        }
         if (search) where.title = { [Op.like]: `%${search}%` };
         if (rating) where.rating = { [Op.gte]: rating };
 
-        const items = await Item.findAll({
-            where,
-            include: [{
-                model: Tag,
-                as: 'tags',
-                through: { attributes: [] },
+        const [items, childCollections] = await Promise.all([
+            Item.findAll({
+                where,
+                include: [{ model: Tag, as: 'tags', through: { attributes: [] } }],
                 order: [['order', 'ASC']],
-            }],
-        });
-        tags = tags || [];
-        const tagsMap = {};
-        tags.forEach(({ itemId, tagName }) => {
-            if (!tagsMap[itemId]) tagsMap[itemId] = [];
-            tagsMap[itemId].push(tagName);
-        });
+            }),
 
-        return items.map(item => ({
+            !isUncategorized && params.hasOwnProperty('collectionId')
+                ? Collection.findAll({
+                    where: { parentId: collectionId },
+                    order: [['order', 'ASC']],
+                })
+                : Promise.resolve([]),
+        ]);
+
+        const collectionItems = await Promise.all(
+            childCollections.map(async (col) => {
+                const count = await Item.count({ where: { collectionId: col.id } });
+                return {
+                    ...col.toJSON(),
+                    itemCount: count,
+                    isCollection: true, // маркер
+                };
+            })
+        );
+
+        const plainItems = items.map(item => ({
             ...item.toJSON(),
-            tags: item.tags.map(t => t.name), // фронт получает массив строк как раньше
+            tags: item.tags.map(t => t.name),
             thumbPath: `library://thumb/${item.id}`,
             originalPath: `library://item/${item.id}`,
         }));
+
+        return { collections: collectionItems, items: plainItems };
     });
 
     ipcMain.handle('library:updateItem', async (_, { id, data }) => {

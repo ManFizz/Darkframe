@@ -6,6 +6,7 @@ import Return from "./Return";
 import {getCurrentSource} from "../../Controllers/AppInitializerController";
 import {FILE_TYPES, SOURCE_TYPES} from "../../Constants";
 import {useFavorites} from "../../Hooks/useFavorites";
+import Collection from "./Collection";
 
 const Thumb = (({ file, isModal, modalUpdater, isSelected }) => {
 
@@ -17,7 +18,7 @@ const Thumb = (({ file, isModal, modalUpdater, isSelected }) => {
     };
 
     const handleThumbClick = (e) => {
-        if (file.type === FILE_TYPES.IMAGE || file.type === FILE_TYPES.VIDEO) {
+        if (file.type === FILE_TYPES.IMAGE || file.type === FILE_TYPES.VIDEO || file.type === FILE_TYPES.LIBRARY) {
             modalUpdater(file, e);
         }
     };
@@ -28,6 +29,7 @@ const Thumb = (({ file, isModal, modalUpdater, isSelected }) => {
             case FILE_TYPES.VIDEO: return <Video file={file} />;
             case FILE_TYPES.FOLDER: return <Folder file={file} />;
             case FILE_TYPES.RETURN: return <Return file={file} />;
+            case FILE_TYPES.LIBRARY: return <Collection file={file} />;
             default: return null;
         }
     };

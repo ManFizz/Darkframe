@@ -4,6 +4,7 @@ export const FILE_TYPES = {
     FOLDER: 3,
     RETURN: 4,
     LIBRARY: 5,
+    COLLECTION: 5,
 };
 export const SOURCE_TYPES = {
     FOLDER: 1,
@@ -12,6 +13,7 @@ export const SOURCE_TYPES = {
     GELBOORU: 4,
     FAVORITE: 5,
     LIBRARY: 6,
+    COLLECTION: 6,
     REALBOORU: 7,
 };
 export const SORT_ORDER = {ASC: 1, DESC: -1};

@@ -1,7 +1,7 @@
 import {useCallback, useEffect, useState} from 'react';
 import LibraryService from '../Services/LibraryService';
 import {ThumbFile} from '../Models/ThumbFile';
-import {SOURCE_TYPES} from '../Constants';
+import {FILE_TYPES, SOURCE_TYPES} from '../Constants';
 
 export function useLibraryItems(collectionId) {
     const [items, setItems] = useState([]);
@@ -11,7 +11,24 @@ export function useLibraryItems(collectionId) {
         setLoading(true);
         const raw = await LibraryService.getItems({ collectionId });
 
-        const thumbFiles = raw.map(item => new ThumbFile({
+        // Псевдо-файлы для дочерних коллекций
+        const collectionThumbs = (raw.collections || []).map(col =>
+            new ThumbFile({
+                id:        col.id,
+                title:     col.name,
+                thumbUrl:  col.id,
+                type:      FILE_TYPES.COLLECTION,
+                remoteType: SOURCE_TYPES.LIBRARY,
+                order:  1000000,
+                _meta: {
+                    itemCount: col.itemCount,
+                    isCollection: true,
+                    collectionId: col.id,
+                },
+            })
+        );
+
+        const thumbFiles = (raw.items || []).map(item => new ThumbFile({
             id:         item.id,
             title:      item.title || item.fileName,
             thumbUrl:   item.thumbPath,
@@ -26,7 +43,7 @@ export function useLibraryItems(collectionId) {
             rating:     item.rating,
         }));
 
-        setItems(thumbFiles);
+        setItems([...collectionThumbs, ...thumbFiles]);
         setLoading(false);
     }, [collectionId]);
 

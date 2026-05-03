@@ -31,6 +31,7 @@ export class ThumbFile {
         this.rating = data.rating || null;
 
         this.type = data.type || this._detectType(this.thumbUrl);
+        this._meta = data._meta || null;
 
         this.uniqueId = this._buildUniqueId();
     }

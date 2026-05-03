@@ -9,6 +9,7 @@ import BulkActionBar from "./BulkActionBar";
 import useSelection from "../../Hooks/useSelection";
 import LibraryService from "../../Services/LibraryService"
 import LibraryGallery from "../PageBuilders/LibraryGallery";
+import {FILE_TYPES} from "../../Constants";
 
 const LibraryView = () => {
     const [selectedCollection, setSelectedCollection] = useState(SPECIAL.ALL);
@@ -40,6 +41,11 @@ const LibraryView = () => {
     }, []);
 
     const handleFileClick = useCallback((file, e) => {
+        if (file.type === FILE_TYPES.LIBRARY) {
+            handleCollectionSelect(file._meta.collectionId);
+            return;
+        }
+
         if (e?.ctrlKey || e?.shiftKey || e?.metaKey) {
             toggle(file.uniqueId, e);
         } else if (selected.size > 0) {
@@ -48,7 +54,7 @@ const LibraryView = () => {
             setSelectedFile(file);
             setPanelOpen(true);
         }
-    }, [selected, toggle]);
+    }, [selected, toggle, handleCollectionSelect]);
 
     useEffect(() => { clear(); }, [selectedCollection]);
 
