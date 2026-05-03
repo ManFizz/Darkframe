@@ -1,28 +1,47 @@
-import React, {useCallback, useState} from 'react';
-import CollectionTree from './CollectionTree';
+import React, {useCallback, useEffect, useState} from 'react';
+import CollectionTree, {SPECIAL} from './CollectionTree';
 import ImportButton from './ImportButton';
 import MetadataPanel from './MetadataPanel';
 import LibraryFilters from './LibraryFilters';
 import {useLibraryItems} from '../../Hooks/useLibraryItems';
 import {useLibraryFilter} from '../../Hooks/useLibraryFilter';
 import Gallery from '../PageBuilders/Gallery';
+import BulkActionBar from "./BulkActionBar";
+import useSelection from "../../Hooks/useSelection";
+import LibraryService from "../../Services/LibraryService"
 
 const LibraryView = () => {
-    const [selectedCollection, setSelectedCollection] = useState(null);
+    const [selectedCollection, setSelectedCollection] = useState(SPECIAL.ALL);
     const [selectedFile, setSelectedFile] = useState(null);
     const [panelOpen, setPanelOpen] = useState(false);
 
-    const { items, reload, updateItem, deleteItem } = useLibraryItems(selectedCollection);
+    const { items, reload, updateItem, deleteItem } = useLibraryItems(
+        selectedCollection === SPECIAL.ALL
+            ? undefined
+            : selectedCollection === SPECIAL.UNCATEGORIZED
+                ? null
+                : selectedCollection
+    );
 
     const {
         filters, filtered,
         update, addTag, removeTag, reset,
     } = useLibraryFilter(items);
 
-    const handleFileClick = useCallback((file) => {
-        setSelectedFile(file);
-        setPanelOpen(true);
-    }, []);
+    const { selected, selectedItems, toggle, selectAll, clear, isSelected } = useSelection(filtered);
+
+    const handleFileClick = useCallback((file, e) => {
+        if (e?.ctrlKey || e?.shiftKey || e?.metaKey) {
+            toggle(file.uniqueId, e);
+        } else if (selected.size > 0) {
+            toggle(file.uniqueId, e);
+        } else {
+            setSelectedFile(file);
+            setPanelOpen(true);
+        }
+    }, [selected, toggle]);
+
+    useEffect(() => { clear(); }, [selectedCollection]);
 
     const handleUpdated = useCallback(async (idOrAction, data) => {
         if (idOrAction === 'delete') {
@@ -58,7 +77,12 @@ const LibraryView = () => {
                 />
             </div>
 
-            <div className={`library-main ${panelOpen ? 'panel-open' : ''}`}>
+            <div className={`library-main ${panelOpen && selected.size === 0 ? 'panel-open' : ''}`}>
+            <BulkActionBar
+                    selectedItems={selectedItems}
+                    collections={LibraryService.getCollections()}
+                    onDone={async () => { clear(); await reload(); }}
+                />
                 <LibraryFilters
                     filters={filters}
                     onUpdate={update}
@@ -69,18 +93,24 @@ const LibraryView = () => {
                     filtered={filtered.length}
                 />
 
-                <div className="library-gallery">
+                <div
+                    className="library-gallery"
+                    onKeyDown={e => { if (e.ctrlKey && e.key === 'a') { e.preventDefault(); selectAll(); }}}
+                    tabIndex={0}
+                    style={{ outline: 'none' }}
+                >
                     <Gallery
                         displayArray={filtered}
                         typeView={2}
-                        modalFileId={selectedFile?.uniqueId || null}
+                        modalFileId={null}
                         modalUpdater={handleFileClick}
-                        onScrollEnd={() => {}}
+                        loadNextPage={() => {}}
+                        isSelected={isSelected}
                     />
                 </div>
             </div>
 
-            {panelOpen && (
+            {panelOpen && selected.size === 0 && (
                 <MetadataPanel
                     file={selectedFile}
                     onUpdated={handleUpdated}

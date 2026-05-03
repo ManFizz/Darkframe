@@ -108,7 +108,8 @@ function register() {
     });
 
     ipcMain.handle('library:getCollections', async () => {
-        return Collection.findAll({ order: [['order', 'ASC']] });
+        const collections = await Collection.findAll({ order: [['order', 'ASC']] });
+        return collections.map(c => c.toJSON());
     });
 
     ipcMain.handle('library:createCollection', async (_, { name, parentId, icon, color }) => {

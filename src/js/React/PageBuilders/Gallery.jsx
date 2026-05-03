@@ -2,7 +2,7 @@ import React, {useRef} from 'react';
 import Thumb from "../Thumb/Thumb";
 import ScrollSensor from "../Helpers/ScrollSensor";
 
-const Gallery = ({ modalFileId, modalUpdater, displayArray, typeView, loadNextPage }) => {
+const Gallery = ({ modalFileId, modalUpdater, displayArray, typeView, loadNextPage, isSelected }) => {
     const isLoadingRef = useRef(false);
 
     return (
@@ -13,6 +13,7 @@ const Gallery = ({ modalFileId, modalUpdater, displayArray, typeView, loadNextPa
                     file={file}
                     modalUpdater={modalUpdater}
                     isModal={modalFileId === file.uniqueId}
+                    isSelected={isSelected?.(file.uniqueId) ?? false}
                 />
             ))}
 

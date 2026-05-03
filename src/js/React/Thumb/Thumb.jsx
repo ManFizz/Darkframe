@@ -7,7 +7,7 @@ import {getCurrentSource} from "../../Controllers/AppInitializerController";
 import {FILE_TYPES, SOURCE_TYPES} from "../../Constants";
 import {useFavorites} from "../../Hooks/useFavorites";
 
-const Thumb = React.memo(({ file, isModal, modalUpdater }) => {
+const Thumb = (({ file, isModal, modalUpdater, isSelected }) => {
 
     const { isFav, toggleFav } = useFavorites();
 
@@ -16,9 +16,9 @@ const Thumb = React.memo(({ file, isModal, modalUpdater }) => {
         toggleFav(file);
     };
 
-    const handleThumbClick = () => {
+    const handleThumbClick = (e) => {
         if (file.type === FILE_TYPES.IMAGE || file.type === FILE_TYPES.VIDEO) {
-            modalUpdater(file);
+            modalUpdater(file, e);
         }
     };
 
@@ -37,7 +37,7 @@ const Thumb = React.memo(({ file, isModal, modalUpdater }) => {
 
     return (
         <div
-            className={`card thumb bg-dark ${isModal ? 'modal-active' : ''} ${isRemovedInFavs ? 'opacity-50' : ''}`}
+            className={`card thumb bg-dark ${isModal ? 'modal-active' : ''} ${isRemovedInFavs ? 'opacity-50' : ''} ${isSelected ? 'thumb-selected' : ''}`}
             onClick={handleThumbClick}
         >
             {hasOverlay && (
