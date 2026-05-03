@@ -5,12 +5,14 @@ const sharp = require('sharp');
 const ffmpeg = require('fluent-ffmpeg');
 const ffmpegPath = require('ffmpeg-static');
 const { app } = require('electron');
+const crypto = require('crypto');
 
 const Item = require('../models/Item');
 const ItemTag = require('../models/ItemTag');
 const sequelize = require('../database');
 const Tag = require('../models/Tag');
 const { SOURCE_TYPES } = require('../../src/js/constants');
+const Collection = require("../models/Collection");
 
 const LIBRARY_REMOTE_TYPE = SOURCE_TYPES.LIBRARY;
 
@@ -27,6 +29,16 @@ const MIME_TYPES = {
     '.mp4': 'video/mp4',  '.webm': 'video/webm',
     '.avi': 'video/avi',
 };
+
+function getFileHash(filePath) {
+    return new Promise((resolve, reject) => {
+        const hash = crypto.createHash('sha256');
+        const stream = fs.createReadStream(filePath);
+        stream.on('data', chunk => hash.update(chunk));
+        stream.on('end', () => resolve(hash.digest('hex')));
+        stream.on('error', reject);
+    });
+}
 
 async function ensureTag(name, transaction) {
     const [tag] = await Tag.findOrCreate({
@@ -93,6 +105,25 @@ function getVideoDuration(filePath) {
 }
 
 async function importFile({ filePath, collectionId = null, tags = [], sourceUrl = '' }) {
+    const fileHash = await getFileHash(filePath);
+
+    const existing = await Item.findOne({
+        where: { fileHash },
+        include: [{ model: Collection, as: 'collection', attributes: ['id', 'name'] }],
+    });
+
+    if (existing) {
+        const collectionName = existing.collection?.name || 'Без коллекции';
+        return {
+            skipped: true,
+            reason: 'duplicate',
+            existingId: existing.id,
+            existingTitle: existing.title || existing.fileName,
+            collectionName,
+            filePath,
+        };
+    }
+
     const id = uuidv4();
     const itemDir = path.join(ITEMS_PATH, id);
     ensureDir(itemDir);
@@ -134,6 +165,7 @@ async function importFile({ filePath, collectionId = null, tags = [], sourceUrl 
             height,
             size: stat.size,
             duration,
+            fileHash,
             collectionId: collectionId || null,
             createdAt: Math.floor(stat.birthtimeMs / 1000),
         }, { transaction: t });
@@ -151,29 +183,54 @@ async function importFile({ filePath, collectionId = null, tags = [], sourceUrl 
         return created;
     });
 
-    return {
-        ...item.toJSON(),
-        tags,
-        thumbPath: thumbPath,
-        originalPath: originalPath,
-    };
+    return { skipped: false, item };
 }
 
 async function importFiles({ filePaths, collectionId, tags, sourceUrl }) {
     const results = [];
+    const skipped = [];
     const errors = [];
 
     for (const filePath of filePaths) {
         try {
-            const item = await importFile({ filePath, collectionId, tags, sourceUrl });
-            results.push(item);
+            const result = await importFile({ filePath, collectionId, tags, sourceUrl });
+
+            if (result.skipped) {
+                skipped.push(result);
+            } else {
+                results.push(result.item);
+            }
         } catch (e) {
             console.error(`Failed to import ${filePath}:`, e);
             errors.push({ filePath, error: e.message });
         }
     }
 
-    return { results, errors };
+    return { results, skipped, errors };
 }
 
-module.exports = { importFiles, importFile, LIBRARY_PATH, ITEMS_PATH, ensureTag };
+async function hashExistingItems() {
+    const items = await Item.findAll({ where: { fileHash: null } });
+    if (!items.length) return;
+
+    console.log(`Hashing ${items.length} existing items...`);
+
+    for (const item of items) {
+        try {
+            const itemDir = path.join(ITEMS_PATH, item.id);
+            const files = fs.readdirSync(itemDir);
+            const original = files.find(f => f.startsWith('original'));
+            if (!original) continue;
+
+            const filePath = path.join(itemDir, original);
+            const hash = await getFileHash(filePath);
+            await item.update({ fileHash: hash });
+        } catch (e) {
+            console.warn(`Could not hash item ${item.id}:`, e.message);
+        }
+    }
+
+    console.log('Hashing complete');
+}
+
+module.exports = { importFiles, importFile, LIBRARY_PATH, ITEMS_PATH, ensureTag, hashExistingItems };

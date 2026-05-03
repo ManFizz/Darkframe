@@ -6,8 +6,8 @@ const { downloadMissingFavorites } = require('./server/controllers/favoriteContr
 const { protocol } = require('electron');
 const path = require('path');
 const fs = require('fs');
-const { ITEMS_PATH } = require('./server/services/importService');
-const { migration_1 } = require("./server/migrations/migration_1");
+const { ITEMS_PATH, hashExistingItems } = require('./server/services/importService');
+const { migrations } = require("./server/migrations");
 
 app.commandLine.appendSwitch('disable-quic');
 app.commandLine.appendSwitch('disable-http2');
@@ -57,8 +57,9 @@ async function initDatabase() {
     try {
         await sequelize.sync();
 
-        await migration_1();
+        await migrations();
         console.log('Database synchronized');
+        hashExistingItems();
     } catch (err) {
         console.error('DB sync error:', err);
     }

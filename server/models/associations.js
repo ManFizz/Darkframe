@@ -1,6 +1,7 @@
 const Item = require("./Item");
 const Tag = require("./Tag");
 const ItemTag = require("./ItemTag");
+const Collection = require("./Collection");
 
 Item.belongsToMany(Tag, {
     through: ItemTag,
@@ -15,5 +16,8 @@ Tag.belongsToMany(Item, {
     otherKey: 'itemId',
     as: 'items',
 });
+
+Item.belongsTo(Collection, { foreignKey: 'collectionId', as: 'collection' });
+Collection.hasMany(Item, { foreignKey: 'collectionId', as: 'items' });
 
 module.exports = { Item, Tag, ItemTag };

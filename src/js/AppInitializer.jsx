@@ -16,6 +16,7 @@ import LibraryView from "./React/Library/LibraryView";
 import {SOURCE_TYPES} from "./Constants";
 
 import {AppController, galleryReducer, initialState} from "./Controllers/AppInitializerController";
+import Notifications from "./React/Helpers/Notifications";
 
 export const GalleryContext = createContext(null);
 
@@ -104,6 +105,7 @@ const Main = () => {
     return (
         <GalleryContext.Provider value={contextValue}>
             <div className={`main-root ${state.safeMode ? "safe-view" : ""}`}>
+                <Notifications />
                 <NavBar />
 
                 {!isLibrary && (

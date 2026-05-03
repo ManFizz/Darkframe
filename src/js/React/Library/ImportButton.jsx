@@ -1,32 +1,58 @@
 import React, {useRef} from 'react';
 import LibraryService from '../../Services/LibraryService';
 
-const { ipcRenderer } = window.require('electron');
+import {notify} from '../../Services/NotificationService';
 
 const ImportButton = ({ collectionId, onImported }) => {
     const isDragging = useRef(false);
 
+    const handleImport = async (filePaths) => {
+        const { results, skipped, errors } = await LibraryService.importFiles({
+            filePaths,
+            collectionId,
+        });
+
+        if (results.length > 0) {
+            notify({
+                message: `Добавлено файлов: ${results.length}`,
+                type: 'success',
+            });
+            onImported?.();
+        }
+
+        skipped.forEach(s => {
+            notify({
+                message: `«${s.existingTitle}» уже есть в коллекции «${s.collectionName}»`,
+                type: 'warning',
+                duration: 5000,
+            });
+        });
+
+        errors.forEach(e => {
+            notify({
+                message: `Ошибка импорта: ${e.filePath}`,
+                type: 'danger',
+            });
+        });
+    };
+
     const handleImportDialog = async () => {
-        const { results, errors } = await LibraryService.importDialog(collectionId);
-        if (errors.length) console.error('Import errors:', errors);
-        if (results.length) onImported?.();
+        const result = await LibraryService.importDialog(collectionId);
+        await handleImport(result.filePaths || []);
     };
 
     const handleDrop = async (e) => {
         e.preventDefault();
         e.stopPropagation();
 
-        const filePaths = Array.from(e.dataTransfer.files).map(f => {
-            return window.require('electron').webUtils?.getPathForFile(f) || f.path;
-        }).filter(Boolean);
-
-        if (!filePaths.length) {
-            console.warn('No paths found');
-            return;
+        const filePaths = [];
+        for (let i = 0; i < e.dataTransfer.files.length; i++) {
+            const p = window.require('electron').webUtils?.getPathForFile(e.dataTransfer.files[i]);
+            if (p) filePaths.push(p);
         }
 
-        const { results, errors } = await LibraryService.importFiles({ filePaths, collectionId });
-        if (results.length) onImported?.();
+        if (!filePaths.length) return;
+        await handleImport(filePaths);
     };
 
     return (
