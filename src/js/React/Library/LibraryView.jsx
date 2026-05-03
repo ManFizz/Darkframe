@@ -2,20 +2,20 @@ import React, {useCallback, useEffect, useMemo, useState} from 'react';
 import CollectionTree, {SPECIAL} from './CollectionTree';
 import ImportButton from './ImportButton';
 import MetadataPanel from './MetadataPanel';
-import LibraryFilters from './LibraryFilters';
 import {useLibraryItems} from '../../Hooks/useLibraryItems';
-import {useLibraryFilter} from '../../Hooks/useLibraryFilter';
 import BulkActionBar from "./BulkActionBar";
 import useSelection from "../../Hooks/useSelection";
 import LibraryService from "../../Services/LibraryService"
 import LibraryGallery from "../PageBuilders/LibraryGallery";
 import {FILE_TYPES} from "../../Constants";
 import useCollections from "../../Hooks/useCollections"
+import {useLibraryContext} from '../../LibraryContext';
 
 const LibraryView = () => {
     const [selectedCollection, setSelectedCollection] = useState(SPECIAL.ALL);
     const [selectedFile, setSelectedFile] = useState(null);
     const [panelOpen, setPanelOpen] = useState(false);
+    const { filtered, setLibraryItems } = useLibraryContext();
 
     const { items, reload, updateItem, deleteItem } = useLibraryItems(
         selectedCollection === SPECIAL.ALL
@@ -25,10 +25,9 @@ const LibraryView = () => {
                 : selectedCollection
     );
 
-    const {
-        filters, filtered,
-        update, addTag, removeTag, reset,
-    } = useLibraryFilter(items);
+    useEffect(() => {
+        setLibraryItems(items);
+    }, [items]);
 
     const { selected, selectedItems, toggle, selectAll, clear, isSelected } = useSelection(filtered);
 
@@ -125,16 +124,6 @@ const LibraryView = () => {
                     collections={LibraryService.getCollections()}
                     onDone={async () => { clear(); await reload(); }}
                 />
-                <LibraryFilters
-                    filters={filters}
-                    onUpdate={update}
-                    onAddTag={addTag}
-                    onRemoveTag={removeTag}
-                    onReset={reset}
-                    total={items.length}
-                    filtered={filtered.length}
-                />
-
                 <div
                     className="library-gallery"
                     onKeyDown={e => { if (e.ctrlKey && e.key === 'a') { e.preventDefault(); selectAll(); }}}

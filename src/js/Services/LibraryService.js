@@ -49,8 +49,6 @@ export const LibraryService = {
     // --- Items ---
 
     async getItems({ collectionId } = {}) {
-        console.log('[LibraryService.getItems] collectionId:', collectionId);
-        console.log('[LibraryService.getItems] params:', JSON.stringify({ collectionId: collectionId }));
         if (collectionId !== undefined)
             return libraryApi.getItems({ collectionId: collectionId });
 

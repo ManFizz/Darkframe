@@ -1,4 +1,4 @@
-import React, {createContext, useEffect, useMemo, useReducer} from 'react';
+import React, {createContext, useEffect, useMemo, useReducer, useState} from 'react';
 import ReactDOM from 'react-dom/client';
 
 import NavBar from "./React/PageBuilders/NavBar.jsx";
@@ -18,10 +18,16 @@ import {SOURCE_TYPES} from "./Constants";
 import {AppController, galleryReducer, initialState} from "./Controllers/AppInitializerController";
 import Notifications from "./React/Helpers/Notifications";
 
+import {LibraryContext} from './LibraryContext';
+import {useLibraryFilter} from './Hooks/useLibraryFilter';
+
 export const GalleryContext = createContext(null);
 
 const Main = () => {
     const [state, dispatch] = useReducer(galleryReducer, initialState);
+
+    const [libraryItems, setLibraryItems] = useState([]);
+    const libraryFilter = useLibraryFilter(libraryItems);
 
     const contextValue = useMemo(() => ({
         state,
@@ -104,9 +110,14 @@ const Main = () => {
 
     return (
         <GalleryContext.Provider value={contextValue}>
+            <LibraryContext.Provider value={{
+                ...libraryFilter,
+                total: libraryItems.length,
+                setLibraryItems,
+            }}>
             <div className={`main-root ${state.safeMode ? "safe-view" : ""}`}>
                 <Notifications />
-                <NavBar />
+                <NavBar setLibraryItems={setLibraryItems} />
 
                 {!isLibrary && (
                     <Modal
@@ -146,6 +157,7 @@ const Main = () => {
                     )}
                 </div>
             </div>
+            </LibraryContext.Provider>
         </GalleryContext.Provider>
     );
 };

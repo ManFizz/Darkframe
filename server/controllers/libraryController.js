@@ -26,10 +26,6 @@ function register() {
     });
 
     ipcMain.handle('library:getItems', async (_, params = {}) => {
-        console.log('[getItems] params:', JSON.stringify(params));
-        console.log('[getItems] hasOwnProperty collectionId:', params.hasOwnProperty('collectionId'));
-        console.log('[getItems] collectionId value:', params.collectionId);
-        console.log('[getItems] collectionId === null:', params.collectionId === null);
         const { collectionId, search, rating } = params;
         const isUncategorized = params.hasOwnProperty('collectionId') && collectionId === null;
 
