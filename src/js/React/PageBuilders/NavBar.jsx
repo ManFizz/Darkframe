@@ -91,11 +91,16 @@ const NavBar = () => {
                     <div className="d-flex btn-group">
                         <div className="btn-group dropdown">
                             <button className="btn btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">
-                                Sort by {state.sortInfo.type === SORT_TYPE.NAME ? 'name' : 'time'}
+                                Sort by {state.sortInfo.type === SORT_TYPE.NAME ? 'name' :
+                                state.sortInfo.type === SORT_TYPE.ID ? 'id' :
+                                    state.sortInfo.type === SORT_TYPE.TIME ? 'time' : "priority"
+                            }
                             </button>
                             <ul className="dropdown-menu dropdown-menu-end">
+                                <li><button className="dropdown-item" onClick={() => setSortInfo({ type: SORT_TYPE.ID })}>Id</button></li>
                                 <li><button className="dropdown-item" onClick={() => setSortInfo({ type: SORT_TYPE.NAME })}>Name</button></li>
                                 <li><button className="dropdown-item" onClick={() => setSortInfo({ type: SORT_TYPE.TIME })}>Time</button></li>
+                                <li><button className="dropdown-item" onClick={() => setSortInfo({ type: SORT_TYPE.PRIORITY })}>Priority</button></li>
                             </ul>
                         </div>
                         <button className="btn btn-outline-secondary" onClick={() => setSortInfo({ order: state.sortInfo.order * -1 })}>

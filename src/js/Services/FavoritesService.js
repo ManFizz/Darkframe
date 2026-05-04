@@ -1,5 +1,5 @@
-import {favoritesApi} from "../Infrastructure/Ipc"
-import {ThumbFile} from "../Models/ThumbFile";
+import {favoritesApi} from "@/Infrastructure/Ipc"
+import {ThumbFile} from "@/Models/ThumbFile";
 
 let favorites = [];
 let listeners = new Set();

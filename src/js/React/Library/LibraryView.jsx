@@ -10,12 +10,14 @@ import LibraryGallery from "../PageBuilders/LibraryGallery";
 import {FILE_TYPES} from "../../Constants";
 import useCollections from "../../Hooks/useCollections"
 import {useLibraryContext} from '../../LibraryContext';
+import Modal from "../Modal/Modal";
 
 const LibraryView = () => {
     const [selectedCollection, setSelectedCollection] = useState(SPECIAL.ALL);
     const [selectedFile, setSelectedFile] = useState(null);
     const [panelOpen, setPanelOpen] = useState(false);
     const { filtered, setLibraryItems } = useLibraryContext();
+    const [modalFileId, setModalFileId] = useState(null);
 
     const { items, reload, updateItem, deleteItem } = useLibraryItems(
         selectedCollection === SPECIAL.ALL
@@ -24,6 +26,12 @@ const LibraryView = () => {
                 ? null
                 : selectedCollection
     );
+
+    const handleFileOpen = useCallback((file) => {
+        if (file.type === FILE_TYPES.IMAGE || file.type === FILE_TYPES.VIDEO) {
+            setModalFileId(file.uniqueId);
+        }
+    }, []);
 
     useEffect(() => {
         setLibraryItems(items);
@@ -102,6 +110,12 @@ const LibraryView = () => {
 
     return (
         <div className="library-layout">
+            <Modal
+                fileId={modalFileId}
+                mainArray={orderedItems}
+                modalUpdater={(file) => setModalFileId(file?.uniqueId || null)}
+                displayFiles={orderedItems}
+            />
             <div className="library-sidebar">
                 <CollectionTree
                     selectedId={selectedCollection}
@@ -135,6 +149,7 @@ const LibraryView = () => {
                         onReordered={handleReordered}
                         isSelected={isSelected}
                         modalUpdater={handleFileClick}
+                        onFileOpen={handleFileOpen}
                         typeView={2}
                     />
                 </div>

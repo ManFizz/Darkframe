@@ -41,6 +41,7 @@ export function useLibraryItems(collectionId) {
             time:       item.importedAt,
             order:      item.order,
             rating:     item.rating,
+            type:       item.mimeType.startsWith('video/') ? FILE_TYPES.VIDEO : FILE_TYPES.IMAGE,
         }));
 
         setItems([...collectionThumbs, ...thumbFiles]);

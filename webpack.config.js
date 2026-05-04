@@ -3,15 +3,15 @@ const HtmlWebpackPlugin = require('html-webpack-plugin')
 const CopyWebpackPlugin = require('copy-webpack-plugin');
 module.exports = {
     target: "electron-renderer",
-    mode: 'production',
-    devtool: 'source-map',
+    mode: 'development',
+    devtool: 'eval-source-map',
     entry: './webpack.imports.js',
     optimization: {
         splitChunks: {
             chunks: 'all',
         },
         usedExports: true,
-        minimize: true,
+        minimize: false,
     },
     module: {
         rules: [
@@ -56,6 +56,15 @@ module.exports = {
         }),
     ],
     resolve: {
-        extensions: ['.js', '.jsx']
+        extensions: ['.js', '.jsx'],
+        alias: {
+            '@': path.resolve(__dirname, 'src/js'),
+            '@data': path.resolve(__dirname, 'data'),
+            '@server': path.resolve(__dirname, 'server'),
+            '@react': path.resolve(__dirname, 'src/js/react'),
+            '@hooks': path.resolve(__dirname, 'src/js/hooks'),
+            '@services': path.resolve(__dirname, 'src/js/services'),
+            '@controllers': path.resolve(__dirname, 'src/js/controllers'),
+        }
     },
 };

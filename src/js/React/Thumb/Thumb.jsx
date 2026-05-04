@@ -1,14 +1,22 @@
-import React from "react";
+import React, {useCallback} from "react";
 import Image from "./Image";
 import Video from "./Video";
 import Folder from "./Folder";
 import Return from "./Return";
-import {getCurrentSource} from "../../Controllers/AppInitializerController";
-import {FILE_TYPES, SOURCE_TYPES} from "../../Constants";
-import {useFavorites} from "../../Hooks/useFavorites";
+import {getCurrentSource} from "@controllers/AppInitializerController";
+import {FILE_TYPES, SOURCE_TYPES} from "@/Constants";
+import {useFavorites} from "@hooks/useFavorites";
 import Collection from "./Collection";
+import {useClickHandler} from '@hooks/useClickHandler';
 
-const Thumb = (({ file, isModal, modalUpdater, isSelected }) => {
+const Thumb = (({ file, isModal, modalUpdater, isSelected, onDoubleClick }) => {
+    const handleSingleClick = useCallback((e) => {
+        if (file.type === FILE_TYPES.IMAGE ||
+            file.type === FILE_TYPES.VIDEO ||
+            file.type === FILE_TYPES.COLLECTION) {
+            modalUpdater(file, e);
+        }
+    }, [file, modalUpdater]);
 
     const { isFav, toggleFav } = useFavorites();
 
@@ -17,11 +25,11 @@ const Thumb = (({ file, isModal, modalUpdater, isSelected }) => {
         toggleFav(file);
     };
 
-    const handleThumbClick = (e) => {
-        if (file.type === FILE_TYPES.IMAGE || file.type === FILE_TYPES.VIDEO || file.type === FILE_TYPES.LIBRARY) {
-            modalUpdater(file, e);
-        }
-    };
+    const handleClick = useClickHandler({
+        onClick: handleSingleClick,
+        onDoubleClick: onDoubleClick ? () => onDoubleClick(file) : null,
+        delay: 250,
+    });
 
     const renderContent = () => {
         switch (file.type) {
@@ -40,7 +48,7 @@ const Thumb = (({ file, isModal, modalUpdater, isSelected }) => {
     return (
         <div
             className={`card thumb bg-dark ${isModal ? 'modal-active' : ''} ${isRemovedInFavs ? 'opacity-50' : ''} ${isSelected ? 'thumb-selected' : ''}`}
-            onClick={handleThumbClick}
+            onClick={handleClick}
         >
             {hasOverlay && (
                 <div className="overlay">

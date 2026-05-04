@@ -10,6 +10,9 @@ export const SORT_STRATEGIES = {
 
     [SORT_TYPE.PRIORITY]: (a, b) =>
         (a.priority || 0) - (b.priority || 0),
+
+    [SORT_TYPE.ID]: (a, b) =>
+        (a.priority || 0) - (b.priority || 0),
 };
 
 export function getSortedArray(array, sortInfo, sourceType) {
@@ -19,6 +22,7 @@ export function getSortedArray(array, sortInfo, sourceType) {
     const strategy = SORT_STRATEGIES[sortInfo?.type];
 
     if (sourceType === SOURCE_TYPES.FAVORITE) {
+        console.log(array);
         return [...array].sort((a, b) => (a.id - b.id) * order);
     }
 

@@ -1,49 +1,41 @@
-import React, {Component} from "react";
+import React, {useMemo, useState} from "react";
 import {BiSolidVideo} from "react-icons/bi";
-import Settings from "../../../../data/settings";
+import Settings from "@data/settings";
+import Image from "./Image";
 
 const loadingUrl = "./images/loading.gif";
 
-class Video extends Component {
-    constructor(props) {
-        super(props);
-        this.state = {
-            isLoading: Settings.Resize,
-        };
-        this.handleVideoLoad = this.handleVideoLoad.bind(this);
-    }
+const Video = ({ file }) => {
+    const [isLoading, setIsLoading] = useState(Settings.Resize);
 
-    handleVideoLoad() {
-        if(this.state.isLoading !== false)
-            this.setState({ isLoading: false });
-    };
+    const hasThumb = useMemo(() =>
+            file.thumbUrl?.trim() && file.thumbUrl !== file.contentUrl,
+        [file.thumbUrl, file.contentUrl]
+    );
 
-    render() {
-        const { thumbUrl, currentSection } = this.props.file;
-        const { isLoading } = this.state;
+    if (hasThumb) {
         return (
             <>
-                {isLoading && (
-                    <img
-                        src={loadingUrl}
-                        alt="Loading"
-                    />
-                )}
-                <video
-                    preload="metadata"
-                    autoPlay={currentSection === "section-p365"}
-                    muted={true}
-                    loop={true}
-                    onLoadedData={this.handleVideoLoad}
-                    style={{ display: isLoading ? 'none' : 'block' }}
-                    src={thumbUrl}
-                />
-                {currentSection !== "section-p365" && (
-                    <BiSolidVideo className="video-mark" />
-                )}
+                <Image file={file} />
+                <BiSolidVideo className="video-mark" />
             </>
         );
     }
+
+    return (
+        <>
+            {isLoading && <img src={loadingUrl} alt="Loading" />}
+            <video
+                preload="metadata"
+                muted
+                loop
+                src={file.contentUrl || file.thumbUrl}
+                onLoadedData={() => setIsLoading(false)}
+                style={{ display: isLoading ? 'none' : 'block' }}
+            />
+            <BiSolidVideo className="video-mark" />
+        </>
+    );
 }
 
 export default Video;

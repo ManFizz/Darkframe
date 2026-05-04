@@ -1,8 +1,8 @@
 import React from 'react';
-import Thumb from '../Thumb/Thumb';
-import {useItemReorder} from '../../Hooks/useItemReorder';
+import Thumb from '@react/Thumb/Thumb';
+import {useItemReorder} from '@hooks/useItemReorder';
 
-const LibraryGallery = ({ items, onReordered, isSelected, modalUpdater, typeView = 2 }) => {
+const LibraryGallery = ({ items, onReordered, isSelected, modalUpdater, typeView = 2, onFileOpen }) => {
     const { draggedId, overId, onDragStart, onDragOver, onDrop, onDragEnd } =
         useItemReorder(items, onReordered);
 
@@ -27,6 +27,7 @@ const LibraryGallery = ({ items, onReordered, isSelected, modalUpdater, typeView
                         modalUpdater={modalUpdater}
                         isModal={false}
                         isSelected={isSelected?.(file.uniqueId)}
+                        onDoubleClick={onFileOpen ? () => onFileOpen(file) : undefined}
                     />
                 </div>
             ))}

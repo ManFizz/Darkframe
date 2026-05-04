@@ -170,3 +170,12 @@ $tag-colors: (
     }
   }
 }
+
+:focus-visible {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+.card {
+  border-color: transparent !important;
+}

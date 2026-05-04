@@ -83,7 +83,7 @@ export class ThumbFile {
     }
 
     getUrl() {
-        return this.localUrl || this.thumbUrl;
+        return this.localUrl || this.contentUrl || this.thumbUrl;
     }
 
     _detectType(url) {
