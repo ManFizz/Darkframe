@@ -2,20 +2,19 @@ import React, {useCallback, useEffect, useMemo, useState} from 'react';
 import CollectionTree, {SPECIAL} from './CollectionTree';
 import ImportButton from './ImportButton';
 import MetadataPanel from './MetadataPanel';
-import {useLibraryItems} from '../../Hooks/useLibraryItems';
+import {useLibraryItems} from '@hooks/useLibraryItems';
 import BulkActionBar from "./BulkActionBar";
-import useSelection from "../../Hooks/useSelection";
-import LibraryService from "../../Services/LibraryService"
+import useSelection from "@hooks/useSelection";
+import LibraryService from "@services/LibraryService"
 import LibraryGallery from "../PageBuilders/LibraryGallery";
-import {FILE_TYPES} from "../../Constants";
-import useCollections from "../../Hooks/useCollections"
-import {useLibraryContext} from '../../LibraryContext';
-import Modal from "../Modal/Modal";
+import {FILE_TYPES} from "@/Constants";
+import useCollections from "@hooks/useCollections"
+import {useLibraryContext} from '@/LibraryContext';
+import Modal from "@react/Modal/Modal";
 
 const LibraryView = () => {
     const [selectedCollection, setSelectedCollection] = useState(SPECIAL.ALL);
     const [selectedFile, setSelectedFile] = useState(null);
-    const [panelOpen, setPanelOpen] = useState(false);
     const { filtered, setLibraryItems } = useLibraryContext();
     const [modalFileId, setModalFileId] = useState(null);
 
@@ -81,7 +80,6 @@ const LibraryView = () => {
             toggle(file.uniqueId, e);
         } else {
             setSelectedFile(file);
-            setPanelOpen(true);
         }
     }, [selected, toggle, handleCollectionSelect]);
 
@@ -91,10 +89,8 @@ const LibraryView = () => {
         if (idOrAction === 'delete') {
             await deleteItem(data, true);
             setSelectedFile(null);
-            setPanelOpen(false);
         } else {
             await updateItem(idOrAction, data);
-            // Обновляем выбранный файл если он открыт
             if (selectedFile?.id === idOrAction) {
                 setSelectedFile(prev => ({ ...prev, ...data }));
             }
@@ -105,7 +101,6 @@ const LibraryView = () => {
     const handleCollectionSelect = useCallback((id) => {
         setSelectedCollection(id);
         setSelectedFile(null);
-        setPanelOpen(false);
     }, []);
 
     return (
@@ -132,7 +127,7 @@ const LibraryView = () => {
                 />
             </div>
 
-            <div className={`library-main ${panelOpen && selected.size === 0 ? 'panel-open' : ''}`}>
+            <div className={`library-main ${selected.size === 0 ? 'panel-open' : ''}`}>
             <BulkActionBar
                     selectedItems={selectedItems}
                     collections={LibraryService.getCollections()}
@@ -154,14 +149,11 @@ const LibraryView = () => {
                     />
                 </div>
             </div>
-
-            {panelOpen && selected.size === 0 && (
-                <MetadataPanel
-                    file={selectedFile}
-                    onUpdated={handleUpdated}
-                    onClose={() => setPanelOpen(false)}
-                />
-            )}
+            <MetadataPanel
+                file={selectedFile}
+                onUpdated={handleUpdated}
+                onClose={() => setPanelOpen(false)}
+            />
         </div>
     );
 };

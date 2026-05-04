@@ -747,3 +747,119 @@
     opacity: 1;
   }
 }
+
+.metadata-panel {
+  position: fixed;
+  right: 0;
+  top: 58px;
+  width: 280px;
+  height: calc(100vh - 58px);
+  border-left: 1px solid var(--bs-border-color);
+  display: flex;
+  flex-direction: column;
+  background: var(--bs-body-bg);
+  z-index: 90;
+
+  &-empty {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    color: var(--bs-secondary);
+
+    i { font-size: 32px; }
+    span { font-size: 13px; }
+  }
+}
+
+.metadata-preview {
+  flex-shrink: 0;
+  height: 180px;
+  background: var(--bs-tertiary-bg);
+  overflow: hidden;
+
+  img, video {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+  }
+}
+
+.metadata-tabs {
+  display: flex;
+  border-bottom: 1px solid var(--bs-border-color);
+  flex-shrink: 0;
+}
+
+.metadata-tab {
+  flex: 1;
+  padding: 8px;
+  font-size: 12px;
+  border: none;
+  background: none;
+  color: var(--bs-secondary);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: all 0.15s;
+
+  &:hover { color: var(--bs-body-color); }
+
+  &.active {
+    color: var(--bs-primary);
+    border-bottom-color: var(--bs-primary);
+  }
+}
+
+.metadata-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.metadata-section {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+
+  label {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    color: var(--bs-secondary);
+    margin: 0;
+  }
+}
+
+.metadata-value {
+  font-size: 13px;
+  color: var(--bs-body-color);
+}
+
+.metadata-filename-full {
+  word-break: break-all;
+  font-size: 12px;
+}
+
+.metadata-footer {
+  display: flex;
+  gap: 8px;
+  padding: 10px 12px;
+  border-top: 1px solid var(--bs-border-color);
+  flex-shrink: 0;
+
+  .btn-primary { flex: 1; }
+}
+
+// library-main учитывает панель
+.library-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  margin-right: 280px; // ← всегда, панель всегда открыта
+}

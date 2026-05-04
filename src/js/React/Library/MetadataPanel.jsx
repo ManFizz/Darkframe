@@ -1,5 +1,6 @@
+// MetadataPanel.jsx
 import React, {useCallback, useEffect, useState} from 'react';
-import LibraryService from '../../Services/LibraryService';
+import LibraryService from '@services/LibraryService';
 import LibraryTagEditor from './LibraryTagEditor';
 
 const RatingStars = ({ value, onChange }) => (
@@ -14,57 +15,14 @@ const RatingStars = ({ value, onChange }) => (
     </div>
 );
 
-const TagEditor = ({ tags, onChange }) => {
-    const [input, setInput] = useState('');
-
-    const addTag = (tag) => {
-        const trimmed = tag.trim().toLowerCase();
-        if (!trimmed || tags.includes(trimmed)) return;
-        onChange([...tags, trimmed]);
-        setInput('');
-    };
-
-    const removeTag = (tag) => onChange(tags.filter(t => t !== tag));
-
-    return (
-        <div className="tag-editor">
-            <div className="tag-editor-list">
-                {tags.map(tag => (
-                    <span key={tag} className="badge bg-secondary me-1 mb-1">
-                        {tag}
-                        <i
-                            className="bi bi-x ms-1"
-                            onClick={() => removeTag(tag)}
-                        />
-                    </span>
-                ))}
-            </div>
-            <input
-                className="form-control form-control-sm mt-1"
-                value={input}
-                placeholder="Добавить тег..."
-                onChange={e => setInput(e.target.value)}
-                onKeyDown={e => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                        e.preventDefault();
-                        addTag(input);
-                    }
-                    if (e.key === 'Backspace' && !input && tags.length) {
-                        removeTag(tags[tags.length - 1]);
-                    }
-                }}
-            />
-        </div>
-    );
-};
-
-const MetadataPanel = ({ file, onUpdated, onClose }) => {
+const MetadataPanel = ({ file, onUpdated }) => {
     const [form, setForm] = useState(null);
     const [saving, setSaving] = useState(false);
     const [dirty, setDirty] = useState(false);
+    const [activeTab, setActiveTab] = useState('info'); // 'info' | 'file'
 
     useEffect(() => {
-        if (!file) return;
+        if (!file) { setForm(null); return; }
         setForm({
             title:     file.title || '',
             sourceUrl: file.sourceUrl || '',
@@ -94,114 +52,193 @@ const MetadataPanel = ({ file, onUpdated, onClose }) => {
         }
     }, [file, form, dirty, onUpdated]);
 
+    // Автосохранение при смене файла
     useEffect(() => {
         return () => { if (dirty) save(); };
     }, [file?.id]);
 
+    // Пустое состояние
     if (!file || !form) return (
-        <div className="metadata-panel metadata-panel-empty">
-            <p>Выбери файл для просмотра метаданных</p>
+        <div className="metadata-panel">
+            <div className="metadata-panel-empty">
+                <i className="bi bi-cursor-fill" />
+                <span>Выбери файл</span>
+            </div>
         </div>
     );
 
     return (
         <div className="metadata-panel">
-            <div className="metadata-panel-header">
-                <span className="metadata-filename">{file.fileName || file.title}</span>
-                <i className="bi bi-x-lg" onClick={onClose} />
-            </div>
-
+            {/* Превью */}
             <div className="metadata-preview">
-                <img src={file.thumbUrl} alt={file.title} />
-            </div>
-
-            <div className="metadata-info">
-                {file.width > 0 && (
-                    <span>{file.width} × {file.height}</span>
-                )}
-                {file.size > 0 && (
-                    <span>{formatSize(file.size)}</span>
-                )}
-                {file.duration && (
-                    <span>{formatDuration(file.duration)}</span>
+                {file.type === 'video' ? (
+                    <video src={file.thumbUrl} muted loop autoPlay />
+                ) : (
+                    <img src={file.thumbUrl} alt={file.title} />
                 )}
             </div>
 
-            <div className="metadata-section">
-                <label>Рейтинг</label>
-                <RatingStars
-                    value={form.rating}
-                    onChange={v => update('rating', v)}
-                />
+            {/* Табы */}
+            <div className="metadata-tabs">
+                <button
+                    className={`metadata-tab ${activeTab === 'info' ? 'active' : ''}`}
+                    onClick={() => setActiveTab('info')}
+                >
+                    <i className="bi bi-info-circle me-1" />
+                    Инфо
+                </button>
+                <button
+                    className={`metadata-tab ${activeTab === 'file' ? 'active' : ''}`}
+                    onClick={() => setActiveTab('file')}
+                >
+                    <i className="bi bi-file-earmark me-1" />
+                    Файл
+                </button>
             </div>
 
-            <div className="metadata-section">
-                <label>Название</label>
-                <input
-                    className="form-control form-control-sm"
-                    value={form.title}
-                    onChange={e => update('title', e.target.value)}
-                    onBlur={save}
-                />
-            </div>
+            {activeTab === 'info' && (
+                <div className="metadata-content">
+                    {/* Рейтинг */}
+                    <div className="metadata-section">
+                        <label>Рейтинг</label>
+                        <RatingStars value={form.rating} onChange={v => update('rating', v)} />
+                    </div>
 
-            <div className="metadata-section">
-                <label>Теги</label>
-                <LibraryTagEditor
-                    tags={form.tags}
-                    onChange={v => update('tags', v)}
-                />
-            </div>
+                    {/* Название */}
+                    <div className="metadata-section">
+                        <label>Название</label>
+                        <input
+                            className="form-control form-control-sm"
+                            value={form.title}
+                            onChange={e => update('title', e.target.value)}
+                            onBlur={save}
+                        />
+                    </div>
 
-            <div className="metadata-section">
-                <label>Источник</label>
-                <div className="input-group input-group-sm">
-                    <input
-                        className="form-control"
-                        value={form.sourceUrl}
-                        onChange={e => update('sourceUrl', e.target.value)}
-                        onBlur={save}
-                        placeholder="https://..."
-                    />
-                    {form.sourceUrl && (
-                        <a
-                        className="btn btn-outline-secondary"
-                        href={form.sourceUrl}
-                        target="_blank"
-                        rel="noreferrer"
-                        >
-                        <i className="bi bi-box-arrow-up-right" />
-                        </a>
+                    {/* Теги */}
+                    <div className="metadata-section">
+                        <label>Теги</label>
+                        <LibraryTagEditor
+                            tags={form.tags}
+                            onChange={v => { update('tags', v); }}
+                        />
+                        {dirty && (
+                            <button
+                                className="btn btn-xs btn-outline-primary mt-1"
+                                onClick={save}
+                            >
+                                Сохранить теги
+                            </button>
                         )}
+                    </div>
+
+                    {/* Источник */}
+                    <div className="metadata-section">
+                        <label>Источник</label>
+                        <div className="input-group input-group-sm">
+                            <input
+                                className="form-control"
+                                value={form.sourceUrl}
+                                onChange={e => update('sourceUrl', e.target.value)}
+                                onBlur={save}
+                                placeholder="https://..."
+                            />
+                            {form.sourceUrl && (
+                                <a
+                                    className="btn btn-outline-secondary"
+                                    href={form.sourceUrl}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                >
+                                <i className="bi bi-box-arrow-up-right" />
+                                </a>
+                                )}
+                        </div>
+                    </div>
+
+                    {/* Заметки */}
+                    <div className="metadata-section">
+                        <label>Заметки</label>
+                        <textarea
+                            className="form-control form-control-sm"
+                            rows={3}
+                            value={form.notes}
+                            onChange={e => update('notes', e.target.value)}
+                            onBlur={save}
+                            placeholder="Заметки..."
+                        />
+                    </div>
                 </div>
-            </div>
+            )}
 
-            <div className="metadata-section">
-                <label>Заметки</label>
-                <textarea
-                    className="form-control form-control-sm"
-                    rows={3}
-                    value={form.notes}
-                    onChange={e => update('notes', e.target.value)}
-                    onBlur={save}
-                    placeholder="Заметки..."
-                />
-            </div>
+            {activeTab === 'file' && (
+                <div className="metadata-content">
+                    {/* Технические данные */}
+                    <div className="metadata-section">
+                        <label>Размер файла</label>
+                        <span className="metadata-value">{formatSize(file.size)}</span>
+                    </div>
 
-            <div className="metadata-actions">
+                    {file.width > 0 && (
+                        <div className="metadata-section">
+                            <label>Разрешение</label>
+                            <span className="metadata-value">{file.width} × {file.height}</span>
+                        </div>
+                    )}
+
+                    {file.duration && (
+                        <div className="metadata-section">
+                            <label>Длительность</label>
+                            <span className="metadata-value">{formatDuration(file.duration)}</span>
+                        </div>
+                    )}
+
+                    <div className="metadata-section">
+                        <label>Добавлен</label>
+                        <span className="metadata-value">
+                            {file.time ? new Date(file.time * 1000).toLocaleDateString('ru-RU') : '—'}
+                        </span>
+                    </div>
+
+                    <div className="metadata-section">
+                        <label>Оригинальное имя</label>
+                        <span className="metadata-value metadata-filename-full">{file.title}</span>
+                    </div>
+
+                    {/* Открыть в проводнике */}
+                    <div className="metadata-section">
+                        <button
+                            className="btn btn-sm btn-outline-secondary w-100"
+                            onClick={() => {
+                                const { shell } = window.require('electron');
+                                shell.showItemInFolder(file.contentUrl.replace('library://item/', ''));
+                            }}
+                        >
+                            <i className="bi bi-folder2-open me-1" />
+                            Показать в проводнике
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            {/* Футер — всегда виден */}
+            <div className="metadata-footer">
                 <button
                     className="btn btn-primary btn-sm"
                     onClick={save}
                     disabled={!dirty || saving}
                 >
-                    {saving ? 'Сохранение...' : 'Сохранить'}
+                    {saving ? (
+                        <><i className="bi bi-arrow-repeat me-1" />Сохранение...</>
+                    ) : (
+                        <><i className="bi bi-check me-1" />Сохранить</>
+                    )}
                 </button>
                 <button
                     className="btn btn-outline-danger btn-sm"
                     onClick={() => onUpdated?.('delete', file.id)}
                 >
-                    <i className="bi bi-trash me-1" />
-                    Удалить
+                    <i className="bi bi-trash" />
                 </button>
             </div>
         </div>
@@ -209,6 +246,7 @@ const MetadataPanel = ({ file, onUpdated, onClose }) => {
 };
 
 function formatSize(bytes) {
+    if (!bytes) return '—';
     if (bytes < 1024) return `${bytes} B`;
     if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
     return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
