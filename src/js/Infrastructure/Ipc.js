@@ -42,4 +42,6 @@ export const libraryApi = {
     reorderItems:      (orderedIds) => invoke('library:reorderItems', { orderedIds }),
     importDirectoryDialog: (data) => invoke('library:importDirectoryDialog', data),
     importDirectory:   (data) => invoke('library:importDirectory', data),
+    importEagleDialog: (data) => invoke('library:importEagleDialog', data),
+    importFromEagle:   (data) => invoke('library:importFromEagle', data),
 };

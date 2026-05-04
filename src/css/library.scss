@@ -863,3 +863,47 @@
   overflow: hidden;
   margin-right: 280px; // ← всегда, панель всегда открыта
 }
+
+.eagle-import-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(4px);
+}
+
+.eagle-import-modal {
+  background: var(--bs-body-bg);
+  border-radius: 12px;
+  padding: 24px;
+  width: 400px;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.3);
+}
+
+.eagle-import-header {
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+}
+
+.eagle-import-file {
+  font-size: 12px;
+  color: var(--bs-secondary);
+  margin-bottom: 8px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.eagle-import-stats {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: var(--bs-secondary);
+  margin-top: 6px;
+}

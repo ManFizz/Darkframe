@@ -79,6 +79,12 @@ export const LibraryService = {
         return libraryApi.deleteItem({ id, deleteFile });
     },
 
+    async importFromEagle({ csvPath, collectionId } = {}) {
+        if (csvPath) {
+            return libraryApi.importFromEagle({ csvPath, collectionId });
+        }
+        return libraryApi.importEagleDialog({ collectionId });
+    },
     // --- Pub/Sub ---
 
     subscribe(cb) {

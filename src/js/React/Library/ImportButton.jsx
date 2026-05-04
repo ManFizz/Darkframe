@@ -1,10 +1,22 @@
-import React, {useRef} from 'react';
-import LibraryService from '../../Services/LibraryService';
+import React, {useState} from 'react';
+import LibraryService from '@services/LibraryService';
+import EagleImportProgress from './EagleImportProgress';
 
-import {notify} from '../../Services/NotificationService';
+import {notify} from '@services/NotificationService';
 
 const ImportButton = ({ collectionId, collectionName, onImported }) => {
-    const isDragging = useRef(false);
+    const [importing, setImporting] = useState(false);
+
+    const handleImportEagle = async () => {
+        setImporting(true);
+        try {
+            const result = await LibraryService.importFromEagle({ collectionId });
+            if (!result) return;
+            await handleImport(result);
+        } finally {
+            setImporting(false);
+        }
+    };
 
     const handleImportFiles = async () => {
         const raw = await LibraryService.importDialog(collectionId);
@@ -90,31 +102,38 @@ const ImportButton = ({ collectionId, collectionName, onImported }) => {
     };
 
     return (
-        <div
-            className="import-zone"
-            onDrop={handleDrop}
-            onDragOver={e => e.preventDefault()}
-        >
-            <div className="import-buttons">
-                <button className="btn btn-primary btn-sm" onClick={handleImportFiles}>
-                    <i className="bi bi-file-earmark-plus me-1" />
-                    Файлы
-                </button>
-                <button className="btn btn-outline-primary btn-sm" onClick={handleImportDirectory}>
-                    <i className="bi bi-folder-plus me-1" />
-                    Папку
-                </button>
+        <>
+            {importing && (
+                <EagleImportProgress onDone={() => { setImporting(false); onImported?.(); }} />
+            )}
+
+            <div className="import-zone" onDrop={handleDrop} onDragOver={e => e.preventDefault()}>
+                <div className="import-buttons">
+                    <button className="btn btn-primary btn-sm" onClick={handleImportFiles}>
+                        <i className="bi bi-file-earmark-plus me-1" />
+                        Файлы
+                    </button>
+                    <button className="btn btn-outline-primary btn-sm" onClick={handleImportDirectory}>
+                        <i className="bi bi-folder-plus me-1" />
+                        Папку
+                    </button>
+                    <button
+                        className="btn btn-outline-warning btn-sm"
+                        onClick={handleImportEagle}
+                        disabled={importing}
+                    >
+                        <i className="bi bi-box-arrow-in-down me-1" />
+                        Eagle CSV
+                    </button>
+                </div>
+                <span className="import-zone-hint">
+                    {collectionName ? <>в <b>{collectionName}</b></> : 'без коллекции'}
+                </span>
+                <span className="import-zone-hint text-secondary" style={{ fontSize: 11 }}>
+                    или перетащи файлы / папки
+                </span>
             </div>
-            <span className="import-zone-hint">
-                {collectionName
-                    ? <>в <b>{collectionName}</b></>
-                    : 'без коллекции'
-                }
-            </span>
-            <span className="import-zone-hint text-secondary" style={{ fontSize: 11 }}>
-                или перетащи файлы / папки
-            </span>
-        </div>
+        </>
     );
 };
 

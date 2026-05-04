@@ -113,7 +113,10 @@ function getVideoDuration(filePath) {
     });
 }
 
-async function importFile({ filePath, collectionId = null, tags = [], sourceUrl = '' }) {
+async function importFile({ filePath, collectionId = null, tags = [], sourceUrl = '', overrides = {} }) {
+    const safeCollectionId =
+        collectionId === 'ALL' || collectionId === 'UNCATEGORIZED' ? null : collectionId || null;
+
     const fileHash = await getFileHash(filePath);
 
     const existing = await Item.findOne({
@@ -122,13 +125,12 @@ async function importFile({ filePath, collectionId = null, tags = [], sourceUrl 
     });
 
     if (existing) {
-        const collectionName = existing.collection?.name || 'Без коллекции';
         return {
             skipped: true,
             reason: 'duplicate',
             existingId: existing.id,
             existingTitle: existing.title || existing.fileName,
-            collectionName,
+            collectionName: existing.collection?.name || 'Без коллекции',
             filePath,
         };
     }
@@ -140,47 +142,47 @@ async function importFile({ filePath, collectionId = null, tags = [], sourceUrl 
     const ext = path.extname(filePath).toLowerCase();
     const fileName = path.basename(filePath);
     const mimeType = getMimeType(filePath);
-
     const originalPath = path.join(itemDir, `original${ext}`);
     const thumbPath = path.join(itemDir, 'thumb.jpg');
 
     fs.copyFileSync(filePath, originalPath);
-
     const stat = fs.statSync(originalPath);
 
-    let width = 0, height = 0, duration = null;
+    let width = overrides.width || 0;
+    let height = overrides.height || 0;
+    let duration = overrides.duration || null;
 
     try {
         if (isVideo(mimeType)) {
             await generateVideoThumb(originalPath, thumbPath);
-            duration = await getVideoDuration(originalPath);
+            if (!duration) duration = await getVideoDuration(originalPath);
         } else {
             const size = await generateImageThumb(originalPath, thumbPath);
-            width = size.width;
-            height = size.height;
+            if (!width) width = size.width;
+            if (!height) height = size.height;
         }
     } catch (e) {
         console.error(`Thumb generation failed for ${fileName}:`, e);
     }
-    const safeCollectionId =
-        collectionId === 'ALL' || collectionId === 'UNCATEGORIZED'
-            ? null
-            : collectionId || null;
 
     const item = await sequelize.transaction(async (t) => {
         const created = await Item.create({
             id,
             fileName,
-            title: path.basename(fileName, ext),
-            sourceUrl,
+            title:      overrides.title      ?? path.basename(fileName, ext),
+            sourceUrl:  overrides.sourceUrl  ?? sourceUrl,
+            notes:      overrides.notes      ?? '',
+            rating:     overrides.rating     ?? 0,
             mimeType,
             width,
             height,
-            size: stat.size,
+            size:       overrides.size       ?? stat.size,
             duration,
-            fileHash,
             collectionId: safeCollectionId,
-            createdAt: Math.floor(stat.birthtimeMs / 1000),
+            fileHash,
+            importedAt: overrides.importedAt ?? Math.floor(Date.now() / 1000),
+            createdAt:  Math.floor(stat.birthtimeMs / 1000),
+            order:      0,
         }, { transaction: t });
 
         if (tags.length > 0) {
@@ -188,7 +190,7 @@ async function importFile({ filePath, collectionId = null, tags = [], sourceUrl 
                 tags.map(name => ensureTag(name, t))
             );
             await ItemTag.bulkCreate(
-                tagRecords.map(tag => ({ itemId: created.id, tagId: tag.id })),
+                tagRecords.map(tag => ({ itemId: id, tagId: tag.id })),
                 { transaction: t }
             );
         }
@@ -196,7 +198,7 @@ async function importFile({ filePath, collectionId = null, tags = [], sourceUrl 
         return created;
     });
 
-    return { skipped: false, item };
+    return { skipped: false, item: item.toJSON() };
 }
 
 async function importFiles({ filePaths, collectionId, tags, sourceUrl }) {

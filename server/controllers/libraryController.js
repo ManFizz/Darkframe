@@ -201,6 +201,27 @@ function register() {
     ipcMain.handle('library:importDirectory', async (_, { dirPath, collectionId }) => {
         return importDirectory({ dirPath, collectionId });
     });
+
+    const { importFromEagleCsv } = require('../services/eagleImportService');
+
+    ipcMain.handle('library:importFromEagle', async (_, { csvPath, collectionId }) => {
+        return importFromEagleCsv({ csvPath, collectionId });
+    });
+
+    ipcMain.handle('library:importEagleDialog', async (event, { collectionId }) => {
+        const { canceled, filePaths } = await dialog.showOpenDialog({
+            properties: ['openFile'],
+            filters: [{ name: 'CSV', extensions: ['csv'] }],
+        });
+
+        if (canceled || !filePaths.length) return null;
+
+        return importFromEagleCsv({
+            csvPath: filePaths[0],
+            collectionId,
+            webContents: event.sender,
+        });
+    });
 }
 
 module.exports = { register };
