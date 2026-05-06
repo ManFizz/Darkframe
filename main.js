@@ -8,6 +8,7 @@ const path = require('path');
 const fs = require('fs');
 const { ITEMS_PATH, hashExistingItems } = require('./server/services/importService');
 const { migrations } = require("./server/migrations");
+const { startApiServer, stopApiServer } = require('./server/apiServer');
 
 app.commandLine.appendSwitch('disable-quic');
 app.commandLine.appendSwitch('disable-http2');
@@ -142,8 +143,11 @@ app.whenReady().then(async () => {
     downloadMissingFavorites().then(() => {
         console.log("Все файлы проверены и недостающие скачаны.");
     });
+
+    startApiServer();
 });
 
 app.on('window-all-closed', () => {
+    stopApiServer();
     app.quit();
 });
