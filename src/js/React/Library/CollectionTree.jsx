@@ -1,6 +1,7 @@
-// CollectionTree.jsx
 import React, {useCallback, useEffect, useRef, useState} from 'react';
-import {useCollections} from '../../Hooks/useCollections';
+import {useCollections} from '@hooks/useCollections';
+import {useLibraryStats} from "@hooks/useLibraryStats";
+import {useLibraryContext} from "@/LibraryContext";
 
 export const SPECIAL = {
     ALL: 'ALL',
@@ -128,6 +129,11 @@ const CollectionNode = ({
                     <span className="collection-count">{node.children.length}</span>
                 )}
 
+                {/* Item count badge */}
+                <span className="collection-item-count">
+                    {node.itemCount ?? 0}
+                </span>
+
                 {/* Кнопки действий */}
                 <div className="collection-actions">
                     <button
@@ -216,6 +222,9 @@ const CollectionTree = ({ selectedId, onSelect }) => {
     const { tree, createCollection, updateCollection, deleteCollection } = useCollections();
     const [creating, setCreating] = useState(null); // null | { parentId }
 
+    const { statsVersion } = useLibraryContext();
+    const { totalCount, uncategorizedCount } = useLibraryStats(statsVersion);
+
     const handleCreate = useCallback(async (name, parentId = null) => {
         await createCollection({ name, parentId });
         setCreating(null);
@@ -247,6 +256,7 @@ const CollectionTree = ({ selectedId, onSelect }) => {
             >
                 <i className="bi bi-images collection-special-icon" />
                 <span className="collection-name">Все файлы</span>
+                <span className="collection-item-count">{totalCount}</span>
             </div>
 
             <div
@@ -255,6 +265,7 @@ const CollectionTree = ({ selectedId, onSelect }) => {
             >
                 <i className="bi bi-inbox collection-special-icon" />
                 <span className="collection-name">Без коллекции</span>
+                <span className="collection-item-count">{uncategorizedCount}</span>
             </div>
 
             <div className="collection-tree-divider" />

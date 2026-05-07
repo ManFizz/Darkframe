@@ -9,17 +9,17 @@ import CustomPagination from "./React/Helpers/CustomPagination";
 import usePagination from "./Hooks/usePagination";
 
 import {InitDatabaseData} from "./BackendConnect";
-import {updateR34Source} from "./Controllers/R34Controller";
-import {StopR34Loading} from "./Controllers/R34FavoriteController"
+import {updateR34Source} from "@controllers/R34Controller";
+import {StopR34Loading} from "@controllers/R34FavoriteController"
 
 import LibraryView from "./React/Library/LibraryView";
 import {SOURCE_TYPES} from "./Constants";
 
-import {AppController, galleryReducer, initialState} from "./Controllers/AppInitializerController";
+import {AppController, galleryReducer, initialState} from "@controllers/AppInitializerController";
 import Notifications from "./React/Helpers/Notifications";
 
 import {LibraryContext} from './LibraryContext';
-import {useLibraryFilter} from './Hooks/useLibraryFilter';
+import {useLibraryFilter} from '@hooks/useLibraryFilter';
 
 export const GalleryContext = createContext(null);
 
@@ -28,6 +28,9 @@ const Main = () => {
 
     const [libraryItems, setLibraryItems] = useState([]);
     const libraryFilter = useLibraryFilter(libraryItems);
+
+    const [statsVersion, setStatsVersion] = useState(0);
+    const refreshStats = () => setStatsVersion(v => v + 1);
 
     const contextValue = useMemo(() => ({
         state,
@@ -114,6 +117,8 @@ const Main = () => {
                 ...libraryFilter,
                 total: libraryItems.length,
                 setLibraryItems,
+                statsVersion,
+                refreshStats,
             }}>
             <div className={`main-root ${state.safeMode ? "safe-view" : ""}`}>
                 <Notifications />

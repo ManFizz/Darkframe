@@ -2,7 +2,7 @@ import React, {useEffect, useState} from 'react';
 import SectionR34 from "../SideBar/SectionR34.jsx";
 import {BsList} from "react-icons/bs";
 
-import {SOURCE_TYPES} from "../../Constants";
+import {SOURCE_TYPES} from "@/Constants";
 
 const SideBar = ({ currentSource }) => {
     const isR34Family = [SOURCE_TYPES.R34, SOURCE_TYPES.GELBOORU, SOURCE_TYPES.REALBOORU].includes(currentSource);

@@ -1,5 +1,5 @@
 import {useEffect, useState} from "react";
-import FavoritesService from "./../Services/FavoritesService"
+import FavoritesService from ".@service/FavoritesService"
 
 export function useGallery() {
     const [mainArray, setMainArray] = useState([]);

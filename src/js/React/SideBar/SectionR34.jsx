@@ -1,6 +1,6 @@
 import React, {useEffect, useState} from 'react';
 import TagSearch from "./SectionR34/TagSearch";
-import {currentR34Source} from "../../Controllers/R34Controller";
+import {currentR34Source} from "@controllers/R34Controller";
 
 const SectionR34 = ({ currentSource }) => {
     const [name, setName] = useState(null);

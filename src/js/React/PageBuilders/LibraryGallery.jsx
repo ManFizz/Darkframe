@@ -1,5 +1,5 @@
 import React from 'react';
-import Thumb from '@react/Thumb/Thumb';
+import Thumb from '../Thumb/Thumb';
 import {useItemReorder} from '@hooks/useItemReorder';
 
 const LibraryGallery = ({ items, onReordered, isSelected, modalUpdater, typeView = 2, onFileOpen }) => {

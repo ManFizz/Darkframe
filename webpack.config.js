@@ -61,10 +61,10 @@ module.exports = {
             '@': path.resolve(__dirname, 'src/js'),
             '@data': path.resolve(__dirname, 'data'),
             '@server': path.resolve(__dirname, 'server'),
-            '@react': path.resolve(__dirname, 'src/js/react'),
-            '@hooks': path.resolve(__dirname, 'src/js/hooks'),
-            '@services': path.resolve(__dirname, 'src/js/services'),
-            '@controllers': path.resolve(__dirname, 'src/js/controllers'),
+            '@react': path.resolve(__dirname, 'src/js/React'),
+            '@hooks': path.resolve(__dirname, 'src/js/Hooks'),
+            '@services': path.resolve(__dirname, 'src/js/Services'),
+            '@controllers': path.resolve(__dirname, 'src/js/Controllers'),
         }
     },
 };

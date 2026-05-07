@@ -1,5 +1,5 @@
 import Settings from "../../../data/settings";
-import {SORT_ORDER, SORT_TYPE, SOURCE_TYPES} from "../Constants";
+import {SORT_ORDER, SORT_TYPE, SOURCE_TYPES} from "@/Constants";
 
 export const SORT_STRATEGIES = {
     [SORT_TYPE.NAME]: (a, b) =>

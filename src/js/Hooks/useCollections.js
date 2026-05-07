@@ -1,5 +1,5 @@
 import {useEffect, useState} from 'react';
-import LibraryService from '../Services/LibraryService';
+import LibraryService from '@services/LibraryService';
 
 export function useCollections() {
     const [tree, setTree] = useState(LibraryService.getTree());

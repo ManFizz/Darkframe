@@ -29,18 +29,28 @@ export function useLibraryFilter(items) {
     }, []);
 
     const addTag = useCallback((tag) => {
-        const t = tag.trim().toLowerCase();
-        if (!t) return;
+        const raw = tag.trim().toLowerCase();
+        if (!raw) return;
+        const exclude = raw.startsWith('-') || raw.startsWith('!');
+        const name = exclude ? raw.slice(1) : raw;
+        if (!name) return;
+        setFilters(prev => {
+            if (prev.tags.some(t => t.name === name)) return prev;
+            return { ...prev, tags: [...prev.tags, { name, exclude }] };
+        });
+    }, []);
+
+    const removeTag = useCallback((name) => {
         setFilters(prev => ({
             ...prev,
-            tags: prev.tags.includes(t) ? prev.tags : [...prev.tags, t],
+            tags: prev.tags.filter(t => t.name !== name),
         }));
     }, []);
 
-    const removeTag = useCallback((tag) => {
+    const toggleTagExclude = useCallback((name) => {
         setFilters(prev => ({
             ...prev,
-            tags: prev.tags.filter(t => t !== tag),
+            tags: prev.tags.map(t => t.name === name ? { ...t, exclude: !t.exclude } : t),
         }));
     }, []);
 
@@ -58,11 +68,13 @@ export function useLibraryFilter(items) {
         }
 
         if (filters.tags.length > 0) {
-            result = result.filter(f =>
-                filters.tags.every(tag =>
-                    Array.isArray(f.tags) && f.tags.includes(tag)
-                )
-            );
+            const includeTags = filters.tags.filter(t => !t.exclude).map(t => t.name);
+            const excludeTags = filters.tags.filter(t => t.exclude).map(t => t.name);
+            result = result.filter(f => {
+                const itemTags = Array.isArray(f.tags) ? f.tags : [];
+                return includeTags.every(tag => itemTags.includes(tag))
+                    && excludeTags.every(tag => !itemTags.includes(tag));
+            });
         }
 
         if (filters.rating > 0) {
@@ -80,5 +92,5 @@ export function useLibraryFilter(items) {
         return result;
     }, [items, filters]);
 
-    return { filters, filtered, update, addTag, removeTag, reset };
+    return { filters, filtered, update, addTag, removeTag, toggleTagExclude, reset };
 }

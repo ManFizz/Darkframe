@@ -23,6 +23,10 @@ async function migrations() {
             name: 'items_fileHash_unique',
         });
     }
+    const indexes = await queryInterface.showIndex('Tags');
+    if (!indexes.find(i => i.name === 'tags_name_idx')) {
+        await queryInterface.addIndex('Tags', ['name'], { name: 'tags_name_idx' });
+    }
 }
 
 module.exports = { migrations};

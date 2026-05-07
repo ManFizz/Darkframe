@@ -1,5 +1,5 @@
-import {normalizeTags} from "../Controllers/TagsController";
-import {FILE_TYPES} from "../Constants";
+import {normalizeTags} from "@controllers/TagsController";
+import {FILE_TYPES} from "@/Constants";
 
 const EXT = {
     IMAGE: /\.(jpg|jpeg|png|webp|gif|jfif)$/i,
@@ -29,6 +29,7 @@ export class ThumbFile {
         this.createdAt = data.createdAt || null;
         this.order = data.order || null;
         this.rating = data.rating || null;
+        this.collectionId = data.collectionId || null;
 
         this.type = data.type || this._detectType(this.thumbUrl);
         this._meta = data._meta || null;

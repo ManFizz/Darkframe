@@ -1,7 +1,7 @@
 import {useCallback, useEffect, useState} from 'react';
-import LibraryService from '../Services/LibraryService';
-import {ThumbFile} from '../Models/ThumbFile';
-import {FILE_TYPES, SOURCE_TYPES} from '../Constants';
+import LibraryService from '@services/LibraryService';
+import {ThumbFile} from '@/Models/ThumbFile';
+import {FILE_TYPES, SOURCE_TYPES} from '@/Constants';
 
 export function useLibraryItems(collectionId) {
     const [items, setItems] = useState([]);
@@ -42,6 +42,7 @@ export function useLibraryItems(collectionId) {
             order:      item.order,
             rating:     item.rating,
             type:       item.mimeType.startsWith('video/') ? FILE_TYPES.VIDEO : FILE_TYPES.IMAGE,
+            collectionId: item.collectionId,
         }));
 
         setItems([...collectionThumbs, ...thumbFiles]);

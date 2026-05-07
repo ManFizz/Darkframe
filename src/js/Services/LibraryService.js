@@ -1,4 +1,4 @@
-import {libraryApi} from '../Infrastructure/Ipc';
+import {libraryApi} from '@/Infrastructure/Ipc';
 
 let collections = [];
 let listeners = new Set();

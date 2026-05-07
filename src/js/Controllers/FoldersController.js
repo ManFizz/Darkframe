@@ -1,8 +1,8 @@
 import {useCallback} from "react";
 import {setGallery} from "./AppInitializerController";
 import {GetThumbByData} from "./GalleryController";
-import {FILE_TYPES, SOURCE_TYPES} from "../Constants";
-import FileService from "../Services/FilesService";
+import {FILE_TYPES, SOURCE_TYPES} from "@/Constants";
+import FileService from "@services/FilesService";
 
 export function useDisplayImagesByPath() {
 

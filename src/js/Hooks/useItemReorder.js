@@ -1,5 +1,5 @@
 import {useCallback, useRef, useState} from 'react';
-import {libraryApi} from '../Infrastructure/Ipc';
+import {libraryApi} from '@/Infrastructure/Ipc';
 
 export function useItemReorder(items, onReordered) {
     const [draggedId, setDraggedId] = useState(null);

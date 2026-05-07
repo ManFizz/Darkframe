@@ -126,7 +126,19 @@ function register() {
 
     ipcMain.handle('library:getCollections', async () => {
         const collections = await Collection.findAll({ order: [['order', 'ASC']] });
-        return collections.map(c => c.toJSON());
+
+        return await Promise.all(
+            collections.map(async (col) => {
+                const count = await Item.count({where: {collectionId: col.id}});
+                return {...col.toJSON(), itemCount: count};
+            })
+        );
+    });
+
+    ipcMain.handle('library:getStats', async () => {
+        const total        = await Item.count();
+        const uncategorized = await Item.count({ where: { collectionId: null } });
+        return { total, uncategorized };
     });
 
     ipcMain.handle('library:createCollection', async (_, { name, parentId, icon, color }) => {
@@ -146,28 +158,27 @@ function register() {
     ipcMain.handle('library:searchTags', async (_, { query }) => {
         if (!query || query.length < 1) return [];
 
-        const tags = await Tag.findAll({
-            where: {
-                name: { [Op.like]: `%${query.toLowerCase()}%` },
-            },
-            include: [{
-                model: Item,
-                as: 'items',
-                required: true,
-                through: { attributes: [] },
-                attributes: [],
-            }],
-            attributes: ['id', 'name', 'type'],
-            limit: 10,
-            order: [['name', 'ASC']],
-        });
+        try {
+            const tags = await Tag.findAll({
+                where: { name: { [Op.like]: `%${query.toLowerCase()}%` } },
+                include: [{
+                    model: Item,
+                    as: 'items',
+                    required: true,
+                    through: { attributes: [] },
+                    attributes: [],
+                }],
+                attributes: ['id', 'name', 'type'],
+                limit: 10,
+                order: [['name', 'ASC']],
+                subQuery: false, // ← ускоряет запрос с include + limit
+            });
 
-        return tags.map(t => ({
-            name: t.name,
-            type: t.type,
-            value: t.name,
-            label: t.name,
-        }));
+            return tags.map(t => ({ name: t.name, type: t.type, value: t.name, label: t.name }));
+        } catch (e) {
+            console.error('[searchTags] error:', e.message);
+            return [];
+        }
     });
 
     ipcMain.handle('library:reorderItems', async (_, { orderedIds }) => {

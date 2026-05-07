@@ -1,5 +1,5 @@
 import React, {useState} from 'react';
-import LibraryService from '../../Services/LibraryService';
+import LibraryService from '@services/LibraryService';
 
 const BulkActionBar = ({ selectedItems, collections, onDone }) => {
     const [targetCollection, setTargetCollection] = useState('');

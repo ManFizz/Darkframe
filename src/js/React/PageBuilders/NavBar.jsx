@@ -1,14 +1,14 @@
 import React, {useContext, useState} from 'react';
 import {BsCaretDownFill, BsFillGrid1X2Fill, BsSearch, BsShieldShaded} from "react-icons/bs";
 import PrivateData from "../../../../data/private";
-import {useDisplayImagesByPath} from "../../Controllers/FoldersController";
-import {DisplayRemoteFavoriteR34} from "../../Controllers/R34FavoriteController"
+import {useDisplayImagesByPath} from "@controllers/FoldersController";
+import {DisplayRemoteFavoriteR34} from "@controllers/R34FavoriteController";
 
-import {GalleryContext} from '../../AppInitializer';
-import {SORT_TYPE, SOURCE_TYPES} from "../../Constants";
-import {useFavorites} from "../../Hooks/useFavorites";
-import {SORT_ORDER} from '../../Hooks/useLibraryFilter';
-import {useLibraryContext} from '../../LibraryContext';
+import {GalleryContext} from '@/AppInitializer';
+import {SORT_TYPE, SOURCE_TYPES} from "@/Constants";
+import {useFavorites} from "@hooks/useFavorites";
+import {SORT_ORDER} from '@hooks/useLibraryFilter';
+import {useLibraryContext} from '@/LibraryContext';
 import {LibraryNavControls, LibraryNavSort} from '../Library/LibraryNavControls';
 
 const NavBar = () => {

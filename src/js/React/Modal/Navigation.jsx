@@ -1,7 +1,7 @@
 import React, {useCallback, useEffect, useMemo} from 'react';
-import {CanMoreMedia, LoadMoreMedia} from "../../Controllers/R34Controller";
-import {FILE_TYPES} from "../../Constants";
-import {useFavorites} from "../../Hooks/useFavorites";
+import {CanMoreMedia, LoadMoreMedia} from "@controllers/R34Controller";
+import {FILE_TYPES} from "@/Constants";
+import {useFavorites} from "@hooks/useFavorites";
 
 const DIRECTION = {
     LEFT: -1,

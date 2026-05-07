@@ -1,5 +1,5 @@
 import React, {useCallback, useRef, useState} from 'react';
-import {libraryApi} from '../../Infrastructure/Ipc';
+import {libraryApi} from '@/Infrastructure/Ipc';
 
 const LibraryTagEditor = ({ tags, onChange }) => {
     const [input, setInput] = useState('');

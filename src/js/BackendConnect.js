@@ -1,5 +1,5 @@
-import FavoriteTagsService from "./Services/FavoriteTagsService";
-import FavoritesService from "./Services/FavoritesService";
+import FavoriteTagsService from "@services/FavoriteTagsService";
+import FavoritesService from "@services/FavoritesService";
 
 let isInitialized = false;
 

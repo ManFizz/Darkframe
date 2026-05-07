@@ -15,7 +15,7 @@ import Modal from "@react/Modal/Modal";
 const LibraryView = () => {
     const [selectedCollection, setSelectedCollection] = useState(SPECIAL.ALL);
     const [selectedFile, setSelectedFile] = useState(null);
-    const { filtered, setLibraryItems } = useLibraryContext();
+    const { filtered, setLibraryItems, refreshStats } = useLibraryContext();
     const [modalFileId, setModalFileId] = useState(null);
 
     const { items, reload, updateItem, deleteItem } = useLibraryItems(
@@ -89,14 +89,17 @@ const LibraryView = () => {
         if (idOrAction === 'delete') {
             await deleteItem(data, true);
             setSelectedFile(null);
+            await reload();
         } else {
             await updateItem(idOrAction, data);
             if (selectedFile?.id === idOrAction) {
                 setSelectedFile(prev => ({ ...prev, ...data }));
             }
+            setOrderedItems(prev =>
+                prev.map(f => f.id === idOrAction ? { ...f, ...data } : f)
+            );
         }
-        await reload();
-    }, [deleteItem, updateItem, selectedFile, reload]);
+    }, [deleteItem, updateItem, selectedFile]);
 
     const handleCollectionSelect = useCallback((id) => {
         setSelectedCollection(id);
@@ -123,7 +126,7 @@ const LibraryView = () => {
                             : selectedCollection
                     }
                     collectionName={currentCollectionName}
-                    onImported={reload}
+                    onImported={() => { reload(); refreshStats(); }}
                 />
             </div>
 

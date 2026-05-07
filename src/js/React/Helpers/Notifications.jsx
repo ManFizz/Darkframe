@@ -1,5 +1,5 @@
 import React, {useCallback, useEffect, useState} from 'react';
-import {subscribeNotifications} from '../../Services/NotificationService';
+import {subscribeNotifications} from '@services/NotificationService';
 
 const ICONS = {
     success: 'bi-check-circle-fill',

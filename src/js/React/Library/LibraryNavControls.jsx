@@ -1,8 +1,9 @@
 import React, {useState} from 'react';
-import {SORT_FIELDS, SORT_ORDER} from '../../Hooks/useLibraryFilter'
+import {SORT_FIELDS, SORT_ORDER} from '@hooks/useLibraryFilter'
+import NotificationBell from "@react/Helpers/NotificationBell";
 
 export const LibraryNavControls = ({ ctx }) => {
-    const { filters, update, addTag, removeTag } = ctx;
+    const { filters, update, addTag, removeTag, toggleTagExclude } = ctx;
     const [tagInput, setTagInput] = useState('');
 
     return (
@@ -27,16 +28,30 @@ export const LibraryNavControls = ({ ctx }) => {
 
             {/* Теги */}
             <div className="d-flex align-items-center gap-1 flex-wrap">
-                {filters.tags.map(tag => (
-                    <span key={tag} className="badge bg-primary">
-                        {tag}
-                        <i className="bi bi-x ms-1" style={{ cursor: 'pointer' }} onClick={() => removeTag(tag)} />
+                {filters.tags.map(({ name, exclude }) => (
+                    <span
+                        key={name}
+                        className={`badge d-inline-flex align-items-center gap-1 ${exclude ? 'bg-danger' : 'bg-primary'}`}
+                        style={{ cursor: 'pointer', userSelect: 'none' }}
+                        title={exclude ? 'Исключение · нажмите, чтобы включить' : 'Включение · нажмите, чтобы исключить'}
+                        onClick={() => toggleTagExclude(name)}
+                    >
+                        {exclude && <i className="bi bi-slash-circle" style={{ fontSize: '0.75em' }} />}
+                        <span style={exclude ? { textDecoration: 'line-through', opacity: 0.9 } : {}}>
+                            {name}
+                        </span>
+                        <i
+                            className="bi bi-x"
+                            style={{ fontSize: '1em' }}
+                            onClick={e => { e.stopPropagation(); removeTag(name); }}
+                        />
                     </span>
                 ))}
                 <input
                     className="form-control form-control-sm"
                     style={{ width: 90 }}
                     placeholder="Тег..."
+                    title="Enter / Пробел — добавить. Начни с − для исключения"
                     value={tagInput}
                     onChange={e => setTagInput(e.target.value)}
                     onKeyDown={e => {
@@ -134,6 +149,8 @@ export const LibraryNavSort = ({ ctx }) => {
                     <i className="bi bi-x-lg" />
                 </button>
             )}
+
+            <NotificationBell />
         </div>
     );
 };

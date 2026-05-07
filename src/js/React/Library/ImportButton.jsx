@@ -55,7 +55,6 @@ const ImportButton = ({ collectionId, collectionName, onImported }) => {
         e.stopPropagation();
 
         const { webUtils } = window.require('electron');
-        const fs = window.require('fs');
         const filePaths = [];
         const dirPaths = [];
 

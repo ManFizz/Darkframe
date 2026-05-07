@@ -1,5 +1,5 @@
 import React from "react";
-import {useDisplayImagesByPath} from "../../Controllers/FoldersController";
+import {useDisplayImagesByPath} from "@controllers/FoldersController";
 
 const pathToImage = "images/folder.png";
 

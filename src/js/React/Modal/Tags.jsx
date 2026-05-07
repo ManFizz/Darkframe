@@ -1,5 +1,5 @@
 import React, {useCallback, useEffect, useMemo, useState} from "react";
-import {ensureTags, getAllTags, getTagOrder, subscribe} from "../../Controllers/TagsController";
+import {ensureTags, getAllTags, getTagOrder, subscribe} from "@controllers/TagsController";
 
 const Tags = ({ file }) => {
     const [version, setVersion] = useState(0);
