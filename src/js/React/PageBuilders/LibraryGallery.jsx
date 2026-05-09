@@ -17,7 +17,11 @@ const LibraryGallery = ({ items, onReordered, isSelected, modalUpdater, typeView
                         ${overId === file.uniqueId ? 'drag-over' : ''}
                     `}
                     draggable
-                    onDragStart={e => onDragStart(e, file.uniqueId)}
+                    onDragStart={e => {
+                        e.dataTransfer.setData('jsg/fileId', file.id);
+                        e.dataTransfer.setData('jsg/reorder', 'true'); // флаг что это reorder
+                        onDragStart(e, file.uniqueId);
+                    }}
                     onDragOver={e => onDragOver(e, file.uniqueId)}
                     onDrop={e => onDrop(e, file.uniqueId)}
                     onDragEnd={onDragEnd}

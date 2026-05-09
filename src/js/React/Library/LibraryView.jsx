@@ -114,10 +114,15 @@ const LibraryView = () => {
                 modalUpdater={(file) => setModalFileId(file?.uniqueId || null)}
                 displayFiles={orderedItems}
             />
-            <div className="library-sidebar">
+            <div className="library-sidebar" onDragOver={e => e.stopPropagation()}>
                 <CollectionTree
                     selectedId={selectedCollection}
                     onSelect={handleCollectionSelect}
+                    onMediaMoved={(fileId, collectionId) => {
+                        setOrderedItems(prev =>
+                            prev.map(f => f.id === fileId ? { ...f, collectionId } : f)
+                        );
+                    }}
                 />
                 <ImportButton
                     collectionId={

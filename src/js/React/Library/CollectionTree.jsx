@@ -2,6 +2,7 @@ import React, {useCallback, useEffect, useRef, useState} from 'react';
 import {useCollections} from '@hooks/useCollections';
 import {useLibraryStats} from "@hooks/useLibraryStats";
 import {useLibraryContext} from "@/LibraryContext";
+import LibraryService from '@services/LibraryService';
 
 export const SPECIAL = {
     ALL: 'ALL',
@@ -43,16 +44,15 @@ const ContextMenu = ({ x, y, node, onClose, onRename, onDelete, onCreateChild })
 };
 
 // --- Узел дерева ---
-const CollectionNode = ({
-                            node, selectedId, onSelect,
-                            onRename, onDelete, onCreateChild,
-                            depth = 0
-                        }) => {
+const CollectionNode = ({ node, selectedId, onSelect, onRename, onDelete,
+                            onCreateChild, onDropMedia, depth = 0
+                                                                    }) => {
     const [isOpen, setIsOpen] = useState(true);
     const [isRenaming, setIsRenaming] = useState(false);
     const [renameValue, setRenameValue] = useState('');
     const [contextMenu, setContextMenu] = useState(null);
     const inputRef = useRef(null);
+    const [isDragOver, setIsDragOver] = useState(false);
 
     const hasChildren = node.children?.length > 0;
     const isSelected = selectedId === node.id;
@@ -62,6 +62,26 @@ const CollectionNode = ({
         setIsRenaming(true);
         setTimeout(() => inputRef.current?.select(), 0);
     }, [node.name]);
+
+    const handleDragOver = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        e.dataTransfer.dropEffect = 'move';
+        setIsDragOver(true);
+    };
+
+    const handleDragLeave = (e) => {
+        e.stopPropagation();
+        setIsDragOver(false);
+    };
+
+    const handleDrop = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setIsDragOver(false);
+        const fileId = e.dataTransfer.getData('jsg/fileId');
+        if (fileId) onDropMedia(fileId, node.id);
+    };
 
     const commitRename = useCallback(async () => {
         const trimmed = renameValue.trim();
@@ -85,10 +105,13 @@ const CollectionNode = ({
     return (
         <div className="collection-node-wrapper">
             <div
-                className={`collection-node ${isSelected ? 'active' : ''} ${isRenaming ? 'renaming' : ''}`}
+                className={`collection-node ${isSelected ? 'active' : ''} ${isDragOver ? 'drop-target' : ''}`}
                 style={{ paddingLeft: 8 + depth * 16 }}
                 onClick={() => !isRenaming && onSelect(node.id)}
                 onContextMenu={handleContextMenu}
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
             >
                 {/* Стрелка раскрытия */}
                 <button
@@ -172,6 +195,7 @@ const CollectionNode = ({
                             onRename={onRename}
                             onDelete={onDelete}
                             onCreateChild={onCreateChild}
+                            onDropMedia={onDropMedia}
                             depth={depth + 1}
                         />
                     ))}
@@ -218,12 +242,19 @@ const CreateInput = ({ parentId = null, onConfirm, onCancel, placeholder }) => {
 };
 
 // --- Корневое дерево ---
-const CollectionTree = ({ selectedId, onSelect }) => {
+const CollectionTree = ({ selectedId, onSelect, onMediaMoved }) => {
     const { tree, createCollection, updateCollection, deleteCollection } = useCollections();
-    const [creating, setCreating] = useState(null); // null | { parentId }
+    const [creating, setCreating] = useState(null);
+    const [treeCollapsed, setTreeCollapsed] = useState(false);
 
-    const { statsVersion } = useLibraryContext();
+    const { statsVersion, refreshStats } = useLibraryContext();
     const { totalCount, uncategorizedCount } = useLibraryStats(statsVersion);
+
+    const handleDropMedia = useCallback(async (fileId, collectionId) => {
+        await LibraryService.updateItem(fileId, { collectionId });
+        refreshStats();
+        onMediaMoved?.(fileId, collectionId);
+    }, [refreshStats]);
 
     const handleCreate = useCallback(async (name, parentId = null) => {
         await createCollection({ name, parentId });
@@ -237,8 +268,14 @@ const CollectionTree = ({ selectedId, onSelect }) => {
 
     return (
         <div className="collection-tree">
-            {/* Заголовок */}
             <div className="collection-tree-header">
+                <button
+                    className="collection-tree-collapse-btn"
+                    onClick={() => setTreeCollapsed(v => !v)}
+                    title={treeCollapsed ? 'Развернуть' : 'Свернуть'}
+                >
+                    <i className={`bi bi-chevron-${treeCollapsed ? 'right' : 'down'}`} />
+                </button>
                 <span>Библиотека</span>
                 <button
                     className="collection-add-btn"
@@ -249,19 +286,17 @@ const CollectionTree = ({ selectedId, onSelect }) => {
                 </button>
             </div>
 
-            {/* Специальные папки */}
-            <div
-                className={`collection-node special ${selectedId === SPECIAL.ALL ? 'active' : ''}`}
-                onClick={() => onSelect(SPECIAL.ALL)}
+            {/* Специальные папки — всегда видны */}
+            <div className={`collection-node special ${selectedId === SPECIAL.ALL ? 'active' : ''}`}
+                 onClick={() => onSelect(SPECIAL.ALL)}
             >
                 <i className="bi bi-images collection-special-icon" />
                 <span className="collection-name">Все файлы</span>
                 <span className="collection-item-count">{totalCount}</span>
             </div>
 
-            <div
-                className={`collection-node special ${selectedId === SPECIAL.UNCATEGORIZED ? 'active' : ''}`}
-                onClick={() => onSelect(SPECIAL.UNCATEGORIZED)}
+            <div className={`collection-node special ${selectedId === SPECIAL.UNCATEGORIZED ? 'active' : ''}`}
+                 onClick={() => onSelect(SPECIAL.UNCATEGORIZED)}
             >
                 <i className="bi bi-inbox collection-special-icon" />
                 <span className="collection-name">Без коллекции</span>
@@ -270,36 +305,37 @@ const CollectionTree = ({ selectedId, onSelect }) => {
 
             <div className="collection-tree-divider" />
 
-            {/* Дерево коллекций */}
-            {tree.map(node => (
-                <CollectionNode
-                    key={node.id}
-                    node={node}
-                    selectedId={selectedId}
-                    onSelect={onSelect}
-                    onRename={updateCollection}
-                    onDelete={handleDelete}
-                    onCreateChild={(parentId) => setCreating({ parentId })}
-                />
-            ))}
-
-            {/* Инпут создания корневой */}
-            {creating?.parentId === null && (
-                <CreateInput
-                    onConfirm={(name) => handleCreate(name, null)}
-                    onCancel={() => setCreating(null)}
-                    placeholder="Новая коллекция..."
-                />
-            )}
-
-            {/* Инпут создания вложенной — рендерится внутри дерева через портал или здесь */}
-            {creating?.parentId !== null && creating !== null && (
-                <CreateInput
-                    parentId={creating.parentId}
-                    onConfirm={(name) => handleCreate(name, creating.parentId)}
-                    onCancel={() => setCreating(null)}
-                    placeholder="Вложенная коллекция..."
-                />
+            {/* Дерево — скрывается при свёртке */}
+            {!treeCollapsed && (
+                <>
+                    {tree.map(node => (
+                        <CollectionNode
+                            key={node.id}
+                            node={node}
+                            selectedId={selectedId}
+                            onSelect={onSelect}
+                            onRename={updateCollection}
+                            onDelete={handleDelete}
+                            onCreateChild={(parentId) => setCreating({ parentId })}
+                            onDropMedia={handleDropMedia}
+                        />
+                    ))}
+                    {creating?.parentId === null && (
+                        <CreateInput
+                            onConfirm={(name) => handleCreate(name, null)}
+                            onCancel={() => setCreating(null)}
+                            placeholder="Новая коллекция..."
+                        />
+                    )}
+                    {creating?.parentId !== null && creating !== null && (
+                        <CreateInput
+                            parentId={creating.parentId}
+                            onConfirm={(name) => handleCreate(name, creating.parentId)}
+                            onCancel={() => setCreating(null)}
+                            placeholder="Вложенная коллекция..."
+                        />
+                    )}
+                </>
             )}
         </div>
     );

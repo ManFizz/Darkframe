@@ -22,6 +22,8 @@ export function useItemReorder(items, onReordered) {
         e.preventDefault();
         if (!draggedId || draggedId === targetId) return;
 
+        if (!e.dataTransfer.getData('jsg/reorder')) return;
+
         const ids = items.map(f => f.uniqueId);
         const fromIdx = ids.indexOf(draggedId);
         const toIdx = ids.indexOf(targetId);

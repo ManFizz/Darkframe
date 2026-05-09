@@ -30,6 +30,8 @@ export class ThumbFile {
         this.order = data.order || null;
         this.rating = data.rating || null;
         this.collectionId = data.collectionId || null;
+        this.importedAt = data.importedAt || null;
+        this.size = data.size || null;
 
         this.type = data.type || this._detectType(this.thumbUrl);
         this._meta = data._meta || null;

@@ -43,6 +43,8 @@ export function useLibraryItems(collectionId) {
             rating:     item.rating,
             type:       item.mimeType.startsWith('video/') ? FILE_TYPES.VIDEO : FILE_TYPES.IMAGE,
             collectionId: item.collectionId,
+            importedAt: item.importedAt,
+            size: item.size,
         }));
 
         setItems([...collectionThumbs, ...thumbFiles]);

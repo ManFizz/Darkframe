@@ -1204,3 +1204,22 @@
     display: none;
   }
 }
+
+.collection-tree-collapse-btn {
+  background: none;
+  border: none;
+  color: var(--bs-secondary);
+  padding: 0 4px;
+  cursor: pointer;
+  font-size: 12px;
+  border-radius: 3px;
+  &:hover { background: var(--bs-tertiary-bg); }
+}
+
+.collection-node {
+  &.drop-target {
+    background: var(--bs-primary-bg-subtle);
+    outline: 2px dashed var(--bs-primary);
+    outline-offset: -2px;
+  }
+}

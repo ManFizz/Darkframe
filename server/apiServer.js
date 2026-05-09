@@ -2,7 +2,7 @@ const http = require('http');
 const path = require('path');
 const fs = require('fs');
 const os = require('os');
-const { session, BrowserWindow, net } = require('electron');
+const { net } = require('electron');
 const { importFile } = require('./services/importService');
 
 const PORT = 45678;
@@ -176,6 +176,25 @@ async function handleCollections(res) {
     respond(res, 200, { ok: true, collections: collections.map(c => c.toJSON()) });
 }
 
+async function handleGetStats(res) {
+    const Item       = require('./models/Item');
+    const Collection = require('./models/Collection');
+    const total        = await Item.count();
+    const uncategorized = await Item.count({ where: { collectionId: null } });
+    respond(res, 200, { ok: true, total, uncategorized });
+}
+
+async function handleCreateCollection(req, res) {
+    const body       = await parseBody(req);
+    const { name, parentId = null } = body;
+    if (!name) { respond(res, 400, { error: 'name required' }); return; }
+
+    const Collection = require('./models/Collection');
+    const maxOrder   = await Collection.max('order') || 0;
+    const col        = await Collection.create({ name, parentId, order: maxOrder + 1 });
+    respond(res, 200, { ok: true, collection: col.toJSON() });
+}
+
 async function handleRequest(req, res) {
     try {
         if (req.method === 'OPTIONS') { respond(res, 204, {}); return; }
@@ -185,6 +204,8 @@ async function handleRequest(req, res) {
         if (req.method === 'POST' && req.url === '/api/addBase64')         { await handleAddBase64(req, res);  return; }
         if (req.method === 'GET'  && req.url.startsWith('/api/rim?'))      { await handleRim(req, res);        return; }
         if (req.method === 'GET'  && req.url === '/api/collections')       { await handleCollections(res);     return; }
+        if (req.method === 'GET' && req.url === '/api/stats')              { await handleGetStats(res); return; }
+        if (req.method === 'POST' && req.url === '/api/collections')       { await handleCreateCollection(req, res); return; }
 
         respond(res, 404, { error: 'Not found' });
     } catch (e) {
