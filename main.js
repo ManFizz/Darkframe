@@ -56,8 +56,13 @@ function setupRequestHeaders() {
 
 async function initDatabase() {
     try {
-        await sequelize.sync();
+        sequelize.authenticate().then(() => {
+            return sequelize.query('PRAGMA journal_mode = WAL;');
+        }).then(() => {
+            return sequelize.query('PRAGMA busy_timeout = 5000;');
+        });
 
+        await sequelize.sync();
         await migrations();
         console.log('Database synchronized');
         hashExistingItems();
