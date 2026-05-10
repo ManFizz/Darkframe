@@ -25,6 +25,7 @@ export function useCollections() {
         },
         updateCollection: (id, data) => LibraryService.updateCollection(id, data),
         deleteCollection: (id) => LibraryService.deleteCollection(id),
+        reorderCollections:  (updates)  => LibraryService.reorderCollections(updates),
     };
 }
 

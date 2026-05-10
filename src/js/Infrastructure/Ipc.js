@@ -45,4 +45,5 @@ export const libraryApi = {
     importEagleDialog: (data) => invoke('library:importEagleDialog', data),
     importFromEagle:   (data) => invoke('library:importFromEagle', data),
     getStats:          ()     => invoke('library:getStats'),
+    reorderCollections: (data) => invoke('library:reorderCollections', data),
 };

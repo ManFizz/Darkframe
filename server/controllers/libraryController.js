@@ -146,7 +146,26 @@ function register() {
     });
 
     ipcMain.handle('library:updateCollection', async (_, { id, data }) => {
-        await Collection.update(data, { where: { id } });
+        const col = await Collection.findByPk(id);
+        if (!col) throw new Error('Collection not found');
+
+        if (data.parentId !== undefined && data.parentId === id) {
+            throw new Error('Cannot set collection as its own parent');
+        }
+
+        await col.update(data);
+        return col.toJSON();
+    });
+
+    ipcMain.handle('library:reorderCollections', async (_, { updates }) => {
+        await Promise.all(
+            updates.map(({ id, order, parentId }) =>
+                Collection.update(
+                    { order, ...(parentId !== undefined ? { parentId } : {}) },
+                    { where: { id } }
+                )
+            )
+        );
         return { ok: true };
     });
 

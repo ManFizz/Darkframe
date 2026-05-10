@@ -46,6 +46,10 @@ export const LibraryService = {
         await this.loadCollections();
     },
 
+    async reorderCollections(updates) {
+        await libraryApi.reorderCollections({ updates });
+        await this.loadCollections();
+    },
     // --- Items ---
 
     async getItems({ collectionId } = {}) {

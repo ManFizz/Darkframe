@@ -1223,3 +1223,23 @@
     outline-offset: -2px;
   }
 }
+
+.collection-node-wrapper {
+  &.dragging { opacity: 0.4; }
+}
+
+.collection-node {
+  &.drop-target {
+    background: var(--bs-primary-bg-subtle);
+    outline: 2px dashed var(--bs-primary);
+    outline-offset: -2px;
+  }
+}
+
+.collection-action-btn {
+  &:disabled {
+    opacity: 0.2;
+    cursor: default;
+    pointer-events: none;
+  }
+}
