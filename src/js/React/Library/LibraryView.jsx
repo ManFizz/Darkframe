@@ -1,14 +1,14 @@
 import React, {useCallback, useEffect, useMemo, useState} from 'react';
-import CollectionTree, {SPECIAL} from './CollectionTree';
-import ImportButton from './ImportButton';
-import MetadataPanel from './MetadataPanel';
-import {useLibraryItems} from '@hooks/useLibraryItems';
+import CollectionTree, {SPECIAL} from './Collection/CollectionTree';
+import ImportButton from './Import/ImportButton';
+import MetadataPanel from './Metadata/MetadataPanel';
+import {useLibraryItems} from '@hooks/library/useLibraryItems';
 import BulkActionBar from "./BulkActionBar";
-import useSelection from "@hooks/useSelection";
+import useSelection from "@hooks/gallery/useSelection";
 import LibraryService from "@services/LibraryService"
 import LibraryGallery from "../PageBuilders/LibraryGallery";
 import {FILE_TYPES} from "@/Constants";
-import useCollections from "@hooks/useCollections"
+import useCollections from "@hooks/library/useCollections"
 import {useLibraryContext} from '@/LibraryContext';
 import Modal from "@react/Modal/Modal";
 

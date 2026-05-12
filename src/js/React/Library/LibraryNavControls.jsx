@@ -1,5 +1,5 @@
 import React, {useState} from 'react';
-import {SORT_FIELDS, SORT_ORDER} from '@hooks/useLibraryFilter'
+import {SORT_FIELDS, SORT_ORDER} from '@hooks/library/useLibraryFilter'
 import NotificationBell from "@react/Helpers/NotificationBell";
 
 export const LibraryNavControls = ({ ctx }) => {

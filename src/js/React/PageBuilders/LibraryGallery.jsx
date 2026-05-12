@@ -1,6 +1,6 @@
 import React from 'react';
 import Thumb from '../Thumb/Thumb';
-import {useItemReorder} from '@hooks/useItemReorder';
+import {useItemReorder} from '@hooks/library/useItemReorder';
 
 const LibraryGallery = ({ items, onReordered, isSelected, modalUpdater, typeView = 2, onFileOpen }) => {
     const { draggedId, overId, onDragStart, onDragOver, onDrop, onDragEnd } =

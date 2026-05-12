@@ -1,30 +1,22 @@
 const fs = require('fs');
 const path = require('path');
 const { v4: uuidv4 } = require('uuid');
-const sharp = require('sharp');
-const ffmpeg = require('fluent-ffmpeg');
-const ffmpegPath = require('ffmpeg-static');
-const ffprobePath = require('ffprobe-static').path;
-
-const { app } = require('electron');
 const crypto = require('crypto');
+const { app } = require('electron');
 
 const Item = require('../models/Item');
 const ItemTag = require('../models/ItemTag');
-const sequelize = require('../database');
 const Tag = require('../models/Tag');
+const Collection = require('../models/Collection');
+const sequelize = require('../database');
 const { SOURCE_TYPES } = require('../../src/js/constants');
-const Collection = require("../models/Collection");
 const Settings = require('../../data/settings');
+const { generateImageThumb, generateVideoThumb, getVideoDuration } = require('./thumbService');
 
 const LIBRARY_REMOTE_TYPE = SOURCE_TYPES.LIBRARY;
 
-ffmpeg.setFfmpegPath(ffmpegPath);
-ffmpeg.setFfprobePath(ffprobePath);
-
 const LIBRARY_PATH = Settings.LibraryPath || path.join(app.getPath('userData'), 'library');
-const ITEMS_PATH = path.join(LIBRARY_PATH, 'items');
-const THUMB_SIZE = 400;
+const ITEMS_PATH   = path.join(LIBRARY_PATH, 'items');
 
 const MIME_TYPES = {
     '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg',
@@ -77,42 +69,6 @@ function isVideo(mimeType) {
     return mimeType.startsWith('video/');
 }
 
-async function generateImageThumb(srcPath, thumbPath) {
-    await sharp(srcPath)
-        .resize(THUMB_SIZE, THUMB_SIZE, {
-            fit: 'inside',
-            withoutEnlargement: true,
-        })
-        .jpeg({ quality: 80 })
-        .toFile(thumbPath);
-
-    const meta = await sharp(srcPath).metadata();
-    return { width: meta.width || 0, height: meta.height || 0 };
-}
-
-function generateVideoThumb(srcPath, thumbPath) {
-    return new Promise((resolve, reject) => {
-        ffmpeg(srcPath)
-            .on('end', resolve)
-            .on('error', reject)
-            .screenshots({
-                timestamps: ['10%'],
-                filename: path.basename(thumbPath),
-                folder: path.dirname(thumbPath),
-                size: `${THUMB_SIZE}x?`,
-            });
-    });
-}
-
-function getVideoDuration(filePath) {
-    return new Promise((resolve) => {
-        ffmpeg.ffprobe(filePath, (err, metadata) => {
-            if (err) return resolve(null);
-            resolve(metadata?.format?.duration || null);
-        });
-    });
-}
-
 async function importFile({ filePath, collectionId = null, tags = [], sourceUrl = '', overrides = {} }) {
     const safeCollectionId =
         collectionId === 'ALL' || collectionId === 'UNCATEGORIZED' ? null : collectionId || null;
@@ -148,8 +104,8 @@ async function importFile({ filePath, collectionId = null, tags = [], sourceUrl 
     fs.copyFileSync(filePath, originalPath);
     const stat = fs.statSync(originalPath);
 
-    let width = overrides.width || 0;
-    let height = overrides.height || 0;
+    let width    = overrides.width    || 0;
+    let height   = overrides.height   || 0;
     let duration = overrides.duration || null;
 
     try {
@@ -158,7 +114,7 @@ async function importFile({ filePath, collectionId = null, tags = [], sourceUrl 
             if (!duration) duration = await getVideoDuration(originalPath);
         } else {
             const size = await generateImageThumb(originalPath, thumbPath);
-            if (!width) width = size.width;
+            if (!width)  width  = size.width;
             if (!height) height = size.height;
         }
     } catch (e) {
@@ -186,9 +142,7 @@ async function importFile({ filePath, collectionId = null, tags = [], sourceUrl 
         }, { transaction: t });
 
         if (tags.length > 0) {
-            const tagRecords = await Promise.all(
-                tags.map(name => ensureTag(name, t))
-            );
+            const tagRecords = await Promise.all(tags.map(name => ensureTag(name, t)));
             await ItemTag.bulkCreate(
                 tagRecords.map(tag => ({ itemId: id, tagId: tag.id })),
                 { transaction: t }
@@ -204,17 +158,13 @@ async function importFile({ filePath, collectionId = null, tags = [], sourceUrl 
 async function importFiles({ filePaths, collectionId, tags, sourceUrl }) {
     const results = [];
     const skipped = [];
-    const errors = [];
+    const errors  = [];
 
     for (const filePath of filePaths) {
         try {
             const result = await importFile({ filePath, collectionId, tags, sourceUrl });
-
-            if (result.skipped) {
-                skipped.push(result);
-            } else {
-                results.push(result.item);
-            }
+            if (result.skipped) skipped.push(result);
+            else                results.push(result.item);
         } catch (e) {
             console.error(`Failed to import ${filePath}:`, e);
             errors.push({ filePath, error: e.message });
@@ -237,8 +187,7 @@ async function hashExistingItems() {
             const original = files.find(f => f.startsWith('original'));
             if (!original) continue;
 
-            const filePath = path.join(itemDir, original);
-            const hash = await getFileHash(filePath);
+            const hash = await getFileHash(path.join(itemDir, original));
             await item.update({ fileHash: hash });
         } catch (e) {
             console.warn(`Could not hash item ${item.id}:`, e.message);
@@ -249,20 +198,16 @@ async function hashExistingItems() {
 }
 
 function collectFiles(dirPath) {
-    const result = [];
-
+    const result  = [];
     const entries = fs.readdirSync(dirPath, { withFileTypes: true });
 
     for (const entry of entries) {
         const fullPath = path.join(dirPath, entry.name);
-
         if (entry.isDirectory()) {
-            result.push(...collectFiles(fullPath)); // рекурсия
+            result.push(...collectFiles(fullPath));
         } else {
             const ext = path.extname(entry.name).toLowerCase();
-            if (SUPPORTED_EXTENSIONS.has(ext)) {
-                result.push(fullPath);
-            }
+            if (SUPPORTED_EXTENSIONS.has(ext)) result.push(fullPath);
         }
     }
 
@@ -271,11 +216,7 @@ function collectFiles(dirPath) {
 
 async function importDirectory({ dirPath, collectionId, tags = [], sourceUrl = '' }) {
     const filePaths = collectFiles(dirPath);
-
-    if (!filePaths.length) {
-        return { results: [], skipped: [], errors: [], total: 0 };
-    }
-
+    if (!filePaths.length) return { results: [], skipped: [], errors: [], total: 0 };
     return importFiles({ filePaths, collectionId, tags, sourceUrl });
 }
 

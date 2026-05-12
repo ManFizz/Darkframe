@@ -6,7 +6,7 @@ import Modal from "./React/Modal/Modal.jsx";
 import SideBar from "./React/PageBuilders/SideBar.jsx";
 import Gallery from "./React/PageBuilders/Gallery";
 import CustomPagination from "./React/Helpers/CustomPagination";
-import usePagination from "./Hooks/usePagination";
+import usePagination from "./Hooks/gallery/usePagination";
 
 import {InitDatabaseData} from "./BackendConnect";
 import {updateR34Source} from "@controllers/R34Controller";
@@ -19,7 +19,7 @@ import {AppController, galleryReducer, initialState} from "@controllers/AppIniti
 import Notifications from "./React/Helpers/Notifications";
 
 import {LibraryContext} from './LibraryContext';
-import {useLibraryFilter} from '@hooks/useLibraryFilter';
+import {useLibraryFilter} from '@hooks/library/useLibraryFilter';
 
 export const GalleryContext = createContext(null);
 

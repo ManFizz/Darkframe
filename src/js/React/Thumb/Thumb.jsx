@@ -7,7 +7,7 @@ import {getCurrentSource} from "@controllers/AppInitializerController";
 import {FILE_TYPES, SOURCE_TYPES} from "@/Constants";
 import {useFavorites} from "@hooks/useFavorites";
 import Collection from "./Collection";
-import {useClickHandler} from '@hooks/useClickHandler';
+import {useClickHandler} from '@hooks/gallery/useClickHandler';
 
 const Thumb = (({ file, isModal, modalUpdater, isSelected, onDoubleClick }) => {
     const handleSingleClick = useCallback((e) => {

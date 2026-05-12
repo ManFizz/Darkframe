@@ -56,11 +56,9 @@ function setupRequestHeaders() {
 
 async function initDatabase() {
     try {
-        sequelize.authenticate().then(() => {
-            return sequelize.query('PRAGMA journal_mode = WAL;');
-        }).then(() => {
-            return sequelize.query('PRAGMA busy_timeout = 5000;');
-        });
+        await sequelize.authenticate();
+        await sequelize.query('PRAGMA journal_mode = WAL;');
+        await sequelize.query('PRAGMA busy_timeout = 5000;');
 
         await sequelize.sync();
         await migrations();

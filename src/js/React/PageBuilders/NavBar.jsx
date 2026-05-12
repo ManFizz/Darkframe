@@ -7,7 +7,7 @@ import {DisplayRemoteFavoriteR34} from "@controllers/R34FavoriteController";
 import {GalleryContext} from '@/AppInitializer';
 import {SORT_TYPE, SOURCE_TYPES} from "@/Constants";
 import {useFavorites} from "@hooks/useFavorites";
-import {SORT_ORDER} from '@hooks/useLibraryFilter';
+import {SORT_ORDER} from '@hooks/library/useLibraryFilter';
 import {useLibraryContext} from '@/LibraryContext';
 import {LibraryNavControls, LibraryNavSort} from '../Library/LibraryNavControls';
 

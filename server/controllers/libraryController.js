@@ -1,11 +1,11 @@
 const { ipcMain, dialog } = require('electron');
-const { importFiles, ITEMS_PATH, importDirectory  } = require('../services/importService');
+const { importFiles, ITEMS_PATH, importDirectory, ensureTag } = require('../services/importService');
 const { Item, Tag, ItemTag } = require('../models/associations');
 const Collection = require('../models/Collection');
 const { Op } = require('sequelize');
 const path = require('path');
 const fs = require('fs');
-const { ensureTag } = require('../services/importService');
+const { importFromEagleCsv } = require('../services/eagleImportService');
 
 function register() {
     ipcMain.handle('library:importDialog', async (_, { collectionId }) => {
@@ -231,8 +231,6 @@ function register() {
     ipcMain.handle('library:importDirectory', async (_, { dirPath, collectionId }) => {
         return importDirectory({ dirPath, collectionId });
     });
-
-    const { importFromEagleCsv } = require('../services/eagleImportService');
 
     ipcMain.handle('library:importFromEagle', async (_, { csvPath, collectionId }) => {
         return importFromEagleCsv({ csvPath, collectionId });
