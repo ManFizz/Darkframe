@@ -65,6 +65,7 @@ module.exports = {
             '@hooks': path.resolve(__dirname, 'src/js/Hooks'),
             '@services': path.resolve(__dirname, 'src/js/Services'),
             '@controllers': path.resolve(__dirname, 'src/js/Controllers'),
+            '@modules': path.resolve(__dirname, 'src/js/modules'),
         }
     },
 };
