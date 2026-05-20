@@ -1,5 +1,5 @@
 import React, {useCallback, useEffect, useMemo} from 'react';
-import {CanMoreMedia, LoadMoreMedia} from "@controllers/R34Controller";
+import {CanMoreMedia, LoadMoreMedia} from "@modules/r34/R34Controller";
 import {FILE_TYPES} from "@/Constants";
 import {useFavorites} from "@hooks/useFavorites";
 

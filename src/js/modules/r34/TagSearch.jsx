@@ -1,5 +1,5 @@
 import React, {useEffect, useRef, useState} from "react";
-import {SearchMedia} from "@controllers/R34Controller";
+import {SearchMedia} from "./R34Controller";
 import FavoriteTagsForm from "./FavoriteTagsForm";
 import {fetchTagSuggestions} from "@controllers/TagsController";
 

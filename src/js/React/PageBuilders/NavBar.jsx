@@ -1,8 +1,7 @@
 import React, {useContext, useState} from 'react';
 import {BsCaretDownFill, BsFillGrid1X2Fill, BsSearch, BsShieldShaded} from "react-icons/bs";
-import PrivateData from "../../../../data/private";
-import {useDisplayImagesByPath} from "@controllers/FoldersController";
-import {DisplayRemoteFavoriteR34} from "@controllers/R34FavoriteController";
+import ModuleRegistry from '@/ModuleRegistry';
+import {displayImagesByPath} from '@modules/folder/FolderController';
 
 import {GalleryContext} from '@/AppInitializer';
 import {SORT_TYPE, SOURCE_TYPES} from "@/Constants";
@@ -19,7 +18,6 @@ const NavBar = () => {
     const isLibrary = state.currentSource === SOURCE_TYPES.LIBRARY;
 
     const [searchValue, setSearchValue] = useState('');
-    const displayImagesByPath = useDisplayImagesByPath();
 
     const handleNavigation = (sourceType, action = null) => {
         setCurrentSource(sourceType);
@@ -35,11 +33,8 @@ const NavBar = () => {
     const DisplayFavorites = () => setMainArray([...favorites]);
 
     const navButtons = [
-        { label: 'R34',      type: SOURCE_TYPES.R34 },
-        { label: 'Gelbooru', type: SOURCE_TYPES.GELBOORU },
+        ...ModuleRegistry.getNavItems(),
         { label: 'Favorites', type: SOURCE_TYPES.FAVORITE, action: DisplayFavorites },
-        { label: 'Folders',  type: SOURCE_TYPES.FOLDER, action: () => displayImagesByPath(PrivateData.startPath) },
-        { label: 'R34 Favs', type: SOURCE_TYPES.R34, action: DisplayRemoteFavoriteR34 },
         { label: 'Library',  type: SOURCE_TYPES.LIBRARY },
     ];
 

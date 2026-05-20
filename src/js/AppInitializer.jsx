@@ -9,8 +9,8 @@ import CustomPagination from "./React/Helpers/CustomPagination";
 import usePagination from "./Hooks/gallery/usePagination";
 
 import {InitDatabaseData} from "./BackendConnect";
-import {updateR34Source} from "@controllers/R34Controller";
-import {StopR34Loading} from "@controllers/R34FavoriteController"
+import ModuleRegistry from './ModuleRegistry';
+import '@/modules';
 
 import LibraryView from "./React/Library/LibraryView";
 import {SOURCE_TYPES} from "./Constants";
@@ -46,8 +46,7 @@ const Main = () => {
             dispatch({ type: 'SET_DISPLAY_ARRAY', payload: arr }),
 
         setCurrentSource: (source) => {
-            StopR34Loading();
-            updateR34Source(source);
+            ModuleRegistry.onSourceChange(source);
             dispatch({ type: 'SET_CURRENT_SOURCE', payload: source });
         },
 

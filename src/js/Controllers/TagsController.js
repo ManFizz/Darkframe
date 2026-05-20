@@ -1,4 +1,4 @@
-import {GetSourceDataById, sources} from "./R34Controller";
+import {GetSourceDataById, sources} from "@modules/r34/R34Controller";
 import {SOURCE_TYPES} from "@/Constants";
 import PrivateData from "@data/private";
 import TagsService from "@services/TagsService";

@@ -1,6 +1,6 @@
-import PrivateData from "../../../data/private";
-import {setGallery} from "./AppInitializerController";
-import {GetThumbByData} from "./GalleryController";
+import PrivateData from "@data/private";
+import {setGallery} from "@controllers/AppInitializerController";
+import {GetThumbByData} from "@controllers/GalleryController";
 import {FILE_TYPES, SOURCE_TYPES} from "@/Constants";
 
 const favUrl = `https://rule34.xxx/index.php?page=favorites&s=view&id=${PrivateData.R34UserId}`;
@@ -70,7 +70,7 @@ export async function DisplayRemoteFavoriteR34() {
 
 async function fetchPostDetails(ids, signal) {
     const promises = ids.map(id =>
-        fetch(`${API_URL}&tags=id:${id}`, { signal }) // Используем сигнал здесь
+        fetch(`${API_URL}&tags=id:${id}`, { signal })
             .then(res => res.json())
             .then(data => data[0])
             .catch(() => null)
