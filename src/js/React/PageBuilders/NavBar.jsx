@@ -33,9 +33,9 @@ const NavBar = () => {
     const DisplayFavorites = () => setMainArray([...favorites]);
 
     const navButtons = [
-        ...ModuleRegistry.getNavItems(),
-        { label: 'Favorites', type: SOURCE_TYPES.FAVORITE, action: DisplayFavorites },
         { label: 'Library',  type: SOURCE_TYPES.LIBRARY },
+        { label: 'Favorites', type: SOURCE_TYPES.FAVORITE, action: DisplayFavorites },
+        ...ModuleRegistry.getNavItems(),
     ];
 
     return (

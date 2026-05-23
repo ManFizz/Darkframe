@@ -8,6 +8,10 @@ export function useLibraryItems(collectionId) {
     const [loading, setLoading] = useState(false);
 
     const load = useCallback(async () => {
+        if (collectionId === false) {
+            setItems([]);
+            return;
+        }
         setLoading(true);
         const raw = await LibraryService.getItems({ collectionId });
 

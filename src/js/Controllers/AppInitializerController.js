@@ -58,7 +58,7 @@ export const initialState = {
     mainArray: [],
     displayArray: [],
     favTagsArray: [],
-    currentSource: SOURCE_TYPES.FOLDER,
+    currentSource: SOURCE_TYPES.LIBRARY,
     typeView: 2,
     sortInfo: { order: SORT_ORDER.DESC, type: SORT_TYPE.TIME },
     safeMode: Settings.SafeView,

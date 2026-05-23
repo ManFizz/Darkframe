@@ -13,17 +13,19 @@ import {useLibraryContext} from '@/LibraryContext';
 import Modal from "@react/Modal/Modal";
 
 const LibraryView = () => {
-    const [selectedCollection, setSelectedCollection] = useState(SPECIAL.ALL);
+    const [selectedCollection, setSelectedCollection] = useState(SPECIAL.NONE);
     const [selectedFile, setSelectedFile] = useState(null);
     const { filtered, setLibraryItems, refreshStats } = useLibraryContext();
     const [modalFileId, setModalFileId] = useState(null);
 
     const { items, reload, updateItem, deleteItem } = useLibraryItems(
-        selectedCollection === SPECIAL.ALL
-            ? undefined
-            : selectedCollection === SPECIAL.UNCATEGORIZED
-                ? null
-                : selectedCollection
+        selectedCollection === SPECIAL.NONE
+            ? false
+            : selectedCollection === SPECIAL.ALL
+                ? undefined
+                : selectedCollection === SPECIAL.UNCATEGORIZED
+                    ? null
+                    : selectedCollection
     );
 
     const handleFileOpen = useCallback((file) => {

@@ -5,11 +5,13 @@ import {useLibraryContext} from "@/LibraryContext";
 import LibraryService from '@services/LibraryService';
 
 export const SPECIAL = {
+    NONE: 'NONE',
     ALL: 'ALL',
     UNCATEGORIZED: 'UNCATEGORIZED',
 };
 
-const ContextMenu = ({ x, y, node, onClose, onRename, onDelete, onCreateChild }) => {
+const ContextMenu = ({ x, y, node, onClose, onRename, onDelete, onCreateChild,
+                        onMoveUp, onMoveDown, canMoveUp, canMoveDown }) => {
     useEffect(() => {
         const handleClick = () => onClose();
         document.addEventListener('mousedown', handleClick);
@@ -29,6 +31,17 @@ const ContextMenu = ({ x, y, node, onClose, onRename, onDelete, onCreateChild })
             <div className="context-menu-item" onClick={() => { onRename(); onClose(); }}>
                 <i className="bi bi-pencil me-2" />
                 Переименовать
+            </div>
+            <div className="context-menu-divider" />
+            <div className={`context-menu-item ${!canMoveUp ? 'disabled' : ''}`}
+                 onClick={() => { if (canMoveUp) { onMoveUp(node.id); onClose(); } }}>
+                <i className="bi bi-chevron-up me-2" />
+                Вверх
+            </div>
+            <div className={`context-menu-item ${!canMoveDown ? 'disabled' : ''}`}
+                 onClick={() => { if (canMoveDown) { onMoveDown(node.id); onClose(); } }}>
+                <i className="bi bi-chevron-down me-2" />
+                Вниз
             </div>
             <div className="context-menu-divider" />
             <div className="context-menu-item danger" onClick={() => { onDelete(node.id); onClose(); }}>
@@ -162,46 +175,6 @@ const CollectionNode = ({ node, selectedId, onSelect, onRename, onDelete,
                 )}
 
                 <span className="collection-item-count">{node.itemCount ?? 0}</span>
-
-                <div className="collection-actions">
-                    <button
-                        className="collection-action-btn"
-                        title="Вверх"
-                        disabled={!canMoveUp}
-                        onClick={e => { e.stopPropagation(); onMoveUp?.(node.id); }}
-                    >
-                        <i className="bi bi-chevron-up" />
-                    </button>
-                    <button
-                        className="collection-action-btn"
-                        title="Вниз"
-                        disabled={!canMoveDown}
-                        onClick={e => { e.stopPropagation(); onMoveDown?.(node.id); }}
-                    >
-                        <i className="bi bi-chevron-down" />
-                    </button>
-                    <button
-                        className="collection-action-btn"
-                        title="Создать вложенную"
-                        onClick={e => { e.stopPropagation(); onCreateChild(node.id); }}
-                    >
-                        <i className="bi bi-folder-plus" />
-                    </button>
-                    <button
-                        className="collection-action-btn"
-                        title="Переименовать"
-                        onClick={e => { e.stopPropagation(); startRename(); }}
-                    >
-                        <i className="bi bi-pencil" />
-                    </button>
-                    <button
-                        className="collection-action-btn danger"
-                        title="Удалить"
-                        onClick={e => { e.stopPropagation(); onDelete(node.id); }}
-                    >
-                        <i className="bi bi-trash" />
-                    </button>
-                </div>
             </div>
 
             {isOpen && hasChildren && (
@@ -234,6 +207,10 @@ const CollectionNode = ({ node, selectedId, onSelect, onRename, onDelete,
                     onRename={startRename}
                     onDelete={onDelete}
                     onCreateChild={onCreateChild}
+                    onMoveUp={onMoveUp}
+                    onMoveDown={onMoveDown}
+                    canMoveUp={canMoveUp}
+                    canMoveDown={canMoveDown}
                 />
             )}
         </div>
