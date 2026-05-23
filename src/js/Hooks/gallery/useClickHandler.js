@@ -16,7 +16,6 @@ export function useClickHandler({ onClick, onDoubleClick, delay = 250 }) {
                 timerRef.current = null;
                 if (!preventRef.current) onClick?.(e);
             }, delay);
-            onClick?.(e);
         }
     }, [onClick, onDoubleClick, delay]);
 }
