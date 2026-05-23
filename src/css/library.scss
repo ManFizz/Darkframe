@@ -527,7 +527,6 @@
 .import-zone {
   display: flex;
   flex-direction: column;
-  align-items: center;
   gap: 6px;
   padding: 12px;
   border: 1px dashed var(--bs-border-color);
@@ -536,6 +535,11 @@
   color: var(--bs-secondary);
 
   &-hint { text-align: center; }
+}
+
+.import-buttons {
+  display: flex;
+  gap: 6px;
 }
 
 .eagle-import-overlay {

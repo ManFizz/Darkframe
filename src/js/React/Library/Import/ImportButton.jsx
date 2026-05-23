@@ -103,30 +103,33 @@ const ImportButton = ({ collectionId, collectionName, onImported }) => {
             )}
 
             <div className="import-zone" onDrop={handleDrop} onDragOver={e => e.preventDefault()}>
+                <div className="import-zone-hint">
+                    {collectionName ? <>в <b>{collectionName}</b></> : 'без коллекции'}
+                </div>
+
                 <div className="import-buttons">
-                    <button className="btn btn-primary btn-sm" onClick={handleImportFiles}>
+                    <button className="btn btn-primary btn-sm flex-fill" onClick={handleImportFiles}>
                         <i className="bi bi-file-earmark-plus me-1" />
                         Файлы
                     </button>
-                    <button className="btn btn-outline-primary btn-sm" onClick={handleImportDirectory}>
+                    <button className="btn btn-primary btn-sm flex-fill" onClick={handleImportDirectory}>
                         <i className="bi bi-folder-plus me-1" />
                         Папку
                     </button>
-                    <button
-                        className="btn btn-outline-warning btn-sm"
-                        onClick={handleImportEagle}
-                        disabled={importing}
-                    >
-                        <i className="bi bi-box-arrow-in-down me-1" />
-                        Eagle CSV
-                    </button>
                 </div>
-                <span className="import-zone-hint">
-                    {collectionName ? <>в <b>{collectionName}</b></> : 'без коллекции'}
-                </span>
-                <span className="import-zone-hint text-secondary" style={{ fontSize: 11 }}>
+
+                <button
+                    className="btn btn-outline-warning btn-sm w-100"
+                    onClick={handleImportEagle}
+                    disabled={importing}
+                >
+                    <i className="bi bi-box-arrow-in-down me-1" />
+                    Eagle CSV
+                </button>
+
+                <div className="import-zone-hint text-secondary">
                     или перетащи файлы / папки
-                </span>
+                </div>
             </div>
         </>
     );
