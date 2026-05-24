@@ -101,10 +101,16 @@ const CollectionNode = ({ node, selectedId, onSelect, onRename, onDelete,
         e.preventDefault(); e.stopPropagation();
         setIsDragOver(false);
 
+        const fileIdsRaw   = e.dataTransfer.getData('jsg/fileIds');
         const fileId       = e.dataTransfer.getData('jsg/fileId');
         const collectionId = e.dataTransfer.getData('jsg/collectionId');
 
-        if (fileId) onDropMedia?.(fileId, node.id);
+        if (fileIdsRaw) {
+            onDropMedia?.(JSON.parse(fileIdsRaw), node.id);
+        } else if (fileId) {
+            onDropMedia?.([fileId], node.id);
+        }
+
         if (collectionId && collectionId !== node.id)
             onDropReorder?.(collectionId, node.id);
     };
@@ -251,10 +257,10 @@ const CollectionTree = ({ selectedId, onSelect, onMediaMoved }) => {
         await updateCollection(draggedId, { parentId: targetId });
     }, [updateCollection]);
 
-    const handleDropMedia = useCallback(async (fileId, collectionId) => {
-        await LibraryService.updateItem(fileId, { collectionId });
+    const handleDropMedia = useCallback(async (fileIds, collectionId) => {
+        await Promise.all(fileIds.map(id => LibraryService.updateItem(id, { collectionId })));
         refreshStats();
-        onMediaMoved?.(fileId, collectionId);
+        onMediaMoved?.(fileIds, collectionId);
     }, [refreshStats, onMediaMoved]);
 
     const handleCreate = useCallback(async (name, parentId = null) => {

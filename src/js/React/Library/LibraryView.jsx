@@ -120,9 +120,10 @@ const LibraryView = () => {
                 <CollectionTree
                     selectedId={selectedCollection}
                     onSelect={handleCollectionSelect}
-                    onMediaMoved={(fileId, collectionId) => {
+                    onMediaMoved={(fileIds, collectionId) => {
+                        const idSet = new Set(fileIds);
                         setOrderedItems(prev =>
-                            prev.map(f => f.id === fileId ? { ...f, collectionId } : f)
+                            prev.map(f => idSet.has(f.id) ? { ...f, collectionId } : f)
                         );
                     }}
                 />
@@ -153,6 +154,7 @@ const LibraryView = () => {
                         items={orderedItems}
                         onReordered={handleReordered}
                         isSelected={isSelected}
+                        selectedIds={selected}
                         modalUpdater={handleFileClick}
                         onFileOpen={handleFileOpen}
                         typeView={2}

@@ -2,9 +2,9 @@ import React from 'react';
 import Thumb from '../Thumb/Thumb';
 import {useItemReorder} from '@hooks/library/useItemReorder';
 
-const LibraryGallery = ({ items, onReordered, isSelected, modalUpdater, typeView = 2, onFileOpen }) => {
-    const { draggedId, overId, onDragStart, onDragOver, onDrop, onDragEnd } =
-        useItemReorder(items, onReordered);
+const LibraryGallery = ({ items, onReordered, isSelected, selectedIds, modalUpdater, typeView = 2, onFileOpen }) => {
+    const { isDragging, overId, onDragStart, onDragOver, onDrop, onDragEnd } =
+        useItemReorder(items, onReordered, selectedIds);
 
     return (
         <div className={`gallery-view-${typeView}`}>
@@ -13,13 +13,20 @@ const LibraryGallery = ({ items, onReordered, isSelected, modalUpdater, typeView
                     key={file.uniqueId}
                     className={`
                         thumb-drag-wrapper
-                        ${draggedId === file.uniqueId ? 'dragging' : ''}
+                        ${isDragging(file.uniqueId) ? 'dragging' : ''}
                         ${overId === file.uniqueId ? 'drag-over' : ''}
                     `}
                     draggable
                     onDragStart={e => {
+                        const isMulti = selectedIds?.has(file.uniqueId) && selectedIds.size > 1;
+                        if (isMulti) {
+                            const draggedFileIds = items
+                                .filter(f => selectedIds.has(f.uniqueId))
+                                .map(f => f.id);
+                            e.dataTransfer.setData('jsg/fileIds', JSON.stringify(draggedFileIds));
+                        }
                         e.dataTransfer.setData('jsg/fileId', file.id);
-                        e.dataTransfer.setData('jsg/reorder', 'true'); // флаг что это reorder
+                        e.dataTransfer.setData('jsg/reorder', 'true');
                         onDragStart(e, file.uniqueId);
                     }}
                     onDragOver={e => onDragOver(e, file.uniqueId)}
