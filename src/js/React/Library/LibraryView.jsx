@@ -2,6 +2,7 @@ import React, {useCallback, useEffect, useMemo, useState} from 'react';
 import CollectionTree, {SPECIAL} from './Collection/CollectionTree';
 import ImportButton from './Import/ImportButton';
 import MetadataPanel from './Metadata/MetadataPanel';
+import BulkMetadataPanel from './Metadata/BulkMetadataPanel';
 import {useLibraryItems} from '@hooks/library/useLibraryItems';
 import BulkActionBar from "./BulkActionBar";
 import useSelection from "@hooks/gallery/useSelection";
@@ -161,11 +162,16 @@ const LibraryView = () => {
                     />
                 </div>
             </div>
-            <MetadataPanel
-                file={selectedFile}
-                onUpdated={handleUpdated}
-                onClose={() => setPanelOpen(false)}
-            />
+            {selectedItems.length > 1
+                ? <BulkMetadataPanel
+                    items={selectedItems}
+                    onUpdated={reload}
+                  />
+                : <MetadataPanel
+                    file={selectedFile}
+                    onUpdated={handleUpdated}
+                  />
+            }
         </div>
     );
 };

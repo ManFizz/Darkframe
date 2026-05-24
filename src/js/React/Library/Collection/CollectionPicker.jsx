@@ -1,7 +1,7 @@
 import React, {useEffect, useRef, useState} from 'react';
 import {useCollections} from '@hooks/library/useCollections';
 
-const CollectionPicker = ({ currentCollectionId, onChange }) => {
+const CollectionPicker = ({ currentCollectionId, mixed = false, onChange }) => {
     const { tree } = useCollections();
     const [open, setOpen] = useState(false);
     const ref             = useRef(null);
@@ -29,7 +29,7 @@ const CollectionPicker = ({ currentCollectionId, onChange }) => {
                 onClick={() => setOpen(v => !v)}
             >
                 <i className="bi bi-folder me-1" />
-                <span>{current?.name || 'Без коллекции'}</span>
+                <span>{mixed ? 'Разные коллекции' : (current?.name || 'Без коллекции')}</span>
                 <i className="bi bi-chevron-down ms-auto" />
             </button>
 
