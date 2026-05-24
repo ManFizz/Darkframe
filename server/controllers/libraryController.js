@@ -3,6 +3,7 @@ const { importFiles, ITEMS_PATH, importDirectory, ensureTag } = require('../serv
 const { Item, Tag, ItemTag } = require('../models/associations');
 const Collection = require('../models/Collection');
 const { Op } = require('sequelize');
+const sequelize = require('../database');
 const path = require('path');
 const fs = require('fs');
 const { importFromEagleCsv } = require('../services/eagleImportService');
@@ -70,6 +71,34 @@ function register() {
         }));
 
         return { collections: collectionItems, items: plainItems };
+    });
+
+    ipcMain.handle('library:bulkUpdateItems', async (_, { updates }) => {
+        await sequelize.transaction(async (t) => {
+            for (const { id, data } of updates) {
+                const { tags, ...fields } = data;
+
+                if (Object.keys(fields).length > 0) {
+                    await Item.update(fields, { where: { id }, transaction: t });
+                }
+
+                if (tags !== undefined) {
+                    await ItemTag.destroy({ where: { itemId: id }, transaction: t });
+
+                    if (tags.length > 0) {
+                        const tagRecords = [];
+                        for (const name of tags) {
+                            tagRecords.push(await ensureTag(name, t));
+                        }
+                        await ItemTag.bulkCreate(
+                            tagRecords.map(tag => ({ itemId: id, tagId: tag.id })),
+                            { transaction: t }
+                        );
+                    }
+                }
+            }
+        });
+        return { ok: true };
     });
 
     ipcMain.handle('library:updateItem', async (_, { id, data }) => {

@@ -79,6 +79,10 @@ export const LibraryService = {
         return libraryApi.updateItem({ id, data });
     },
 
+    async bulkUpdateItems(updates) {
+        return libraryApi.bulkUpdateItems({ updates });
+    },
+
     async deleteItem(id, deleteFile = false) {
         return libraryApi.deleteItem({ id, deleteFile });
     },

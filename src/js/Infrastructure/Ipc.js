@@ -33,6 +33,7 @@ export const libraryApi = {
     importFiles:       (data) => invoke('library:importFiles', data),
     getItems:          (data) => invoke('library:getItems', data),
     updateItem:        (data) => invoke('library:updateItem', data),
+    bulkUpdateItems:   (data) => invoke('library:bulkUpdateItems', data),
     deleteItem:        (data) => invoke('library:deleteItem', data),
     getCollections:    ()     => invoke('library:getCollections'),
     createCollection:  (data) => invoke('library:createCollection', data),

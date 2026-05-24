@@ -9,10 +9,8 @@ const BulkActionBar = ({ selectedItems, collections, onDone }) => {
 
     const moveToCollection = async () => {
         const collectionId = targetCollection || null;
-        await Promise.all(
-            selectedItems.map(f =>
-                LibraryService.updateItem(f.id, { collectionId })
-            )
+        await LibraryService.bulkUpdateItems(
+            selectedItems.map(f => ({ id: f.id, data: { collectionId } }))
         );
         onDone();
     };
@@ -21,11 +19,11 @@ const BulkActionBar = ({ selectedItems, collections, onDone }) => {
         const tag = tagInput.trim().toLowerCase();
         if (!tag) return;
 
-        await Promise.all(
-            selectedItems.map(f => {
-                const tags = [...new Set([...(f.tags || []), tag])];
-                return LibraryService.updateItem(f.id, { tags });
-            })
+        await LibraryService.bulkUpdateItems(
+            selectedItems.map(f => ({
+                id: f.id,
+                data: { tags: [...new Set([...(f.tags || []), tag])] },
+            }))
         );
         setTagInput('');
         onDone();
@@ -33,9 +31,9 @@ const BulkActionBar = ({ selectedItems, collections, onDone }) => {
 
     const deleteAll = async () => {
         if (!confirm(`Удалить ${selectedItems.length} файлов?`)) return;
-        await Promise.all(
-            selectedItems.map(f => LibraryService.deleteItem(f.id, true))
-        );
+        for (const f of selectedItems) {
+            await LibraryService.deleteItem(f.id, true);
+        }
         onDone();
     };
 
