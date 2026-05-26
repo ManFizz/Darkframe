@@ -1,20 +1,85 @@
-import React, {useEffect, useMemo, useRef, useState} from 'react';
+import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import Navigation from "./Navigation";
 import Tags from "./Tags";
 import Video from "./Video";
+import MetadataPanel from "../Library/Metadata/MetadataPanel";
 import Settings from "../../../../data/settings";
-import {FILE_TYPES} from "@/Constants";
+import {FILE_TYPES, SOURCE_TYPES} from "@/Constants";
 import {useFavorites} from "@hooks/useFavorites";
 
-const Modal = ({ fileId, mainArray, modalUpdater, displayFiles }) => {
-    const [isLong, setIsLong] = useState(false);
-    const [degree, setDegree] = useState(0);
-    const modalRef = useRef(null);
-    const { isFav } = useFavorites();
+const DELETE_DELAY = 1500;
 
-    const file = useMemo(() => {
-        return mainArray.find(f => f.uniqueId === fileId) || null;
-    }, [fileId, mainArray]);
+const Modal = ({ fileId, mainArray, modalUpdater, displayFiles, onUpdated }) => {
+    const [isLong, setIsLong]             = useState(false);
+    const [degree, setDegree]             = useState(0);
+    const [panelOpen, setPanelOpen]       = useState(true);
+    const [deleteCountdown, setDeleteCountdown] = useState(false);
+    const deleteTimerRef = useRef(null);
+    const modalRef       = useRef(null);
+    const { isFav }      = useFavorites();
+
+    const file = useMemo(() =>
+        mainArray.find(f => f.uniqueId === fileId) || null,
+    [fileId, mainArray]);
+
+    const isLibrary  = file?.remoteType === SOURCE_TYPES.LIBRARY;
+    const showPanel  = isLibrary && panelOpen && onUpdated;
+
+    // Переход к соседнему файлу и удаление текущего
+    const handleDelete = useCallback(() => {
+        if (!file || !onUpdated) return;
+
+        const currentIndex = mainArray.findIndex(f => f.uniqueId === fileId);
+        const next = mainArray[currentIndex + 1] || mainArray[currentIndex - 1];
+
+        if (next && (next.type === FILE_TYPES.IMAGE || next.type === FILE_TYPES.VIDEO)) {
+            modalUpdater(next);
+        } else {
+            modalUpdater(null);
+        }
+
+        onUpdated('delete', file.id);
+    }, [file, fileId, mainArray, modalUpdater, onUpdated]);
+
+    // Отмена countdown при смене файла
+    useEffect(() => {
+        return () => {
+            if (deleteTimerRef.current) {
+                clearTimeout(deleteTimerRef.current);
+                deleteTimerRef.current = null;
+                setDeleteCountdown(false);
+            }
+        };
+    }, [fileId]);
+
+    // Delete-клавиша с задержкой (capture — раньше Navigation's Escape)
+    useEffect(() => {
+        if (!isLibrary || !onUpdated) return;
+
+        const handleKey = (e) => {
+            if (e.key === 'Delete') {
+                e.stopPropagation();
+                if (deleteTimerRef.current) return;
+
+                setDeleteCountdown(true);
+                deleteTimerRef.current = setTimeout(() => {
+                    deleteTimerRef.current = null;
+                    setDeleteCountdown(false);
+                    handleDelete();
+                }, DELETE_DELAY);
+            }
+
+            if (e.key === 'Escape' && deleteTimerRef.current) {
+                e.stopPropagation();
+                clearTimeout(deleteTimerRef.current);
+                deleteTimerRef.current = null;
+                setDeleteCountdown(false);
+            }
+        };
+
+        document.addEventListener('keydown', handleKey, true);
+        return () => document.removeEventListener('keydown', handleKey, true);
+    }, [isLibrary, onUpdated, handleDelete]);
 
     useEffect(() => {
         if (!file) return;
@@ -32,7 +97,6 @@ const Modal = ({ fileId, mainArray, modalUpdater, displayFiles }) => {
                 setIsLong(true);
             }
         });
-
     }, [file]);
 
     useEffect(() => {
@@ -48,42 +112,77 @@ const Modal = ({ fileId, mainArray, modalUpdater, displayFiles }) => {
                 img.src = neighbor.getUrl();
             }
         });
-
     }, [file, mainArray]);
+
+    // Перехватываем delete из кнопки MetadataPanel — навигируем перед удалением
+    const handlePanelUpdated = useCallback((idOrAction, data) => {
+        if (idOrAction === 'delete') {
+            handleDelete();
+        } else {
+            onUpdated?.(idOrAction, data);
+        }
+    }, [handleDelete, onUpdated]);
 
     if (!file) return null;
 
+    const mediaContent = file.type === FILE_TYPES.IMAGE ? (
+        <img
+            key={fileId}
+            alt={file.title}
+            src={file.getUrl()}
+            className={Settings.LongView && isLong ? "long" : ""}
+            style={{ transform: `rotate(${degree}deg)` }}
+        />
+    ) : (
+        <Video file={file} />
+    );
+
     return (
-        <dialog
-            className={`modal-view ${isFav(file.thumbUrl) ? "favorite" : ""}`}
-            open
-            ref={modalRef}
-            tabIndex="-1"
-        >
-            <Navigation
-                file={file}
-                modalUpdater={modalUpdater}
-                mainArray={mainArray}
-                setDegree={setDegree}
-                displayFiles={displayFiles}
-            />
+        <>
+            <dialog
+                className={`modal-view ${isFav(file.thumbUrl) ? "favorite" : ""} ${showPanel ? 'with-panel' : ''}`}
+                open
+                ref={modalRef}
+                tabIndex="-1"
+            >
+                <Navigation
+                    file={file}
+                    modalUpdater={modalUpdater}
+                    mainArray={mainArray}
+                    setDegree={setDegree}
+                    displayFiles={displayFiles}
+                    panelOpen={panelOpen}
+                    onPanelToggle={isLibrary && onUpdated ? () => setPanelOpen(v => !v) : null}
+                />
 
-            <div className="modal-content-wrapper">
-                {file.type === FILE_TYPES.IMAGE ? (
-                    <img
-                        key={fileId}
-                        alt={file.title}
-                        src={file.getUrl()}
-                        className={Settings.LongView && isLong ? "long" : ""}
-                        style={{ transform: `rotate(${degree}deg)` }}
-                    />
+                {showPanel ? (
+                    <>
+                        <div className="modal-media-area">
+                            <div className="modal-content-wrapper">
+                                {mediaContent}
+                            </div>
+                        </div>
+                        <div className="modal-panel-wrapper">
+                            <MetadataPanel file={file} onUpdated={handlePanelUpdated} />
+                        </div>
+                    </>
                 ) : (
-                    <Video file={file} />
+                    <>
+                        <div className="modal-content-wrapper">
+                            {mediaContent}
+                        </div>
+                        <Tags file={file} />
+                    </>
                 )}
-            </div>
+            </dialog>
 
-            <Tags file={file} />
-        </dialog>
+            {deleteCountdown && (
+                <div className="modal-delete-countdown">
+                    <span>Удаление файла... Esc — отмена</span>
+                    <div className="modal-delete-countdown-bar" />
+                </div>
+            )}
+        </>
     );
 };
 

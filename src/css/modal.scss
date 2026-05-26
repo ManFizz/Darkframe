@@ -66,10 +66,10 @@
 
 .modal-nav-container {
   position: fixed;
-  top: 66px;
+  top: variables.$modal-top;
   left: 0;
   width: 100%;
-  height: calc(100vh - 66px);
+  height: calc(100vh - #{variables.$modal-top});
   z-index: 1100;
   pointer-events: none;
 
@@ -85,10 +85,14 @@
       transform: scale(1.1) translateY(-45%);
     }
   }
-  .btn-cancel, .bi-heart-fill, .bi-heart, .bi-ban, .bi-arrow-clockwise {
+  .btn-cancel, .bi-heart-fill, .bi-heart, .bi-ban, .bi-arrow-clockwise,
+  .bi-layout-sidebar-reverse {
     transform: translateY(-50%);
     font-size: 32px;
     top: 16px;
+  }
+  .bi-layout-sidebar-reverse {
+    left: 166px;
   }
   .btn-cancel {
     left: 16px;
@@ -97,6 +101,10 @@
 
   .bi-heart-fill, .bi-heart, .bi-ban { left: 66px; }
   .bi-arrow-clockwise { left: 116px; }
+  .modal-nav-panel-btn {
+    left: 166px;
+    &.active { color: var(--bs-primary) !important; }
+  }
 
   .arrow {
     top: 50%;
@@ -116,4 +124,73 @@
 .thumb.modal-active {
   filter: brightness(0.5);
   z-index: 3;
+}
+
+// ─── Modal + metadata panel ───────────────────────────────────────────────────
+
+.modal-view.with-panel {
+  flex-direction: row;
+  align-items: stretch;
+  justify-content: flex-start;
+
+  .modal-media-area {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+}
+
+.modal-panel-wrapper {
+  width: 280px;
+  flex-shrink: 0;
+  overflow-y: auto;
+  border-left: 1px solid rgba(255, 255, 255, 0.08);
+
+  // Переопределяем fixed-позиционирование MetadataPanel внутри модалки
+  .metadata-panel {
+    position: relative;
+    top: auto;
+    right: auto;
+    width: 100%;
+    height: auto;
+    min-height: 100%;
+    border-left: none;
+    z-index: auto;
+  }
+}
+
+// ─── Delete countdown ─────────────────────────────────────────────────────────
+
+$delete-delay: 1500ms;
+
+@keyframes modal-delete-drain {
+  from { width: 100%; }
+  to   { width: 0%; }
+}
+
+.modal-delete-countdown {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 1102;
+  background: rgba(180, 30, 30, 0.92);
+  backdrop-filter: blur(4px);
+  padding: 10px 20px 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  color: white;
+  font-size: 13px;
+  font-weight: 500;
+
+  &-bar {
+    height: 3px;
+    background: rgba(255, 255, 255, 0.9);
+    border-radius: 2px;
+    animation: modal-delete-drain $delete-delay linear forwards;
+  }
 }

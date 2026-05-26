@@ -116,6 +116,7 @@ const LibraryView = () => {
                 mainArray={orderedItems}
                 modalUpdater={(file) => setModalFileId(file?.uniqueId || null)}
                 displayFiles={orderedItems}
+                onUpdated={handleUpdated}
             />
             <div className="library-sidebar" onDragOver={e => e.stopPropagation()}>
                 <CollectionTree
