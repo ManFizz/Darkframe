@@ -97,7 +97,7 @@ const Modal = ({ fileId, mainArray, modalUpdater, displayFiles, onUpdated }) => 
                 setIsLong(true);
             }
         });
-    }, [file]);
+    }, [file?.uniqueId]);
 
     useEffect(() => {
         if (!file || file.type !== FILE_TYPES.IMAGE) return;

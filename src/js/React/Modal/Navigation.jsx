@@ -86,27 +86,29 @@ const Navigation = ({ file, modalUpdater, mainArray, setDegree, panelOpen, onPan
 
     return (
         <div className="modal-nav-container">
-            <i
-                className="bi bi-arrow-left-square btn-cancel"
-                onClick={() => modalUpdater(null)}
-            />
-            {!onPanelToggle && ( //bypass in library
+            <div className="modal-nav-row">
                 <i
-                    className={`bi ${isFav(file.thumbUrl) ? "bi-heart-fill" : "bi-heart"}`}
-                    onClick={handleToggleFav}
+                    className="bi bi-arrow-left-square btn-cancel"
+                    onClick={() => modalUpdater(null)}
                 />
-            )}
-            <i
-                className="bi bi-arrow-clockwise"
-                onClick={() => setDegree(d => (d + 90) % 360)}
-            />
-            {onPanelToggle && (
+                {!onPanelToggle && ( //bypass in library
+                    <i
+                        className={`bi ${isFav(file.thumbUrl) ? "bi-heart-fill" : "bi-heart"}`}
+                        onClick={handleToggleFav}
+                    />
+                )}
                 <i
-                    className={`bi bi-layout-sidebar-reverse modal-nav-panel-btn ${panelOpen ? 'active' : ''}`}
-                    onClick={onPanelToggle}
-                    title={panelOpen ? 'Скрыть панель' : 'Показать панель'}
+                    className="bi bi-arrow-clockwise"
+                    onClick={() => setDegree(d => (d + 90) % 360)}
                 />
-            )}
+                {onPanelToggle && (
+                    <i
+                        className={`bi bi-layout-sidebar-reverse modal-nav-panel-btn ${panelOpen ? 'active' : ''}`}
+                        onClick={onPanelToggle}
+                        title={panelOpen ? 'Скрыть панель' : 'Показать панель'}
+                    />
+                )}
+            </div>
 
             {canGoLeft && (
                 <i

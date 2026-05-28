@@ -96,7 +96,8 @@ const TagDropdown = ({ currentTags, onAdd, onClose }) => {
                 {!loading && isEmpty && query.trim() && (
                     <div
                         className="tag-dropdown-item tag-dropdown-create"
-                        onClick={() => { handleAdd(query.trim().toLowerCase()); setQuery(''); }}
+                        onMouseDown={e => e.preventDefault()}
+                        onClick={() => { handleAdd(query.trim().toLowerCase()); setQuery(''); inputRef.current?.focus(); }}
                     >
                         <i className="bi bi-plus-circle me-1" />
                         Создать «{query.trim().toLowerCase()}»
@@ -110,7 +111,8 @@ const TagDropdown = ({ currentTags, onAdd, onClose }) => {
                         <div
                             key={name}
                             className="tag-dropdown-item"
-                            onClick={() => { handleAdd(name); setQuery(''); }}
+                            onMouseDown={e => e.preventDefault()}
+                            onClick={() => { handleAdd(name); setQuery(''); inputRef.current?.focus(); }}
                         >
                             {typeN != null && (
                                 <span className={`tag-dot tag-type-${typeN}`} />

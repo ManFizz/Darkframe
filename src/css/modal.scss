@@ -74,39 +74,29 @@
   pointer-events: none;
 
   i {
-    position: absolute;
     pointer-events: auto;
     cursor: pointer;
     color: white;
     filter: drop-shadow(0 0 5px black);
-    transition: transform 0.2s, opacity 0.2s;
-
-    &:hover {
-      transform: scale(1.1) translateY(-45%);
-    }
   }
-  .btn-cancel, .bi-heart-fill, .bi-heart, .bi-ban, .bi-arrow-clockwise,
-  .bi-layout-sidebar-reverse {
-    transform: translateY(-50%);
+  .modal-nav-row .bi {
+    margin: 4px 7px;
     font-size: 32px;
-    top: 16px;
-  }
-  .bi-layout-sidebar-reverse {
-    left: 166px;
+    transition: transform 0.2s;
+
+    &:hover { transform: scale(1.1); }
   }
   .btn-cancel {
-    left: 16px;
     color: #ff4444 !important;
   }
 
-  .bi-heart-fill, .bi-heart, .bi-ban { left: 66px; }
-  .bi-arrow-clockwise { left: 116px; }
   .modal-nav-panel-btn {
-    left: 166px;
     &.active { color: var(--bs-primary) !important; }
   }
 
   .arrow {
+    position: absolute;
+    transition: transform 0.2s, opacity 0.2s;
     top: 50%;
     transform: translateY(-50%);
     font-size: 100px;
@@ -114,6 +104,7 @@
 
     &:hover {
       opacity: 1;
+      transform: scale(1.1) translateY(-45%);
     }
   }
 
@@ -193,4 +184,14 @@ $delete-delay: 1500ms;
     border-radius: 2px;
     animation: modal-delete-drain $delete-delay linear forwards;
   }
+}
+
+.modal-nav-row {
+  display: flex;
+  width: 100%;
+  height: 32px;
+  flex-direction: row;
+  justify-content: flex-start;
+  align-items: flex-start;
+  padding-left: 10px;
 }
