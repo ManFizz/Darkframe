@@ -279,6 +279,48 @@ function register() {
             webContents: event.sender,
         });
     });
+
+    // Generate display.jpg for items that have HEIC originals but no display copy
+    ipcMain.handle('library:generateMissingDisplays', async (event) => {
+        const { generateHeifDisplay } = require('../services/thumbService');
+        const dirs = fs.readdirSync(ITEMS_PATH);
+        let fixed = 0, skipped = 0, failed = 0;
+
+        for (const id of dirs) {
+            const itemDir = path.join(ITEMS_PATH, id);
+            const displayPath = path.join(itemDir, 'display.jpg');
+            if (fs.existsSync(displayPath)) { skipped++; continue; }
+
+            // Find original file
+            let originalPath = null;
+            try {
+                const files = fs.readdirSync(itemDir);
+                const orig = files.find(f => f.startsWith('original'));
+                if (!orig) { skipped++; continue; }
+                originalPath = path.join(itemDir, orig);
+            } catch { skipped++; continue; }
+
+            // Check magic bytes for HEIF
+            try {
+                const buf = Buffer.alloc(8);
+                const fd = fs.openSync(originalPath, 'r');
+                fs.readSync(fd, buf, 0, 8, 0);
+                fs.closeSync(fd);
+                if (buf.slice(4, 8).toString('ascii') !== 'ftyp') { skipped++; continue; }
+            } catch { skipped++; continue; }
+
+            try {
+                await generateHeifDisplay(originalPath, displayPath);
+                fixed++;
+                event.sender.send('library:repairProgress', { fixed, skipped, failed });
+            } catch (e) {
+                console.error('Failed to generate display for', id, e.message);
+                failed++;
+            }
+        }
+
+        return { fixed, skipped, failed };
+    });
 }
 
 module.exports = { register };

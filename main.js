@@ -7,6 +7,7 @@ const { protocol } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const { ITEMS_PATH, hashExistingItems } = require('./server/services/importService');
+const { generateHeifDisplay } = require('./server/services/thumbService');
 const { migrations } = require("./server/migrations");
 const { startApiServer, stopApiServer } = require('./server/apiServer');
 
@@ -84,9 +85,15 @@ function registerLibraryProtocol() {
                 const itemDir = path.join(ITEMS_PATH, id);
                 if (!fs.existsSync(itemDir)) return callback({ error: -6 });
 
-                const files = fs.readdirSync(itemDir);
-                const original = files.find(f => f.startsWith('original'));
-                filePath = original ? path.join(itemDir, original) : null;
+                // Prefer display.jpg (generated for HEIC/unsupported originals)
+                const displayFile = path.join(itemDir, 'display.jpg');
+                if (fs.existsSync(displayFile)) {
+                    filePath = displayFile;
+                } else {
+                    const files = fs.readdirSync(itemDir);
+                    const original = files.find(f => f.startsWith('original'));
+                    filePath = original ? path.join(itemDir, original) : null;
+                }
             }
 
             if (!filePath || !fs.existsSync(filePath)) {
