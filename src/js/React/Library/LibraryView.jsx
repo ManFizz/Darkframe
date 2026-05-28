@@ -96,10 +96,15 @@ const LibraryView = () => {
         } else {
             await updateItem(idOrAction, data);
             if (selectedFile?.id === idOrAction) {
-                setSelectedFile(prev => ({ ...prev, ...data }));
+                setSelectedFile(prev =>
+                    Object.assign(Object.create(Object.getPrototypeOf(prev)), prev, data)
+                );
             }
             setOrderedItems(prev =>
-                prev.map(f => f.id === idOrAction ? { ...f, ...data } : f)
+                prev.map(f => f.id === idOrAction
+                    ? Object.assign(Object.create(Object.getPrototypeOf(f)), f, data)
+                    : f
+                )
             );
         }
     }, [deleteItem, updateItem, selectedFile]);

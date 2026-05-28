@@ -58,7 +58,8 @@ const Navigation = ({ file, modalUpdater, mainArray, setDegree, panelOpen, onPan
                     openShift(DIRECTION.RIGHT);
                     break;
                 case 'Enter':
-                    handleToggleFav();
+                    if(onPanelToggle == null) //bypass in library
+                        handleToggleFav();
                     break;
                 case 'Escape':
                     modalUpdater(null);
@@ -89,10 +90,12 @@ const Navigation = ({ file, modalUpdater, mainArray, setDegree, panelOpen, onPan
                 className="bi bi-arrow-left-square btn-cancel"
                 onClick={() => modalUpdater(null)}
             />
-            <i
-                className={`bi ${isFav(file.thumbUrl) ? "bi-heart-fill" : "bi-heart"}`}
-                onClick={handleToggleFav}
-            />
+            {!onPanelToggle && ( //bypass in library
+                <i
+                    className={`bi ${isFav(file.thumbUrl) ? "bi-heart-fill" : "bi-heart"}`}
+                    onClick={handleToggleFav}
+                />
+            )}
             <i
                 className="bi bi-arrow-clockwise"
                 onClick={() => setDegree(d => (d + 90) % 360)}
