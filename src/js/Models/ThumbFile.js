@@ -1,5 +1,5 @@
-import {normalizeTags} from "../Controllers/TagsController";
-import {FILE_TYPES} from "../Constants";
+import {normalizeTags} from "@controllers/TagsController";
+import {FILE_TYPES} from "@/Constants";
 
 const EXT = {
     IMAGE: /\.(jpg|jpeg|png|webp|gif|jfif)$/i,
@@ -27,8 +27,14 @@ export class ThumbFile {
         this.priority = data.priority ?? 1;
         this.localUrl = data.localUrl || null;
         this.createdAt = data.createdAt || null;
+        this.order = data.order || null;
+        this.rating = data.rating || null;
+        this.collectionId = data.collectionId || null;
+        this.importedAt = data.importedAt || null;
+        this.size = data.size || null;
 
         this.type = data.type || this._detectType(this.thumbUrl);
+        this._meta = data._meta || null;
 
         this.uniqueId = this._buildUniqueId();
     }
@@ -80,7 +86,7 @@ export class ThumbFile {
     }
 
     getUrl() {
-        return this.localUrl || this.thumbUrl;
+        return this.localUrl || this.contentUrl || this.thumbUrl;
     }
 
     _detectType(url) {

@@ -1,5 +1,5 @@
 import {useEffect, useState} from "react";
-import FavoritesService from "./../Services/FavoritesService"
+import FavoritesService from "@services/FavoritesService"
 
 export function useFavorites() {
 

@@ -1,4 +1,4 @@
-import React, {createContext, useEffect, useMemo, useReducer} from 'react';
+import React, {createContext, useEffect, useMemo, useReducer, useState} from 'react';
 import ReactDOM from 'react-dom/client';
 
 import NavBar from "./React/PageBuilders/NavBar.jsx";
@@ -6,18 +6,31 @@ import Modal from "./React/Modal/Modal.jsx";
 import SideBar from "./React/PageBuilders/SideBar.jsx";
 import Gallery from "./React/PageBuilders/Gallery";
 import CustomPagination from "./React/Helpers/CustomPagination";
-import usePagination from "./Hooks/usePagination";
+import usePagination from "./Hooks/gallery/usePagination";
 
 import {InitDatabaseData} from "./BackendConnect";
-import {updateR34Source} from "./Controllers/R34Controller";
-import {StopR34Loading} from "./Controllers/R34FavoriteController"
+import ModuleRegistry from './ModuleRegistry';
+import '@/modules';
 
-import {AppController, galleryReducer, initialState} from "./Controllers/AppInitializerController";
+import LibraryView from "./React/Library/LibraryView";
+import {SOURCE_TYPES} from "./Constants";
+
+import {AppController, galleryReducer, initialState} from "@controllers/AppInitializerController";
+import Notifications from "./React/Helpers/Notifications";
+
+import {LibraryContext} from './LibraryContext';
+import {useLibraryFilter} from '@hooks/library/useLibraryFilter';
 
 export const GalleryContext = createContext(null);
 
 const Main = () => {
     const [state, dispatch] = useReducer(galleryReducer, initialState);
+
+    const [libraryItems, setLibraryItems] = useState([]);
+    const libraryFilter = useLibraryFilter(libraryItems);
+
+    const [statsVersion, setStatsVersion] = useState(0);
+    const refreshStats = () => setStatsVersion(v => v + 1);
 
     const contextValue = useMemo(() => ({
         state,
@@ -33,8 +46,7 @@ const Main = () => {
             dispatch({ type: 'SET_DISPLAY_ARRAY', payload: arr }),
 
         setCurrentSource: (source) => {
-            StopR34Loading();
-            updateR34Source(source);
+            ModuleRegistry.onSourceChange(source);
             dispatch({ type: 'SET_CURRENT_SOURCE', payload: source });
         },
 
@@ -96,43 +108,60 @@ const Main = () => {
         });
     }, []);
 
+    const isLibrary = state.currentSource === SOURCE_TYPES.LIBRARY;
+
     return (
         <GalleryContext.Provider value={contextValue}>
+            <LibraryContext.Provider value={{
+                ...libraryFilter,
+                total: libraryItems.length,
+                setLibraryItems,
+                statsVersion,
+                refreshStats,
+            }}>
             <div className={`main-root ${state.safeMode ? "safe-view" : ""}`}>
-                <NavBar />
+                <Notifications />
+                <NavBar setLibraryItems={setLibraryItems} />
 
-                <Modal
-                    fileId={state.modalFileId}
-                    modalUpdater={contextValue.setModalFile}
-                    mainArray={state.mainArray}
-                    displayFiles={state.displayArray}
-                />
+                {!isLibrary && (
+                    <Modal
+                        fileId={state.modalFileId}
+                        modalUpdater={contextValue.setModalFile}
+                        mainArray={state.mainArray}
+                        displayFiles={state.displayArray}
+                    />
+                )}
 
                 <div className="wrapper d-flex align-items-stretch main-split overflow-auto">
-                    <SideBar
-                        currentSource={state.currentSource}
-                    />
+                    {!isLibrary && <SideBar currentSource={state.currentSource} />}
 
-                    <div className="container-fluid">
-                        <Gallery
-                            modalFileId={state.modalFileId}
-                            modalUpdater={contextValue.setModalFile}
-                            displayArray={state.displayArray}
-                            typeView={state.typeView}
-                            loadNextPage={loadNextPage}
-                        />
+                    <div className="container-fluid p-0">
+                        {isLibrary ? (
+                            <LibraryView />
+                        ) : (
+                            <Gallery
+                                modalFileId={state.modalFileId}
+                                modalUpdater={contextValue.setModalFile}
+                                displayArray={state.displayArray}
+                                typeView={state.typeView}
+                                loadNextPage={loadNextPage}
+                            />
+                        )}
                     </div>
 
-                    <CustomPagination
-                        currentPage={currentPage}
-                        maxPage={maxPage}
-                        pages={pages}
-                        goToPage={goToPage}
-                        loadNextPage={loadNextPage}
-                        currentSource={state.currentSource}
-                    />
+                    {!isLibrary && (
+                        <CustomPagination
+                            currentPage={currentPage}
+                            maxPage={maxPage}
+                            pages={pages}
+                            goToPage={goToPage}
+                            loadNextPage={loadNextPage}
+                            currentSource={state.currentSource}
+                        />
+                    )}
                 </div>
             </div>
+            </LibraryContext.Provider>
         </GalleryContext.Provider>
     );
 };

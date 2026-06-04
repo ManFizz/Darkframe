@@ -1,7 +1,7 @@
 import React, {useMemo} from 'react';
 import Pagination from 'react-bootstrap/Pagination';
-import {CanMoreMedia, LoadMoreMedia} from "../../Controllers/R34Controller";
-import {SOURCE_TYPES} from "../../Constants";
+import {CanMoreMedia, LoadMoreMedia} from "@modules/r34/R34Controller";
+import {SOURCE_TYPES} from "@/Constants";
 
 const MAX_PAGES = 7;
 

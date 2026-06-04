@@ -1,6 +1,6 @@
 import React, {useMemo, useState} from "react";
 import {BsPlusLg} from "react-icons/bs";
-import useFavoriteTags from "../../../Hooks/useFavoriteTags";
+import useFavoriteTags from "@hooks/useFavoriteTags";
 
 const FavoriteTagsForm = ({ currentSource, onToggle }) => {
     const [value, setValue] = useState("");

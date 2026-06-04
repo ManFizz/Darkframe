@@ -1,13 +1,22 @@
-import React from "react";
+import React, {useCallback} from "react";
 import Image from "./Image";
 import Video from "./Video";
 import Folder from "./Folder";
 import Return from "./Return";
-import {getCurrentSource} from "../../Controllers/AppInitializerController";
-import {FILE_TYPES, SOURCE_TYPES} from "../../Constants";
-import {useFavorites} from "../../Hooks/useFavorites";
+import {getCurrentSource} from "@controllers/AppInitializerController";
+import {FILE_TYPES, SOURCE_TYPES} from "@/Constants";
+import {useFavorites} from "@hooks/useFavorites";
+import Collection from "./Collection";
+import {useClickHandler} from '@hooks/gallery/useClickHandler';
 
-const Thumb = React.memo(({ file, isModal, modalUpdater }) => {
+const Thumb = (({ file, isModal, modalUpdater, isSelected, onDoubleClick }) => {
+    const handleSingleClick = useCallback((e) => {
+        if (file.type === FILE_TYPES.IMAGE ||
+            file.type === FILE_TYPES.VIDEO ||
+            file.type === FILE_TYPES.COLLECTION) {
+            modalUpdater(file, e);
+        }
+    }, [file, modalUpdater]);
 
     const { isFav, toggleFav } = useFavorites();
 
@@ -16,11 +25,11 @@ const Thumb = React.memo(({ file, isModal, modalUpdater }) => {
         toggleFav(file);
     };
 
-    const handleThumbClick = () => {
-        if (file.type === FILE_TYPES.IMAGE || file.type === FILE_TYPES.VIDEO) {
-            modalUpdater(file);
-        }
-    };
+    const handleClick = useClickHandler({
+        onClick: handleSingleClick,
+        onDoubleClick: onDoubleClick ? () => onDoubleClick(file) : null,
+        delay: 250,
+    });
 
     const renderContent = () => {
         switch (file.type) {
@@ -28,6 +37,7 @@ const Thumb = React.memo(({ file, isModal, modalUpdater }) => {
             case FILE_TYPES.VIDEO: return <Video file={file} />;
             case FILE_TYPES.FOLDER: return <Folder file={file} />;
             case FILE_TYPES.RETURN: return <Return file={file} />;
+            case FILE_TYPES.LIBRARY: return <Collection file={file} />;
             default: return null;
         }
     };
@@ -37,8 +47,8 @@ const Thumb = React.memo(({ file, isModal, modalUpdater }) => {
 
     return (
         <div
-            className={`card thumb bg-dark ${isModal ? 'modal-active' : ''} ${isRemovedInFavs ? 'opacity-50' : ''}`}
-            onClick={handleThumbClick}
+            className={`card thumb bg-dark ${isModal ? 'modal-active' : ''} ${isRemovedInFavs ? 'opacity-50' : ''} ${isSelected ? 'thumb-selected' : ''}`}
+            onClick={handleClick}
         >
             {hasOverlay && (
                 <div className="overlay">

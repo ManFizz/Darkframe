@@ -1,4 +1,4 @@
-import {favoriteTagsApi} from "../Infrastructure/Ipc";
+import {favoriteTagsApi} from "@/Infrastructure/Ipc";
 
 let favoriteTags = [];
 let listeners = new Set();

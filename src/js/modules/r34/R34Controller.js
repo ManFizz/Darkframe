@@ -1,7 +1,7 @@
-import {GetThumbByData} from "./GalleryController.js";
-import {addToGallery, setGallery} from "./AppInitializerController";
-import PrivateData from "../../../data/private";
-import {SOURCE_TYPES} from "../Constants";
+import {GetThumbByData} from "@controllers/GalleryController.js";
+import {addToGallery, setGallery} from "@controllers/AppInitializerController";
+import PrivateData from "@data/private";
+import {SOURCE_TYPES} from "@/Constants";
 
 export const sources = {
     r34: {
@@ -60,7 +60,7 @@ export function updateR34Source(sourceId) {
         currentR34Source = sources.realbooru;
     else currentR34Source = null;
 }
-const postPerPage = 100; //Maximum in  API
+const postPerPage = 100; //Maximum in API
 let maxPosts = 0;
 let currentPage;
 let currentQueryTags = "";

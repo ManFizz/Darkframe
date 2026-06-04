@@ -1,8 +1,8 @@
 import {useCallback, useEffect, useState} from "react";
-import {SOURCE_TYPES} from "../Constants";
-import Settings from "../../../data/settings";
-import {setGallery} from "../Controllers/AppInitializerController";
-import {CanMoreMedia, LoadMoreMedia} from "../Controllers/R34Controller";
+import {SOURCE_TYPES} from "@/Constants";
+import Settings from "@data/settings";
+import {setGallery} from "@controllers/AppInitializerController";
+import {CanMoreMedia, LoadMoreMedia} from "@modules/r34/R34Controller";
 
 export function usePagination({ mainArray, currentSource, updateDisplayArray, modalFile }) {
     const [currentPage, setCurrentPage] = useState(1);

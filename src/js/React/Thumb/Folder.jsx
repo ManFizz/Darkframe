@@ -1,11 +1,9 @@
 import React from "react";
-import {useDisplayImagesByPath} from "../../Controllers/FoldersController";
+import {displayImagesByPath} from "@modules/folder/FolderController";
 
 const pathToImage = "images/folder.png";
 
 const Folder = ({ file }) => {
-    const displayImagesByPath = useDisplayImagesByPath();
-
     const handleClick = () => {
         displayImagesByPath(file.sourceUrl + '\\' + file.title);
     };

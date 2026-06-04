@@ -3,6 +3,7 @@ export const FILE_TYPES = {
     VIDEO: 2,
     FOLDER: 3,
     RETURN: 4,
+    LIBRARY: 5,
     COLLECTION: 5,
 };
 export const SOURCE_TYPES = {
@@ -11,8 +12,9 @@ export const SOURCE_TYPES = {
     P365: 3,
     GELBOORU: 4,
     FAVORITE: 5,
+    LIBRARY: 6,
     COLLECTION: 6,
     REALBOORU: 7,
 };
 export const SORT_ORDER = {ASC: 1, DESC: -1};
-export const SORT_TYPE = {NAME: 0, TIME: 1, PRIORITY: 2};
+export const SORT_TYPE = {NAME: 0, TIME: 1, PRIORITY: 2, ID: 3};

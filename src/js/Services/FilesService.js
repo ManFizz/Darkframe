@@ -1,4 +1,4 @@
-import {filesApi} from "../Infrastructure/Ipc";
+import {filesApi} from "@/Infrastructure/Ipc";
 
 export const FileService = {
     getFilesByPath(path) { return filesApi.getFilesByPath(path) },

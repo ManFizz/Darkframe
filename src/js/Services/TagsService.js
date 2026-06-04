@@ -1,4 +1,4 @@
-import {tagsApi} from "../Infrastructure/Ipc";
+import {tagsApi} from "@/Infrastructure/Ipc";
 
 export const TagsService = {
     getByNames(names) { return tagsApi.getByNames(names) },

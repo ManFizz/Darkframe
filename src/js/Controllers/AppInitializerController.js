@@ -1,5 +1,5 @@
 import Settings from "../../../data/settings";
-import {SORT_ORDER, SORT_TYPE, SOURCE_TYPES} from "../Constants";
+import {SORT_ORDER, SORT_TYPE, SOURCE_TYPES} from "@/Constants";
 
 export const SORT_STRATEGIES = {
     [SORT_TYPE.NAME]: (a, b) =>
@@ -10,6 +10,9 @@ export const SORT_STRATEGIES = {
 
     [SORT_TYPE.PRIORITY]: (a, b) =>
         (a.priority || 0) - (b.priority || 0),
+
+    [SORT_TYPE.ID]: (a, b) =>
+        (a.priority || 0) - (b.priority || 0),
 };
 
 export function getSortedArray(array, sortInfo, sourceType) {
@@ -19,6 +22,7 @@ export function getSortedArray(array, sortInfo, sourceType) {
     const strategy = SORT_STRATEGIES[sortInfo?.type];
 
     if (sourceType === SOURCE_TYPES.FAVORITE) {
+        console.log(array);
         return [...array].sort((a, b) => (a.id - b.id) * order);
     }
 
@@ -54,7 +58,7 @@ export const initialState = {
     mainArray: [],
     displayArray: [],
     favTagsArray: [],
-    currentSource: SOURCE_TYPES.FOLDER,
+    currentSource: SOURCE_TYPES.LIBRARY,
     typeView: 2,
     sortInfo: { order: SORT_ORDER.DESC, type: SORT_TYPE.TIME },
     safeMode: Settings.SafeView,

@@ -4,8 +4,9 @@ const fs = require("fs");
 const dbFilePath = 'data/data.db';
 
 function customLogger(message) {
-	if(!message.includes("SELECT ") && !message.includes("PRAGMA INDEX_LIST")) {}
+	if (!message.includes("SELECT ") && !message.includes("PRAGMA INDEX_LIST")) {
 		fs.appendFileSync('sequelize.log', message + '\n');
+	}
 }
 
 if (!fs.existsSync(dbFilePath)) {
@@ -15,6 +16,7 @@ if (!fs.existsSync(dbFilePath)) {
 const sequelize = new Sequelize({
 	dialect: 'sqlite',
 	storage: dbFilePath,
+	pool: { max: 1, min: 0, acquire: 30000, idle: 10000 },
 	logging: customLogger,
 });
 

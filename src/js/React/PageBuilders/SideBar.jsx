@@ -1,16 +1,14 @@
 import React, {useEffect, useState} from 'react';
-import SectionR34 from "../SideBar/SectionR34.jsx";
 import {BsList} from "react-icons/bs";
-
-import {SOURCE_TYPES} from "../../Constants";
+import ModuleRegistry from '@/ModuleRegistry';
 
 const SideBar = ({ currentSource }) => {
-    const isR34Family = [SOURCE_TYPES.R34, SOURCE_TYPES.GELBOORU, SOURCE_TYPES.REALBOORU].includes(currentSource);
-    const [sidebarOpen, setSidebarOpen] = useState(isR34Family);
+    const SideSection = ModuleRegistry.getSidebarSection(currentSource);
+    const [sidebarOpen, setSidebarOpen] = useState(!!SideSection);
 
     useEffect(() => {
-        if (isR34Family) setSidebarOpen(true);
-    }, [currentSource, isR34Family]);
+        if (SideSection) setSidebarOpen(true);
+    }, [currentSource, SideSection]);
 
     return (
         <nav className={`sidebar bg-dark text-white ${sidebarOpen ? 'open' : ''}`}>
@@ -19,9 +17,7 @@ const SideBar = ({ currentSource }) => {
                     <BsList />
                 </button>
             </div>
-            {isR34Family && (
-                <SectionR34 currentSource={currentSource} />
-            )}
+            {SideSection && <SideSection currentSource={currentSource} />}
         </nav>
     );
 }

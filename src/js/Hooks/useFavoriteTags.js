@@ -1,5 +1,5 @@
 import {useEffect, useState} from "react";
-import {FavoriteTagsService} from "../Services/FavoriteTagsService";
+import {FavoriteTagsService} from "@services/FavoriteTagsService";
 
 export function useFavoriteTags() {
 

@@ -25,7 +25,7 @@ async function handleAddFavorites(event, data) {
 		if (!id) return null;
 
 		if (data.remoteType !== 1) {
-			queueDownload({ id, thumbUrl });
+			queueDownload({ id: id, thumbUrl: data.thumbUrl });
 		}
 
 		return id;

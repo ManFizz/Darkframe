@@ -1,7 +1,7 @@
 import React, {useCallback, useEffect, useMemo} from 'react';
-import {CanMoreMedia, LoadMoreMedia} from "../../Controllers/R34Controller";
-import {FILE_TYPES} from "../../Constants";
-import {useFavorites} from "../../Hooks/useFavorites";
+import {CanMoreMedia, LoadMoreMedia} from "@modules/r34/R34Controller";
+import {FILE_TYPES} from "@/Constants";
+import {useFavorites} from "@hooks/useFavorites";
 
 const DIRECTION = {
     LEFT: -1,
@@ -16,7 +16,7 @@ const isCanDisplayedByIdx = (mainArray, nextIdx) => {
     return item.type === FILE_TYPES.VIDEO || item.type === FILE_TYPES.IMAGE;
 };
 
-const Navigation = ({ file, modalUpdater, mainArray, setDegree }) => {
+const Navigation = ({ file, modalUpdater, mainArray, setDegree, panelOpen, onPanelToggle }) => {
     const { isFav, toggleFav } = useFavorites();
 
     const currentIndex = useMemo(() => {
@@ -58,7 +58,8 @@ const Navigation = ({ file, modalUpdater, mainArray, setDegree }) => {
                     openShift(DIRECTION.RIGHT);
                     break;
                 case 'Enter':
-                    handleToggleFav();
+                    if(onPanelToggle == null) //bypass in library
+                        handleToggleFav();
                     break;
                 case 'Escape':
                     modalUpdater(null);
@@ -80,23 +81,34 @@ const Navigation = ({ file, modalUpdater, mainArray, setDegree }) => {
         };
     }, [openShift, modalUpdater]);
 
-    const canGoLeft = isCanDisplayedByIdx(mainArray, currentIndex - 1);
+    const canGoLeft  = isCanDisplayedByIdx(mainArray, currentIndex - 1);
     const canGoRight = isCanDisplayedByIdx(mainArray, currentIndex + 1);
 
     return (
         <div className="modal-nav-container">
-            <i
-                className={`bi ${isFav(file.thumbUrl) ? "bi-heart-fill" : "bi-heart"}`}
-                onClick={handleToggleFav}
-            />
-            <i
-                className="bi bi-arrow-clockwise"
-                onClick={() => setDegree(d => (d + 90) % 360)}
-            />
-            <i
-                className="bi bi-arrow-left-square btn-cancel"
-                onClick={() => modalUpdater(null)}
-            />
+            <div className="modal-nav-row">
+                <i
+                    className="bi bi-arrow-left-square btn-cancel"
+                    onClick={() => modalUpdater(null)}
+                />
+                {!onPanelToggle && ( //bypass in library
+                    <i
+                        className={`bi ${isFav(file.thumbUrl) ? "bi-heart-fill" : "bi-heart"}`}
+                        onClick={handleToggleFav}
+                    />
+                )}
+                <i
+                    className="bi bi-arrow-clockwise"
+                    onClick={() => setDegree(d => (d + 90) % 360)}
+                />
+                {onPanelToggle && (
+                    <i
+                        className={`bi bi-layout-sidebar-reverse modal-nav-panel-btn ${panelOpen ? 'active' : ''}`}
+                        onClick={onPanelToggle}
+                        title={panelOpen ? 'Скрыть панель' : 'Показать панель'}
+                    />
+                )}
+            </div>
 
             {canGoLeft && (
                 <i
@@ -104,7 +116,6 @@ const Navigation = ({ file, modalUpdater, mainArray, setDegree }) => {
                     onClick={() => openShift(DIRECTION.LEFT)}
                 />
             )}
-
             {(canGoRight || CanMoreMedia()) && (
                 <i
                     className="bi bi-chevron-compact-right arrow arrow-right"

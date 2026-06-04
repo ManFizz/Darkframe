@@ -6,6 +6,7 @@ const Settings = {
     Resize: true,
     LongView: true,
     HttpProxy: false,
+    LibraryPath: 'D:\\MyLibrary',
 };
 
 module.exports = Settings;

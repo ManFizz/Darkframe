@@ -1,5 +1,5 @@
 import React, {useCallback, useEffect, useMemo, useState} from "react";
-import {ensureTags, getAllTags, getTagOrder, subscribe} from "../../Controllers/TagsController";
+import {ensureTags, getAllTags, getTagOrder, subscribe} from "@controllers/TagsController";
 
 const Tags = ({ file }) => {
     const [version, setVersion] = useState(0);
@@ -53,7 +53,7 @@ const Tags = ({ file }) => {
         <div className="col-7 text-center tags">
             {visibleTags.map(({ name, metadata }) => {
                 const cls = metadata
-                    ? `tag-type-${metadata.type}`
+                    ? `tag-type-${metadata.type ? metadata.type : 0}`
                     : "bg-secondary";
 
                 const isActive = activeTag === name;

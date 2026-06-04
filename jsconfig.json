@@ -1,0 +1,16 @@
+{
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/js/*"],
+      "@data/*": ["data/*"],
+      "@server/*": ["server/*"],
+      "@react/*": ["src/js/React/*"],
+      "@hooks/*": ["src/js/Hooks/*"],
+      "@services/*": ["src/js/Services/*"],
+      "@controllers/*": ["src/js/Controllers/*"]
+    },
+    "jsx": "react"
+  },
+  "include": ["src/**/*", "server/**/*"]
+}
