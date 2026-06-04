@@ -25,10 +25,8 @@ const Modal = ({ fileId, mainArray, modalUpdater, displayFiles, onUpdated }) => 
     const isLibrary  = file?.remoteType === SOURCE_TYPES.LIBRARY;
     const showPanel  = isLibrary && panelOpen && onUpdated;
 
-    // Переход к соседнему файлу и удаление текущего
-    const handleDelete = useCallback(() => {
-        if (!file || !onUpdated) return;
-
+    // Переход к соседнему файлу (используется при удалении и смене коллекции)
+    const navigateToNext = useCallback(() => {
         const currentIndex = mainArray.findIndex(f => f.uniqueId === fileId);
         const next = mainArray[currentIndex + 1] || mainArray[currentIndex - 1];
 
@@ -37,9 +35,14 @@ const Modal = ({ fileId, mainArray, modalUpdater, displayFiles, onUpdated }) => 
         } else {
             modalUpdater(null);
         }
+    }, [fileId, mainArray, modalUpdater]);
 
+    // Переход к соседнему файлу и удаление текущего
+    const handleDelete = useCallback(() => {
+        if (!file || !onUpdated) return;
+        navigateToNext();
         onUpdated('delete', file.id);
-    }, [file, fileId, mainArray, modalUpdater, onUpdated]);
+    }, [file, navigateToNext, onUpdated]);
 
     // Отмена countdown при смене файла
     useEffect(() => {
@@ -114,14 +117,22 @@ const Modal = ({ fileId, mainArray, modalUpdater, displayFiles, onUpdated }) => 
         });
     }, [file, mainArray]);
 
-    // Перехватываем delete из кнопки MetadataPanel — навигируем перед удалением
+    // Перехватываем апдейты из MetadataPanel:
+    //  - 'delete' → навигируем перед удалением
+    //  - смена коллекции → навигируем перед сохранением, иначе файл выпадает
+    //    из текущей выборки и Modal закрывается
     const handlePanelUpdated = useCallback((idOrAction, data) => {
         if (idOrAction === 'delete') {
             handleDelete();
-        } else {
-            onUpdated?.(idOrAction, data);
+            return;
         }
-    }, [handleDelete, onUpdated]);
+
+        if (file && data && 'collectionId' in data && data.collectionId !== file.collectionId) {
+            navigateToNext();
+        }
+
+        onUpdated?.(idOrAction, data);
+    }, [handleDelete, navigateToNext, onUpdated, file]);
 
     if (!file) return null;
 
