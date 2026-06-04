@@ -1,4 +1,5 @@
-import React, {useCallback, useEffect, useMemo, useState} from 'react';
+import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
+import {useDragAutoScroll} from '@hooks/library/useDragAutoScroll';
 import CollectionTree, {SPECIAL} from './Collection/CollectionTree';
 import ImportButton from './Import/ImportButton';
 import MetadataPanel from './Metadata/MetadataPanel';
@@ -18,6 +19,8 @@ const LibraryView = () => {
     const [selectedFile, setSelectedFile] = useState(null);
     const { filtered, setLibraryItems, refreshStats } = useLibraryContext();
     const [modalFileId, setModalFileId] = useState(null);
+    const galleryScrollRef = useRef(null);
+    useDragAutoScroll(galleryScrollRef);
 
     const { items, reload, updateItem, deleteItem } = useLibraryItems(
         selectedCollection === SPECIAL.NONE
@@ -152,6 +155,7 @@ const LibraryView = () => {
                     onDone={async () => { clear(); await reload(); }}
                 />
                 <div
+                    ref={galleryScrollRef}
                     className="library-gallery"
                     onKeyDown={e => { if (e.ctrlKey && e.key === 'a') { e.preventDefault(); selectAll(); }}}
                     tabIndex={0}
