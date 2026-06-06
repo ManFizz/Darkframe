@@ -335,11 +335,28 @@
     gap: 8px;
   }
 
-  &.drop-target {
+  &.drop-target,
+  &.drop-inside {
     background: var(--bs-primary-bg-subtle);
     outline: 2px dashed var(--bs-primary);
     outline-offset: -2px;
   }
+
+  &.drop-before::before,
+  &.drop-after::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: var(--bs-primary);
+    border-radius: 2px;
+    pointer-events: none;
+    z-index: 2;
+  }
+
+  &.drop-before::before { top: -1px; }
+  &.drop-after::after   { bottom: -1px; }
 }
 
 .collection-toggle {

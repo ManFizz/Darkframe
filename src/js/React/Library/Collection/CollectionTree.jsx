@@ -10,8 +10,27 @@ export const SPECIAL = {
     UNCATEGORIZED: 'UNCATEGORIZED',
 };
 
-const ContextMenu = ({ x, y, node, onClose, onRename, onDelete, onCreateChild,
-                        onMoveUp, onMoveDown, canMoveUp, canMoveDown }) => {
+function findNodeAndParent(tree, id, parent = null) {
+    for (const node of tree) {
+        if (node.id === id) return { node, parent };
+        if (node.children?.length) {
+            const r = findNodeAndParent(node.children, id, node);
+            if (r) return r;
+        }
+    }
+    return null;
+}
+
+function isDescendant(node, targetId) {
+    if (!node?.children?.length) return false;
+    for (const child of node.children) {
+        if (child.id === targetId) return true;
+        if (isDescendant(child, targetId)) return true;
+    }
+    return false;
+}
+
+const ContextMenu = ({ x, y, node, onClose, onRename, onDelete, onCreateChild }) => {
     useEffect(() => {
         const handleClick = () => onClose();
         document.addEventListener('mousedown', handleClick);
@@ -33,17 +52,6 @@ const ContextMenu = ({ x, y, node, onClose, onRename, onDelete, onCreateChild,
                 Переименовать
             </div>
             <div className="context-menu-divider" />
-            <div className={`context-menu-item ${!canMoveUp ? 'disabled' : ''}`}
-                 onClick={() => { if (canMoveUp) { onMoveUp(node.id); onClose(); } }}>
-                <i className="bi bi-chevron-up me-2" />
-                Вверх
-            </div>
-            <div className={`context-menu-item ${!canMoveDown ? 'disabled' : ''}`}
-                 onClick={() => { if (canMoveDown) { onMoveDown(node.id); onClose(); } }}>
-                <i className="bi bi-chevron-down me-2" />
-                Вниз
-            </div>
-            <div className="context-menu-divider" />
             <div className="context-menu-item danger" onClick={() => { onDelete(node.id); onClose(); }}>
                 <i className="bi bi-trash me-2" />
                 Удалить
@@ -53,19 +61,18 @@ const ContextMenu = ({ x, y, node, onClose, onRename, onDelete, onCreateChild,
 };
 
 const CollectionNode = ({ node, selectedId, onSelect, onRename, onDelete,
-                            onCreateChild, onDropMedia, onDropReorder,
-                            onMoveUp, onMoveDown, canMoveUp, canMoveDown, depth = 0
-                                                                    }) => {
-    const [isOpen, setIsOpen] = useState(true);
-    const [isRenaming, setIsRenaming] = useState(false);
+                            onCreateChild, onDropMedia, onDropCollection,
+                            draggedIdRef, depth = 0 }) => {
+    const [isOpen, setIsOpen]           = useState(true);
+    const [isRenaming, setIsRenaming]   = useState(false);
     const [renameValue, setRenameValue] = useState('');
     const [contextMenu, setContextMenu] = useState(null);
+    const [dropPosition, setDropPosition] = useState(null); // 'before' | 'inside' | 'after' | null
+    const [isDragging, setIsDragging]   = useState(false);
     const inputRef = useRef(null);
-    const [isDragOver, setIsDragOver] = useState(false);
-    const [isDragging, setIsDragging] = useState(false);
 
     const hasChildren = node.children?.length > 0;
-    const isSelected = selectedId === node.id;
+    const isSelected  = selectedId === node.id;
 
     const startRename = useCallback(() => {
         setRenameValue(node.name);
@@ -77,29 +84,57 @@ const CollectionNode = ({ node, selectedId, onSelect, onRename, onDelete,
         e.stopPropagation();
         e.dataTransfer.setData('jsg/collectionId', node.id);
         e.dataTransfer.effectAllowed = 'move';
+        draggedIdRef.current = node.id;
         setIsDragging(true);
     };
 
-    const handleDragEnd = () => setIsDragging(false);
+    const handleDragEnd = () => {
+        draggedIdRef.current = null;
+        setIsDragging(false);
+        setDropPosition(null);
+    };
 
     const handleDragOver = (e) => {
         e.preventDefault(); e.stopPropagation();
-        const isCollection = e.dataTransfer.types.includes('jsg/collectionid');
-        const isFile       = e.dataTransfer.types.includes('jsg/fileid');
-        if (isCollection || isFile) {
+        const types = e.dataTransfer.types;
+        const isCollection = types.includes('jsg/collectionid');
+        const isFile       = types.includes('jsg/fileid');
+
+        if (isFile) {
             e.dataTransfer.dropEffect = 'move';
-            setIsDragOver(true);
+            setDropPosition('inside');
+            return;
         }
+
+        if (!isCollection) return;
+
+        const draggedId = draggedIdRef.current;
+        if (draggedId === node.id) { setDropPosition(null); return; }
+
+        const rect  = e.currentTarget.getBoundingClientRect();
+        const y     = e.clientY - rect.top;
+        const ratio = y / rect.height;
+
+        const allowAfter = !(hasChildren && isOpen);
+
+        let pos;
+        if (ratio < 0.30)                  pos = 'before';
+        else if (ratio > 0.70 && allowAfter) pos = 'after';
+        else                                pos = 'inside';
+
+        e.dataTransfer.dropEffect = 'move';
+        setDropPosition(pos);
     };
 
     const handleDragLeave = (e) => {
         e.stopPropagation();
-        setIsDragOver(false);
+        setDropPosition(null);
     };
 
     const handleDrop = (e) => {
         e.preventDefault(); e.stopPropagation();
-        setIsDragOver(false);
+        const pos = dropPosition;
+        setDropPosition(null);
 
         const fileIdsRaw   = e.dataTransfer.getData('jsg/fileIds');
         const fileId       = e.dataTransfer.getData('jsg/fileId');
@@ -111,8 +146,9 @@ const CollectionNode = ({ node, selectedId, onSelect, onRename, onDelete,
             onDropMedia?.([fileId], node.id);
         }
 
-        if (collectionId && collectionId !== node.id)
-            onDropReorder?.(collectionId, node.id);
+        if (collectionId && collectionId !== node.id && pos) {
+            onDropCollection?.(collectionId, node.id, pos);
+        }
     };
 
     const commitRename = useCallback(async () => {
@@ -134,6 +170,8 @@ const CollectionNode = ({ node, selectedId, onSelect, onRename, onDelete,
         setIsOpen(v => !v);
     }, []);
 
+    const dropClass = dropPosition ? `drop-${dropPosition}` : '';
+
     return (
         <div
             className={`collection-node-wrapper ${isDragging ? 'dragging' : ''}`}
@@ -142,7 +180,7 @@ const CollectionNode = ({ node, selectedId, onSelect, onRename, onDelete,
             onDragEnd={handleDragEnd}
         >
             <div
-                className={`collection-node ${isSelected ? 'active' : ''} ${isDragOver ? 'drop-target' : ''}`}
+                className={`collection-node ${isSelected ? 'active' : ''} ${dropClass}`}
                 style={{ paddingLeft: 8 + depth * 16 }}
                 onClick={() => !isRenaming && onSelect(node.id)}
                 onContextMenu={handleContextMenu}
@@ -185,7 +223,7 @@ const CollectionNode = ({ node, selectedId, onSelect, onRename, onDelete,
 
             {isOpen && hasChildren && (
                 <div className="collection-children">
-                    {node.children.map((child, idx) => (
+                    {node.children.map((child) => (
                         <CollectionNode
                             key={child.id}
                             node={child}
@@ -195,11 +233,8 @@ const CollectionNode = ({ node, selectedId, onSelect, onRename, onDelete,
                             onDelete={onDelete}
                             onCreateChild={onCreateChild}
                             onDropMedia={onDropMedia}
-                            onDropReorder={onDropReorder}
-                            onMoveUp={onMoveUp}
-                            onMoveDown={onMoveDown}
-                            canMoveUp={idx > 0}
-                            canMoveDown={idx < node.children.length - 1}
+                            onDropCollection={onDropCollection}
+                            draggedIdRef={draggedIdRef}
                             depth={depth + 1}
                         />
                     ))}
@@ -213,10 +248,6 @@ const CollectionNode = ({ node, selectedId, onSelect, onRename, onDelete,
                     onRename={startRename}
                     onDelete={onDelete}
                     onCreateChild={onCreateChild}
-                    onMoveUp={onMoveUp}
-                    onMoveDown={onMoveDown}
-                    canMoveUp={canMoveUp}
-                    canMoveDown={canMoveDown}
                 />
             )}
         </div>
@@ -281,19 +312,66 @@ const CollectionTree = ({ selectedId, onSelect, onMediaMoved }) => {
     const { tree, createCollection, updateCollection, deleteCollection, reorderCollections } = useCollections();
     const [creating, setCreating] = useState(null);
     const [treeCollapsed, setTreeCollapsed] = useState(false);
+    const draggedIdRef = useRef(null);
 
     const { statsVersion, refreshStats } = useLibraryContext();
     const { total, uncategorized } = useLibraryStats(statsVersion);
-
-    const handleDropReorder = useCallback(async (draggedId, targetId) => {
-        await updateCollection(draggedId, { parentId: targetId });
-    }, [updateCollection]);
 
     const handleDropMedia = useCallback(async (fileIds, collectionId) => {
         await Promise.all(fileIds.map(id => LibraryService.updateItem(id, { collectionId })));
         refreshStats();
         onMediaMoved?.(fileIds, collectionId);
     }, [refreshStats, onMediaMoved]);
+
+    /**
+     * Drop a collection relative to a target.
+     *   position: 'before' | 'inside' | 'after'
+     *   before/after  → becomes sibling of target
+     *   inside        → becomes child of target
+     */
+    const handleDropCollection = useCallback(async (draggedId, targetId, position) => {
+        if (!draggedId || !targetId || draggedId === targetId) return;
+
+        const draggedInfo = findNodeAndParent(tree, draggedId);
+        const targetInfo  = findNodeAndParent(tree, targetId);
+        if (!draggedInfo || !targetInfo) return;
+
+        if (isDescendant(draggedInfo.node, targetId)) return;
+
+        const oldParentId = draggedInfo.parent?.id ?? null;
+
+        let newParentId;
+        let newSiblings;
+
+        if (position === 'inside') {
+            newParentId = targetId;
+            const existingChildren = targetInfo.node.children || [];
+            newSiblings = [
+                ...existingChildren.filter(c => c.id !== draggedId),
+                draggedInfo.node,
+            ];
+        } else {
+            newParentId = targetInfo.parent?.id ?? null;
+            const targetSiblings = targetInfo.parent ? targetInfo.parent.children : tree;
+            const filtered = targetSiblings.filter(s => s.id !== draggedId);
+            const targetIdx = filtered.findIndex(s => s.id === targetId);
+            const insertIdx = position === 'before' ? targetIdx : targetIdx + 1;
+            newSiblings = [
+                ...filtered.slice(0, insertIdx),
+                draggedInfo.node,
+                ...filtered.slice(insertIdx),
+            ];
+        }
+
+        if (oldParentId !== newParentId) {
+            await updateCollection(draggedId, { parentId: newParentId });
+        }
+
+        const orderUpdates = newSiblings.map((s, i) => ({ id: s.id, order: i }));
+        if (orderUpdates.length > 0) {
+            await reorderCollections(orderUpdates);
+        }
+    }, [tree, updateCollection, reorderCollections]);
 
     const handleCreate = useCallback(async (name, parentId = null) => {
         await createCollection({ name, parentId });
@@ -304,49 +382,6 @@ const CollectionTree = ({ selectedId, onSelect, onMediaMoved }) => {
         if (!confirm('Удалить коллекцию? Файлы останутся без коллекции.')) return;
         await deleteCollection(id);
     }, [deleteCollection]);
-
-    const findSiblings = (nodes, id) => {
-        for (const node of nodes) {
-            const idx = node.children?.findIndex(c => c.id === id);
-            if (idx !== undefined && idx > -1) return { siblings: node.children, idx };
-            if (node.children?.length) {
-                const found = findSiblings(node.children, id);
-                if (found) return found;
-            }
-        }
-
-        const idx = nodes.findIndex(n => n.id === id);
-        if (idx > -1) return { siblings: nodes, idx };
-        return null;
-    };
-
-    const handleMoveUp = useCallback(async (id) => {
-        const result = findSiblings(tree, id);
-        if (!result || result.idx === 0) return;
-
-        const { siblings, idx } = result;
-        const updates = siblings.map((s, i) => {
-            if (i === idx - 1) return { id: s.id, order: (siblings[idx].order ?? idx) };
-            if (i === idx)     return { id: s.id, order: (siblings[idx - 1].order ?? idx - 1) };
-            return null;
-        }).filter(Boolean);
-
-        await reorderCollections(updates);
-    }, [tree, reorderCollections]);
-
-    const handleMoveDown = useCallback(async (id) => {
-        const result = findSiblings(tree, id);
-        if (!result || result.idx === result.siblings.length - 1) return;
-
-        const { siblings, idx } = result;
-        const updates = siblings.map((s, i) => {
-            if (i === idx)     return { id: s.id, order: (siblings[idx + 1].order ?? idx + 1) };
-            if (i === idx + 1) return { id: s.id, order: (siblings[idx].order ?? idx) };
-            return null;
-        }).filter(Boolean);
-
-        await reorderCollections(updates);
-    }, [tree, reorderCollections]);
 
     return (
         <div className="collection-tree">
@@ -386,7 +421,7 @@ const CollectionTree = ({ selectedId, onSelect, onMediaMoved }) => {
 
             {!treeCollapsed && (
                 <>
-                    {tree.map((node, idx) => (
+                    {tree.map((node) => (
                         <CollectionNode
                             key={node.id}
                             node={node}
@@ -396,11 +431,8 @@ const CollectionTree = ({ selectedId, onSelect, onMediaMoved }) => {
                             onDelete={handleDelete}
                             onCreateChild={(parentId) => setCreating({ parentId })}
                             onDropMedia={handleDropMedia}
-                            onDropReorder={handleDropReorder}
-                            onMoveUp={handleMoveUp}
-                            onMoveDown={handleMoveDown}
-                            canMoveUp={idx > 0}
-                            canMoveDown={idx < tree.length - 1}
+                            onDropCollection={handleDropCollection}
+                            draggedIdRef={draggedIdRef}
                         />
                     ))}
                     {creating?.parentId === null && (
