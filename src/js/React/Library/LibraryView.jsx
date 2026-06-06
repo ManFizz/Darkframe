@@ -130,11 +130,20 @@ const LibraryView = () => {
                 <CollectionTree
                     selectedId={selectedCollection}
                     onSelect={handleCollectionSelect}
-                    onMediaMoved={(fileIds, collectionId) => {
+                    onMediaMoved={(fileIds, newCollectionId) => {
                         const idSet = new Set(fileIds);
-                        setOrderedItems(prev =>
-                            prev.map(f => idSet.has(f.id) ? { ...f, collectionId } : f)
-                        );
+
+                        const stillVisibleAfterMove =
+                            selectedCollection === SPECIAL.ALL ? true
+                                : selectedCollection === SPECIAL.UNCATEGORIZED ? newCollectionId === null
+                                    : newCollectionId === selectedCollection;
+
+                        setOrderedItems(prev => prev.flatMap(f => {
+                            if (!idSet.has(f.id))       return [f];
+                            if (!stillVisibleAfterMove) return [];
+
+                            return [Object.assign(Object.create(Object.getPrototypeOf(f)), f, { collectionId: newCollectionId })];
+                        }));
                     }}
                 />
                 <ImportButton

@@ -245,6 +245,38 @@ const CreateInput = ({ parentId = null, onConfirm, onCancel, placeholder }) => {
     );
 };
 
+const SpecialFileDropTarget = ({ className, onDropFiles, children, ...rest }) => {
+    const [over, setOver] = useState(false);
+
+    const isFileDrag = (e) => e.dataTransfer.types.includes('jsg/fileid');
+
+    return (
+        <div
+            {...rest}
+            className={`${className} ${over ? 'drop-inside' : ''}`}
+            onDragOver={e => {
+                if (!isFileDrag(e)) return;
+                e.preventDefault(); e.stopPropagation();
+                e.dataTransfer.dropEffect = 'move';
+                setOver(true);
+            }}
+            onDragLeave={e => { e.stopPropagation(); setOver(false); }}
+            onDrop={e => {
+                if (!isFileDrag(e)) return;
+                e.preventDefault(); e.stopPropagation();
+                setOver(false);
+
+                const fileIdsRaw = e.dataTransfer.getData('jsg/fileIds');
+                const fileId     = e.dataTransfer.getData('jsg/fileId');
+                if (fileIdsRaw)  onDropFiles(JSON.parse(fileIdsRaw));
+                else if (fileId) onDropFiles([fileId]);
+            }}
+        >
+            {children}
+        </div>
+    );
+};
+
 const CollectionTree = ({ selectedId, onSelect, onMediaMoved }) => {
     const { tree, createCollection, updateCollection, deleteCollection, reorderCollections } = useCollections();
     const [creating, setCreating] = useState(null);
@@ -339,12 +371,16 @@ const CollectionTree = ({ selectedId, onSelect, onMediaMoved }) => {
                 <span className="collection-item-count">{total}</span>
             </div>
 
-            <div className={`collection-node special ${selectedId === SPECIAL.UNCATEGORIZED ? 'active' : ''}`}
-                 onClick={() => onSelect(SPECIAL.UNCATEGORIZED)}>
+            <SpecialFileDropTarget
+                className={`collection-node special ${selectedId === SPECIAL.UNCATEGORIZED ? 'active' : ''}`}
+                onClick={() => onSelect(SPECIAL.UNCATEGORIZED)}
+                onDropFiles={fileIds => handleDropMedia(fileIds, null)}
+                title="Перетащите сюда файл, чтобы убрать его из коллекции"
+            >
                 <i className="bi bi-inbox collection-special-icon" />
                 <span className="collection-name">Без коллекции</span>
                 <span className="collection-item-count">{uncategorized}</span>
-            </div>
+            </SpecialFileDropTarget>
 
             <div className="collection-tree-divider" />
 
