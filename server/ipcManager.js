@@ -3,6 +3,7 @@ const favoriteController = require('./controllers/favoriteController');
 const favoriteTagController = require('./controllers/favoriteTagController');
 const tagController = require('./controllers/tagController');
 const { register } = require('./controllers/libraryController');
+const libraryRegistryController = require('./controllers/libraryRegistryController');
 require('./models/associations');
 
 function setupIpcHandlers() {
@@ -11,6 +12,7 @@ function setupIpcHandlers() {
 	favoriteTagController.registerHandlers();
 	tagController.registerHandlers();
 	register();
+	libraryRegistryController.register();
 }
 
 module.exports = { setupIpcHandlers };

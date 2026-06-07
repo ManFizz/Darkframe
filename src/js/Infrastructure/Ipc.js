@@ -48,3 +48,12 @@ export const libraryApi = {
     getStats:          ()     => invoke('library:getStats'),
     reorderCollections: (data) => invoke('library:reorderCollections', data),
 };
+
+export const libraryRegistryApi = {
+    list:        ()                       => invoke('library:registry:list'),
+    pickFolder:  ()                       => invoke('library:registry:pickFolder'),
+    add:         (name, folderPath)       => invoke('library:registry:add', { name, folderPath }),
+    rename:      (id, name)               => invoke('library:registry:rename', { id, name }),
+    remove:      (id, deleteFiles=false)  => invoke('library:registry:remove', { id, deleteFiles }),
+    switch:      (id)                     => invoke('library:registry:switch', { id }),
+};

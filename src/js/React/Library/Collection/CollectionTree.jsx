@@ -3,6 +3,7 @@ import {useCollections} from '@hooks/library/useCollections';
 import {useLibraryStats} from "@hooks/library/useLibraryStats";
 import {useLibraryContext} from "@/LibraryContext";
 import LibraryService from '@services/LibraryService';
+import LibrarySwitcher from './LibrarySwitcher';
 
 export const SPECIAL = {
     NONE: 'NONE',
@@ -385,6 +386,8 @@ const CollectionTree = ({ selectedId, onSelect, onMediaMoved }) => {
 
     return (
         <div className="collection-tree">
+            <LibrarySwitcher />
+
             <div className="collection-tree-header">
                 <button className="collection-tree-collapse-btn"
                         onClick={() => setTreeCollapsed(v => !v)}
@@ -392,7 +395,7 @@ const CollectionTree = ({ selectedId, onSelect, onMediaMoved }) => {
                 >
                     <i className={`bi bi-chevron-${treeCollapsed ? 'right' : 'down'}`} />
                 </button>
-                <span>Библиотека</span>
+                <span>Коллекции</span>
                 <button className="collection-add-btn" title="Создать коллекцию"
                         onClick={() => setCreating({ parentId: null })}>
                     <i className="bi bi-plus" />

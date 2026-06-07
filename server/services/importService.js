@@ -10,13 +10,13 @@ const Tag = require('../models/Tag');
 const Collection = require('../models/Collection');
 const sequelize = require('../database');
 const { SOURCE_TYPES } = require('../../src/js/constants');
-const Settings = require('../../data/settings');
+const { getActive } = require('../libraryRegistry');
 const { generateImageThumb, generateVideoThumb, getVideoDuration } = require('./thumbService');
 
 const LIBRARY_REMOTE_TYPE = SOURCE_TYPES.LIBRARY;
 
-const LIBRARY_PATH = Settings.LibraryPath || path.join(app.getPath('userData'), 'library');
-const ITEMS_PATH   = path.join(LIBRARY_PATH, 'items');
+const ITEMS_PATH   = getActive().itemsPath;
+const LIBRARY_PATH = path.dirname(ITEMS_PATH);
 
 const MIME_TYPES = {
     '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg',

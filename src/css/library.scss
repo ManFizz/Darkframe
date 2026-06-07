@@ -242,6 +242,165 @@
   i:hover ~ i { color: var(--bs-secondary); }
 }
 
+// ─── Library Switcher ────────────────────────────────────────────────────────
+
+.library-switcher {
+  position: relative;
+  margin: 4px 4px 8px;
+}
+
+.library-switcher-button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 6px 10px;
+  background: var(--bs-tertiary-bg);
+  border: 1px solid var(--bs-border-color);
+  border-radius: 6px;
+  color: var(--bs-body-color);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.1s;
+
+  &:hover { background: var(--bs-secondary-bg); }
+
+  i.bi-collection      { color: var(--bs-primary); font-size: 14px; }
+  .library-switcher-caret { margin-left: auto; opacity: 0.7; font-size: 12px; }
+}
+
+.library-switcher-name {
+  flex: 1;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.library-switcher-menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  margin-top: 4px;
+  background: var(--bs-body-bg);
+  border: 1px solid var(--bs-border-color);
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  z-index: 100;
+  padding: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.library-switcher-item {
+  display: flex;
+  align-items: center;
+  border-radius: 4px;
+
+  &:hover { background: var(--bs-tertiary-bg); }
+  &.active { background: var(--bs-primary-bg-subtle); }
+
+  &-main {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 8px;
+    cursor: pointer;
+    min-width: 0;
+
+    span {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    i { font-size: 13px; opacity: 0.7; }
+  }
+
+  &-actions {
+    display: none;
+    gap: 2px;
+    padding-right: 4px;
+
+    button {
+      background: none;
+      border: none;
+      color: var(--bs-secondary);
+      padding: 4px;
+      border-radius: 3px;
+      cursor: pointer;
+      &:hover { background: var(--bs-secondary-bg); color: var(--bs-body-color); }
+    }
+  }
+
+  &:hover .library-switcher-item-actions { display: flex; }
+}
+
+.library-switcher-rename-input {
+  flex: 1;
+  min-width: 0;
+  padding: 6px 8px;
+  margin: 0;
+  border: 1px solid var(--bs-primary);
+  border-radius: 4px;
+  background: var(--bs-body-bg);
+  color: var(--bs-body-color);
+  font-size: 13px;
+  outline: none;
+}
+
+.library-switcher-divider {
+  height: 1px;
+  background: var(--bs-border-color);
+  margin: 4px 0;
+}
+
+.library-switcher-add {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  background: none;
+  border: none;
+  color: var(--bs-secondary);
+  border-radius: 4px;
+  cursor: pointer;
+  text-align: left;
+
+  &:hover { background: var(--bs-tertiary-bg); color: var(--bs-body-color); }
+}
+
+.library-switcher-add-row {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+
+  input {
+    flex: 1;
+    min-width: 0;
+    padding: 4px 8px;
+    border: 1px solid var(--bs-border-color);
+    border-radius: 4px;
+    background: var(--bs-body-bg);
+    color: var(--bs-body-color);
+    font-size: 12px;
+  }
+
+  button {
+    background: var(--bs-tertiary-bg);
+    border: 1px solid var(--bs-border-color);
+    color: var(--bs-body-color);
+    border-radius: 4px;
+    padding: 4px 8px;
+    cursor: pointer;
+    &:hover { background: var(--bs-secondary-bg); }
+  }
+}
+
 // ─── Collection Tree ──────────────────────────────────────────────────────────
 
 .collection-tree {
