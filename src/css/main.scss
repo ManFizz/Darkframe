@@ -130,7 +130,8 @@ $tag-colors: (
   display: flex;
   align-items: flex-end;
   justify-content: flex-end;
-  padding-right: 5px;
+  gap: 8px;
+  padding: 0 7px 5px 0;
   transition: .1s linear;
   z-index: 50;
 
@@ -139,6 +140,11 @@ $tag-colors: (
     color: white;
     cursor: pointer;
     filter: drop-shadow(1px 1px 1px black);
+    transition: all .15s;
+    &:hover {
+      color: var(--bs-primary);
+      transform: scale(1.2);
+    }
   }
 }
 

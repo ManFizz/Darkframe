@@ -38,7 +38,7 @@ const LibraryGallery = ({ items, onReordered, isSelected, selectedIds, modalUpda
                         modalUpdater={modalUpdater}
                         isModal={false}
                         isSelected={isSelected?.(file.uniqueId)}
-                        onDoubleClick={onFileOpen ? () => onFileOpen(file) : undefined}
+                        onOpen={onFileOpen}
                     />
                 </div>
             ))}

@@ -7,10 +7,9 @@ import {getCurrentSource} from "@controllers/AppInitializerController";
 import {FILE_TYPES, SOURCE_TYPES} from "@/Constants";
 import {useFavorites} from "@hooks/useFavorites";
 import Collection from "./Collection";
-import {useClickHandler} from '@hooks/gallery/useClickHandler';
 
-const Thumb = (({ file, isModal, modalUpdater, isSelected, onDoubleClick }) => {
-    const handleSingleClick = useCallback((e) => {
+const Thumb = (({ file, isModal, modalUpdater, isSelected, onOpen }) => {
+    const handleClick = useCallback((e) => {
         if (file.type === FILE_TYPES.IMAGE ||
             file.type === FILE_TYPES.VIDEO ||
             file.type === FILE_TYPES.COLLECTION) {
@@ -25,11 +24,10 @@ const Thumb = (({ file, isModal, modalUpdater, isSelected, onDoubleClick }) => {
         toggleFav(file);
     };
 
-    const handleClick = useClickHandler({
-        onClick: handleSingleClick,
-        onDoubleClick: onDoubleClick ? () => onDoubleClick(file) : null,
-        delay: 250,
-    });
+    const handleOpenClick = (event) => {
+        event.stopPropagation();
+        onOpen?.(file);
+    };
 
     const renderContent = () => {
         switch (file.type) {
@@ -52,6 +50,13 @@ const Thumb = (({ file, isModal, modalUpdater, isSelected, onDoubleClick }) => {
         >
             {hasOverlay && (
                 <div className="overlay">
+                    {onOpen && !isModal && (
+                        <i
+                            className="bi bi-arrows-fullscreen overlay-open"
+                            title="Открыть"
+                            onClick={handleOpenClick}
+                        />
+                    )}
                     <i
                         className={`bi ${isFav(file.thumbUrl) ? 'bi-ban' : 'bi-heart-fill'}`}
                         onClick={handleLikeClick}
