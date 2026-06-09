@@ -2,6 +2,7 @@ import React, {useMemo, useState} from "react";
 import {BiSolidVideo} from "react-icons/bi";
 import Settings from "@data/settings";
 import Image from "./Image";
+import {cachedMediaUrl} from "@/Infrastructure/MediaCache";
 
 const loadingUrl = "./images/loading.gif";
 
@@ -29,7 +30,7 @@ const Video = ({ file }) => {
                 preload="metadata"
                 muted
                 loop
-                src={file.contentUrl || file.thumbUrl}
+                src={cachedMediaUrl(file.contentUrl || file.thumbUrl)}
                 onLoadedData={() => setIsLoading(false)}
                 style={{ display: isLoading ? 'none' : 'block' }}
             />

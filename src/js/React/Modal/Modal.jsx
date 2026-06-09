@@ -6,6 +6,7 @@ import MetadataPanel from "../Library/Metadata/MetadataPanel";
 import Settings from "../../../../data/settings";
 import {FILE_TYPES, SOURCE_TYPES} from "@/Constants";
 import {useFavorites} from "@hooks/useFavorites";
+import {cachedMediaUrl} from "@/Infrastructure/MediaCache";
 
 const DELETE_DELAY = 1500;
 
@@ -112,7 +113,7 @@ const Modal = ({ fileId, mainArray, modalUpdater, displayFiles, onUpdated }) => 
             const neighbor = mainArray[i];
             if (neighbor?.type === FILE_TYPES.IMAGE) {
                 const img = new window.Image();
-                img.src = neighbor.getUrl();
+                img.src = cachedMediaUrl(neighbor.getUrl());
             }
         });
     }, [file, mainArray]);
@@ -140,7 +141,7 @@ const Modal = ({ fileId, mainArray, modalUpdater, displayFiles, onUpdated }) => 
         <img
             key={fileId}
             alt={file.title}
-            src={file.getUrl()}
+            src={cachedMediaUrl(file.getUrl())}
             className={Settings.LongView && isLong ? "long" : ""}
             style={{ transform: `rotate(${degree}deg)` }}
         />

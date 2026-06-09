@@ -8,6 +8,7 @@ const path = require('path');
 const fs = require('fs');
 const { ITEMS_PATH, hashExistingItems } = require('./server/services/importService');
 const { generateHeifDisplay } = require('./server/services/thumbService');
+const mediaCache = require('./server/mediaCache');
 const { migrations } = require("./server/migrations");
 const { startApiServer, stopApiServer } = require('./server/apiServer');
 
@@ -118,11 +119,25 @@ protocol.registerSchemesAsPrivileged([
             supportFetchAPI: true,
             corsEnabled: true,
         }
+    },
+    {
+        scheme: mediaCache.SCHEME,
+        privileges: {
+            secure: true,
+            standard: true,
+            supportFetchAPI: true,
+            corsEnabled: true,
+            stream: true,            // Range support for cached videos
+        }
     }
 ]);
 
 app.whenReady().then(async () => {
     registerLibraryProtocol();
+
+    // Fresh media cache each session, then register the caching protocol
+    mediaCache.clearCache();
+    mediaCache.registerProtocol();
 
     setupIpcHandlers();
 
@@ -159,5 +174,8 @@ app.whenReady().then(async () => {
 
 app.on('window-all-closed', () => {
     stopApiServer();
+    // Best-effort; the renderer may still hold file handles, so leftovers are
+    // wiped on next launch (mediaCache.clearCache runs at whenReady).
+    mediaCache.clearCache();
     app.quit();
 });

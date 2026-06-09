@@ -1,4 +1,5 @@
 import React, {useEffect, useRef, useState} from "react";
+import {cachedMediaUrl} from "@/Infrastructure/MediaCache";
 
 const loadingUrl = "./images/loading.gif";
 const PREVIEW_WIDTH = 400;
@@ -49,6 +50,7 @@ const CanvasImage = ({ file }) => {
         if (!file.thumbUrl) return;
 
         const targetUrl = normalizeUrl(file.thumbUrl);
+        const fetchUrl  = cachedMediaUrl(targetUrl);
 
         const img = new window.Image();
         imgLoaderRef.current = img;
@@ -88,7 +90,14 @@ const CanvasImage = ({ file }) => {
             imgLoaderRef.current = null;
         };
 
+        let triedDirect = false;
         img.onerror = (err) => {
+            // If the cache layer failed, retry once against the raw URL
+            if (!triedDirect && fetchUrl !== targetUrl) {
+                triedDirect = true;
+                img.src = targetUrl;
+                return;
+            }
             console.error("Image load error. URL:", targetUrl, err);
             setDisplaySrc(targetUrl);
             imgLoaderRef.current = null;
@@ -98,7 +107,7 @@ const CanvasImage = ({ file }) => {
             img.crossOrigin = "Anonymous";
         }
 
-        img.src = targetUrl;
+        img.src = fetchUrl;
 
         return () => {
             if (imgLoaderRef.current) {
