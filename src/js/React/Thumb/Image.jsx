@@ -4,7 +4,43 @@ const loadingUrl = "./images/loading.gif";
 const PREVIEW_WIDTH = 400;
 const MAX_PREVIEW_HEIGHT = 600;
 
+function normalizeUrl(url) {
+    if (url.startsWith('C:') || url.startsWith('/') || url.startsWith('Users'))
+        return `file://${url}`;
+    return url;
+}
+
 const Image = ({ file }) => {
+    // Когда thumbUrl уже является готовой превьюшкой (отдельный full-res contentUrl),
+    // canvas-даунскейл не нужен — рисуем нативный <img> с lazy-загрузкой.
+    const isPregenerated = file.getUrl() !== file.thumbUrl;
+
+    if (isPregenerated) {
+        return <PregeneratedImage thumbUrl={file.thumbUrl} />;
+    }
+
+    return <CanvasImage file={file} />;
+};
+
+const PregeneratedImage = ({ thumbUrl }) => {
+    const [isLoaded, setIsLoaded] = useState(false);
+
+    return (
+        <img
+            src={normalizeUrl(thumbUrl)}
+            alt="preview"
+            loading="lazy"
+            onLoad={() => setIsLoaded(true)}
+            style={
+                isLoaded
+                    ? { width: '100%', display: 'block' }
+                    : { opacity: 0.5, filter: 'blur(5px)', backgroundColor: '#222', width: '100%' }
+            }
+        />
+    );
+};
+
+const CanvasImage = ({ file }) => {
     const [displaySrc, setDisplaySrc] = useState(loadingUrl);
     const [isLoaded, setIsLoaded] = useState(false);
     const imgLoaderRef = useRef(null);
@@ -12,10 +48,7 @@ const Image = ({ file }) => {
     useEffect(() => {
         if (!file.thumbUrl) return;
 
-        let targetUrl = file.thumbUrl;
-        if (targetUrl.startsWith('C:') || targetUrl.startsWith('/') || targetUrl.startsWith('Users')) {
-            targetUrl = `file://${targetUrl}`;
-        }
+        const targetUrl = normalizeUrl(file.thumbUrl);
 
         const img = new window.Image();
         imgLoaderRef.current = img;
