@@ -85,7 +85,7 @@ function respond(res, status, data) {
 
 async function handleAdd(req, res) {
     const body = await parseBody(req);
-    const { url, sourceUrl, tags = [], collectionId = null, title } = body;
+    const { url, sourceUrl, tags = [], collectionId = null, title, notes } = body;
 
     if (!url) { respond(res, 400, { error: 'url is required' }); return; }
 
@@ -100,7 +100,7 @@ async function handleAdd(req, res) {
         collectionId,
         tags,
         sourceUrl:    sourceUrl || url,
-        overrides:    { title: title || path.basename(urlPath, ext) },
+        overrides:    { title: title || path.basename(urlPath, ext), notes: notes || '' },
     });
 
     try { fs.unlinkSync(tmpPath); } catch {}
