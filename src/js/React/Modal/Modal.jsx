@@ -142,7 +142,6 @@ const Modal = ({ fileId, mainArray, modalUpdater, displayFiles, onUpdated }) => 
             key={fileId}
             alt={file.title}
             src={cachedMediaUrl(file.getUrl())}
-            className={Settings.LongView && isLong ? "long" : ""}
             style={{ transform: `rotate(${degree}deg)` }}
         />
     ) : (
@@ -152,7 +151,7 @@ const Modal = ({ fileId, mainArray, modalUpdater, displayFiles, onUpdated }) => 
     return (
         <>
             <dialog
-                className={`modal-view ${isFav(file.thumbUrl) ? "favorite" : ""} ${showPanel ? 'with-panel' : ''}`}
+                className={`modal-view ${isFav(file.thumbUrl) ? "favorite" : ""} ${showPanel ? 'with-panel' : ''} ${Settings.LongView && isLong ? "long" : ""}`}
                 open
                 ref={modalRef}
                 tabIndex="-1"
