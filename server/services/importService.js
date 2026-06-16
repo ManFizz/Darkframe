@@ -23,12 +23,13 @@ const MIME_TYPES = {
     '.png': 'image/png',  '.webp': 'image/webp',
     '.gif': 'image/gif',  '.jfif': 'image/jpeg',
     '.mp4': 'video/mp4',  '.webm': 'video/webm',
-    '.avi': 'video/avi',
+    '.avi': 'video/avi',  '.mkv': 'video/x-matroska',
+    '.mov': 'video/quicktime',
 };
 
 const SUPPORTED_EXTENSIONS = new Set([
     '.jpg', '.jpeg', '.png', '.webp', '.gif', '.jfif',
-    '.mp4', '.webm', '.avi',
+    '.mp4', '.webm', '.avi', '.mkv', '.mov',
 ]);
 
 function getFileHash(filePath) {

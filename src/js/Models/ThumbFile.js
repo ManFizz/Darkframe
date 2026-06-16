@@ -3,7 +3,7 @@ import {FILE_TYPES} from "@/Constants";
 
 const EXT = {
     IMAGE: /\.(jpg|jpeg|png|webp|gif|jfif)$/i,
-    VIDEO: /\.(webm|mp4|avi)$/i,
+    VIDEO: /\.(webm|mp4|avi|mkv|mov)$/i,
     GIF: /\.(gif)$/i,
     WEBP: /\.(webp)$/i,
 };
