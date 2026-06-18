@@ -7,6 +7,7 @@ const sequelize = require('../database');
 const path = require('path');
 const fs = require('fs');
 const { importFromEagleCsv } = require('../services/eagleImportService');
+const { importFromUrl } = require('../services/urlImportService');
 
 function register() {
     ipcMain.handle('library:importDialog', async (_, { collectionId }) => {
@@ -263,6 +264,14 @@ function register() {
 
     ipcMain.handle('library:importFromEagle', async (_, { csvPath, collectionId }) => {
         return importFromEagleCsv({ csvPath, collectionId });
+    });
+
+    ipcMain.handle('library:importUrl', async (event, { url, collectionId }) => {
+        return importFromUrl({
+            url,
+            collectionId,
+            onProgress: (p) => event.sender.send('library:urlImportProgress', p),
+        });
     });
 
     ipcMain.handle('library:importEagleDialog', async (event, { collectionId }) => {

@@ -1,10 +1,47 @@
-import React, {useState} from 'react';
+import React, {useEffect, useState} from 'react';
 import LibraryService from '@services/LibraryService';
 import EagleImportProgress from './EagleImportProgress';
 import {notify} from '@services/NotificationService';
 
 const ImportButton = ({ collectionId, collectionName, onImported }) => {
     const [importing, setImporting] = useState(false);
+    const [url, setUrl] = useState('');
+    const [urlImporting, setUrlImporting] = useState(false);
+    const [urlProgress, setUrlProgress] = useState(null);
+
+    useEffect(() => {
+        const { ipcRenderer } = window.require('electron');
+        const handler = (_, p) => setUrlProgress(p);
+        ipcRenderer.on('library:urlImportProgress', handler);
+        return () => ipcRenderer.removeListener('library:urlImportProgress', handler);
+    }, []);
+
+    const handleImportUrl = async () => {
+        const trimmed = url.trim();
+        if (!trimmed || urlImporting) return;
+
+        setUrlImporting(true);
+        setUrlProgress(null);
+        try {
+            const result = await LibraryService.importUrl({ url: trimmed, collectionId });
+
+            // Surface the real download reason instead of a generic message
+            if (result.errors?.length) {
+                const reason = String(result.errors[0].error || '')
+                    .split('\n').filter(Boolean).pop() || 'неизвестная ошибка';
+                notify({ message: `Не удалось загрузить: ${reason}`, type: 'danger', duration: 8000 });
+                return;
+            }
+
+            await handleImport(result);
+            if (result.results?.length) setUrl('');
+        } catch (e) {
+            notify({ message: `Ошибка загрузки по ссылке: ${e.message}`, type: 'danger' });
+        } finally {
+            setUrlImporting(false);
+            setUrlProgress(null);
+        }
+    };
 
     const handleImportEagle = async () => {
         setImporting(true);
@@ -28,7 +65,15 @@ const ImportButton = ({ collectionId, collectionName, onImported }) => {
     };
 
     const handleImport = async ({ results = [], skipped = [], errors = [] }) => {
-        if (results.length > 0) {
+        if (results.length === 1) {
+            const f = results[0];
+            const name = f.title || f.fileName || 'файл';
+            notify({
+                message: `«${name}» добавлен в «${collectionName || 'Без коллекции'}»`,
+                type: 'success',
+            });
+            onImported?.();
+        } else if (results.length > 1) {
             notify({ message: `Добавлено файлов: ${results.length}`, type: 'success' });
             onImported?.();
         }
@@ -117,6 +162,48 @@ const ImportButton = ({ collectionId, collectionName, onImported }) => {
                         Папку
                     </button>
                 </div>
+
+                <div className="import-url-row">
+                    <input
+                        className="form-control form-control-sm"
+                        placeholder="Прямая ссылка на медиа (.jpg, .mp4, …)"
+                        value={url}
+                        onChange={e => setUrl(e.target.value)}
+                        onKeyDown={e => { if (e.key === 'Enter') handleImportUrl(); }}
+                        disabled={urlImporting}
+                    />
+                    <button
+                        className="btn btn-primary btn-sm"
+                        onClick={handleImportUrl}
+                        disabled={urlImporting || !url.trim()}
+                        title="Загрузить по ссылке"
+                    >
+                        {urlImporting
+                            ? <i className="bi bi-arrow-repeat spin" />
+                            : <i className="bi bi-link-45deg" />}
+                    </button>
+                </div>
+
+                {urlImporting && (
+                    <div className="import-url-progress">
+                        {urlProgress?.percent != null ? (
+                            <>
+                                <div className="progress" style={{ height: 6 }}>
+                                    <div
+                                        className="progress-bar"
+                                        style={{ width: `${urlProgress.percent}%`, transition: 'width .2s' }}
+                                    />
+                                </div>
+                                <span>
+                                    {Math.round(urlProgress.percent)}%
+                                    {urlProgress.eta ? ` · ${urlProgress.eta}` : ''}
+                                </span>
+                            </>
+                        ) : (
+                            <span>Загрузка…</span>
+                        )}
+                    </div>
+                )}
 
                 <button
                     className="btn btn-outline-warning btn-sm w-100"

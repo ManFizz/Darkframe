@@ -731,6 +731,25 @@
   gap: 6px;
 }
 
+.import-url-row {
+  display: flex;
+  gap: 6px;
+
+  input { flex: 1; min-width: 0; }
+  button { flex-shrink: 0; }
+}
+
+.import-url-progress {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  color: var(--bs-secondary);
+
+  .progress { flex: 1; }
+  span { white-space: nowrap; }
+}
+
 .eagle-import-overlay {
   position: fixed;
   inset: 0;
