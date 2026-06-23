@@ -8,6 +8,7 @@ const path = require('path');
 const fs = require('fs');
 const { importFromEagleCsv } = require('../services/eagleImportService');
 const { importFromUrl } = require('../services/urlImportService');
+const { importFromJson } = require('../services/jsonImportService');
 
 function register() {
     ipcMain.handle('library:importDialog', async (_, { collectionId }) => {
@@ -284,6 +285,25 @@ function register() {
 
         return importFromEagleCsv({
             csvPath: filePaths[0],
+            collectionId,
+            webContents: event.sender,
+        });
+    });
+
+    ipcMain.handle('library:importFromJson', async (event, { jsonPath, collectionId }) => {
+        return importFromJson({ jsonPath, collectionId, webContents: event.sender });
+    });
+
+    ipcMain.handle('library:importJsonDialog', async (event, { collectionId }) => {
+        const { canceled, filePaths } = await dialog.showOpenDialog({
+            properties: ['openFile'],
+            filters: [{ name: 'JSON', extensions: ['json'] }],
+        });
+
+        if (canceled || !filePaths.length) return null;
+
+        return importFromJson({
+            jsonPath: filePaths[0],
             collectionId,
             webContents: event.sender,
         });

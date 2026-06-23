@@ -1,0 +1,31 @@
+{
+  "collection": "Imported/From Extension",
+  "items": [
+    {
+      "url": "https://example.com/image1.jpg",
+      "title": "Закат над морем",
+      "tags": ["природа", "закат", "море"],
+      "source": "https://example.com/post/123",
+      "notes": "Найдено в подборке лучших фото 2024",
+      "rating": 5
+    },
+    {
+      "url": "https://example.com/clip.mp4",
+      "title": "Короткое видео",
+      "tags": "юмор, коты",
+      "source": "https://example.com/video/456",
+      "collection": "Видео/Коты"
+    },
+    {
+      "filePath": "C:\\Users\\me\\Pictures\\local.png",
+      "title": "Локальный файл",
+      "notes": "Импорт из локальной папки по абсолютному пути"
+    },
+    {
+      "base64": "iVBORw0KGgoAAAANSUhEUgAA...",
+      "mimeType": "image/png",
+      "title": "Инлайн-картинка",
+      "tags": ["test"]
+    }
+  ]
+}

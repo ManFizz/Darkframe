@@ -97,6 +97,13 @@ export const LibraryService = {
         }
         return libraryApi.importEagleDialog({ collectionId });
     },
+
+    async importFromJson({ jsonPath, collectionId } = {}) {
+        if (jsonPath) {
+            return libraryApi.importFromJson({ jsonPath, collectionId });
+        }
+        return libraryApi.importJsonDialog({ collectionId });
+    },
     // --- Pub/Sub ---
 
     subscribe(cb) {

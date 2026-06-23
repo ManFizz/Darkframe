@@ -51,6 +51,7 @@ async function importFromEagleCsv({ csvPath, collectionId = null, webContents })
             current: i + 1,
             total,
             title: row.title,
+            label: 'Импорт из Eagle',
         });
 
         if (!row.filePath || !fs.existsSync(row.filePath)) {

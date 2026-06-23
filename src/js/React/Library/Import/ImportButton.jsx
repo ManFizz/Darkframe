@@ -54,6 +54,17 @@ const ImportButton = ({ collectionId, collectionName, onImported }) => {
         }
     };
 
+    const handleImportJson = async () => {
+        setImporting(true);
+        try {
+            const result = await LibraryService.importFromJson({ collectionId });
+            if (!result) return;
+            await handleImport(result);
+        } finally {
+            setImporting(false);
+        }
+    };
+
     const handleImportFiles = async () => {
         const raw = await LibraryService.importDialog(collectionId);
         await handleImport(raw);
@@ -205,14 +216,24 @@ const ImportButton = ({ collectionId, collectionName, onImported }) => {
                     </div>
                 )}
 
-                <button
-                    className="btn btn-outline-warning btn-sm w-100"
-                    onClick={handleImportEagle}
-                    disabled={importing}
-                >
-                    <i className="bi bi-box-arrow-in-down me-1" />
-                    Eagle CSV
-                </button>
+                <div className="import-buttons">
+                    <button
+                        className="btn btn-outline-info btn-sm flex-fill"
+                        onClick={handleImportJson}
+                        disabled={importing}
+                    >
+                        <i className="bi bi-filetype-json me-1" />
+                        JSON
+                    </button>
+                    <button
+                        className="btn btn-outline-warning btn-sm flex-fill"
+                        onClick={handleImportEagle}
+                        disabled={importing}
+                    >
+                        <i className="bi bi-box-arrow-in-down me-1" />
+                        Eagle CSV
+                    </button>
+                </div>
 
                 <div className="import-zone-hint text-secondary">
                     или перетащи файлы / папки
