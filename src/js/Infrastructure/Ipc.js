@@ -60,3 +60,9 @@ export const libraryRegistryApi = {
     remove:      (id, deleteFiles=false)  => invoke('library:registry:remove', { id, deleteFiles }),
     switch:      (id)                     => invoke('library:registry:switch', { id }),
 };
+
+export const configApi = {
+    get:      ()     => invoke('config:get'),
+    save:     (data) => invoke('config:save', data),
+    relaunch: ()     => invoke('config:relaunch'),
+};

@@ -1,5 +1,5 @@
 import React, {useContext, useState} from 'react';
-import {BsCaretDownFill, BsFillGrid1X2Fill, BsSearch, BsShieldShaded} from "react-icons/bs";
+import {BsCaretDownFill, BsFillGrid1X2Fill, BsGearFill, BsSearch, BsShieldShaded} from "react-icons/bs";
 import ModuleRegistry from '@/ModuleRegistry';
 import {displayImagesByPath} from '@modules/folder/FolderController';
 
@@ -9,6 +9,7 @@ import {useFavorites} from "@hooks/useFavorites";
 import {SORT_ORDER} from '@hooks/library/useLibraryFilter';
 import {useLibraryContext} from '@/LibraryContext';
 import {LibraryNavControls, LibraryNavSort} from '../Library/LibraryNavControls';
+import SettingsPanel from '../Settings/SettingsPanel';
 
 const NavBar = () => {
     const { state, setCurrentSource, setSortInfo, setTypeView, setSafeMode, setMainArray } = useContext(GalleryContext);
@@ -18,6 +19,7 @@ const NavBar = () => {
     const isLibrary = state.currentSource === SOURCE_TYPES.LIBRARY;
 
     const [searchValue, setSearchValue] = useState('');
+    const [showSettings, setShowSettings] = useState(false);
 
     const handleNavigation = (sourceType, action = null) => {
         setCurrentSource(sourceType);
@@ -112,7 +114,17 @@ const NavBar = () => {
                         </button>
                     </div>
                 )}
+
+                <button
+                    className="btn btn-outline-secondary ms-2 navbar-settings-btn"
+                    onClick={() => setShowSettings(true)}
+                    title="Настройки"
+                >
+                    <BsGearFill />
+                </button>
             </div>
+
+            {showSettings && <SettingsPanel onClose={() => setShowSettings(false)} />}
         </header>
     );
 };

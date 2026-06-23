@@ -1,7 +1,5 @@
 const Settings = {
     SafeView: false,
-    BackgroundImg: true,
-    CheckRatio: true,
     MaxThumbsPerPage: 32,
     Resize: true,
     LongView: true,

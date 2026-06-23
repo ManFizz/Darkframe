@@ -5,6 +5,7 @@ node_modules\*
 *.css
 *.css.map
 /data/*.js
+/data/*.override.json
 *.db
 package-lock.json
 data/backup
