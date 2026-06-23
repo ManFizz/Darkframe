@@ -87,6 +87,7 @@ const Modal = ({ fileId, mainArray, modalUpdater, displayFiles, onUpdated }) => 
 
     useEffect(() => {
         if (!file) return;
+        let cancelled = false;
 
         setIsLong(false);
         setDegree(0);
@@ -97,10 +98,13 @@ const Modal = ({ fileId, mainArray, modalUpdater, displayFiles, onUpdated }) => 
         }
 
         file.getSize().then(size => {
+            if (cancelled) return;
             if (size && size.height >= 1200 && size.height / size.width > 2.25) {
                 setIsLong(true);
             }
         });
+
+        return () => { cancelled = true; };
     }, [file?.uniqueId]);
 
     useEffect(() => {
