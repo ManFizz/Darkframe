@@ -91,6 +91,24 @@
     &.active { color: var(--bs-primary) !important; }
   }
 
+  .modal-nav-counter {
+    position: absolute;
+    top: 14px;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 4px 13px;
+    background: rgba(0, 0, 0, 0.55);
+    color: #fff;
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1;
+    letter-spacing: 0.5px;
+    border-radius: 999px;
+    pointer-events: none;
+    user-select: none;
+    backdrop-filter: blur(4px);
+  }
+
   .arrow {
     position: absolute;
     transition: transform 0.2s, opacity 0.2s;

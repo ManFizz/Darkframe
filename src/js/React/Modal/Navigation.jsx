@@ -25,6 +25,16 @@ const Navigation = ({ file, modalUpdater, mainArray, setDegree, panelOpen, onPan
         );
     }, [mainArray, file]);
 
+    const { position, total } = useMemo(() => {
+        const displayable = mainArray.filter(f =>
+            f.type === FILE_TYPES.IMAGE || f.type === FILE_TYPES.VIDEO
+        );
+        const idx = displayable.findIndex(f =>
+            String(f.uniqueId) === String(file.uniqueId)
+        );
+        return { position: idx + 1, total: displayable.length };
+    }, [mainArray, file]);
+
     const openShift = useCallback((direction) => {
         const nextIdx = currentIndex + direction;
 
@@ -109,6 +119,12 @@ const Navigation = ({ file, modalUpdater, mainArray, setDegree, panelOpen, onPan
                     />
                 )}
             </div>
+
+            {position > 0 && total > 0 && (
+                <div className="modal-nav-counter">
+                    {position}/{total}{CanMoreMedia() ? '+' : ''}
+                </div>
+            )}
 
             {canGoLeft && (
                 <i
