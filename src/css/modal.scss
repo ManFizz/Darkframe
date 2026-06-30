@@ -44,6 +44,16 @@
       max-height: unset;
       max-width: 1000px;
     }
+
+    .modal-panel-wrapper {
+      position: sticky;
+      top: 0;
+    }
+
+    &.with-panel .modal-media-area {
+      justify-content: unset;
+      overflow: visible;
+    }
   }
 
   .tag {
