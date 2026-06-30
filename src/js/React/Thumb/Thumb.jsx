@@ -17,7 +17,7 @@ const Thumb = (({ file, isModal, modalUpdater, isSelected, onOpen }) => {
         }
     }, [file, modalUpdater]);
 
-    const { isFav, toggleFav } = useFavorites();
+    const { isFav, isPending, toggleFav } = useFavorites();
 
     const handleLikeClick = (event) => {
         event.stopPropagation();
@@ -41,7 +41,13 @@ const Thumb = (({ file, isModal, modalUpdater, isSelected, onOpen }) => {
     };
 
     const hasOverlay = file.type === FILE_TYPES.IMAGE || file.type === FILE_TYPES.VIDEO;
-    const isRemovedInFavs = !isFav(file.thumbUrl) && getCurrentSource() === SOURCE_TYPES.FAVORITE;
+    const isRemovedInFavs = !isFav(file) && getCurrentSource() === SOURCE_TYPES.FAVORITE;
+
+    // Favouriting only makes sense from external modules; inside the library the
+    // rating handles it (the library grid is the one that passes `onOpen`). We
+    // still show the heart on already-favourited items in the standalone Favorites
+    // view so they can be un-favourited there.
+    const showHeart = hasOverlay && !onOpen && (file.remoteType !== SOURCE_TYPES.LIBRARY || isFav(file));
 
     return (
         <div
@@ -57,10 +63,14 @@ const Thumb = (({ file, isModal, modalUpdater, isSelected, onOpen }) => {
                             onClick={handleOpenClick}
                         />
                     )}
-                    <i
-                        className={`bi ${isFav(file.thumbUrl) ? 'bi-ban' : 'bi-heart-fill'}`}
-                        onClick={handleLikeClick}
-                    />
+                    {showHeart && (
+                        isPending(file)
+                            ? <i className="bi bi-arrow-repeat spin" title="Добавление…" />
+                            : <i
+                                className={`bi ${isFav(file) ? 'bi-ban' : 'bi-heart-fill'}`}
+                                onClick={handleLikeClick}
+                            />
+                    )}
                 </div>
             )}
             {renderContent()}

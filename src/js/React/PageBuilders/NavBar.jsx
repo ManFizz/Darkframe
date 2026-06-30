@@ -5,15 +5,13 @@ import {displayImagesByPath} from '@modules/folder/FolderController';
 
 import {GalleryContext} from '@/AppInitializer';
 import {SORT_TYPE, SOURCE_TYPES} from "@/Constants";
-import {useFavorites} from "@hooks/useFavorites";
 import {SORT_ORDER} from '@hooks/library/useLibraryFilter';
 import {useLibraryContext} from '@/LibraryContext';
 import {LibraryNavControls, LibraryNavSort} from '../Library/LibraryNavControls';
 import SettingsPanel from '../Settings/SettingsPanel';
 
 const NavBar = () => {
-    const { state, setCurrentSource, setSortInfo, setTypeView, setSafeMode, setMainArray } = useContext(GalleryContext);
-    const { favorites } = useFavorites();
+    const { state, setCurrentSource, setSortInfo, setTypeView, setSafeMode } = useContext(GalleryContext);
     const libraryCtx = useLibraryContext();
 
     const isLibrary = state.currentSource === SOURCE_TYPES.LIBRARY;
@@ -32,11 +30,10 @@ const NavBar = () => {
         }
     };
 
-    const DisplayFavorites = () => setMainArray([...favorites]);
-
+    // Favourites now live in the library sidebar (next to "Все файлы"), so the
+    // top-level button is gone.
     const navButtons = [
         { label: 'Library',  type: SOURCE_TYPES.LIBRARY },
-        { label: 'Favorites', type: SOURCE_TYPES.FAVORITE, action: DisplayFavorites },
         ...ModuleRegistry.getNavItems(),
     ];
 

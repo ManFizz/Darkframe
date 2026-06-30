@@ -316,7 +316,7 @@ const CollectionTree = ({ selectedId, onSelect, onMediaMoved }) => {
     const draggedIdRef = useRef(null);
 
     const { statsVersion, refreshStats } = useLibraryContext();
-    const { total, uncategorized } = useLibraryStats(statsVersion);
+    const { total, uncategorized, favoritesId, favoritesCount } = useLibraryStats(statsVersion);
 
     const handleDropMedia = useCallback(async (fileIds, collectionId) => {
         await Promise.all(fileIds.map(id => LibraryService.updateItem(id, { collectionId })));
@@ -419,6 +419,19 @@ const CollectionTree = ({ selectedId, onSelect, onMediaMoved }) => {
                 <span className="collection-name">Без коллекции</span>
                 <span className="collection-item-count">{uncategorized}</span>
             </SpecialFileDropTarget>
+
+            {favoritesId && (
+                <SpecialFileDropTarget
+                    className={`collection-node special collection-node--favorites ${selectedId === favoritesId ? 'active' : ''}`}
+                    onClick={() => onSelect(favoritesId)}
+                    onDropFiles={fileIds => handleDropMedia(fileIds, favoritesId)}
+                    title="Перетащите сюда файл, чтобы добавить в избранное"
+                >
+                    <i className="bi bi-heart-fill collection-special-icon" />
+                    <span className="collection-name">Избранное</span>
+                    <span className="collection-item-count">{favoritesCount}</span>
+                </SpecialFileDropTarget>
+            )}
 
             <div className="collection-tree-divider" />
 

@@ -155,7 +155,7 @@ const Modal = ({ fileId, mainArray, modalUpdater, displayFiles, onUpdated }) => 
     return (
         <>
             <dialog
-                className={`modal-view ${isFav(file.thumbUrl) ? "favorite" : ""} ${showPanel ? 'with-panel' : ''} ${Settings.LongView && isLong ? "long" : ""}`}
+                className={`modal-view ${isFav(file) ? "favorite" : ""} ${showPanel ? 'with-panel' : ''} ${Settings.LongView && isLong ? "long" : ""}`}
                 open
                 ref={modalRef}
                 tabIndex="-1"

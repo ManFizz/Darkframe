@@ -1,95 +1,37 @@
 const { ipcMain } = require('electron');
-const { removeFavorite, getFavorites, addFavorite } = require("../services/favoriteService");
-const Favorite = require("../models/Favorite");
-const fs = require('fs').promises;
-const { queueDownload } = require("../services/downloadService");
+const { addFavorite, removeFavoriteByPost, listFavoriteItems } = require('../services/favoriteService');
 
-const tagsToDb = (tags) =>
-	Array.isArray(tags) ? tags.join(' ') : (tags || '');
-
-const tagsFromDb = (tags) =>
-	tags ? tags.split(' ').filter(Boolean) : [];
-
-async function handleAddFavorites(event, data) {
-	try {
-		const newFavorite = await addFavorite(event,
-			data.thumbUrl,
-			data.title,
-			data.sourceUrl,
-			tagsToDb(data.tags),
-			data.priority,
-			data.remoteType
-		);
-		const id = newFavorite?.id;
-
-		if (!id) return null;
-
-		if (data.remoteType !== 1) {
-			queueDownload({ id: id, thumbUrl: data.thumbUrl });
-		}
-
-		return id;
-	} catch (error) {
-		console.error('Error handling addFavorites:', error);
-		throw error;
-	}
+async function handleAddFavorite(_, data) {
+    try {
+        return await addFavorite(data);
+    } catch (error) {
+        console.error('Error adding favorite:', error);
+        return { ok: false, error: error.message };
+    }
 }
 
-async function handleRemoveFavorites(event, url) {
-	try {
-		const favorite = await Favorite.findOne({ where: { thumbUrl: url } });
-
-		if (favorite && favorite.localUrl) {
-			await fs.unlink(favorite.localUrl).catch(() => {}); // Удаляем файл
-		}
-
-		await removeFavorite(url);
-		return true;
-	} catch (error) {
-		console.error('Error handling removeFavorites:', error);
-		throw error;
-	}
+async function handleRemoveFavorite(_, { postUrl }) {
+    try {
+        return await removeFavoriteByPost(postUrl);
+    } catch (error) {
+        console.error('Error removing favorite:', error);
+        return { ok: false, error: error.message };
+    }
 }
 
-async function handleGetFavorites() {
-	try {
-		const favorites = await getFavorites();
-		return favorites.map(row => ({
-			...row,
-			tags: tagsFromDb(row.tags),
-		}));
-	} catch (error) {
-		console.error('Ошибка при получении избранного:', error);
-		throw error;
-	}
-}
-
-async function downloadMissingFavorites(queueDownload) {
-	try {
-		const favorites = await getFavorites();
-		for (let favorite of favorites) {
-			if (favorite.remoteType === 1) continue;
-
-			const localPath = favorite.localUrl;
-			const exists = localPath ? await fs.access(localPath).then(() => true).catch(() => false) : false;
-
-			if (!exists && typeof queueDownload === 'function') {
-				const url = favorite.thumbUrl || favorite.url;
-				queueDownload({ id: favorite.id, url });
-			}
-		}
-	} catch (error) {
-		console.error('Ошибка при проверке локальных копий:', error);
-	}
+async function handleListFavorites() {
+    try {
+        return await listFavoriteItems();
+    } catch (error) {
+        console.error('Error listing favorites:', error);
+        return [];
+    }
 }
 
 function registerHandlers() {
-	ipcMain.handle("addFavorites", handleAddFavorites);
-	ipcMain.handle("removeFavorites", handleRemoveFavorites);
-	ipcMain.handle('getFavorites', handleGetFavorites);
+    ipcMain.handle('favorites:add', handleAddFavorite);
+    ipcMain.handle('favorites:remove', handleRemoveFavorite);
+    ipcMain.handle('favorites:list', handleListFavorites);
 }
 
-module.exports = {
-	registerHandlers,
-	downloadMissingFavorites
-};
+module.exports = { registerHandlers };

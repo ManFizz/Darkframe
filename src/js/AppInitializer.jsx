@@ -151,12 +151,11 @@ const Main = () => {
 
                     {!isLibrary && (
                         <CustomPagination
-                            currentPage={currentPage}
-                            maxPage={maxPage}
-                            pages={pages}
-                            goToPage={goToPage}
-                            loadNextPage={loadNextPage}
-                            currentSource={state.currentSource}
+                            anchorPage={currentPage}
+                            lastLoadedPage={maxPage}
+                            totalPages={pages}
+                            jumpToPage={goToPage}
+                            appendNextPage={loadNextPage}
                         />
                     )}
                 </div>

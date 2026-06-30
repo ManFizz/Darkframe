@@ -11,13 +11,15 @@ import LibraryService from "@services/LibraryService"
 import LibraryGallery from "../PageBuilders/LibraryGallery";
 import {FILE_TYPES} from "@/Constants";
 import useCollections from "@hooks/library/useCollections"
+import {useLibraryStats} from "@hooks/library/useLibraryStats";
 import {useLibraryContext} from '@/LibraryContext';
 import Modal from "@react/Modal/Modal";
 
 const LibraryView = () => {
     const [selectedCollection, setSelectedCollection] = useState(SPECIAL.NONE);
     const [selectedFile, setSelectedFile] = useState(null);
-    const { filtered, setLibraryItems, refreshStats } = useLibraryContext();
+    const { filtered, setLibraryItems, refreshStats, statsVersion } = useLibraryContext();
+    const { favoritesId } = useLibraryStats(statsVersion);
     const [modalFileId, setModalFileId] = useState(null);
     const galleryScrollRef = useRef(null);
     useDragAutoScroll(galleryScrollRef);
@@ -56,6 +58,8 @@ const LibraryView = () => {
             selectedCollection === SPECIAL.UNCATEGORIZED ||
             !selectedCollection) return null;
 
+        if (selectedCollection === favoritesId) return 'Избранное';
+
         const findName = (nodes) => {
             for (const node of nodes) {
                 if (node.id === selectedCollection) return node.name;
@@ -68,7 +72,7 @@ const LibraryView = () => {
         };
 
         return findName(tree);
-    }, [selectedCollection, tree]);
+    }, [selectedCollection, tree, favoritesId]);
 
     const handleReordered = useCallback((reordered) => {
         setOrderedItems(reordered);

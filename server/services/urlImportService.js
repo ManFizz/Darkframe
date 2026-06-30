@@ -29,10 +29,15 @@ function wrapResult(result, url) {
     return { results: [result.item], skipped: [], errors: [] };
 }
 
-async function importDirectUrl({ url, collectionId, tags, onProgress }) {
+// `sourceUrl` lets callers store a different origin than the media link itself
+// (e.g. the post page a favourite came from); it falls back to the media URL.
+async function importDirectUrl({ url, collectionId, tags, sourceUrl, title, referer, onProgress }) {
     const res = await axios.get(url, {
         responseType: 'arraybuffer',
-        headers: { 'User-Agent': USER_AGENT },
+        headers: {
+            'User-Agent': USER_AGENT,
+            ...(referer ? { Referer: referer } : {}),
+        },
         maxContentLength: Infinity,
         maxBodyLength: Infinity,
         onDownloadProgress: (e) => {
@@ -48,13 +53,14 @@ async function importDirectUrl({ url, collectionId, tags, onProgress }) {
     const tmp = path.join(os.tmpdir(), `df-url-${Date.now()}${ext}`);
     fs.writeFileSync(tmp, Buffer.from(res.data));
 
+    const origin = sourceUrl || url;
     try {
         const result = await importFile({
             filePath: tmp,
             collectionId,
             tags,
-            sourceUrl: url,
-            overrides: { sourceUrl: url },
+            sourceUrl: origin,
+            overrides: { sourceUrl: origin, title: title || undefined },
         });
         return wrapResult(result, url);
     } finally {
@@ -62,7 +68,7 @@ async function importDirectUrl({ url, collectionId, tags, onProgress }) {
     }
 }
 
-async function importFromUrl({ url, collectionId = null, tags = [], onProgress } = {}) {
+async function importFromUrl({ url, collectionId = null, tags = [], sourceUrl, title, referer, onProgress } = {}) {
     url = (url || '').trim();
     if (!url) return { results: [], skipped: [], errors: [{ url, error: 'empty url' }] };
 
@@ -74,7 +80,7 @@ async function importFromUrl({ url, collectionId = null, tags = [], onProgress }
     }
 
     try {
-        return await importDirectUrl({ url, collectionId, tags, onProgress });
+        return await importDirectUrl({ url, collectionId, tags, sourceUrl, title, referer, onProgress });
     } catch (e) {
         console.error('[urlImport] failed for', url, e);
         return { results: [], skipped: [], errors: [{ url, error: e.message }] };

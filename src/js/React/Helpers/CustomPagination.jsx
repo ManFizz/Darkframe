@@ -1,64 +1,69 @@
-import React, {useMemo} from 'react';
+import React from 'react';
 import Pagination from 'react-bootstrap/Pagination';
-import {CanMoreMedia, LoadMoreMedia} from "@modules/r34/R34Controller";
-import {SOURCE_TYPES} from "@/Constants";
+import {CanMoreMedia} from "@modules/r34/R34Controller";
 
-const MAX_PAGES = 7;
+// Number of page buttons rendered at once (first/last shortcuts are extra).
+const WINDOW_SIZE = 7;
 
-const CustomPagination = ({ currentPage, maxPage, pages, goToPage, loadNextPage, currentSource }) => {
-    const { paginationItems, startPage, endPage } = useMemo(() => {
-        const startPage = Math.max(1, currentPage - Math.floor(MAX_PAGES / 2));
-        let endPage = Math.min(pages, startPage + MAX_PAGES - 1);
-        const adjustedStart = Math.max(1, endPage - MAX_PAGES + 1);
+const CustomPagination = ({ anchorPage, lastLoadedPage, totalPages, jumpToPage, appendNextPage }) => {
+    if (totalPages <= 1) return null;
 
-        const items = [];
-        for (let i = adjustedStart; i <= endPage; i++) {
-            items.push(
-                <Pagination.Item
-                    key={i}
-                    active={i >= currentPage && i <= maxPage}
-                    onClick={() => goToPage(i)}
-                >
-                    {i}
-                </Pagination.Item>
-            );
-        }
+    // The gallery shows a contiguous range of pages [anchorPage..lastLoadedPage] at
+    // once: clicking a number jumps to a single page, while the "+" button extends
+    // the range downwards by appending the next page (that's what lastLoadedPage tracks).
 
-        return { paginationItems: items, startPage: adjustedStart, endPage };
-    }, [currentPage, maxPage, pages, goToPage]);
+    // Center the visible window on the anchor so it's always rendered; pages of the
+    // loaded range that fall past the window are still hinted by the last shortcut.
+    const windowEnd = Math.min(totalPages, Math.max(1, anchorPage - Math.floor(WINDOW_SIZE / 2)) + WINDOW_SIZE - 1);
+    const windowStart = Math.max(1, windowEnd - WINDOW_SIZE + 1);
 
-    if (pages <= 1) return null;
+    // A page can be appended either from already-loaded pages or, once those run out,
+    // by fetching more remote media (R34 family).
+    const canAppend = lastLoadedPage < totalPages || CanMoreMedia();
 
-    const isR34Family = currentSource === SOURCE_TYPES.R34 || currentSource === SOURCE_TYPES.GELBOORU;
+    // Single page button — highlights the anchor and shades the loaded range.
+    const renderPage = (page) => (
+        <Pagination.Item
+            key={page}
+            active={page === anchorPage}
+            className={page > anchorPage && page <= lastLoadedPage ? 'page-in-range' : ''}
+            onClick={() => jumpToPage(page)}
+        >
+            {page}
+        </Pagination.Item>
+    );
+
+    const windowPages = [];
+    for (let page = windowStart; page <= windowEnd; page++) windowPages.push(renderPage(page));
 
     return (
-        <Pagination size="sm" className="fixed-bottom justify-content-center">
-            {startPage !== 1 && (
-                <Pagination.Item key={1} onClick={() => goToPage(1)}>
-                    {1}
-                </Pagination.Item>
-            )}
-            {startPage - 1 > 1 && <Pagination.Ellipsis />}
+        <Pagination size="sm" className="custom-pagination fixed-bottom justify-content-center">
+            <Pagination.Prev
+                disabled={anchorPage <= 1}
+                onClick={() => jumpToPage(anchorPage - 1)}
+            />
 
-            {paginationItems}
+            {windowStart > 1 && renderPage(1)}
+            {windowStart > 2 && <Pagination.Ellipsis disabled />}
 
-            {pages - endPage > 1 && <Pagination.Ellipsis />}
-            {endPage !== pages && (
-                <Pagination.Item key={pages} onClick={() => goToPage(pages)}>
-                    {pages}
-                </Pagination.Item>
-            )}
+            {windowPages}
+
+            {windowEnd < totalPages - 1 && <Pagination.Ellipsis disabled />}
+            {windowEnd < totalPages && renderPage(totalPages)}
 
             <Pagination.Next
-                key="next"
-                onClick={loadNextPage}
-                disabled={pages === maxPage}
+                disabled={anchorPage >= totalPages}
+                onClick={() => jumpToPage(anchorPage + 1)}
             />
-            <Pagination.Last
-                key="last"
-                onClick={() => CanMoreMedia() && LoadMoreMedia()}
-                disabled={!isR34Family && !CanMoreMedia()}
-            />
+
+            <Pagination.Item
+                className="page-append"
+                title="Показать ещё страницу"
+                disabled={!canAppend}
+                onClick={() => canAppend && appendNextPage()}
+            >
+                +
+            </Pagination.Item>
         </Pagination>
     );
 };

@@ -27,6 +27,11 @@ const Collection = sequelize.define('Collection', {
         type: DataTypes.INTEGER,
         defaultValue: 0,
     },
+    isSystem: {
+        type: DataTypes.BOOLEAN,
+        defaultValue: false,
+        allowNull: false,
+    },
     createdAt: {
         type: DataTypes.INTEGER,
         defaultValue: () => Math.floor(Date.now() / 1000),

@@ -17,7 +17,7 @@ const isCanDisplayedByIdx = (mainArray, nextIdx) => {
 };
 
 const Navigation = ({ file, modalUpdater, mainArray, setDegree, panelOpen, onPanelToggle }) => {
-    const { isFav, toggleFav } = useFavorites();
+    const { isFav, isPending, toggleFav } = useFavorites();
 
     const currentIndex = useMemo(() => {
         return mainArray.findIndex(f =>
@@ -102,10 +102,12 @@ const Navigation = ({ file, modalUpdater, mainArray, setDegree, panelOpen, onPan
                     onClick={() => modalUpdater(null)}
                 />
                 {!onPanelToggle && ( //bypass in library
-                    <i
-                        className={`bi ${isFav(file.thumbUrl) ? "bi-heart-fill" : "bi-heart"}`}
-                        onClick={handleToggleFav}
-                    />
+                    isPending(file)
+                        ? <i className="bi bi-arrow-repeat spin" title="Добавление…" />
+                        : <i
+                            className={`bi ${isFav(file) ? "bi-heart-fill" : "bi-heart"}`}
+                            onClick={handleToggleFav}
+                        />
                 )}
                 <i
                     className="bi bi-arrow-clockwise"

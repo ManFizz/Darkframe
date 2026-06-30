@@ -185,3 +185,26 @@ $tag-colors: (
 .card {
   border-color: transparent !important;
 }
+// ─── Gallery pagination ────────────────────────────────────────────────────────
+
+.custom-pagination {
+  // Pages between the anchor (currentPage) and the last loaded page (maxPage):
+  // these are shown together in the gallery, so mark them as a connected range.
+  .page-in-range .page-link {
+    background-color: var(--bs-primary-bg-subtle);
+    border-color: var(--bs-primary-border-subtle);
+    color: var(--bs-primary);
+    font-weight: 600;
+  }
+
+  // "Append next page" control — visually distinct from the jump buttons.
+  .page-append {
+    margin-left: 8px;
+
+    .page-link {
+      font-weight: 700;
+      color: var(--bs-success);
+    }
+    &.disabled .page-link { color: var(--bs-secondary); }
+  }
+}

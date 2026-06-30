@@ -2,7 +2,6 @@ const { app, BrowserWindow, session } = require('electron');
 const { backupDatabase } = require('./server/backup');
 const { setupIpcHandlers } = require('./server/ipcManager');
 const sequelize = require("./server/database");
-const { downloadMissingFavorites } = require('./server/controllers/favoriteController');
 const { protocol } = require('electron');
 const path = require('path');
 const fs = require('fs');
@@ -64,6 +63,7 @@ async function initDatabase() {
 
         await sequelize.sync();
         await migrations();
+        await require('./server/favoritesCollection').ensureFavoritesCollection();
         console.log('Database synchronized');
         hashExistingItems();
     } catch (err) {
@@ -163,10 +163,6 @@ app.whenReady().then(async () => {
     app.on('open-file', (event, filePath) => {
         event.preventDefault();
         win.webContents.send('file-dropped', [filePath]);
-    });
-
-    downloadMissingFavorites().then(() => {
-        console.log("Все файлы проверены и недостающие скачаны.");
     });
 
     startApiServer();

@@ -9,6 +9,7 @@ const fs = require('fs');
 const { importFromEagleCsv } = require('../services/eagleImportService');
 const { importFromUrl } = require('../services/urlImportService');
 const { importFromJson } = require('../services/jsonImportService');
+const { getFavoritesCollectionId } = require('../favoritesCollection');
 
 function register() {
     ipcMain.handle('library:importDialog', async (_, { collectionId }) => {
@@ -156,7 +157,12 @@ function register() {
     });
 
     ipcMain.handle('library:getCollections', async () => {
-        const collections = await Collection.findAll({ order: [['order', 'ASC']] });
+        // System collections (e.g. Favorites) live in the same DB but are managed
+        // separately, so they never show up in the regular collection tree.
+        const collections = await Collection.findAll({
+            where: { isSystem: false },
+            order: [['order', 'ASC']],
+        });
 
         return await Promise.all(
             collections.map(async (col) => {
@@ -167,9 +173,13 @@ function register() {
     });
 
     ipcMain.handle('library:getStats', async () => {
-        const total        = await Item.count();
-        const uncategorized = await Item.count({ where: { collectionId: null } });
-        return { total, uncategorized };
+        const favoritesId = await getFavoritesCollectionId();
+        const [total, uncategorized, favoritesCount] = await Promise.all([
+            Item.count(),
+            Item.count({ where: { collectionId: null } }),
+            Item.count({ where: { collectionId: favoritesId } }),
+        ]);
+        return { total, uncategorized, favoritesId, favoritesCount };
     });
 
     ipcMain.handle('library:createCollection', async (_, { name, parentId, icon, color }) => {

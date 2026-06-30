@@ -10,9 +10,9 @@ export async function invoke(channel, ...args) {
 }
 
 export const favoritesApi = {
-    getAll: ()     => invoke("getFavorites"),
-    add:    (data) => invoke("addFavorites", data),
-    remove: (url)  => invoke("removeFavorites", url),
+    list:   ()        => invoke("favorites:list"),
+    add:    (data)    => invoke("favorites:add", data),
+    remove: (postUrl) => invoke("favorites:remove", { postUrl }),
 };
 export const favoriteTagsApi = {
     getAll: ()                => invoke("getFavTags"),

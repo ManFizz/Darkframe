@@ -27,6 +27,15 @@ async function migrations() {
     if (!indexes.find(i => i.name === 'tags_name_idx')) {
         await queryInterface.addIndex('Tags', ['name'], { name: 'tags_name_idx' });
     }
+
+    const collectionsDesc = await queryInterface.describeTable('Collections');
+    if (!collectionsDesc.isSystem) {
+        await queryInterface.addColumn('Collections', 'isSystem', {
+            type: DataTypes.BOOLEAN,
+            defaultValue: false,
+            allowNull: false,
+        });
+    }
 }
 
 module.exports = { migrations};
