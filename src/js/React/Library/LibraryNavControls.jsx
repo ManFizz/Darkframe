@@ -92,10 +92,10 @@ export const LibraryNavSort = ({ ctx }) => {
                             Любой
                         </button>
                     </li>
-                    {[1, 2, 3, 4, 5].map(r => (
+                    {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(r => (
                         <li key={r}>
                             <button className="dropdown-item" onClick={() => update('rating', r)}>
-                                {'★'.repeat(r)} {r}+
+                                ★ {r}+
                             </button>
                         </li>
                     ))}
