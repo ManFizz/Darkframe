@@ -170,6 +170,11 @@ const Modal = ({ fileId, mainArray, modalUpdater, displayFiles, onUpdated }) => 
                 open
                 ref={modalRef}
                 tabIndex="-1"
+                onContextMenu={(e) => {
+                    if (e.target.closest('.modal-panel-wrapper')) return;
+                    e.preventDefault();
+                    modalUpdater(null);
+                }}
             >
                 <Navigation
                     file={file}

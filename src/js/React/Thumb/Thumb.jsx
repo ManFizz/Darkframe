@@ -29,6 +29,13 @@ const Thumb = (({ file, isModal, modalUpdater, isSelected, onOpen }) => {
         onOpen?.(file);
     };
 
+    const handleContextMenu = (event) => {
+        event.preventDefault();
+        if (file.type !== FILE_TYPES.IMAGE && file.type !== FILE_TYPES.VIDEO) return;
+        if (onOpen) onOpen(file);
+        else modalUpdater(file, event);
+    };
+
     const renderContent = () => {
         switch (file.type) {
             case FILE_TYPES.IMAGE: return <Image file={file} />;
@@ -53,6 +60,7 @@ const Thumb = (({ file, isModal, modalUpdater, isSelected, onOpen }) => {
         <div
             className={`card thumb bg-dark ${isModal ? 'modal-active' : ''} ${isRemovedInFavs ? 'opacity-50' : ''} ${isSelected ? 'thumb-selected' : ''}`}
             onClick={handleClick}
+            onContextMenu={handleContextMenu}
         >
             {hasOverlay && (
                 <div className="overlay">
