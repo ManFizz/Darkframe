@@ -24,7 +24,7 @@ const LibraryView = () => {
     const galleryScrollRef = useRef(null);
     useDragAutoScroll(galleryScrollRef);
 
-    const { items, reload, updateItem, deleteItem } = useLibraryItems(
+    const { items, reload, deleteItem } = useLibraryItems(
         selectedCollection === SPECIAL.NONE
             ? false
             : selectedCollection === SPECIAL.ALL
@@ -101,7 +101,6 @@ const LibraryView = () => {
             setSelectedFile(null);
             await reload();
         } else {
-            await updateItem(idOrAction, data);
             if (selectedFile?.id === idOrAction) {
                 setSelectedFile(prev =>
                     Object.assign(Object.create(Object.getPrototypeOf(prev)), prev, data)
@@ -114,7 +113,7 @@ const LibraryView = () => {
                 )
             );
         }
-    }, [deleteItem, updateItem, selectedFile]);
+    }, [deleteItem, reload, selectedFile]);
 
     const handleCollectionSelect = useCallback((id) => {
         setSelectedCollection(id);
