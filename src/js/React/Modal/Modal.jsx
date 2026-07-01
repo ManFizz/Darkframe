@@ -17,6 +17,7 @@ const Modal = ({ fileId, mainArray, modalUpdater, displayFiles, onUpdated }) => 
     const [deleteCountdown, setDeleteCountdown] = useState(false);
     const deleteTimerRef = useRef(null);
     const modalRef       = useRef(null);
+    const preloadRef     = useRef(new Map());
     const { isFav }      = useFavorites();
 
     const file = useMemo(() =>
@@ -108,24 +109,35 @@ const Modal = ({ fileId, mainArray, modalUpdater, displayFiles, onUpdated }) => 
     }, [file?.uniqueId]);
 
     useEffect(() => {
-        if (!file || file.type !== FILE_TYPES.IMAGE) return;
+        if (!file) return;
 
         const index = mainArray.findIndex(f => f.uniqueId === file.uniqueId);
         if (index === -1) return;
 
-        [index - 1, index + 1].forEach(i => {
-            const neighbor = mainArray[i];
+        const WINDOW = 3;
+        const wanted = new Set();
+        for (let d = -WINDOW; d <= WINDOW; d++) {
+            const neighbor = mainArray[index + d];
             if (neighbor?.type === FILE_TYPES.IMAGE) {
-                const img = new window.Image();
-                img.src = cachedMediaUrl(neighbor.getUrl());
+                wanted.add(cachedMediaUrl(neighbor.getUrl()));
             }
+        }
+
+        const cache = preloadRef.current;
+        wanted.forEach(url => {
+            if (cache.has(url)) return;
+            const img = new window.Image();
+            img.decoding = 'async';
+            img.src = url;
+            img.decode?.().catch(() => {});
+            cache.set(url, img);
         });
+
+        for (const url of [...cache.keys()]) {
+            if (!wanted.has(url)) cache.delete(url);
+        }
     }, [file, mainArray]);
 
-    // Перехватываем апдейты из MetadataPanel:
-    //  - 'delete' → навигируем перед удалением
-    //  - смена коллекции → навигируем перед сохранением, иначе файл выпадает
-    //    из текущей выборки и Modal закрывается
     const handlePanelUpdated = useCallback((idOrAction, data) => {
         if (idOrAction === 'delete') {
             handleDelete();
@@ -143,7 +155,6 @@ const Modal = ({ fileId, mainArray, modalUpdater, displayFiles, onUpdated }) => 
 
     const mediaContent = file.type === FILE_TYPES.IMAGE ? (
         <img
-            key={fileId}
             alt={file.title}
             src={cachedMediaUrl(file.getUrl())}
             style={{ transform: `rotate(${degree}deg)` }}
