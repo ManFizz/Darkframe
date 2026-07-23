@@ -25,21 +25,22 @@ const MetadataPanel = ({ file, onUpdated }) => {
     const saveTimeout    = useRef(null);
     const pendingFormRef = useRef(null);
 
-    useEffect(() => { fileRef.current = file; }, [file]);
+    const onUpdatedRef = useRef(onUpdated);
+    useEffect(() => { onUpdatedRef.current = onUpdated; });
 
     useEffect(() => {
         const prevFile = fileRef.current;
         const prevForm = pendingFormRef.current;
 
+        clearTimeout(saveTimeout.current);
+
         if (prevFile && prevForm && prevFile.id !== file?.id) {
-            clearTimeout(saveTimeout.current);
             LibraryService.updateItem(prevFile.id, prevForm)
-                .then(() => onUpdated?.(prevFile.id, prevForm))
+                .then(() => onUpdatedRef.current?.(prevFile.id, prevForm))
                 .catch(console.error);
-        } else {
-            clearTimeout(saveTimeout.current);
         }
 
+        fileRef.current = file;
         pendingFormRef.current = null;
 
         if (!file) { setForm(null); return; }
@@ -70,6 +71,7 @@ const MetadataPanel = ({ file, onUpdated }) => {
 
                 try {
                     await LibraryService.updateItem(currentFile.id, currentForm);
+                    if (pendingFormRef.current === currentForm) pendingFormRef.current = null;
                     onUpdated?.(currentFile.id, currentForm);
                 } catch (e) {
                     console.error('Autosave failed:', e);
@@ -81,7 +83,17 @@ const MetadataPanel = ({ file, onUpdated }) => {
     }, [onUpdated]);
 
     useEffect(() => {
-        return () => clearTimeout(saveTimeout.current);
+        return () => {
+            clearTimeout(saveTimeout.current);
+
+            const lastFile = fileRef.current;
+            const lastForm = pendingFormRef.current;
+            if (!lastFile || !lastForm) return;
+
+            LibraryService.updateItem(lastFile.id, lastForm)
+                .then(() => onUpdatedRef.current?.(lastFile.id, lastForm))
+                .catch(console.error);
+        };
     }, []);
 
     if (!file || !form) return (
