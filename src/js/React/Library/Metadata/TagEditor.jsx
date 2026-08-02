@@ -4,6 +4,20 @@ import {libraryApi} from '@/Infrastructure/Ipc';
 const RECENT_TAGS_KEY = 'jsg_recent_tags';
 const RECENT_LIMIT = 12;
 
+// Split a pasted string into individual tags. Primary separator is ";" (what the
+// browser userscripts emit), newlines also count. Stray backslashes are stripped
+// so a literal "\;" separator degrades gracefully to ";". Everything is trimmed,
+// lowercased and de-duplicated; spaces are NOT separators (multi-word tags survive).
+export function splitTags(raw) {
+    const seen = new Set();
+    const out = [];
+    for (const piece of String(raw).split(/[;\n]+/)) {
+        const t = piece.replace(/\\/g, '').trim().toLowerCase();
+        if (t && !seen.has(t)) { seen.add(t); out.push(t); }
+    }
+    return out;
+}
+
 function loadRecentTags() {
     try { return JSON.parse(localStorage.getItem(RECENT_TAGS_KEY) || '[]'); }
     catch { return []; }
@@ -50,7 +64,8 @@ const TagDropdown = ({ currentTags, onAdd, onClose }) => {
     }, [query]);
 
     const handleAdd = (tag) => {
-        saveRecentTag(tag);
+        // A single paste may carry many tags — record each one in recents.
+        splitTags(tag).forEach(saveRecentTag);
         onAdd(tag);
     };
 
@@ -138,10 +153,11 @@ const TagEditor = ({ tags, onChange }) => {
         return () => document.removeEventListener('mousedown', handler);
     }, []);
 
-    const addTag = (tag) => {
-        const t = tag.trim().toLowerCase();
-        if (!t || tags.includes(t)) return;
-        onChange([...tags, t]);
+    const addTag = (raw) => {
+        // Accept a whole separated string ("a; b; c") and expand it into tags.
+        const incoming = splitTags(raw).filter(t => !tags.includes(t));
+        if (!incoming.length) return;
+        onChange([...tags, ...incoming]);
     };
 
     const removeTag = (tag) => onChange(tags.filter(t => t !== tag));
