@@ -13,12 +13,19 @@ export const SORT_ORDER = {
     DESC: -1,
 };
 
+// Rating filter is a range [min, max] over 0..10, where 0 means "unrated".
+// Default 0..10 = "any". Setting max below 10 or min above 0 narrows it; the
+// special "unrated only" case is just min=0, max=0.
+export const RATING_MIN = 0;
+export const RATING_MAX = 10;
+
 const initialFilters = {
-    search:  '',
-    tags:    [],
-    rating:  0,
-    sortBy:  SORT_FIELDS.ORDER,
-    order:   SORT_ORDER.ASC,
+    search:    '',
+    tags:      [],
+    ratingMin: RATING_MIN,
+    ratingMax: RATING_MAX,
+    sortBy:    SORT_FIELDS.ORDER,
+    order:     SORT_ORDER.ASC,
 };
 
 export function useLibraryFilter(items) {
@@ -77,8 +84,12 @@ export function useLibraryFilter(items) {
             });
         }
 
-        if (filters.rating > 0) {
-            result = result.filter(f => (f.rating || 0) >= filters.rating);
+        const { ratingMin = RATING_MIN, ratingMax = RATING_MAX } = filters;
+        if (ratingMin > RATING_MIN || ratingMax < RATING_MAX) {
+            result = result.filter(f => {
+                const r = f.rating || 0;
+                return r >= ratingMin && r <= ratingMax;
+            });
         }
 
         result.sort((a, b) => {
