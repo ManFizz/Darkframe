@@ -8,10 +8,35 @@ const { importFile } = require('./services/importService');
 const PORT = 45678;
 let server = null;
 
+// Map the response Content-Type to a file extension. Needed for media served
+// behind extensionless / query-string URLs (e.g. hulkporn's /video.php?video=…),
+// where the URL path tells us nothing about the real format.
+const CONTENT_TYPE_EXT = {
+    'image/jpeg': '.jpg',  'image/jpg':  '.jpg',
+    'image/png':  '.png',  'image/webp': '.webp',
+    'image/gif':  '.gif',
+    'video/mp4':  '.mp4',  'video/webm': '.webm',
+    'video/quicktime': '.mov', 'video/x-matroska': '.mkv',
+};
+
+// Extensions we trust straight from the URL; anything else defers to Content-Type.
+const MEDIA_EXTENSIONS = new Set([
+    '.jpg', '.jpeg', '.png', '.webp', '.gif', '.jfif',
+    '.mp4', '.webm', '.avi', '.mkv', '.mov',
+]);
+
+function extFromContentType(contentType) {
+    if (!contentType) return null;
+    const type = contentType.split(';')[0].trim().toLowerCase();
+    return CONTENT_TYPE_EXT[type] || null;
+}
+
+// Resolves with the response Content-Type so the caller can pick a correct extension.
 function downloadWithNet(url, destPath) {
     return new Promise((resolve, reject) => {
         const file = fs.createWriteStream(destPath);
         let settled = false;
+        let contentType = null;
 
         const done = (err) => {
             if (settled) return;
@@ -21,14 +46,14 @@ function downloadWithNet(url, destPath) {
                 fs.unlink(destPath, () => {});
                 reject(err);
             } else {
-                resolve();
+                resolve(contentType);
             }
         };
 
         const request = net.request({ url, method: 'GET', redirect: 'follow' });
 
         request.setHeader('User-Agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
-        request.setHeader('Accept', 'image/webp,image/apng,image/*,*/*;q=0.8');
+        request.setHeader('Accept', 'image/webp,image/apng,image/*,video/*,*/*;q=0.8');
         request.setHeader('Accept-Language', 'en-US,en;q=0.9');
         request.setHeader('Referer', new URL(url).origin + '/');
 
@@ -37,6 +62,8 @@ function downloadWithNet(url, destPath) {
                 done(new Error(`HTTP ${response.statusCode}`));
                 return;
             }
+            contentType = response.headers['content-type'];
+            if (Array.isArray(contentType)) contentType = contentType[0];
             response.on('data', (chunk) => file.write(chunk));
             response.on('end',  () => done(null));
             response.on('error', done);
@@ -51,8 +78,7 @@ function downloadWithNet(url, destPath) {
 async function downloadWithRetry(url, destPath, retries = 3) {
     for (let i = 0; i < retries; i++) {
         try {
-            await downloadWithNet(url, destPath);
-            return;
+            return await downloadWithNet(url, destPath);
         } catch (e) {
             console.warn(`[API] Download attempt ${i + 1} failed: ${e.message}`);
             if (i === retries - 1) throw e;
@@ -90,17 +116,27 @@ async function handleAdd(req, res) {
     if (!url) { respond(res, 400, { error: 'url is required' }); return; }
 
     const urlPath = new URL(url).pathname;
-    const ext     = path.extname(urlPath).toLowerCase() || '.jpg';
-    const tmpPath = path.join(os.tmpdir(), `jsgallery_${Date.now()}${ext}`);
+    const urlExt  = path.extname(urlPath).toLowerCase();
+    // A media extension in the URL is only trusted if it's actually one we support;
+    // otherwise (.php, no extension, …) we fall back to the Content-Type after download.
+    const urlExtTrusted = MEDIA_EXTENSIONS.has(urlExt) ? urlExt : null;
 
-    await downloadWithRetry(url, tmpPath);
+    // Download to a neutral name first, then rename to the resolved extension so
+    // importFile's extension-based mime detection sees the right type.
+    const tmpBase = path.join(os.tmpdir(), `jsgallery_${Date.now()}`);
+    const tmpDownload = `${tmpBase}.download`;
+
+    const contentType = await downloadWithRetry(url, tmpDownload);
+    const ext = urlExtTrusted || extFromContentType(contentType) || '.jpg';
+    const tmpPath = `${tmpBase}${ext}`;
+    fs.renameSync(tmpDownload, tmpPath);
 
     const result = await importFile({
         filePath:     tmpPath,
         collectionId,
         tags,
         sourceUrl:    sourceUrl || url,
-        overrides:    { title: title || path.basename(urlPath, ext), notes: notes || '' },
+        overrides:    { title: title || path.basename(urlPath, urlExt) || 'media', notes: notes || '' },
     });
 
     try { fs.unlinkSync(tmpPath); } catch {}
