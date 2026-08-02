@@ -164,14 +164,43 @@
     align-items: center;
     justify-content: center;
     overflow: hidden;
+    // A lit "stage" so the media reads as placed, not floating in the void.
+    background:
+      radial-gradient(closest-side at 50% 42%, rgba(176, 107, 255, 0.10), transparent 78%);
+  }
+}
+
+// ─── Redesign: framed stage + glass panel (direction B) ───────────────────────
+.modal-view {
+  .modal-content-wrapper {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  // Give the media a real frame: rounded, hairline edge, deep soft shadow.
+  img, video {
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 24px 70px rgba(0, 0, 0, 0.6);
+  }
+
+  // The "long image" mode keeps its own orange debug border — don't double it up.
+  &.long img {
+    border-radius: 0;
+    box-shadow: none;
   }
 }
 
 .modal-panel-wrapper {
-  width: 280px;
+  width: 288px;
   flex-shrink: 0;
   overflow-y: auto;
-  border-left: 1px solid rgba(255, 255, 255, 0.08);
+  // Frosted glass layer floating over the stage.
+  background: var(--df-glass-strong, rgba(20, 16, 28, 0.72));
+  backdrop-filter: blur(16px);
+  border-left: 1px solid var(--df-glass-border, rgba(255, 255, 255, 0.08));
+  box-shadow: -18px 0 40px rgba(0, 0, 0, 0.35);
 
   // Переопределяем fixed-позиционирование MetadataPanel внутри модалки
   .metadata-panel {
@@ -182,7 +211,21 @@
     height: auto;
     min-height: 100%;
     border-left: none;
+    background: transparent;
     z-index: auto;
+  }
+
+  // Caps field labels get the accent-tinted brand rhythm.
+  .metadata-section label {
+    letter-spacing: 0.12em;
+    color: var(--bs-secondary);
+  }
+
+  // Inputs sit on the darker glass, not the flat body colour.
+  .metadata-content .form-control {
+    background: rgba(0, 0, 0, 0.3);
+    border-color: var(--df-glass-border);
+    border-radius: 10px;
   }
 }
 

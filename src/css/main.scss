@@ -1,5 +1,31 @@
 @use 'variables';
 
+// ─── Redesign: one accent to rule them all ────────────────────────────────────
+// The app shipped on stock Bootstrap blue; the redesign commits to a single violet
+// accent (the same hue the modal always used). Everything that reads var(--bs-primary)
+// in our own SCSS picks this up automatically. Stock Bootstrap buttons compile their
+// own hex, so those are re-skinned explicitly where the redesign touches them.
+:root,
+[data-bs-theme="dark"] {
+  --bs-primary: #b06bff;
+  --bs-primary-rgb: 176, 107, 255;
+  --bs-primary-bg-subtle: #241b33;
+  --bs-primary-border-subtle: #4a3a6b;
+  --bs-primary-text-emphasis: #cba6ff;
+  --bs-link-color: #b06bff;
+  --bs-link-color-rgb: 176, 107, 255;
+  --bs-link-hover-color: #c690ff;
+
+  // Redesign tokens — used by the glass topbar, minimal import block and modal stage.
+  --df-accent: #b06bff;
+  --df-accent-dim: #7c4fd6;
+  --df-accent-soft: rgba(176, 107, 255, 0.14);
+  --df-accent-glow: rgba(176, 107, 255, 0.45);
+  --df-glass: rgba(255, 255, 255, 0.035);
+  --df-glass-strong: rgba(20, 16, 28, 0.72);
+  --df-glass-border: #322a44;
+}
+
 .hidden {
   display: none;
 }

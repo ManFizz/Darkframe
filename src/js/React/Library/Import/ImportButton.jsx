@@ -8,6 +8,9 @@ const ImportButton = ({ collectionId, collectionName, onImported }) => {
     const [url, setUrl] = useState('');
     const [urlImporting, setUrlImporting] = useState(false);
     const [urlProgress, setUrlProgress] = useState(null);
+    // The secondary import paths (link/folder/json/csv) are hidden until asked for —
+    // "Добавить файлы" is the one action people reach for 95% of the time.
+    const [expanded, setExpanded] = useState(false);
 
     useEffect(() => {
         const { ipcRenderer } = window.require('electron');
@@ -159,83 +162,84 @@ const ImportButton = ({ collectionId, collectionName, onImported }) => {
             )}
 
             <div className="import-zone" onDrop={handleDrop} onDragOver={e => e.preventDefault()}>
-                <div className="import-zone-hint">
+                {/* Primary path — one clear button */}
+                <button className="import-primary" onClick={handleImportFiles}>
+                    <i className="bi bi-plus-lg" />
+                    Добавить файлы
+                </button>
+
+                <div className="import-target">
                     {collectionName ? <>в <b>{collectionName}</b></> : 'без коллекции'}
                 </div>
 
-                <div className="import-buttons">
-                    <button className="btn btn-primary btn-sm flex-fill" onClick={handleImportFiles}>
-                        <i className="bi bi-file-earmark-plus me-1" />
-                        Файлы
-                    </button>
-                    <button className="btn btn-primary btn-sm flex-fill" onClick={handleImportDirectory}>
-                        <i className="bi bi-folder-plus me-1" />
-                        Папку
-                    </button>
-                </div>
+                {/* Secondary paths — collapsed until requested */}
+                <button
+                    className={`import-more-toggle ${expanded ? 'open' : ''}`}
+                    onClick={() => setExpanded(v => !v)}
+                >
+                    <i className="bi bi-chevron-down" />
+                    Ссылка · Папка · JSON · CSV
+                </button>
 
-                <div className="import-url-row">
-                    <input
-                        className="form-control form-control-sm"
-                        placeholder="Прямая ссылка на медиа (.jpg, .mp4, …)"
-                        value={url}
-                        onChange={e => setUrl(e.target.value)}
-                        onKeyDown={e => { if (e.key === 'Enter') handleImportUrl(); }}
-                        disabled={urlImporting}
-                    />
-                    <button
-                        className="btn btn-primary btn-sm"
-                        onClick={handleImportUrl}
-                        disabled={urlImporting || !url.trim()}
-                        title="Загрузить по ссылке"
-                    >
-                        {urlImporting
-                            ? <i className="bi bi-arrow-repeat spin" />
-                            : <i className="bi bi-link-45deg" />}
-                    </button>
-                </div>
+                {expanded && (
+                    <div className="import-more">
+                        <div className="import-url-row">
+                            <input
+                                className="form-control form-control-sm"
+                                placeholder="Прямая ссылка (.jpg, .mp4, …)"
+                                value={url}
+                                onChange={e => setUrl(e.target.value)}
+                                onKeyDown={e => { if (e.key === 'Enter') handleImportUrl(); }}
+                                disabled={urlImporting}
+                            />
+                            <button
+                                className="btn btn-primary btn-sm"
+                                onClick={handleImportUrl}
+                                disabled={urlImporting || !url.trim()}
+                                title="Загрузить по ссылке"
+                            >
+                                {urlImporting
+                                    ? <i className="bi bi-arrow-repeat spin" />
+                                    : <i className="bi bi-link-45deg" />}
+                            </button>
+                        </div>
 
-                {urlImporting && (
-                    <div className="import-url-progress">
-                        {urlProgress?.percent != null ? (
-                            <>
-                                <div className="progress" style={{ height: 6 }}>
-                                    <div
-                                        className="progress-bar"
-                                        style={{ width: `${urlProgress.percent}%`, transition: 'width .2s' }}
-                                    />
-                                </div>
-                                <span>
-                                    {Math.round(urlProgress.percent)}%
-                                    {urlProgress.eta ? ` · ${urlProgress.eta}` : ''}
-                                </span>
-                            </>
-                        ) : (
-                            <span>Загрузка…</span>
+                        {urlImporting && (
+                            <div className="import-url-progress">
+                                {urlProgress?.percent != null ? (
+                                    <>
+                                        <div className="progress" style={{ height: 6 }}>
+                                            <div
+                                                className="progress-bar"
+                                                style={{ width: `${urlProgress.percent}%`, transition: 'width .2s' }}
+                                            />
+                                        </div>
+                                        <span>
+                                            {Math.round(urlProgress.percent)}%
+                                            {urlProgress.eta ? ` · ${urlProgress.eta}` : ''}
+                                        </span>
+                                    </>
+                                ) : (
+                                    <span>Загрузка…</span>
+                                )}
+                            </div>
                         )}
+
+                        <div className="import-more-actions">
+                            <button className="import-ghost" onClick={handleImportDirectory}>
+                                <i className="bi bi-folder-plus" /> Папку
+                            </button>
+                            <button className="import-ghost" onClick={handleImportJson} disabled={importing}>
+                                <i className="bi bi-filetype-json" /> JSON
+                            </button>
+                            <button className="import-ghost" onClick={handleImportEagle} disabled={importing}>
+                                <i className="bi bi-box-arrow-in-down" /> CSV
+                            </button>
+                        </div>
                     </div>
                 )}
 
-                <div className="import-buttons">
-                    <button
-                        className="btn btn-outline-info btn-sm flex-fill"
-                        onClick={handleImportJson}
-                        disabled={importing}
-                    >
-                        <i className="bi bi-filetype-json me-1" />
-                        JSON
-                    </button>
-                    <button
-                        className="btn btn-outline-warning btn-sm flex-fill"
-                        onClick={handleImportEagle}
-                        disabled={importing}
-                    >
-                        <i className="bi bi-box-arrow-in-down me-1" />
-                        Eagle CSV
-                    </button>
-                </div>
-
-                <div className="import-zone-hint text-secondary">
+                <div className="import-drop-hint">
                     или перетащи файлы / папки
                 </div>
             </div>

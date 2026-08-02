@@ -38,10 +38,10 @@ const NavBar = () => {
     ];
 
     return (
-        <header className="navbar navbar-expand-lg sticky-top navbar-dark text-white bg-dark">
+        <header className="navbar navbar-expand-lg sticky-top navbar-dark text-white navbar-glass">
             <div className="container-fluid">
                 <div className="navbar-nav flex-row flex-wrap">
-                    <div className="btn-group">
+                    <div className="btn-group nav-source-group">
                         {navButtons.map((btn, idx) => (
                             <React.Fragment key={btn.label}>
                                 <input
@@ -52,7 +52,7 @@ const NavBar = () => {
                                     defaultChecked={idx === 0}
                                 />
                                 <label
-                                    className="btn btn-outline-primary"
+                                    className="btn nav-source-tab"
                                     htmlFor={`nav-${idx}`}
                                     onClick={() => handleNavigation(btn.type, btn.action)}
                                 >
@@ -79,46 +79,49 @@ const NavBar = () => {
                     </form>
                 )}
 
-                {isLibrary && libraryCtx ? (
-                    <LibraryNavSort ctx={libraryCtx} />
-                ) : (
-                    <div className="d-flex btn-group">
-                        <div className="btn-group dropdown">
-                            <button className="btn btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">
-                                Sort by {state.sortInfo.type === SORT_TYPE.NAME ? 'name' :
-                                state.sortInfo.type === SORT_TYPE.ID ? 'id' :
-                                    state.sortInfo.type === SORT_TYPE.TIME ? 'time' : "priority"
-                            }
+                {/* Right-side actions collapse into one glass "island" */}
+                <div className="navbar-actions">
+                    {isLibrary && libraryCtx ? (
+                        <LibraryNavSort ctx={libraryCtx} />
+                    ) : (
+                        <div className="d-flex btn-group">
+                            <div className="btn-group dropdown">
+                                <button className="btn btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">
+                                    Sort by {state.sortInfo.type === SORT_TYPE.NAME ? 'name' :
+                                    state.sortInfo.type === SORT_TYPE.ID ? 'id' :
+                                        state.sortInfo.type === SORT_TYPE.TIME ? 'time' : "priority"
+                                }
+                                </button>
+                                <ul className="dropdown-menu dropdown-menu-end">
+                                    <li><button className="dropdown-item" onClick={() => setSortInfo({ type: SORT_TYPE.ID })}>Id</button></li>
+                                    <li><button className="dropdown-item" onClick={() => setSortInfo({ type: SORT_TYPE.NAME })}>Name</button></li>
+                                    <li><button className="dropdown-item" onClick={() => setSortInfo({ type: SORT_TYPE.TIME })}>Time</button></li>
+                                    <li><button className="dropdown-item" onClick={() => setSortInfo({ type: SORT_TYPE.PRIORITY })}>Priority</button></li>
+                                </ul>
+                            </div>
+                            <button className="btn btn-outline-secondary" onClick={() => setSortInfo({ order: state.sortInfo.order * -1 })}>
+                                Order <BsCaretDownFill className={state.sortInfo.order === SORT_ORDER.ASC ? 'flip' : ''} />
                             </button>
-                            <ul className="dropdown-menu dropdown-menu-end">
-                                <li><button className="dropdown-item" onClick={() => setSortInfo({ type: SORT_TYPE.ID })}>Id</button></li>
-                                <li><button className="dropdown-item" onClick={() => setSortInfo({ type: SORT_TYPE.NAME })}>Name</button></li>
-                                <li><button className="dropdown-item" onClick={() => setSortInfo({ type: SORT_TYPE.TIME })}>Time</button></li>
-                                <li><button className="dropdown-item" onClick={() => setSortInfo({ type: SORT_TYPE.PRIORITY })}>Priority</button></li>
-                            </ul>
+                            <button className="btn btn-outline-secondary" onClick={() => setTypeView(null)}>
+                                <BsFillGrid1X2Fill />
+                            </button>
+                            <button
+                                className={`btn ${state.safeMode ? 'btn-success' : 'btn-outline-secondary'}`}
+                                onClick={() => setSafeMode(!state.safeMode)}
+                            >
+                                <BsShieldShaded />
+                            </button>
                         </div>
-                        <button className="btn btn-outline-secondary" onClick={() => setSortInfo({ order: state.sortInfo.order * -1 })}>
-                            Order <BsCaretDownFill className={state.sortInfo.order === SORT_ORDER.ASC ? 'flip' : ''} />
-                        </button>
-                        <button className="btn btn-outline-secondary" onClick={() => setTypeView(null)}>
-                            <BsFillGrid1X2Fill />
-                        </button>
-                        <button
-                            className={`btn ${state.safeMode ? 'btn-success' : 'btn-outline-secondary'}`}
-                            onClick={() => setSafeMode(!state.safeMode)}
-                        >
-                            <BsShieldShaded />
-                        </button>
-                    </div>
-                )}
+                    )}
 
-                <button
-                    className="btn btn-outline-secondary ms-2 navbar-settings-btn"
-                    onClick={() => setShowSettings(true)}
-                    title="Настройки"
-                >
-                    <BsGearFill />
-                </button>
+                    <button
+                        className="btn navbar-settings-btn"
+                        onClick={() => setShowSettings(true)}
+                        title="Настройки"
+                    >
+                        <BsGearFill />
+                    </button>
+                </div>
             </div>
 
             {showSettings && <SettingsPanel onClose={() => setShowSettings(false)} />}
