@@ -11,6 +11,21 @@ export const SPECIAL = {
     UNCATEGORIZED: 'UNCATEGORIZED',
 };
 
+// Which tree branches the user has collapsed — persisted so the tree looks the
+// same after a restart. We store the collapsed ids (not the open ones) so brand
+// new collections default to open.
+const COLLAPSED_KEY = 'jsg_collapsed_collections';
+
+function loadCollapsed() {
+    try { return new Set(JSON.parse(localStorage.getItem(COLLAPSED_KEY) || '[]')); }
+    catch { return new Set(); }
+}
+
+function saveCollapsed(set) {
+    try { localStorage.setItem(COLLAPSED_KEY, JSON.stringify([...set])); }
+    catch { /* storage full / unavailable — non-fatal, just won't persist */ }
+}
+
 function findNodeAndParent(tree, id, parent = null) {
     for (const node of tree) {
         if (node.id === id) return { node, parent };
@@ -63,8 +78,8 @@ const ContextMenu = ({ x, y, node, onClose, onRename, onDelete, onCreateChild })
 
 const CollectionNode = ({ node, selectedId, onSelect, onRename, onDelete,
                             onCreateChild, onDropMedia, onDropCollection,
-                            draggedIdRef, depth = 0 }) => {
-    const [isOpen, setIsOpen]           = useState(true);
+                            draggedIdRef, collapsed, onToggleCollapse, depth = 0 }) => {
+    const isOpen = !collapsed.has(node.id);
     const [isRenaming, setIsRenaming]   = useState(false);
     const [renameValue, setRenameValue] = useState('');
     const [contextMenu, setContextMenu] = useState(null);
@@ -168,8 +183,8 @@ const CollectionNode = ({ node, selectedId, onSelect, onRename, onDelete,
 
     const handleToggle = useCallback((e) => {
         e.stopPropagation();
-        setIsOpen(v => !v);
-    }, []);
+        onToggleCollapse(node.id);
+    }, [onToggleCollapse, node.id]);
 
     const dropClass = dropPosition ? `drop-${dropPosition}` : '';
 
@@ -236,6 +251,8 @@ const CollectionNode = ({ node, selectedId, onSelect, onRename, onDelete,
                             onDropMedia={onDropMedia}
                             onDropCollection={onDropCollection}
                             draggedIdRef={draggedIdRef}
+                            collapsed={collapsed}
+                            onToggleCollapse={onToggleCollapse}
                             depth={depth + 1}
                         />
                     ))}
@@ -313,7 +330,17 @@ const CollectionTree = ({ selectedId, onSelect, onMediaMoved }) => {
     const { tree, createCollection, updateCollection, deleteCollection, reorderCollections } = useCollections();
     const [creating, setCreating] = useState(null);
     const [treeCollapsed, setTreeCollapsed] = useState(false);
+    const [collapsed, setCollapsed] = useState(loadCollapsed);
     const draggedIdRef = useRef(null);
+
+    const handleToggleCollapse = useCallback((id) => {
+        setCollapsed(prev => {
+            const next = new Set(prev);
+            next.has(id) ? next.delete(id) : next.add(id);
+            saveCollapsed(next);
+            return next;
+        });
+    }, []);
 
     const { statsVersion, refreshStats } = useLibraryContext();
     const { total, uncategorized, favoritesId, favoritesCount } = useLibraryStats(statsVersion);
@@ -449,6 +476,8 @@ const CollectionTree = ({ selectedId, onSelect, onMediaMoved }) => {
                             onDropMedia={handleDropMedia}
                             onDropCollection={handleDropCollection}
                             draggedIdRef={draggedIdRef}
+                            collapsed={collapsed}
+                            onToggleCollapse={handleToggleCollapse}
                         />
                     ))}
                     {creating?.parentId === null && (
