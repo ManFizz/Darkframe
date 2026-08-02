@@ -24,4 +24,16 @@ const sequelize = new Sequelize({
     logging: customLogger,
 });
 
+// SQLite locks the whole file for writes. Without these two PRAGMAs any brush of
+// contention (two saves overlapping, a read during a write) throws SQLITE_BUSY
+// immediately. busy_timeout makes a blocked writer wait instead of erroring, and
+// WAL lets reads proceed while a write is in flight. Applied to every pooled
+// connection as it opens.
+sequelize.afterConnect(async (connection) => {
+    const run = (sql) => new Promise((resolve, reject) =>
+        connection.run(sql, (err) => (err ? reject(err) : resolve())));
+    await run('PRAGMA busy_timeout = 5000;');
+    await run('PRAGMA journal_mode = WAL;');
+});
+
 module.exports = sequelize;

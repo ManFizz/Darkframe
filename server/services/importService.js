@@ -143,7 +143,12 @@ async function importFile({ filePath, collectionId = null, tags = [], sourceUrl 
         }, { transaction: t });
 
         if (tags.length > 0) {
-            const tagRecords = await Promise.all(tags.map(name => ensureTag(name, t)));
+            // Sequential, not Promise.all — parallel INSERTs on the single SQLite
+            // connection contend for the write lock and can throw SQLITE_BUSY.
+            const tagRecords = [];
+            for (const name of tags) {
+                tagRecords.push(await ensureTag(name, t));
+            }
             await ItemTag.bulkCreate(
                 tagRecords.map(tag => ({ itemId: id, tagId: tag.id })),
                 { transaction: t }

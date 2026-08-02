@@ -107,22 +107,29 @@ function register() {
     ipcMain.handle('library:updateItem', async (_, { id, data }) => {
         const { tags, ...fields } = data;
 
-        if (Object.keys(fields).length > 0) {
-            await Item.update(fields, { where: { id } });
-        }
-
-        if (tags !== undefined) {
-            await ItemTag.destroy({ where: { itemId: id } });
-
-            if (tags.length > 0) {
-                const tagRecords = await Promise.all(
-                    tags.map(name => ensureTag(name))
-                );
-                await ItemTag.bulkCreate(
-                    tagRecords.map(tag => ({ itemId: id, tagId: tag.id }))
-                );
+        // One transaction keeps all writes for a single save on one connection, and
+        // tags are created sequentially — parallel findOrCreate INSERTs were racing
+        // each other into SQLITE_BUSY, especially when a paste added many tags at once.
+        await sequelize.transaction(async (t) => {
+            if (Object.keys(fields).length > 0) {
+                await Item.update(fields, { where: { id }, transaction: t });
             }
-        }
+
+            if (tags !== undefined) {
+                await ItemTag.destroy({ where: { itemId: id }, transaction: t });
+
+                if (tags.length > 0) {
+                    const tagRecords = [];
+                    for (const name of tags) {
+                        tagRecords.push(await ensureTag(name, t));
+                    }
+                    await ItemTag.bulkCreate(
+                        tagRecords.map(tag => ({ itemId: id, tagId: tag.id })),
+                        { transaction: t }
+                    );
+                }
+            }
+        });
 
         return { ok: true };
     });
