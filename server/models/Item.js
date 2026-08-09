@@ -1,4 +1,4 @@
-const { DataTypes } = require('sequelize');
+const { DataTypes, Op } = require('sequelize');
 const sequelize = require('../database');
 
 const Item = sequelize.define('Item', {
@@ -22,6 +22,17 @@ const Item = sequelize.define('Item', {
     fileHash:       { type: DataTypes.STRING(64), allowNull: true, unique: true, },
     importedAt:     { type: DataTypes.INTEGER, defaultValue: () => Math.floor(Date.now() / 1000), },
     createdAt:      { type: DataTypes.INTEGER, allowNull: true, },
-}, { timestamps: false });
+    // Soft-delete: NULL = live item, unix timestamp = moved to trash.
+    deletedAt:      { type: DataTypes.INTEGER, allowNull: true, defaultValue: null },
+}, {
+    timestamps: false,
+    // Every ordinary read/count automatically hides trashed items. The trash and
+    // permanent-delete/restore paths opt out with Item.unscoped() (or the
+    // onlyTrashed scope) — see libraryController.
+    defaultScope: { where: { deletedAt: null } },
+    scopes: {
+        onlyTrashed: { where: { deletedAt: { [Op.ne]: null } } },
+    },
+});
 
 module.exports = Item;

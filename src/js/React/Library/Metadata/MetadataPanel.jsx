@@ -222,11 +222,21 @@ const MetadataPanel = ({ file, onUpdated }) => {
             )}
 
             <div className="metadata-footer">
+                {file.deletedAt && (
+                    <button
+                        className="btn btn-outline-success btn-sm"
+                        title="Восстановить из корзины"
+                        onClick={() => onUpdated?.('restore', file.id)}
+                    >
+                        <i className="bi bi-arrow-counterclockwise" />
+                    </button>
+                )}
                 <button
                     className="btn btn-outline-danger btn-sm"
+                    title={file.deletedAt ? 'Удалить навсегда' : 'В корзину'}
                     onClick={() => onUpdated?.('delete', file.id)}
                 >
-                    <i className="bi bi-trash" />
+                    <i className={`bi ${file.deletedAt ? 'bi-trash3' : 'bi-trash'}`} />
                 </button>
             </div>
         </div>

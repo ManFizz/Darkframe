@@ -3,7 +3,7 @@ import LibraryService from '@services/LibraryService';
 import {ThumbFile} from '@/Models/ThumbFile';
 import {FILE_TYPES, SOURCE_TYPES} from '@/Constants';
 
-export function useLibraryItems(collectionId) {
+export function useLibraryItems(collectionId, trash = false) {
     const [items, setItems] = useState([]);
     const [loading, setLoading] = useState(false);
 
@@ -13,7 +13,7 @@ export function useLibraryItems(collectionId) {
             return;
         }
         setLoading(true);
-        const raw = await LibraryService.getItems({ collectionId });
+        const raw = await LibraryService.getItems({ collectionId, trash });
 
         const collectionThumbs = (raw.collections || []).map(col =>
             new ThumbFile({
@@ -48,11 +48,12 @@ export function useLibraryItems(collectionId) {
             collectionId: item.collectionId,
             importedAt: item.importedAt,
             size: item.size,
+            deletedAt: item.deletedAt,
         }));
 
         setItems([...collectionThumbs, ...thumbFiles]);
         setLoading(false);
-    }, [collectionId]);
+    }, [collectionId, trash]);
 
     useEffect(() => { load(); }, [load]);
 
@@ -64,8 +65,12 @@ export function useLibraryItems(collectionId) {
             await LibraryService.updateItem(id, data);
             await load();
         },
-        deleteItem: async (id, deleteFile) => {
-            await LibraryService.deleteItem(id, deleteFile);
+        deleteItem: async (id, permanent) => {
+            await LibraryService.deleteItem(id, permanent);
+            await load();
+        },
+        restoreItem: async (id) => {
+            await LibraryService.restoreItem(id);
             await load();
         },
     };

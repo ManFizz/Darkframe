@@ -14,6 +14,7 @@ import useCollections from "@hooks/library/useCollections"
 import {useLibraryStats} from "@hooks/library/useLibraryStats";
 import {useLibraryContext} from '@/LibraryContext';
 import Modal from "@react/Modal/Modal";
+import {notify} from '@services/NotificationService';
 
 const LibraryView = () => {
     const [selectedCollection, setSelectedCollection] = useState(SPECIAL.NONE);
@@ -24,14 +25,19 @@ const LibraryView = () => {
     const galleryScrollRef = useRef(null);
     useDragAutoScroll(galleryScrollRef);
 
-    const { items, reload, deleteItem } = useLibraryItems(
-        selectedCollection === SPECIAL.NONE
-            ? false
-            : selectedCollection === SPECIAL.ALL
-                ? undefined
-                : selectedCollection === SPECIAL.UNCATEGORIZED
-                    ? null
-                    : selectedCollection
+    const isTrash = selectedCollection === SPECIAL.TRASH;
+
+    const { items, reload, deleteItem, restoreItem } = useLibraryItems(
+        isTrash
+            ? undefined
+            : selectedCollection === SPECIAL.NONE
+                ? false
+                : selectedCollection === SPECIAL.ALL
+                    ? undefined
+                    : selectedCollection === SPECIAL.UNCATEGORIZED
+                        ? null
+                        : selectedCollection,
+        isTrash
     );
 
     const handleFileOpen = useCallback((file) => {
@@ -95,10 +101,40 @@ const LibraryView = () => {
 
     useEffect(() => { clear(); }, [selectedCollection]);
 
+    const handleEmptyTrash = useCallback(async () => {
+        if (!confirm('Очистить корзину? Все элементы будут удалены навсегда.')) return;
+        await LibraryService.emptyTrash();
+        setSelectedFile(null);
+        refreshStats();
+        await reload();
+    }, [refreshStats, reload]);
+
     const handleUpdated = useCallback(async (idOrAction, data) => {
         if (idOrAction === 'delete') {
-            await deleteItem(data, true);
+            // In the trash view "delete" means gone for good; elsewhere it's a soft delete.
+            await deleteItem(data, isTrash);
             setSelectedFile(null);
+            refreshStats();
+            await reload();
+            if (!isTrash) {
+                notify({
+                    message: 'Перемещено в корзину',
+                    type: 'info',
+                    duration: 6000,
+                    action: {
+                        label: 'Отменить',
+                        onClick: async () => {
+                            await LibraryService.restoreItem(data);
+                            refreshStats();
+                            await reload();
+                        },
+                    },
+                });
+            }
+        } else if (idOrAction === 'restore') {
+            await restoreItem(data);
+            setSelectedFile(null);
+            refreshStats();
             await reload();
         } else {
             if (selectedFile?.id === idOrAction) {
@@ -106,14 +142,32 @@ const LibraryView = () => {
                     Object.assign(Object.create(Object.getPrototypeOf(prev)), prev, data)
                 );
             }
-            setOrderedItems(prev =>
-                prev.map(f => f.id === idOrAction
-                    ? Object.assign(Object.create(Object.getPrototypeOf(f)), f, data)
-                    : f
-                )
-            );
+            setOrderedItems(prev => {
+                const idx = prev.findIndex(f => f.id === idOrAction);
+                if (idx === -1) return prev;
+
+                const item    = prev[idx];
+                const patched = Object.assign(Object.create(Object.getPrototypeOf(item)), item, data);
+                const collectionChanged = data && 'collectionId' in data && item.collectionId !== data.collectionId;
+
+                if (!collectionChanged) {
+                    return prev.map(f => f.id === idOrAction ? patched : f);
+                }
+
+                // Moved to another collection: the server drops it at the end of that
+                // collection's order, so mirror that here — pull it out and, if it's
+                // still on screen, re-add it last. Otherwise it just leaves the view.
+                const stillVisible =
+                    selectedCollection === SPECIAL.ALL           ? true
+                        : selectedCollection === SPECIAL.UNCATEGORIZED ? data.collectionId === null
+                            : selectedCollection === SPECIAL.TRASH     ? true
+                                : data.collectionId === selectedCollection;
+
+                const without = prev.filter(f => f.id !== idOrAction);
+                return stillVisible ? [...without, patched] : without;
+            });
         }
-    }, [deleteItem, reload, selectedFile]);
+    }, [deleteItem, restoreItem, reload, refreshStats, isTrash, selectedCollection, selectedFile]);
 
     const handleCollectionSelect = useCallback((id) => {
         setSelectedCollection(id);
@@ -139,32 +193,55 @@ const LibraryView = () => {
                         const stillVisibleAfterMove =
                             selectedCollection === SPECIAL.ALL ? true
                                 : selectedCollection === SPECIAL.UNCATEGORIZED ? newCollectionId === null
-                                    : newCollectionId === selectedCollection;
+                                    : selectedCollection === SPECIAL.TRASH ? true
+                                        : newCollectionId === selectedCollection;
 
-                        setOrderedItems(prev => prev.flatMap(f => {
-                            if (!idSet.has(f.id))       return [f];
-                            if (!stillVisibleAfterMove) return [];
-
-                            return [Object.assign(Object.create(Object.getPrototypeOf(f)), f, { collectionId: newCollectionId })];
-                        }));
+                        // Pull the moved items out and re-append them at the end, matching
+                        // the server dropping them last in the destination's order.
+                        setOrderedItems(prev => {
+                            const moved = [];
+                            const rest = prev.filter(f => {
+                                if (!idSet.has(f.id)) return true;
+                                moved.push(Object.assign(Object.create(Object.getPrototypeOf(f)), f, { collectionId: newCollectionId }));
+                                return false;
+                            });
+                            return stillVisibleAfterMove ? [...rest, ...moved] : rest;
+                        });
+                    }}
+                    onFilesTrashed={(fileIds) => {
+                        const idSet = new Set(fileIds);
+                        setOrderedItems(prev => prev.filter(f => !idSet.has(f.id)));
                     }}
                 />
-                <ImportButton
-                    collectionId={
-                        selectedCollection === SPECIAL.ALL || selectedCollection === SPECIAL.UNCATEGORIZED
-                            ? null
-                            : selectedCollection
-                    }
-                    collectionName={currentCollectionName}
-                    onImported={() => { reload(); refreshStats(); }}
-                />
+                {!isTrash && (
+                    <ImportButton
+                        collectionId={
+                            selectedCollection === SPECIAL.ALL || selectedCollection === SPECIAL.UNCATEGORIZED
+                                ? null
+                                : selectedCollection
+                        }
+                        collectionName={currentCollectionName}
+                        onImported={() => { reload(); refreshStats(); }}
+                    />
+                )}
             </div>
 
             <div className={`library-main ${selected.size === 0 ? 'panel-open' : ''}`}>
+            {isTrash && (
+                <div className="trash-toolbar">
+                    <i className="bi bi-trash me-1" />
+                    <span>Корзина — удалённые элементы</span>
+                    <button className="btn btn-sm btn-outline-danger ms-auto" onClick={handleEmptyTrash}>
+                        <i className="bi bi-trash3 me-1" />
+                        Очистить корзину
+                    </button>
+                </div>
+            )}
             <BulkActionBar
                     selectedItems={selectedItems}
                     collections={LibraryService.getCollections()}
-                    onDone={async () => { clear(); await reload(); }}
+                    permanent={isTrash}
+                    onDone={async () => { clear(); refreshStats(); await reload(); }}
                 />
                 <div
                     ref={galleryScrollRef}
@@ -181,6 +258,8 @@ const LibraryView = () => {
                         modalUpdater={handleFileClick}
                         onFileOpen={handleFileOpen}
                         typeView={2}
+                        scrollRef={galleryScrollRef}
+                        resetKey={selectedCollection}
                     />
                 </div>
             </div>

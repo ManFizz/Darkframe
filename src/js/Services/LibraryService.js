@@ -52,7 +52,10 @@ export const LibraryService = {
     },
     // --- Items ---
 
-    async getItems({ collectionId } = {}) {
+    async getItems({ collectionId, trash = false } = {}) {
+        if (trash)
+            return libraryApi.getItems({ trash: true });
+
         if (collectionId !== undefined)
             return libraryApi.getItems({ collectionId: collectionId });
 
@@ -87,8 +90,17 @@ export const LibraryService = {
         return libraryApi.bulkUpdateItems({ updates });
     },
 
-    async deleteItem(id, deleteFile = false) {
-        return libraryApi.deleteItem({ id, deleteFile });
+    // permanent=false → moves to trash; permanent=true → wipes it for good.
+    async deleteItem(id, permanent = false) {
+        return libraryApi.deleteItem({ id, permanent });
+    },
+
+    async restoreItem(id) {
+        return libraryApi.restoreItem({ id });
+    },
+
+    async emptyTrash() {
+        return libraryApi.emptyTrash();
     },
 
     async importFromEagle({ csvPath, collectionId } = {}) {

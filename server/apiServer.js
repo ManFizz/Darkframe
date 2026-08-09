@@ -215,7 +215,7 @@ async function handleCollections(res) {
 async function handleGetStats(res) {
     const Item       = require('./models/Item');
     const Collection = require('./models/Collection');
-    const total        = await Item.count();
+    const total        = await Item.count();                          // default scope: live only
     const uncategorized = await Item.count({ where: { collectionId: null } });
     respond(res, 200, { ok: true, total, uncategorized });
 }

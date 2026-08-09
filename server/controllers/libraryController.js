@@ -11,6 +11,17 @@ const { importFromUrl } = require('../services/urlImportService');
 const { importFromJson } = require('../services/jsonImportService');
 const { getFavoritesCollectionId } = require('../favoritesCollection');
 
+// When an item's collection changes, drop it at the end of the destination's order
+// so the just-moved item is easy to find (last relative to "Порядок"). Mutates
+// `fields.order` in place; a no-op when the collection isn't changing.
+async function moveToEndOnCollectionChange(id, fields, t) {
+    if (!('collectionId' in fields)) return;
+    const cur = await Item.unscoped().findByPk(id, { attributes: ['collectionId'], transaction: t });
+    if (!cur || cur.collectionId === fields.collectionId) return;
+    const maxOrder = await Item.max('order', { where: { collectionId: fields.collectionId }, transaction: t });
+    fields.order = (Number.isFinite(maxOrder) ? maxOrder : -1) + 1;
+}
+
 function register() {
     ipcMain.handle('library:importDialog', async (_, { collectionId }) => {
         const { canceled, filePaths } = await dialog.showOpenDialog({
@@ -30,24 +41,29 @@ function register() {
     });
 
     ipcMain.handle('library:getItems', async (_, params = {}) => {
-        const { collectionId, search, rating } = params;
+        const { collectionId, search, rating, trash } = params;
         const isUncategorized = params.hasOwnProperty('collectionId') && collectionId === null;
 
+        // Default scope already hides trashed items; the trash view opts out.
+        const itemModel = trash ? Item.unscoped() : Item;
+
         const where = {};
-        if (params.hasOwnProperty('collectionId')) {
+        if (trash) {
+            where.deletedAt = { [Op.ne]: null };   // every trashed item, any collection
+        } else if (params.hasOwnProperty('collectionId')) {
             where.collectionId = collectionId;
         }
         if (search) where.title = { [Op.like]: `%${search}%` };
         if (rating) where.rating = { [Op.gte]: rating };
 
         const [items, childCollections] = await Promise.all([
-            Item.findAll({
+            itemModel.findAll({
                 where,
                 include: [{ model: Tag, as: 'tags', through: { attributes: [] } }],
                 order: [['order', 'ASC']],
             }),
 
-            !isUncategorized && params.hasOwnProperty('collectionId')
+            !trash && !isUncategorized && params.hasOwnProperty('collectionId')
                 ? Collection.findAll({
                     where: { parentId: collectionId },
                     order: [['order', 'ASC']],
@@ -71,7 +87,7 @@ function register() {
             tags: item.tags.map(t => t.name),
             thumbPath: `library://thumb/${item.id}`,
             originalPath: `library://item/${item.id}`,
-        }));
+        }));   // toJSON already carries deletedAt through to the client
 
         return { collections: collectionItems, items: plainItems };
     });
@@ -81,8 +97,10 @@ function register() {
             for (const { id, data } of updates) {
                 const { tags, ...fields } = data;
 
+                await moveToEndOnCollectionChange(id, fields, t);
+
                 if (Object.keys(fields).length > 0) {
-                    await Item.update(fields, { where: { id }, transaction: t });
+                    await Item.unscoped().update(fields, { where: { id }, transaction: t });
                 }
 
                 if (tags !== undefined) {
@@ -111,8 +129,10 @@ function register() {
         // tags are created sequentially — parallel findOrCreate INSERTs were racing
         // each other into SQLITE_BUSY, especially when a paste added many tags at once.
         await sequelize.transaction(async (t) => {
+            await moveToEndOnCollectionChange(id, fields, t);
+
             if (Object.keys(fields).length > 0) {
-                await Item.update(fields, { where: { id }, transaction: t });
+                await Item.unscoped().update(fields, { where: { id }, transaction: t });
             }
 
             if (tags !== undefined) {
@@ -134,33 +154,52 @@ function register() {
         return { ok: true };
     });
 
-    ipcMain.handle('library:deleteItem', async (_, { id, deleteFile = false }) => {
-        await ItemTag.destroy({ where: { itemId: id } });
-        await Item.destroy({ where: { id } });
+    // Remove an item's files from disk (best-effort on Windows locks).
+    async function purgeItemFiles(id) {
+        const itemDir = path.join(ITEMS_PATH, id);
+        if (!fs.existsSync(itemDir)) return;
 
-        if (deleteFile) {
-            const itemDir = path.join(ITEMS_PATH, id);
-
-            if (fs.existsSync(itemDir)) {
-                const files = fs.readdirSync(itemDir);
-                for (const file of files) {
-                    const filePath = path.join(itemDir, file);
-                    try {
-                        fs.chmodSync(filePath, 0o666);
-                    } catch {}
-                }
-
-                await new Promise(resolve => setTimeout(resolve, 100));
-
-                try {
-                    fs.rmSync(itemDir, { recursive: true, force: true });
-                } catch (e) {
-                    console.warn(`Could not delete ${itemDir}, will retry later:`, e.message);
-                }
-            }
+        for (const file of fs.readdirSync(itemDir)) {
+            try { fs.chmodSync(path.join(itemDir, file), 0o666); } catch {}
         }
+        await new Promise(resolve => setTimeout(resolve, 100));
+        try {
+            fs.rmSync(itemDir, { recursive: true, force: true });
+        } catch (e) {
+            console.warn(`Could not delete ${itemDir}, will retry later:`, e.message);
+        }
+    }
 
+    // Wipe an item for good: tags, DB row, files. Unscoped so it also matches
+    // trashed rows (the default scope would exclude them).
+    async function hardDeleteItem(id) {
+        await ItemTag.destroy({ where: { itemId: id } });
+        await Item.unscoped().destroy({ where: { id } });
+        await purgeItemFiles(id);
+    }
+
+    ipcMain.handle('library:deleteItem', async (_, { id, permanent = false }) => {
+        if (permanent) {
+            await hardDeleteItem(id);
+        } else {
+            // Soft delete → trash. Files and tags stay so it can be restored.
+            await Item.unscoped().update({ deletedAt: Math.floor(Date.now() / 1000) }, { where: { id } });
+        }
         return { ok: true };
+    });
+
+    ipcMain.handle('library:restoreItem', async (_, { id }) => {
+        // Unscoped: the row we're restoring is currently trashed.
+        await Item.unscoped().update({ deletedAt: null }, { where: { id } });
+        return { ok: true };
+    });
+
+    ipcMain.handle('library:emptyTrash', async () => {
+        const trashed = await Item.scope('onlyTrashed').findAll({ attributes: ['id'] });
+        for (const { id } of trashed) {
+            await hardDeleteItem(id);
+        }
+        return { ok: true, removed: trashed.length };
     });
 
     ipcMain.handle('library:getCollections', async () => {
@@ -181,12 +220,13 @@ function register() {
 
     ipcMain.handle('library:getStats', async () => {
         const favoritesId = await getFavoritesCollectionId();
-        const [total, uncategorized, favoritesCount] = await Promise.all([
-            Item.count(),
+        const [total, uncategorized, favoritesCount, trashCount] = await Promise.all([
+            Item.count(),                                         // default scope: live only
             Item.count({ where: { collectionId: null } }),
             Item.count({ where: { collectionId: favoritesId } }),
+            Item.unscoped().count({ where: { deletedAt: { [Op.ne]: null } } }),
         ]);
-        return { total, uncategorized, favoritesId, favoritesCount };
+        return { total, uncategorized, favoritesId, favoritesCount, trashCount };
     });
 
     ipcMain.handle('library:createCollection', async (_, { name, parentId, icon, color }) => {
@@ -251,7 +291,7 @@ function register() {
     ipcMain.handle('library:reorderItems', async (_, { orderedIds }) => {
         await Promise.all(
             orderedIds.map((id, index) =>
-                Item.update({ order: index }, { where: { id } })
+                Item.unscoped().update({ order: index }, { where: { id } })
             )
         );
         return { ok: true };

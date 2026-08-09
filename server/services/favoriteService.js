@@ -59,7 +59,7 @@ async function removeFavoriteByPost(postUrl) {
 async function listFavoriteItems() {
     const collectionId = await getFavoritesCollectionId();
     const items = await Item.findAll({
-        where: { collectionId },
+        where: { collectionId },   // default scope already hides trashed items
         include: [{ model: Tag, as: 'tags', through: { attributes: [] } }],
         order: [['order', 'ASC']],
     });

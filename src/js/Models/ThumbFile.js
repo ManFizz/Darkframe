@@ -32,6 +32,7 @@ export class ThumbFile {
         this.collectionId = data.collectionId || null;
         this.importedAt = data.importedAt || null;
         this.size = data.size || null;
+        this.deletedAt = data.deletedAt || null;
 
         this.type = data.type || this._detectType(this.thumbUrl);
         this._meta = data._meta || null;
@@ -49,14 +50,6 @@ export class ThumbFile {
 
     updateUniqueId() {
         this.uniqueId = this._buildUniqueId();
-    }
-
-    isFav() {
-        throw new Error("Deprecated");
-    }
-
-    ToggleFav() {
-        throw new Error("Deprecated");
     }
 
     async getSize() {

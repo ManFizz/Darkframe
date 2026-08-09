@@ -9,6 +9,7 @@ export const SPECIAL = {
     NONE: 'NONE',
     ALL: 'ALL',
     UNCATEGORIZED: 'UNCATEGORIZED',
+    TRASH: 'TRASH',
 };
 
 // Which tree branches the user has collapsed — persisted so the tree looks the
@@ -326,7 +327,7 @@ const SpecialFileDropTarget = ({ className, onDropFiles, children, ...rest }) =>
     );
 };
 
-const CollectionTree = ({ selectedId, onSelect, onMediaMoved }) => {
+const CollectionTree = ({ selectedId, onSelect, onMediaMoved, onFilesTrashed }) => {
     const { tree, createCollection, updateCollection, deleteCollection, reorderCollections } = useCollections();
     const [creating, setCreating] = useState(null);
     const [treeCollapsed, setTreeCollapsed] = useState(false);
@@ -343,13 +344,20 @@ const CollectionTree = ({ selectedId, onSelect, onMediaMoved }) => {
     }, []);
 
     const { statsVersion, refreshStats } = useLibraryContext();
-    const { total, uncategorized, favoritesId, favoritesCount } = useLibraryStats(statsVersion);
+    const { total, uncategorized, favoritesId, favoritesCount, trashCount } = useLibraryStats(statsVersion);
 
     const handleDropMedia = useCallback(async (fileIds, collectionId) => {
         await Promise.all(fileIds.map(id => LibraryService.updateItem(id, { collectionId })));
         refreshStats();
         onMediaMoved?.(fileIds, collectionId);
     }, [refreshStats, onMediaMoved]);
+
+    // Dropping media on the trash node soft-deletes it (recoverable).
+    const handleDropTrash = useCallback(async (fileIds) => {
+        await Promise.all(fileIds.map(id => LibraryService.deleteItem(id, false)));
+        refreshStats();
+        onFilesTrashed?.(fileIds);
+    }, [refreshStats, onFilesTrashed]);
 
     /**
      * Drop a collection relative to a target.
@@ -459,6 +467,17 @@ const CollectionTree = ({ selectedId, onSelect, onMediaMoved }) => {
                     <span className="collection-item-count">{favoritesCount}</span>
                 </SpecialFileDropTarget>
             )}
+
+            <SpecialFileDropTarget
+                className={`collection-node special collection-node--trash ${selectedId === SPECIAL.TRASH ? 'active' : ''}`}
+                onClick={() => onSelect(SPECIAL.TRASH)}
+                onDropFiles={handleDropTrash}
+                title="Перетащите сюда файл, чтобы отправить в корзину"
+            >
+                <i className="bi bi-trash collection-special-icon" />
+                <span className="collection-name">Корзина</span>
+                <span className="collection-item-count">{trashCount}</span>
+            </SpecialFileDropTarget>
 
             <div className="collection-tree-divider" />
 

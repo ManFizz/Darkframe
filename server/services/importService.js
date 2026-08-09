@@ -76,12 +76,20 @@ async function importFile({ filePath, collectionId = null, tags = [], sourceUrl 
 
     const fileHash = await getFileHash(filePath);
 
-    const existing = await Item.findOne({
+    // Unscoped: fileHash is UNIQUE, so we must also see trashed rows to avoid an
+    // INSERT that would violate the constraint.
+    const existing = await Item.unscoped().findOne({
         where: { fileHash },
         include: [{ model: Collection, as: 'collection', attributes: ['id', 'name'] }],
     });
 
     if (existing) {
+        // Re-importing a file that's sitting in the trash brings it back instead
+        // of failing as a "duplicate".
+        if (existing.deletedAt) {
+            await existing.update({ deletedAt: null });
+            return { skipped: false, item: existing.toJSON(), restored: true };
+        }
         return {
             skipped: true,
             reason: 'duplicate',
@@ -181,7 +189,8 @@ async function importFiles({ filePaths, collectionId, tags, sourceUrl }) {
 }
 
 async function hashExistingItems() {
-    const items = await Item.findAll({ where: { fileHash: null } });
+    // Unscoped: trashed items need hashes too, so duplicate detection keeps working.
+    const items = await Item.unscoped().findAll({ where: { fileHash: null } });
     if (!items.length) return;
 
     console.log(`Hashing ${items.length} existing items...`);

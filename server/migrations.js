@@ -12,6 +12,14 @@ async function migrations() {
             allowNull: false,
         });
     }
+    if (!tableDesc.deletedAt) {
+        // Soft-delete marker: NULL = live, a unix timestamp = in the trash.
+        await queryInterface.addColumn('Items', 'deletedAt', {
+            type: DataTypes.INTEGER,
+            allowNull: true,
+            defaultValue: null,
+        });
+    }
     if (!tableDesc.fileHash) {
         await queryInterface.addColumn('Items', 'fileHash', {
             type: DataTypes.STRING(64),
