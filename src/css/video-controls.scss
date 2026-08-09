@@ -1,157 +1,271 @@
-.video-misc {
-  flex: 100%;
-  display: flex;
-  justify-content: center;
-  gap: 30px;
-}
+// ─── Redesign: floating video control bar (direction V2) ──────────────────────
+// Anchored to the modal/window bottom (not the video), so it sits still while the
+// media changes size. .modal-view is position:fixed, so this absolute box pins to
+// the window edge.
 
-.video-progress {
-  flex: 100%;
-  position: relative;
-  height: 8px;
-  margin-bottom: 10px;
-}
-
-progress {
-  -webkit-appearance: none;
-  -moz-appearance: none;
-  appearance: none;
-  border-radius: 2px;
-  width: 100%;
-  height: 8px;
-  pointer-events: none;
+.video-controls.v2 {
   position: absolute;
-  top: 0;
-}
-
-progress::-webkit-progress-bar {
-  background-color: #474545;
-  border-radius: 2px;
-}
-
-progress::-webkit-progress-value {
-  background: red;
-  border-radius: 2px;
-}
-
-progress::-moz-progress-bar {
-  border: 1px solid red;
-  background: red;
-}
-
-.seek {
-  position: absolute;
-  top: 0;
-  width: 100%;
-  cursor: pointer;
-  margin: 0;
-}
-
-input[type=range] {
-  -webkit-appearance: none;
-  -moz-appearance: none;
-  height: 8.4px;
-  background: transparent;
-  cursor: pointer;
-}
-
-input[type=range]:focus {
-  outline: none;
-}
-
-input[type=range]:focus::-webkit-slider-runnable-track {
-  background: transparent;
-}
-
-input[type=range]:focus::-moz-range-track {
-  outline: none;
-}
-
-input[type=range]::-webkit-slider-runnable-track {
-  width: 100%;
-  cursor: pointer;
-  border-radius: 1.3px;
-  -webkit-appearance: none;
-  transition: all 0.4s ease;
-}
-
-input[type=range]::-webkit-slider-thumb {
-  height: 16px;
-  width: 16px;
-  border-radius: 16px;
-  background: red;
-  cursor: pointer;
-  -webkit-appearance: none;
-  margin-left: -1px;
-}
-
-input[type=range]::-moz-range-track {
-  width: 100%;
-  height: 8.4px;
-  cursor: pointer;
-  border: 1px solid transparent;
-  background: transparent;
-  border-radius: 1.3px;
-}
-
-input[type=range]::-moz-range-thumb {
-  height: 14px;
-  width: 14px;
-  border-radius: 50px;
-  border: 1px solid red;
-  background: red;
-  cursor: pointer;
-  margin-top: 5px;
-}
-
-input[type=range].volume {
-  height: 5px;
-  background-color: #fff;
-}
-
-input[type=range].volume::-webkit-slider-runnable-track {
-  background-color: transparent;
-}
-
-input[type=range].volume::-webkit-slider-thumb {
-  margin-left: 0;
-  height: 14px;
-  width: 14px;
-  background: #fff;
-}
-
-input[type=range].volume::-moz-range-thumb {
-  border: 1px solid #fff;
-  background: #fff;
-}
-
-.time-control {
-  flex-direction: row;
-  flex-wrap: nowrap;
+  left: 50%;
+  bottom: 18px;
+  transform: translateX(-50%);
+  width: min(860px, 94%);
+  z-index: 2;
   display: flex;
-  width: 100%;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.video-controls i {
-  font-size: 1.6em;
-}
-
-.video-controls {
-  position: absolute;
-  width: 700px;
-  bottom: 0;
-  display: flex;
-  justify-content: space-around;
-  border-radius: 4px;
-  align-items: center;
-  padding: 0 10px;
-  flex-wrap: wrap;
-  transition: all 0.2s ease;
-  background-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.3), rgba(0, 0, 0, 0.5));
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
   color: #fff;
-  font-size: 20px;
-  z-index: 1;
-  left: calc(50% - 350px);
+  transition: opacity 0.25s ease;
+
+  &.idle { opacity: 0; pointer-events: none; }
+
+  .bi { font-size: 18px; line-height: 1; }
+}
+
+// Small handle shown when the bar is collapsed.
+.vc-expand {
+  position: absolute;
+  left: 50%;
+  bottom: 14px;
+  transform: translateX(-50%);
+  z-index: 2;
+  width: 46px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--df-glass-border);
+  border-radius: 999px;
+  background: var(--df-glass-strong);
+  color: #fff;
+  cursor: pointer;
+  backdrop-filter: blur(14px);
+  opacity: 0.55;
+  transition: opacity 0.15s;
+  &:hover { opacity: 1; }
+}
+
+// ─── Shared button ────────────────────────────────────────────────────────────
+.vc-btn {
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  border: none;
+  border-radius: 9px;
+  background: transparent;
+  color: #fff;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, transform 0.1s;
+
+  &:hover { background: rgba(255, 255, 255, 0.14); }
+  &:active { transform: scale(0.94); }
+}
+
+.vc-play {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--df-accent), var(--df-accent-dim));
+  box-shadow: 0 4px 16px var(--df-accent-glow);
+  &:hover { filter: brightness(1.08); background: linear-gradient(135deg, var(--df-accent), var(--df-accent-dim)); }
+  .bi { font-size: 22px; }
+}
+
+.vc-mode.vc-btn .bi { font-size: 17px; }
+
+// ─── Progress track (driven smoothly from rAF, so no width transition here) ────
+.vc-track {
+  position: relative;
+  width: 100%;
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.18);
+  cursor: pointer;
+
+  > div { position: absolute; top: 0; bottom: 0; border-radius: 999px; pointer-events: none; }
+
+  .vc-buffered { left: 0; background: rgba(255, 255, 255, 0.22); }
+  .vc-ab-region { top: 0; bottom: 0; background: rgba(244, 201, 93, 0.22); border-radius: 0; }
+  .vc-fill { left: 0; background: linear-gradient(90deg, var(--df-accent-dim), var(--df-accent)); }
+
+  .vc-mark {
+    top: -3px;
+    bottom: -3px;
+    width: 3px;
+    margin-left: -1.5px;
+    background: #f4c95d;
+    border-radius: 2px;
+  }
+
+  .vc-thumb {
+    top: 50%;
+    width: 13px;
+    height: 13px;
+    margin-left: -6.5px;
+    border-radius: 50%;
+    background: #fff;
+    transform: translateY(-50%);
+    box-shadow: 0 0 0 4px rgba(176, 107, 255, 0.35);
+  }
+
+  .vc-tooltip {
+    top: -30px;
+    transform: translateX(-50%);
+    padding: 2px 7px;
+    border-radius: 6px;
+    background: rgba(0, 0, 0, 0.8);
+    color: #fff;
+    font: 600 11px/1 var(--mono, ui-monospace, monospace);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+
+  // Transparent range on top does the actual seeking/dragging.
+  .vc-seek {
+    position: absolute;
+    top: 50%;
+    left: 0;
+    width: 100%;
+    height: 18px;
+    margin: 0;
+    transform: translateY(-50%);
+    background: transparent;
+    -webkit-appearance: none;
+    appearance: none;
+    cursor: pointer;
+
+    &:focus { outline: none; }
+    &::-webkit-slider-runnable-track { background: transparent; }
+    &::-moz-range-track { background: transparent; }
+    &::-webkit-slider-thumb { -webkit-appearance: none; width: 18px; height: 18px; background: transparent; border: none; cursor: pointer; }
+    &::-moz-range-thumb { width: 18px; height: 18px; background: transparent; border: none; cursor: pointer; }
+  }
+}
+
+// ─── Bar: three zones so play stays dead-centre ───────────────────────────────
+.vc-pill {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 14px;
+  border-radius: 16px;
+  background: var(--df-glass-strong);
+  border: 1px solid var(--df-glass-border);
+  backdrop-filter: blur(18px);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
+}
+
+.vc-zone { display: flex; align-items: center; gap: 3px; min-width: 0; }
+.vc-left   { justify-self: start; }
+.vc-center { justify-self: center; }
+.vc-right  { justify-self: end; }
+
+.vc-time {
+  font: 600 12.5px/1 var(--mono, ui-monospace, monospace);
+  font-variant-numeric: tabular-nums;
+  padding: 0 6px 0 2px;
+  white-space: nowrap;
+  span { opacity: 0.45; margin: 0 1px; }
+}
+
+// ─── Volume: vertical popover, doesn't shift the row ───────────────────────────
+.vc-vol { position: relative; }
+
+.vc-vol-popup {
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 10px);
+  transform: translateX(-50%);
+  padding: 12px 10px;
+  border-radius: 12px;
+  background: var(--df-glass-strong);
+  border: 1px solid var(--df-glass-border);
+  backdrop-filter: blur(16px);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.5);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s;
+}
+.vc-vol:hover .vc-vol-popup,
+.vc-vol:focus-within .vc-vol-popup { opacity: 1; pointer-events: auto; }
+
+.vc-vol-slider {
+  writing-mode: vertical-lr;
+  direction: rtl;                 // bottom = quiet, top = loud
+  width: 6px;
+  height: 90px;
+  accent-color: var(--df-accent);
+  cursor: pointer;
+}
+
+// ─── A–B loop — text label, distinct from the repeat icon ──────────────────────
+.vc-ab {
+  min-width: 38px;
+  height: 30px;
+  padding: 0 8px;
+  border: 1px solid var(--df-glass-border);
+  border-radius: 8px;
+  background: transparent;
+  color: #fff;
+  font: 700 12px/1 var(--font, system-ui, sans-serif);
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  transition: all 0.15s;
+
+  &:hover { border-color: var(--df-accent-dim); }
+  &.armed { color: #f4c95d; border-color: rgba(244, 201, 93, 0.6); }
+  &.active { color: #1a1420; background: #f4c95d; border-color: #f4c95d; }
+}
+
+// ─── Speed: compact narrow menu ────────────────────────────────────────────────
+.vc-speed-wrap { position: relative; }
+
+.vc-speed {
+  min-width: 38px;
+  height: 30px;
+  padding: 0 8px;
+  border: 1px solid var(--df-glass-border);
+  border-radius: 8px;
+  background: transparent;
+  color: #fff;
+  font: 700 12px/1 var(--mono, ui-monospace, monospace);
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+
+  &:hover { border-color: var(--df-accent-dim); }
+  &.on { color: var(--df-accent); border-color: var(--df-accent-dim); }
+}
+
+.vc-speed-menu {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 8px);
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  width: 62px;
+  padding: 4px;
+  border-radius: 10px;
+  background: var(--df-glass-strong);
+  border: 1px solid var(--df-glass-border);
+  backdrop-filter: blur(16px);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.5);
+
+  button {
+    padding: 6px 8px;
+    border: none;
+    border-radius: 6px;
+    background: transparent;
+    color: #fff;
+    font: 600 12px/1 var(--mono, ui-monospace, monospace);
+    text-align: center;
+    cursor: pointer;
+    transition: background 0.12s;
+
+    &:hover { background: rgba(255, 255, 255, 0.12); }
+    &.active { background: var(--df-accent); }
+  }
 }

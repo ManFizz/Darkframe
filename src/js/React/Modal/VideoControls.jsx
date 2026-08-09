@@ -1,167 +1,395 @@
 import React, {useCallback, useEffect, useRef, useState} from 'react';
-import {
-    BsFastForwardFill,
-    BsFillPauseFill,
-    BsFillPlayFill,
-    BsFillRewindFill,
-    BsFillSkipEndFill,
-    BsFillSkipStartFill,
-    BsFillVolumeMuteFill,
-    BsFillVolumeUpFill,
-    BsRecordCircle,
-    BsRecordCircleFill,
-    BsRecycle,
-    BsRepeat,
-    BsRepeat1
-} from "react-icons/bs";
 
-const formatTime = (timeInSeconds) => {
-    const date = new Date(timeInSeconds * 1000);
-    const m = date.getMinutes();
-    const s = String(date.getSeconds()).padStart(2, '0');
+const RATE_KEY      = 'jsg_video_rate';
+const VOL_KEY       = 'jsg_video_volume';
+const COLLAPSED_KEY = 'jsg_video_controls_collapsed';
+const SPEEDS        = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2];
+const FRAME         = 1 / 30;   // no true fps from <video>, ~30fps is a fine step
+const IDLE_MS       = 2600;
+
+const clamp = (v, lo, hi) => Math.max(lo, Math.min(v, hi));
+
+const formatTime = (t) => {
+    if (!isFinite(t) || t < 0) t = 0;
+    const m = Math.floor(t / 60);
+    const s = String(Math.floor(t % 60)).padStart(2, '0');
     return `${m}:${s}`;
 };
 
-const VideoControls = ({ video, isLooped, isMuted, isPaused, currentTime, videoDuration, toggleLoop }) => {
-    const [startRec, setStartRec] = useState(null);
-    const [endRec, setEndRec] = useState(null);
-    const isSpacePressed = useRef(false);
-    const lastStateVideo = useRef(false);
+const PLAY_MODE_META = {
+    repeat:  { icon: 'bi-repeat-1',        title: 'Повтор одного' },
+    next:    { icon: 'bi-collection-play',  title: 'Играть дальше по списку' },
+    shuffle: { icon: 'bi-shuffle',          title: 'Вперемешку' },
+};
 
-    const skipToSec = useCallback((sec) => {
+const volumeIcon = (muted, v) =>
+    muted || v === 0 ? 'bi-volume-mute-fill'
+        : v < 0.5     ? 'bi-volume-down-fill'
+        :               'bi-volume-up-fill';
+
+const VideoControls = ({ video, isPaused, currentTime, videoDuration, playMode, cyclePlayMode }) => {
+    const [volume, setVolume]     = useState(1);
+    const [muted, setMuted]       = useState(false);
+    const [rate, setRate]         = useState(1);
+    const [buffered, setBuffered] = useState(0);
+    const [startRec, setStartRec] = useState(null);   // A of the A–B loop
+    const [endRec, setEndRec]     = useState(null);   // B of the A–B loop
+    const [speedOpen, setSpeedOpen] = useState(false);
+    const [hoverPct, setHoverPct] = useState(null);   // seek-bar hover position
+    const [hidden, setHidden]     = useState(false);   // auto-hide while playing
+    const [collapsed, setCollapsed] = useState(() => localStorage.getItem(COLLAPSED_KEY) === '1');
+
+    const isSpaceDown = useRef(false);
+    const wasPlaying  = useRef(false);
+    const trackRef    = useRef(null);
+    const speedRef    = useRef(null);
+    const fillRef     = useRef(null);
+    const thumbRef    = useRef(null);
+
+    const dur = videoDuration || 0;
+    const pct = (t) => (dur ? clamp(t / dur, 0, 1) * 100 : 0);
+    const abActive = startRec !== null && endRec !== null;
+
+    // ─── Pull volume / rate / buffered off the element, apply saved prefs ───────
+    useEffect(() => {
         if (!video) return;
-        video.currentTime = Math.max(0, Math.min(sec, video.duration));
+
+        const savedRate = parseFloat(localStorage.getItem(RATE_KEY));
+        const savedVol  = parseFloat(localStorage.getItem(VOL_KEY));
+        if (isFinite(savedRate)) video.playbackRate = savedRate;
+        if (isFinite(savedVol))  video.volume = savedVol;
+
+        const sync = () => { setVolume(video.volume); setMuted(video.muted); setRate(video.playbackRate); };
+        const syncBuffered = () => {
+            try {
+                const b = video.buffered;
+                if (b.length) setBuffered(b.end(b.length - 1) / (video.duration || 1));
+            } catch { /* buffered can throw before metadata */ }
+        };
+
+        sync(); syncBuffered();
+        video.addEventListener('volumechange', sync);
+        video.addEventListener('ratechange', sync);
+        video.addEventListener('progress', syncBuffered);
+        video.addEventListener('timeupdate', syncBuffered);
+        return () => {
+            video.removeEventListener('volumechange', sync);
+            video.removeEventListener('ratechange', sync);
+            video.removeEventListener('progress', syncBuffered);
+            video.removeEventListener('timeupdate', syncBuffered);
+        };
     }, [video]);
 
-    const skipSec = useCallback((seconds) => {
-        if (!video) return;
-        video.currentTime = Math.max(0, Math.min(video.currentTime + seconds, video.duration));
-    }, [video]);
+    // ─── Smooth progress: drive the fill/thumb from rAF, not the 4Hz timeupdate ─
+    useEffect(() => {
+        if (!video || collapsed) return;
+        let raf;
+        const tick = () => {
+            const d = video.duration || 0;
+            const p = d ? clamp(video.currentTime / d, 0, 1) * 100 : 0;
+            if (fillRef.current)  fillRef.current.style.width = `${p}%`;
+            if (thumbRef.current) thumbRef.current.style.left = `${p}%`;
+            raf = requestAnimationFrame(tick);
+        };
+        raf = requestAnimationFrame(tick);
+        return () => cancelAnimationFrame(raf);
+    }, [video, collapsed]);
 
-    const toggleMute = useCallback(() => {
-        if (video) video.muted = !video.muted;
-    }, [video]);
-
+    // ─── Actions (all read straight off the element to stay closure-safe) ───────
     const togglePlay = useCallback(() => {
-        if (!video) return;
-        (video.paused || video.ended) ? video.play() : video.pause();
+        if (video) (video.paused || video.ended) ? video.play().catch(() => {}) : video.pause();
     }, [video]);
 
-    const skipAhead = useCallback((e) => {
-        if (!video) return;
-        const val = e.target.dataset.seek ?? e.target.value;
-        if (val !== Math.round(video.currentTime))
-            video.currentTime = val;
+    const skipToSec = useCallback((s) => {
+        if (video) video.currentTime = clamp(s, 0, video.duration || 0);
     }, [video]);
 
-    const handleSeekMouseDown = useCallback(() => {
+    const skipSec = useCallback((d) => {
+        if (video) video.currentTime = clamp(video.currentTime + d, 0, video.duration || 0);
+    }, [video]);
+
+    const stepFrame = useCallback((dir) => {
         if (!video) return;
-        lastStateVideo.current = video.paused;
+        video.pause();
+        video.currentTime = clamp(video.currentTime + dir * FRAME, 0, video.duration || 0);
+    }, [video]);
+
+    const jumpPct = useCallback((p) => {
+        if (video && video.duration) video.currentTime = video.duration * p;
+    }, [video]);
+
+    const setPlaybackRate = useCallback((r) => {
+        r = clamp(r, SPEEDS[0], SPEEDS[SPEEDS.length - 1]);
+        if (video) video.playbackRate = r;
+        localStorage.setItem(RATE_KEY, String(r));
+    }, [video]);
+
+    const bumpRate = useCallback((dir) => {
+        const cur = video?.playbackRate ?? 1;
+        let i = SPEEDS.findIndex(s => Math.abs(s - cur) < 0.001);
+        if (i < 0) i = SPEEDS.indexOf(1);
+        setPlaybackRate(SPEEDS[clamp(i + dir, 0, SPEEDS.length - 1)]);
+    }, [video, setPlaybackRate]);
+
+    const setVol = useCallback((v) => {
+        v = clamp(v, 0, 1);
+        if (video) { video.volume = v; if (v > 0) video.muted = false; }
+        localStorage.setItem(VOL_KEY, String(v));
+    }, [video]);
+
+    const toggleMute = useCallback(() => { if (video) video.muted = !video.muted; }, [video]);
+
+    // Fullscreen the whole modal so this bar stays visible, not the bare <video>.
+    const toggleFullscreen = useCallback(() => {
+        if (!video) return;
+        const target = video.closest('.modal-view') || video;
+        document.fullscreenElement ? document.exitFullscreen() : target.requestFullscreen?.();
+    }, [video]);
+
+    const togglePip = useCallback(async () => {
+        if (!video) return;
+        try {
+            if (document.pictureInPictureElement) await document.exitPictureInPicture();
+            else await video.requestPictureInPicture?.();
+        } catch { /* pip unsupported / blocked — ignore */ }
+    }, [video]);
+
+    const toggleCollapsed = useCallback(() => {
+        setCollapsed(prev => {
+            const next = !prev;
+            localStorage.setItem(COLLAPSED_KEY, next ? '1' : '0');
+            return next;
+        });
+    }, []);
+
+    // ─── A–B loop: click cycles set-A → set-B → clear ──────────────────────────
+    const handleAB = useCallback(() => {
+        const t = video?.currentTime ?? 0;
+        if (startRec === null)      setStartRec(t);
+        else if (endRec === null)   (t <= startRec ? setStartRec(t) : setEndRec(t));
+        else                        { setStartRec(null); setEndRec(null); }
+    }, [video, startRec, endRec]);
+
+    useEffect(() => {
+        if (!video || !abActive) return;
+        const onTime = () => { if (video.currentTime > endRec || video.currentTime < startRec) video.currentTime = startRec; };
+        video.addEventListener('timeupdate', onTime);
+        return () => video.removeEventListener('timeupdate', onTime);
+    }, [video, abActive, startRec, endRec]);
+
+    // ─── Seek bar drag ─────────────────────────────────────────────────────────
+    const onSeekDown = useCallback(() => {
+        if (!video) return;
+        wasPlaying.current = !video.paused;
         video.pause();
     }, [video]);
 
-    const handleSeekMouseUp = useCallback(() => {
-        if (!video) return;
-        if (video.paused && !lastStateVideo.current) video.play();
+    const onSeekUp = useCallback(() => {
+        if (video && wasPlaying.current) video.play().catch(() => {});
     }, [video]);
 
-    const setStart = useCallback(() => {
-        if (video) setStartRec(video.currentTime);
-    }, [video]);
-
-    const setEnd = useCallback(() => {
-        if (video) setEndRec(video.currentTime);
-    }, [video]);
-
-    const clearRecord = useCallback(() => {
-        setStartRec(null);
-        setEndRec(null);
-    }, []);
-
+    // ─── Auto-hide the bar after a moment of stillness while playing ────────────
     useEffect(() => {
-        if (!video || startRec === null || endRec === null) return;
-
-        const handleTimeUpdate = () => {
-            if (video.currentTime > endRec) skipToSec(startRec);
+        if (collapsed) return;
+        let timer;
+        const show = () => {
+            setHidden(false);
+            clearTimeout(timer);
+            if (!isPaused) timer = setTimeout(() => setHidden(true), IDLE_MS);
         };
+        show();
+        document.addEventListener('mousemove', show);
+        return () => { clearTimeout(timer); document.removeEventListener('mousemove', show); };
+    }, [isPaused, collapsed]);
 
-        video.addEventListener('timeupdate', handleTimeUpdate);
-        return () => video.removeEventListener('timeupdate', handleTimeUpdate);
-    }, [video, startRec, endRec, skipToSec]);
-
+    // ─── Close the speed menu on outside click ─────────────────────────────────
     useEffect(() => {
-        const handleKeyDown = (e) => {
-            if (e.ctrlKey) {
-                if (e.key === 'ArrowLeft') skipSec(-10);
-                if (e.key === 'ArrowRight') skipSec(10);
+        if (!speedOpen) return;
+        const onDown = (e) => { if (speedRef.current && !speedRef.current.contains(e.target)) setSpeedOpen(false); };
+        document.addEventListener('mousedown', onDown);
+        return () => document.removeEventListener('mousedown', onDown);
+    }, [speedOpen]);
+
+    // ─── Keyboard shortcuts ────────────────────────────────────────────────────
+    useEffect(() => {
+        const typing = () => {
+            const el = document.activeElement;
+            return el?.tagName === 'INPUT' || el?.tagName === 'TEXTAREA' || el?.isContentEditable;
+        };
+        const onKeyDown = (e) => {
+            if (typing()) return;
+
+            // Ctrl+←/→ seeks; plain ←/→ is left to Navigation (prev/next file).
+            if (e.ctrlKey || e.metaKey || e.altKey) {
+                if (e.key === 'ArrowLeft')  { e.preventDefault(); skipSec(-10); }
+                if (e.key === 'ArrowRight') { e.preventDefault(); skipSec(10); }
                 return;
             }
 
-            if (e.code === 'Space' || e.key === ' ') {
-                const tag = document.activeElement?.tagName;
-                if (tag === 'INPUT' || tag === 'TEXTAREA') return;
-                e.preventDefault();
-                if (isSpacePressed.current) return;
-                isSpacePressed.current = true;
-                togglePlay();
+            switch (e.code) {
+                case 'Space':
+                    e.preventDefault();
+                    if (isSpaceDown.current) return;
+                    isSpaceDown.current = true;
+                    togglePlay();
+                    break;
+                case 'KeyM': toggleMute(); break;
+                case 'KeyF': e.preventDefault(); toggleFullscreen(); break;
+                case 'KeyP': togglePip(); break;
+                case 'ArrowUp':   e.preventDefault(); setVol((video?.volume ?? 1) + 0.05); break;
+                case 'ArrowDown': e.preventDefault(); setVol((video?.volume ?? 1) - 0.05); break;
+                case 'Comma':  e.shiftKey ? bumpRate(-1) : stepFrame(-1); break;   // "<" slower, "," frame back
+                case 'Period': e.shiftKey ? bumpRate(1)  : stepFrame(1);  break;   // ">" faster, "." frame fwd
+                default:
+                    if (/^Digit[0-9]$/.test(e.code)) jumpPct(Number(e.code.slice(5)) / 10);
             }
         };
+        const onKeyUp = (e) => { if (e.code === 'Space') isSpaceDown.current = false; };
 
-        const handleKeyUp = (e) => {
-            if (e.code === 'Space' || e.key === ' ')
-                isSpacePressed.current = false;
-        };
-
-        document.addEventListener('keydown', handleKeyDown);
-        document.addEventListener('keyup', handleKeyUp);
+        document.addEventListener('keydown', onKeyDown);
+        document.addEventListener('keyup', onKeyUp);
         return () => {
-            document.removeEventListener('keydown', handleKeyDown);
-            document.removeEventListener('keyup', handleKeyUp);
+            document.removeEventListener('keydown', onKeyDown);
+            document.removeEventListener('keyup', onKeyUp);
         };
-    }, [skipSec, togglePlay]);
+    }, [video, togglePlay, toggleMute, toggleFullscreen, togglePip, setVol, bumpRate, stepFrame, skipSec, jumpPct]);
+
+    if (collapsed) {
+        return (
+            <button className="vc-expand" title="Показать управление" onClick={toggleCollapsed}>
+                <i className="bi bi-chevron-up" />
+            </button>
+        );
+    }
+
+    const mode = PLAY_MODE_META[playMode] || PLAY_MODE_META.repeat;
+    const abLabel = startRec === null ? 'A‑B' : endRec === null ? 'A →' : 'A‑B';
+    const abTitle = startRec === null ? 'Отметить начало повтора (A)'
+        : endRec === null ? 'Отметить конец повтора (B)'
+        : 'Сбросить A–B повтор';
 
     return (
-        <div className="video-controls">
-            <div className="video-misc">
-                {isLooped
-                    ? <BsRepeat1 onClick={toggleLoop} />
-                    : <BsRepeat onClick={toggleLoop} />
-                }
-                {isMuted
-                    ? <BsFillVolumeMuteFill onClick={toggleMute} />
-                    : <BsFillVolumeUpFill onClick={toggleMute} />
-                }
-                {!startRec && <BsRecordCircle onClick={setStart} />}
-                {startRec && !endRec && <BsRecordCircleFill onClick={setEnd} />}
-                {startRec && endRec && <BsRecycle onClick={clearRecord} />}
-            </div>
-
-            <div className="time-control">
-                <time id="time-elapsed">{formatTime(currentTime)}</time>
-                <BsFillSkipStartFill onClick={() => skipToSec(0)} />
-                <BsFillRewindFill onClick={() => skipSec(-10)} />
-                {isPaused
-                    ? <BsFillPlayFill onClick={togglePlay} />
-                    : <BsFillPauseFill onClick={togglePlay} />
-                }
-                <BsFastForwardFill onClick={() => skipSec(10)} />
-                <BsFillSkipEndFill onClick={() => skipToSec(Number.MAX_VALUE)} />
-                <time id="duration">{formatTime(videoDuration)}</time>
-            </div>
-
-            <div className="video-progress">
-                <progress value={currentTime} max={videoDuration} />
+        <div className={`video-controls v2 ${hidden ? 'idle' : ''}`}>
+            {/* Progress track */}
+            <div
+                className="vc-track"
+                ref={trackRef}
+                onMouseMove={(e) => {
+                    const r = e.currentTarget.getBoundingClientRect();
+                    setHoverPct(clamp((e.clientX - r.left) / r.width, 0, 1));
+                }}
+                onMouseLeave={() => setHoverPct(null)}
+            >
+                <div className="vc-buffered" style={{ width: `${buffered * 100}%` }} />
+                {abActive && (
+                    <div className="vc-ab-region" style={{ left: `${pct(startRec)}%`, width: `${pct(endRec) - pct(startRec)}%` }} />
+                )}
+                <div className="vc-fill" ref={fillRef} style={{ width: `${pct(currentTime)}%` }} />
+                {startRec !== null && <div className="vc-mark" style={{ left: `${pct(startRec)}%` }} />}
+                {endRec   !== null && <div className="vc-mark" style={{ left: `${pct(endRec)}%` }} />}
+                <div className="vc-thumb" ref={thumbRef} style={{ left: `${pct(currentTime)}%` }} />
+                {hoverPct !== null && (
+                    <div className="vc-tooltip" style={{ left: `${hoverPct * 100}%` }}>
+                        {formatTime(hoverPct * dur)}
+                    </div>
+                )}
                 <input
-                    className="seek"
+                    className="vc-seek"
                     type="range"
                     min={0}
-                    max={videoDuration}
-                    step={0.25}
+                    max={dur || 0}
+                    step={0.1}
                     value={currentTime}
-                    onChange={skipAhead}
-                    onMouseDown={handleSeekMouseDown}
-                    onMouseUp={handleSeekMouseUp}
+                    onChange={(e) => skipToSec(Number(e.target.value))}
+                    onMouseDown={onSeekDown}
+                    onMouseUp={onSeekUp}
                 />
+            </div>
+
+            {/* Three-zone bar: play stays dead-centre regardless of side widths */}
+            <div className="vc-pill">
+                <div className="vc-zone vc-left">
+                    <time className="vc-time">{formatTime(currentTime)} <span>/</span> {formatTime(dur)}</time>
+                    <div className="vc-vol">
+                        <button className="vc-btn" title="Звук (M)" onClick={toggleMute}>
+                            <i className={`bi ${volumeIcon(muted, volume)}`} />
+                        </button>
+                        <div className="vc-vol-popup">
+                            <input
+                                className="vc-vol-slider"
+                                type="range"
+                                min={0}
+                                max={1}
+                                step={0.02}
+                                value={muted ? 0 : volume}
+                                onChange={(e) => setVol(Number(e.target.value))}
+                            />
+                        </div>
+                    </div>
+                </div>
+
+                <div className="vc-zone vc-center">
+                    <button className="vc-btn" title="В начало" onClick={() => skipToSec(0)}>
+                        <i className="bi bi-skip-start-fill" />
+                    </button>
+                    <button className="vc-btn" title="−10 c" onClick={() => skipSec(-10)}>
+                        <i className="bi bi-rewind-fill" />
+                    </button>
+                    <button className="vc-btn vc-play" title="Пробел" onClick={togglePlay}>
+                        <i className={`bi ${isPaused ? 'bi-play-fill' : 'bi-pause-fill'}`} />
+                    </button>
+                    <button className="vc-btn" title="+10 c" onClick={() => skipSec(10)}>
+                        <i className="bi bi-fast-forward-fill" />
+                    </button>
+                    <button className="vc-btn" title="В конец" onClick={() => skipToSec(Number.MAX_VALUE)}>
+                        <i className="bi bi-skip-end-fill" />
+                    </button>
+                </div>
+
+                <div className="vc-zone vc-right">
+                    <button
+                        className={`vc-ab ${startRec !== null && endRec === null ? 'armed' : ''} ${abActive ? 'active' : ''}`}
+                        title={abTitle}
+                        onClick={handleAB}
+                    >
+                        {abLabel}
+                    </button>
+                    <button className="vc-btn vc-mode" title={mode.title} onClick={cyclePlayMode}>
+                        <i className={`bi ${mode.icon}`} />
+                    </button>
+                    <div className="vc-speed-wrap" ref={speedRef}>
+                        <button
+                            className={`vc-speed ${rate !== 1 ? 'on' : ''}`}
+                            title="Скорость ( < > )"
+                            onClick={() => setSpeedOpen(v => !v)}
+                            onWheel={(e) => { e.preventDefault(); bumpRate(e.deltaY < 0 ? 1 : -1); }}
+                        >
+                            {rate}×
+                        </button>
+                        {speedOpen && (
+                            <div className="vc-speed-menu">
+                                {SPEEDS.map(s => (
+                                    <button
+                                        key={s}
+                                        className={s === rate ? 'active' : ''}
+                                        onClick={() => { setPlaybackRate(s); setSpeedOpen(false); }}
+                                    >
+                                        {s}×
+                                    </button>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                    <button className="vc-btn" title="Картинка-в-картинке (P)" onClick={togglePip}>
+                        <i className="bi bi-pip" />
+                    </button>
+                    <button className="vc-btn" title="На весь экран (F)" onClick={toggleFullscreen}>
+                        <i className="bi bi-arrows-fullscreen" />
+                    </button>
+                    <button className="vc-btn" title="Свернуть панель" onClick={toggleCollapsed}>
+                        <i className="bi bi-chevron-down" />
+                    </button>
+                </div>
             </div>
         </div>
     );
