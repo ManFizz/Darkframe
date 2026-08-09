@@ -160,7 +160,7 @@ const Modal = ({ fileId, mainArray, modalUpdater, displayFiles, onUpdated }) => 
             style={{ transform: `rotate(${degree}deg)` }}
         />
     ) : (
-        <Video file={file} />
+        <Video file={file} mainArray={mainArray} modalUpdater={modalUpdater} />
     );
 
     return (
@@ -186,24 +186,20 @@ const Modal = ({ fileId, mainArray, modalUpdater, displayFiles, onUpdated }) => 
                     onPanelToggle={isLibrary && onUpdated ? () => setPanelOpen(v => !v) : null}
                 />
 
+                {/* The media area is always rendered in the same spot so toggling the
+                    panel never remounts <Video> (which would restart playback). Only
+                    the panel / tags sibling swaps. */}
+                <div className="modal-media-area">
+                    <div className="modal-content-wrapper">
+                        {mediaContent}
+                    </div>
+                </div>
                 {showPanel ? (
-                    <>
-                        <div className="modal-media-area">
-                            <div className="modal-content-wrapper">
-                                {mediaContent}
-                            </div>
-                        </div>
-                        <div className="modal-panel-wrapper">
-                            <MetadataPanel file={file} onUpdated={handlePanelUpdated} />
-                        </div>
-                    </>
+                    <div className="modal-panel-wrapper">
+                        <MetadataPanel file={file} onUpdated={handlePanelUpdated} />
+                    </div>
                 ) : (
-                    <>
-                        <div className="modal-content-wrapper">
-                            {mediaContent}
-                        </div>
-                        <Tags file={file} />
-                    </>
+                    <Tags file={file} />
                 )}
             </dialog>
 
