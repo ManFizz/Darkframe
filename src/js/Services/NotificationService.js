@@ -6,12 +6,15 @@ export function subscribeNotifications(cb) {
     return () => listeners.delete(cb);
 }
 
-export function notify({ message, type = 'info', duration = 3000 }) {
+// `action` is an optional { label, onClick } — renders a button in the toast
+// (used for e.g. "Moved to trash · Undo").
+export function notify({ message, type = 'info', duration = 3000, action = null }) {
     const notification = {
         id: Date.now() + Math.random(),
         message,
         type,
         duration,
+        action,
         time: new Date(),
     };
     history.push(notification);
