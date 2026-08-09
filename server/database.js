@@ -3,6 +3,11 @@ const path = require('path');
 const { Sequelize } = require('sequelize');
 const { getActive } = require('./libraryRegistry');
 
+// Writing to sequelize.log on every query is synchronous disk I/O in the main
+// process and the file grows without bound — off by default, opt in with
+// JSG_SQL_LOG=1 when actually debugging SQL.
+const SQL_LOG = process.env.JSG_SQL_LOG === '1';
+
 function customLogger(message) {
     if (!message.includes('SELECT ') && !message.includes('PRAGMA INDEX_LIST')) {
         fs.appendFileSync('sequelize.log', message + '\n');
@@ -21,7 +26,7 @@ const sequelize = new Sequelize({
     dialect: 'sqlite',
     storage: dbFilePath,
     pool: { max: 1, min: 0, acquire: 30000, idle: 10000 },
-    logging: customLogger,
+    logging: SQL_LOG ? customLogger : false,
 });
 
 // SQLite locks the whole file for writes. Without these two PRAGMAs any brush of
