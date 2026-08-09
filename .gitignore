@@ -11,3 +11,4 @@ package-lock.json
 data/backup
 /downloads/
 /cache/
+/scripts/custom/
