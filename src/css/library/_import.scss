@@ -1,0 +1,137 @@
+// ─── Import ───────────────────────────────────────────────────────────────────
+
+// ─── Redesign: minimal import block (direction A) ─────────────────────────────
+.import-zone {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  border: 1px dashed var(--df-glass-border);
+  border-radius: 12px;
+  font-size: 12px;
+  color: var(--bs-secondary);
+  transition: border-color .15s, background .15s;
+
+  &:hover { border-color: var(--df-accent-dim); }
+}
+
+// The one obvious action.
+.import-primary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 42px;
+  border: none;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #fff;
+  cursor: pointer;
+  background: linear-gradient(135deg, var(--df-accent), var(--df-accent-dim));
+  box-shadow: 0 4px 14px var(--df-accent-glow);
+  transition: transform .12s, box-shadow .2s, filter .15s;
+
+  &:hover { filter: brightness(1.06); box-shadow: 0 6px 20px var(--df-accent-glow); }
+  &:active { transform: translateY(1px); }
+
+  i { font-size: 15px; }
+}
+
+.import-target {
+  text-align: center;
+  color: var(--bs-secondary);
+  b { color: var(--df-accent); font-weight: 600; }
+}
+
+// Disclosure for the rarely-used paths.
+.import-more-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 32px;
+  border: 1px dashed var(--df-glass-border);
+  border-radius: 9px;
+  background: transparent;
+  color: var(--bs-secondary);
+  font-size: 12px;
+  cursor: pointer;
+  transition: color .15s, border-color .15s;
+
+  &:hover { color: var(--bs-body-color); border-color: var(--df-accent-dim); }
+
+  i { transition: transform .2s; }
+  &.open i { transform: rotate(180deg); }
+}
+
+.import-more {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.import-more-actions {
+  display: flex;
+  gap: 6px;
+
+  .import-ghost {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    height: 30px;
+    border: 1px solid var(--df-glass-border);
+    border-radius: 8px;
+    background: var(--df-glass);
+    color: var(--bs-secondary);
+    font-size: 12px;
+    cursor: pointer;
+    transition: color .15s, border-color .15s, background .15s;
+
+    &:hover:not(:disabled) {
+      color: var(--bs-body-color);
+      border-color: var(--df-accent-dim);
+      background: var(--df-accent-soft);
+    }
+    &:disabled { opacity: 0.5; cursor: default; }
+  }
+}
+
+.import-drop-hint {
+  text-align: center;
+  color: var(--bs-secondary);
+  opacity: 0.7;
+}
+
+.import-url-row {
+  display: flex;
+  gap: 6px;
+
+  input { flex: 1; min-width: 0; }
+  button { flex-shrink: 0; }
+}
+
+.import-url-progress {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  color: var(--bs-secondary);
+
+  .progress { flex: 1; }
+  span { white-space: nowrap; }
+}
+
+.eagle-import-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(4px);
+}
+

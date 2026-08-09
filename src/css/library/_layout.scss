@@ -1,0 +1,112 @@
+// ─── Layout ──────────────────────────────────────────────────────────────────
+
+.library-layout {
+  display: flex;
+  height: 100%;
+  overflow: hidden;
+}
+
+.library-sidebar {
+  min-width: 240px;
+  max-width: 240px;
+  border-right: 1px solid var(--bs-border-color);
+  // The sidebar itself no longer scrolls — the tree gets its own scroll region so
+  // the import block stays pinned at the bottom no matter how many collections exist.
+  overflow: hidden;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.library-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  margin-right: 280px;
+}
+
+.library-gallery {
+  flex: 1;
+  overflow-y: auto;
+  user-select: none;
+}
+
+// ─── Filters ─────────────────────────────────────────────────────────────────
+
+.library-filters {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--bs-border-color);
+  flex-wrap: wrap;
+  flex-shrink: 0;
+}
+
+.filter-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: var(--bs-secondary);
+  display: block;
+  margin-bottom: 2px;
+}
+
+.filter-search {
+  min-width: 200px;
+  flex: 1;
+}
+
+.filter-tags {
+  .filter-tags-list {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 2px;
+    min-width: 150px;
+    padding: 2px 6px;
+    border: 1px solid var(--bs-border-color);
+    border-radius: 4px;
+    cursor: text;
+  }
+
+  .filter-tag-input {
+    border: none;
+    outline: none;
+    background: transparent;
+    color: var(--bs-body-color);
+    font-size: 13px;
+    min-width: 60px;
+    width: auto;
+  }
+}
+
+.filter-rating {
+  .rating-stars {
+    font-size: 16px;
+    color: var(--bs-warning);
+    cursor: pointer;
+    display: flex;
+    gap: 2px;
+  }
+}
+
+.filter-sort {
+  .form-select { min-width: 160px; }
+}
+
+.filter-footer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+
+  .filter-count {
+    font-size: 12px;
+    color: var(--bs-secondary);
+    white-space: nowrap;
+  }
+}
+

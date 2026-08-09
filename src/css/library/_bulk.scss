@@ -1,0 +1,37 @@
+// ─── Bulk Actions ─────────────────────────────────────────────────────────────
+
+.bulk-action-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: var(--bs-primary-bg-subtle);
+  border-bottom: 1px solid var(--bs-primary);
+  flex-shrink: 0;
+  flex-wrap: wrap;
+  animation: slideDown 0.15s ease;
+}
+
+.bulk-count {
+  font-weight: 600;
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+.bulk-action-group {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+
+  .form-select,
+  .form-control {
+    width: auto;
+    min-width: 120px;
+  }
+}
+
+@keyframes slideDown {
+  from { transform: translateY(-100%); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+

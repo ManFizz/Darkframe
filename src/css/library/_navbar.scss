@@ -1,0 +1,342 @@
+// ─── Redesign: glass topbar (direction B) ─────────────────────────────────────
+.navbar-glass {
+  position: relative;
+  padding: 8px 16px;
+  background: linear-gradient(160deg, rgba(23, 19, 31, 0.9), rgba(16, 14, 21, 0.82));
+  backdrop-filter: blur(14px);
+  border-bottom: 1px solid var(--df-glass-border);
+  // Soft violet bloom in the top-left, echoing the modal.
+  &::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(560px 160px at 12% -40%, var(--df-accent-soft), transparent 60%);
+    pointer-events: none;
+  }
+
+  .container-fluid {
+    position: relative;
+    gap: 14px;
+    align-items: center;
+  }
+
+  // Source tabs: quiet by default, active one rides the accent gradient + glow.
+  .nav-source-group { gap: 2px; }
+
+  .nav-source-tab {
+    border: 1px solid transparent;
+    border-radius: 999px;
+    padding: 6px 16px;
+    font-weight: 600;
+    font-size: 14px;
+    color: var(--bs-secondary);
+    background: transparent;
+    transition: color .15s, background .15s, box-shadow .2s;
+
+    &:hover { color: var(--bs-body-color); background: rgba(255, 255, 255, 0.05); }
+  }
+
+  .btn-check:checked + .nav-source-tab {
+    color: #fff;
+    background: linear-gradient(135deg, var(--df-accent), var(--df-accent-dim));
+    box-shadow: 0 4px 16px var(--df-accent-glow);
+  }
+
+  // Right-side controls read as a single translucent island.
+  .navbar-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-left: auto;
+    padding: 4px;
+    border-radius: 999px;
+    background: rgba(0, 0, 0, 0.28);
+    border: 1px solid var(--df-glass-border);
+
+    .btn {
+      border-color: transparent;
+      background: transparent;
+      color: var(--bs-secondary);
+      border-radius: 999px;
+
+      &:hover { color: var(--bs-body-color); background: rgba(255, 255, 255, 0.06); }
+    }
+
+    // Keep the dropdowns' rounded grouping from clashing with the pill container.
+    .btn-group > .btn:first-child { border-top-left-radius: 999px; border-bottom-left-radius: 999px; }
+    .btn-group > .btn:last-child  { border-top-right-radius: 999px; border-bottom-right-radius: 999px; }
+  }
+}
+
+.navbar-settings-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+// ─── Redesign: library nav controls (search / tags / rating) ──────────────────
+.library-nav-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  max-width: 660px;
+  margin: 0 auto;
+}
+
+// Glass search pill — matches the topbar island.
+.nav-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 36px;
+  flex: 1;
+  min-width: 160px;
+  max-width: 320px;
+  padding: 0 6px 0 12px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--df-glass-border);
+  transition: border-color .15s, box-shadow .15s;
+
+  &:focus-within {
+    border-color: var(--df-accent-dim);
+    box-shadow: 0 0 0 3px var(--df-accent-soft);
+  }
+
+  .nav-search-icon { color: var(--bs-secondary); font-size: 14px; }
+
+  .nav-search-input {
+    flex: 1;
+    min-width: 0;
+    border: none;
+    outline: none;
+    background: transparent;
+    color: var(--bs-body-color);
+    font-size: 13px;
+    &::placeholder { color: var(--bs-secondary); }
+  }
+
+  .nav-search-clear {
+    flex-shrink: 0;
+    width: 24px;
+    height: 24px;
+    display: grid;
+    place-items: center;
+    border: none;
+    border-radius: 50%;
+    background: transparent;
+    color: var(--bs-secondary);
+    cursor: pointer;
+    transition: background .15s, color .15s;
+    &:hover { background: rgba(255, 255, 255, 0.08); color: var(--bs-body-color); }
+  }
+}
+
+// Tag filter — chips + typed input, with a live suggestion list.
+.tag-filter {
+  position: relative;
+  flex: 1;
+  min-width: 120px;
+  max-width: 260px;
+
+  .tag-filter-tags {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 4px;
+    min-height: 36px;
+    padding: 3px 8px;
+    border-radius: 12px;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid var(--df-glass-border);
+    cursor: text;
+    transition: border-color .15s, box-shadow .15s;
+  }
+  &:focus-within .tag-filter-tags {
+    border-color: var(--df-accent-dim);
+    box-shadow: 0 0 0 3px var(--df-accent-soft);
+  }
+
+  .tag-filter-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 6px 2px 8px;
+    font-size: 12px;
+    line-height: 1.4;
+    border-radius: 999px;
+    cursor: pointer;
+    user-select: none;
+    color: #fff;
+    background: rgba(176, 107, 255, 0.28);
+    border: 1px solid rgba(176, 107, 255, 0.4);
+
+    &.exclude {
+      background: rgba(220, 53, 69, 0.24);
+      border-color: rgba(220, 53, 69, 0.45);
+    }
+    .struck { text-decoration: line-through; opacity: 0.9; }
+    .bi-x { font-size: 13px; opacity: 0.8; }
+    .bi-x:hover { opacity: 1; }
+    .bi-slash-circle { font-size: 11px; }
+  }
+
+  .tag-filter-input {
+    flex: 1;
+    min-width: 50px;
+    border: none;
+    outline: none;
+    background: transparent;
+    color: var(--bs-body-color);
+    font-size: 13px;
+    &::placeholder { color: var(--bs-secondary); }
+  }
+
+  .tag-filter-suggestions {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    right: 0;
+    z-index: 1200;
+    max-height: 260px;
+    overflow-y: auto;
+    padding: 4px;
+    border-radius: 10px;
+    background: var(--df-glass-strong);
+    border: 1px solid var(--df-glass-border);
+    backdrop-filter: blur(14px);
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+  }
+
+  .tag-filter-suggestion {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 10px;
+    font-size: 13px;
+    border-radius: 7px;
+    cursor: pointer;
+    color: var(--bs-body-color);
+    &:hover { background: var(--df-accent-soft); }
+  }
+}
+
+.nav-reset {
+  flex-shrink: 0;
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--bs-secondary);
+  cursor: pointer;
+  transition: background .15s, color .15s;
+  &:hover { background: rgba(220, 53, 69, 0.16); color: #ff8b8b; }
+}
+
+.nav-counter {
+  flex-shrink: 0;
+  font-size: 12px;
+  color: var(--bs-secondary);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+// ─── Rating range filter popover ──────────────────────────────────────────────
+.rating-filter {
+  position: relative;
+
+  .rating-filter-active { color: var(--df-accent) !important; }
+
+  .rating-filter-panel {
+    position: absolute;
+    top: calc(100% + 6px);
+    right: 0;
+    z-index: 1200;
+    width: 240px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 14px;
+    border-radius: 12px;
+    background: var(--df-glass-strong);
+    border: 1px solid var(--df-glass-border);
+    backdrop-filter: blur(16px);
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5);
+  }
+
+  .rating-filter-presets {
+    display: flex;
+    gap: 6px;
+
+    button {
+      flex: 1;
+      padding: 6px 8px;
+      font-size: 12px;
+      border-radius: 8px;
+      background: var(--df-glass);
+      border: 1px solid var(--df-glass-border);
+      color: var(--bs-body-color);
+      cursor: pointer;
+      transition: border-color .15s, background .15s;
+      &:hover { border-color: var(--df-accent-dim); background: var(--df-accent-soft); }
+    }
+  }
+
+  .rating-filter-readout {
+    text-align: center;
+    font-size: 13px;
+    color: var(--bs-secondary);
+    b { color: var(--star, #f4c95d); }
+  }
+
+  .rating-filter-slider {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 12px;
+    color: var(--bs-secondary);
+    margin: 0;
+
+    span { width: 22px; flex-shrink: 0; }
+    input[type="range"] { flex: 1; accent-color: var(--df-accent); }
+    b { width: 18px; text-align: right; color: var(--bs-body-color); font-variant-numeric: tabular-nums; }
+  }
+}
+
+.eagle-import-modal {
+  background: var(--bs-body-bg);
+  border-radius: 12px;
+  padding: 24px;
+  width: 400px;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.3);
+}
+
+.eagle-import-header {
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+}
+
+.eagle-import-file {
+  font-size: 12px;
+  color: var(--bs-secondary);
+  margin-bottom: 8px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.eagle-import-stats {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: var(--bs-secondary);
+  margin-top: 6px;
+}
+
