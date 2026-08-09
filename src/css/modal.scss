@@ -37,15 +37,20 @@
     box-shadow: 0 0 30px rgba(0,0,0,0.5);
   }
 
+  // "Long" images are taller than the viewport and the modal scrolls. Instead of
+  // the old orange frame, a soft fade + bouncing chevron at the bottom signal
+  // "there's more below, scroll".
   &.long {
     img {
       width: 700px;
       height: auto;
       margin: 0 auto;
       display: block;
-      border: orange 4px solid;
       max-height: unset;
       max-width: 1000px;
+      border-radius: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
     }
 
     .modal-panel-wrapper {
@@ -56,6 +61,36 @@
     &.with-panel .modal-media-area {
       justify-content: unset;
       overflow: visible;
+    }
+
+    // Fade at the very bottom of the window.
+    &::after {
+      content: "";
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      height: 96px;
+      background: linear-gradient(to bottom, transparent, rgba(8, 6, 12, 0.9));
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    // Downward chevron drawn with two borders, gently bouncing.
+    &::before {
+      content: "";
+      position: fixed;
+      left: 50%;
+      bottom: 26px;
+      width: 15px;
+      height: 15px;
+      margin-left: -8px;
+      border-right: 3px solid rgba(255, 255, 255, 0.75);
+      border-bottom: 3px solid rgba(255, 255, 255, 0.75);
+      transform: rotate(45deg);
+      pointer-events: none;
+      z-index: 2;
+      animation: modal-long-scroll-hint 1.6s ease-in-out infinite;
     }
   }
 
@@ -72,6 +107,19 @@
     transform: scale(1.1);
     opacity: 0.7;
   }
+}
+
+// The media area is always present now (so toggling the panel doesn't remount the
+// video). Base styles cover the no-panel case; ".with-panel" adds the stage look.
+.modal-media-area {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
 }
 
 .modal-nav-container {
@@ -168,6 +216,18 @@
     background:
       radial-gradient(closest-side at 50% 42%, rgba(176, 107, 255, 0.10), transparent 78%);
   }
+
+  // The panel eats 288px on the right, so the media area is the *left* region and
+  // anything smaller than it drifts left of the screen centre. Reserve the same
+  // 288px on the left: the clear area is now symmetric and the media sits dead-centre
+  // on the viewport. Media is capped to that clear width so it never slides under
+  // the panel. (Skipped in ".long" mode, which has its own left-aligned layout.)
+  &:not(.long) .modal-media-area { padding-left: variables.$modal-panel-width; }
+
+  &:not(.long) .modal-media-area img,
+  &:not(.long) .modal-media-area video {
+    max-width: calc(100vw - #{variables.$modal-panel-width} * 2);
+  }
 }
 
 // ─── Redesign: framed stage + glass panel (direction B) ───────────────────────
@@ -184,16 +244,27 @@
     border: 1px solid rgba(255, 255, 255, 0.08);
     box-shadow: 0 24px 70px rgba(0, 0, 0, 0.6);
   }
+}
 
-  // The "long image" mode keeps its own orange debug border — don't double it up.
-  &.long img {
-    border-radius: 0;
-    box-shadow: none;
-  }
+@keyframes modal-long-scroll-hint {
+  0%, 100% { transform: translateY(0) rotate(45deg); opacity: 0.45; }
+  50%      { transform: translateY(6px) rotate(45deg); opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .modal-view.long::before { animation: none; }
+}
+
+// Fullscreen is requested on the whole dialog (not the bare <video>) so the
+// control bar stays visible. Drop the top offset and fill the screen.
+.modal-view:fullscreen {
+  top: 0;
+  width: 100vw;
+  height: 100vh;
 }
 
 .modal-panel-wrapper {
-  width: 288px;
+  width: variables.$modal-panel-width;
   flex-shrink: 0;
   overflow-y: auto;
   // Frosted glass layer floating over the stage.
