@@ -12,6 +12,14 @@ async function migrations() {
             allowNull: false,
         });
     }
+    if (!tableDesc.editedAt) {
+        // Bumped whenever the image is edited in-app; used to cache-bust library:// URLs.
+        await queryInterface.addColumn('Items', 'editedAt', {
+            type: DataTypes.INTEGER,
+            allowNull: true,
+            defaultValue: null,
+        });
+    }
     if (!tableDesc.deletedAt) {
         // Soft-delete marker: NULL = live, a unix timestamp = in the trash.
         await queryInterface.addColumn('Items', 'deletedAt', {
@@ -44,6 +52,19 @@ async function migrations() {
             allowNull: false,
         });
     }
+    if (!collectionsDesc.isSmart) {
+        await queryInterface.addColumn('Collections', 'isSmart', {
+            type: DataTypes.BOOLEAN, defaultValue: false, allowNull: false,
+        });
+    }
+    if (!collectionsDesc.filter) {
+        await queryInterface.addColumn('Collections', 'filter', {
+            type: DataTypes.TEXT, allowNull: true,
+        });
+    }
+
+    // Tag rename rules (from → to). New table — create it if missing.
+    await require('./models/TagAlias').sync();
 }
 
 module.exports = { migrations};

@@ -64,12 +64,15 @@ async function listFavoriteItems() {
         order: [['order', 'ASC']],
     });
 
-    return items.map(item => ({
-        ...item.toJSON(),
-        tags: item.tags.map(t => t.name),
-        thumbPath: `library://thumb/${item.id}`,
-        originalPath: `library://item/${item.id}`,
-    }));
+    return items.map(item => {
+        const v = item.editedAt ? `?v=${item.editedAt}` : '';
+        return {
+            ...item.toJSON(),
+            tags: item.tags.map(t => t.name),
+            thumbPath: `library://thumb/${item.id}${v}`,
+            originalPath: `library://item/${item.id}${v}`,
+        };
+    });
 }
 
 module.exports = { addFavorite, removeFavoriteByPost, listFavoriteItems };

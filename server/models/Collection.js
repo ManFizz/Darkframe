@@ -32,6 +32,16 @@ const Collection = sequelize.define('Collection', {
         defaultValue: false,
         allowNull: false,
     },
+    // Smart collection: auto-populated from a saved filter (stored as JSON).
+    isSmart: {
+        type: DataTypes.BOOLEAN,
+        defaultValue: false,
+        allowNull: false,
+    },
+    filter: {
+        type: DataTypes.TEXT,
+        allowNull: true,
+    },
     createdAt: {
         type: DataTypes.INTEGER,
         defaultValue: () => Math.floor(Date.now() / 1000),

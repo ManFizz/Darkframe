@@ -12,6 +12,7 @@ const sequelize = require('../database');
 const { SOURCE_TYPES } = require('../../src/js/constants');
 const { getActive } = require('../libraryRegistry');
 const { generateImageThumb, generateVideoThumb, getVideoDuration } = require('./thumbService');
+const { resolveAlias } = require('./tagAdmin');
 
 const LIBRARY_REMOTE_TYPE = SOURCE_TYPES.LIBRARY;
 
@@ -43,10 +44,13 @@ function getFileHash(filePath) {
 }
 
 async function ensureTag(name, transaction) {
+    // Apply permanent rename rules (e.g. "dots" → "dot") at the single point where
+    // tags are created/associated.
+    const resolved = await resolveAlias(name);
     const [tag] = await Tag.findOrCreate({
-        where: { name: name.toLowerCase().trim() },
+        where: { name: resolved },
         defaults: {
-            name: name.toLowerCase().trim(),
+            name: resolved,
             remoteType: LIBRARY_REMOTE_TYPE,
             type: null,
             count: null,

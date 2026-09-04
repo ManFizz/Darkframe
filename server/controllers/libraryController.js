@@ -10,6 +10,9 @@ const { importFromEagleCsv } = require('../services/eagleImportService');
 const { importFromUrl } = require('../services/urlImportService');
 const { importFromJson } = require('../services/jsonImportService');
 const { getFavoritesCollectionId } = require('../favoritesCollection');
+const { editImage, revertImage } = require('../services/imageEditService');
+const tagAdmin = require('../services/tagAdmin');
+const { getSmartItems } = require('../services/smartItems');
 
 // When an item's collection changes, drop it at the end of the destination's order
 // so the just-moved item is easy to find (last relative to "Порядок"). Mutates
@@ -82,12 +85,16 @@ function register() {
             })
         );
 
-        const plainItems = items.map(item => ({
-            ...item.toJSON(),
-            tags: item.tags.map(t => t.name),
-            thumbPath: `library://thumb/${item.id}`,
-            originalPath: `library://item/${item.id}`,
-        }));   // toJSON already carries deletedAt through to the client
+        const plainItems = items.map(item => {
+            // editedAt cache-busts both URLs after an in-app rotate/crop.
+            const v = item.editedAt ? `?v=${item.editedAt}` : '';
+            return {
+                ...item.toJSON(),
+                tags: item.tags.map(t => t.name),
+                thumbPath: `library://thumb/${item.id}${v}`,
+                originalPath: `library://item/${item.id}${v}`,
+            };
+        });   // toJSON already carries deletedAt / editedAt through to the client
 
         return { collections: collectionItems, items: plainItems };
     });
@@ -188,6 +195,14 @@ function register() {
         return { ok: true };
     });
 
+    ipcMain.handle('library:editImage', async (_, { id, ...transform }) => {
+        return editImage(id, transform);
+    });
+
+    ipcMain.handle('library:revertImage', async (_, { id }) => {
+        return revertImage(id);
+    });
+
     ipcMain.handle('library:restoreItem', async (_, { id }) => {
         // Unscoped: the row we're restoring is currently trashed.
         await Item.unscoped().update({ deletedAt: null }, { where: { id } });
@@ -202,6 +217,31 @@ function register() {
         return { ok: true, removed: trashed.length };
     });
 
+    // ─── Tag manager ──────────────────────────────────────────────────────────
+    ipcMain.handle('library:getAllTags',   async ()               => tagAdmin.getAllTags());
+    ipcMain.handle('library:renameTag',    async (_, { id, newName }) => tagAdmin.renameTag(id, newName));
+    ipcMain.handle('library:mergeTags',    async (_, { sourceId, targetId }) => tagAdmin.mergeTags(sourceId, targetId));
+    ipcMain.handle('library:deleteTag',    async (_, { id })       => tagAdmin.deleteTag(id));
+    ipcMain.handle('library:getTagRules',  async ()               => tagAdmin.getRules());
+    ipcMain.handle('library:addTagRule',   async (_, data)         => tagAdmin.addRule(data));
+    ipcMain.handle('library:deleteTagRule', async (_, { id })      => tagAdmin.deleteRule(id));
+
+    // ─── Smart collections ──────────────────────────────────────────────────────
+    ipcMain.handle('library:getSmartItems', async (_, { filter }) => getSmartItems(filter || {}));
+
+    ipcMain.handle('library:createSmartCollection', async (_, { name, filter }) => {
+        const maxOrder = (await Collection.max('order', { where: { isSystem: false } })) || 0;
+        const col = await Collection.create({
+            name, isSmart: true, filter: JSON.stringify(filter || {}), order: maxOrder + 1,
+        });
+        return col.toJSON();
+    });
+
+    ipcMain.handle('library:updateSmartFilter', async (_, { id, filter }) => {
+        await Collection.update({ filter: JSON.stringify(filter || {}) }, { where: { id } });
+        return { ok: true };
+    });
+
     ipcMain.handle('library:getCollections', async () => {
         // System collections (e.g. Favorites) live in the same DB but are managed
         // separately, so they never show up in the regular collection tree.
@@ -212,8 +252,16 @@ function register() {
 
         return await Promise.all(
             collections.map(async (col) => {
-                const count = await Item.count({where: {collectionId: col.id}});
-                return {...col.toJSON(), itemCount: count};
+                const j = col.toJSON();
+                let itemCount;
+                if (j.isSmart) {
+                    let f = {};
+                    try { f = JSON.parse(j.filter || '{}'); } catch { /* ignore */ }
+                    itemCount = (await getSmartItems(f)).items.length;
+                } else {
+                    itemCount = await Item.count({ where: { collectionId: col.id } });
+                }
+                return { ...j, itemCount };
             })
         );
     });

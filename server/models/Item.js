@@ -24,6 +24,8 @@ const Item = sequelize.define('Item', {
     createdAt:      { type: DataTypes.INTEGER, allowNull: true, },
     // Soft-delete: NULL = live item, unix timestamp = moved to trash.
     deletedAt:      { type: DataTypes.INTEGER, allowNull: true, defaultValue: null },
+    // Last in-app edit (rotate/crop) timestamp; NULL = never edited. Cache-busts URLs.
+    editedAt:       { type: DataTypes.INTEGER, allowNull: true, defaultValue: null },
 }, {
     timestamps: false,
     // Every ordinary read/count automatically hides trashed items. The trash and
