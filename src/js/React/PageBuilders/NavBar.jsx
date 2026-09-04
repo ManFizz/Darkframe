@@ -9,6 +9,7 @@ import {SORT_ORDER} from '@hooks/library/useLibraryFilter';
 import {useLibraryContext} from '@/LibraryContext';
 import {LibraryNavControls, LibraryNavSort} from '../Library/LibraryNavControls';
 import SettingsPanel from '../Settings/SettingsPanel';
+import TagManager from '../Settings/TagManager';
 
 const NavBar = () => {
     const { state, setCurrentSource, setSortInfo, setTypeView, setSafeMode } = useContext(GalleryContext);
@@ -18,6 +19,7 @@ const NavBar = () => {
 
     const [searchValue, setSearchValue] = useState('');
     const [showSettings, setShowSettings] = useState(false);
+    const [showTags, setShowTags] = useState(false);
 
     const handleNavigation = (sourceType, action = null) => {
         setCurrentSource(sourceType);
@@ -114,6 +116,15 @@ const NavBar = () => {
                         </div>
                     )}
 
+                    {isLibrary && (
+                        <button
+                            className="btn navbar-settings-btn"
+                            onClick={() => setShowTags(true)}
+                            title="Управление тегами"
+                        >
+                            <i className="bi bi-tags-fill" />
+                        </button>
+                    )}
                     <button
                         className="btn navbar-settings-btn"
                         onClick={() => setShowSettings(true)}
@@ -125,6 +136,7 @@ const NavBar = () => {
             </div>
 
             {showSettings && <SettingsPanel onClose={() => setShowSettings(false)} />}
+            {showTags && <TagManager onClose={() => setShowTags(false)} />}
         </header>
     );
 };

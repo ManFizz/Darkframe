@@ -16,7 +16,7 @@ const isCanDisplayedByIdx = (mainArray, nextIdx) => {
     return item.type === FILE_TYPES.VIDEO || item.type === FILE_TYPES.IMAGE;
 };
 
-const Navigation = ({ file, modalUpdater, mainArray, setDegree, panelOpen, onPanelToggle }) => {
+const Navigation = ({ file, modalUpdater, mainArray, setDegree, panelOpen, onPanelToggle, onEdit, onApplyLast }) => {
     const { isFav, isPending, toggleFav } = useFavorites();
 
     const currentIndex = useMemo(() => {
@@ -57,6 +57,7 @@ const Navigation = ({ file, modalUpdater, mainArray, setDegree, panelOpen, onPan
     useEffect(() => {
         const handleKeyDown = (e) => {
             if (e.ctrlKey) return;
+            if (document.querySelector('.img-editor')) return;   // editor owns the keyboard
 
             switch (e.key) {
                 case 'ArrowLeft':
@@ -113,6 +114,20 @@ const Navigation = ({ file, modalUpdater, mainArray, setDegree, panelOpen, onPan
                     className="bi bi-arrow-clockwise"
                     onClick={() => setDegree(d => (d + 90) % 360)}
                 />
+                {onEdit && (
+                    <i
+                        className="bi bi-crop"
+                        title="Редактировать (поворот / обрезка)"
+                        onClick={onEdit}
+                    />
+                )}
+                {onApplyLast && (
+                    <i
+                        className="bi bi-magic"
+                        title="Применить последнюю правку (поворот / обрезку)"
+                        onClick={onApplyLast}
+                    />
+                )}
                 {onPanelToggle && (
                     <i
                         className={`bi bi-layout-sidebar-reverse modal-nav-panel-btn ${panelOpen ? 'active' : ''}`}

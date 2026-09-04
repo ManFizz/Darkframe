@@ -3,20 +3,27 @@ import Navigation from "./Navigation";
 import Tags from "./Tags";
 import Video from "./Video";
 import MetadataPanel from "../Library/Metadata/MetadataPanel";
+import ImageEditor from "./ImageEditor";
 import Settings from "../../../../data/settings";
 import {FILE_TYPES, SOURCE_TYPES} from "@/Constants";
 import {useFavorites} from "@hooks/useFavorites";
 import {cachedMediaUrl} from "@/Infrastructure/MediaCache";
+import LibraryService from "@services/LibraryService";
+import {notify} from "@services/NotificationService";
+import {loadEditPreset} from "@services/imageEditPreset";
 
-const DELETE_DELAY = 1500;
+const clamp = (v, lo, hi) => Math.max(lo, Math.min(v, hi));
 
 const Modal = ({ fileId, mainArray, modalUpdater, displayFiles, onUpdated }) => {
     const [isLong, setIsLong]             = useState(false);
     const [degree, setDegree]             = useState(0);
     const [panelOpen, setPanelOpen]       = useState(true);
-    const [deleteCountdown, setDeleteCountdown] = useState(false);
-    const deleteTimerRef = useRef(null);
+    const [editing, setEditing]           = useState(false);
+    const [zoom, setZoom]                 = useState(1);
+    const [pan, setPan]                   = useState({ x: 0, y: 0 });
     const modalRef       = useRef(null);
+    const contentRef     = useRef(null);
+    const panDrag        = useRef(null);
     const preloadRef     = useRef(new Map());
     const { isFav }      = useFavorites();
 
@@ -46,39 +53,16 @@ const Modal = ({ fileId, mainArray, modalUpdater, displayFiles, onUpdated }) => 
         onUpdated('delete', file.id);
     }, [file, navigateToNext, onUpdated]);
 
-    // Отмена countdown при смене файла
-    useEffect(() => {
-        return () => {
-            if (deleteTimerRef.current) {
-                clearTimeout(deleteTimerRef.current);
-                deleteTimerRef.current = null;
-                setDeleteCountdown(false);
-            }
-        };
-    }, [fileId]);
-
-    // Delete-клавиша с задержкой (capture — раньше Navigation's Escape)
+    // Delete key removes immediately — the trash + Undo toast make the old countdown
+    // pointless. (capture phase so it runs before Navigation's key handling)
     useEffect(() => {
         if (!isLibrary || !onUpdated) return;
 
         const handleKey = (e) => {
+            if (document.querySelector('.img-editor')) return;   // don't delete while editing
             if (e.key === 'Delete') {
                 e.stopPropagation();
-                if (deleteTimerRef.current) return;
-
-                setDeleteCountdown(true);
-                deleteTimerRef.current = setTimeout(() => {
-                    deleteTimerRef.current = null;
-                    setDeleteCountdown(false);
-                    handleDelete();
-                }, DELETE_DELAY);
-            }
-
-            if (e.key === 'Escape' && deleteTimerRef.current) {
-                e.stopPropagation();
-                clearTimeout(deleteTimerRef.current);
-                deleteTimerRef.current = null;
-                setDeleteCountdown(false);
+                handleDelete();
             }
         };
 
@@ -92,6 +76,9 @@ const Modal = ({ fileId, mainArray, modalUpdater, displayFiles, onUpdated }) => 
 
         setIsLong(false);
         setDegree(0);
+        setEditing(false);
+        setZoom(1);
+        setPan({ x: 0, y: 0 });
 
         if (modalRef.current) {
             modalRef.current.scrollTo(0, 0);
@@ -138,6 +125,19 @@ const Modal = ({ fileId, mainArray, modalUpdater, displayFiles, onUpdated }) => 
         }
     }, [file, mainArray]);
 
+    // One-click re-apply of the last edit (rotate/crop) to this image.
+    const handleApplyLast = useCallback(async () => {
+        const preset = loadEditPreset();
+        if (!preset || !file) return;
+        try {
+            await LibraryService.editImage(file.id, preset);
+            notify({ message: 'Правка применена', type: 'success' });
+            onUpdated?.('refresh');
+        } catch (e) {
+            notify({ message: `Не удалось применить: ${e.message}`, type: 'danger' });
+        }
+    }, [file, onUpdated]);
+
     const handlePanelUpdated = useCallback((idOrAction, data) => {
         if (idOrAction === 'delete') {
             handleDelete();
@@ -151,13 +151,61 @@ const Modal = ({ fileId, mainArray, modalUpdater, displayFiles, onUpdated }) => 
         onUpdated?.(idOrAction, data);
     }, [handleDelete, navigateToNext, onUpdated, file]);
 
+    // ─── Wheel-zoom / drag-pan for images while just viewing ───────────────────
+    const canZoom = file?.type === FILE_TYPES.IMAGE && !(Settings.LongView && isLong);
+
+    const onWheel = useCallback((e) => {
+        if (!canZoom || !contentRef.current) return;
+        e.preventDefault();
+        const rect = contentRef.current.getBoundingClientRect();
+        const mx = e.clientX - rect.left - rect.width / 2;
+        const my = e.clientY - rect.top - rect.height / 2;
+        const z2 = clamp(zoom * (e.deltaY < 0 ? 1.2 : 1 / 1.2), 1, 12);
+        if (z2 === zoom) return;
+        if (z2 === 1) { setZoom(1); setPan({ x: 0, y: 0 }); return; }
+        setPan(p => ({ x: mx - (mx - p.x) * (z2 / zoom), y: my - (my - p.y) * (z2 / zoom) }));
+        setZoom(z2);
+    }, [canZoom, zoom]);
+
+    // Non-passive so preventDefault stops the modal from scrolling.
+    useEffect(() => {
+        const el = contentRef.current;
+        if (!el) return;
+        el.addEventListener('wheel', onWheel, { passive: false });
+        return () => el.removeEventListener('wheel', onWheel);
+    }, [onWheel]);
+
+    const onPanMove = useCallback((e) => {
+        const d = panDrag.current;
+        if (d) setPan({ x: d.ox + (e.clientX - d.sx), y: d.oy + (e.clientY - d.sy) });
+    }, []);
+    const onPanUp = useCallback(() => {
+        panDrag.current = null;
+        window.removeEventListener('pointermove', onPanMove);
+        window.removeEventListener('pointerup', onPanUp);
+    }, [onPanMove]);
+    const onMediaPointerDown = useCallback((e) => {
+        if (zoom <= 1 || e.button !== 0) return;
+        panDrag.current = { sx: e.clientX, sy: e.clientY, ox: pan.x, oy: pan.y };
+        window.addEventListener('pointermove', onPanMove);
+        window.addEventListener('pointerup', onPanUp);
+    }, [zoom, pan, onPanMove, onPanUp]);
+
+    useEffect(() => () => {
+        window.removeEventListener('pointermove', onPanMove);
+        window.removeEventListener('pointerup', onPanUp);
+    }, [onPanMove, onPanUp]);
+
     if (!file) return null;
 
     const mediaContent = file.type === FILE_TYPES.IMAGE ? (
         <img
             alt={file.title}
+            style={{
+                transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom}) rotate(${degree}deg)`,
+                cursor: zoom > 1 ? 'grab' : 'default',
+            }}
             src={cachedMediaUrl(file.getUrl())}
-            style={{ transform: `rotate(${degree}deg)` }}
         />
     ) : (
         <Video file={file} mainArray={mainArray} modalUpdater={modalUpdater} />
@@ -176,22 +224,26 @@ const Modal = ({ fileId, mainArray, modalUpdater, displayFiles, onUpdated }) => 
                     modalUpdater(null);
                 }}
             >
-                <Navigation
-                    file={file}
-                    modalUpdater={modalUpdater}
-                    mainArray={mainArray}
-                    setDegree={setDegree}
-                    displayFiles={displayFiles}
-                    panelOpen={panelOpen}
-                    onPanelToggle={isLibrary && onUpdated ? () => setPanelOpen(v => !v) : null}
-                />
+                {!editing && (
+                    <Navigation
+                        file={file}
+                        modalUpdater={modalUpdater}
+                        mainArray={mainArray}
+                        setDegree={setDegree}
+                        displayFiles={displayFiles}
+                        panelOpen={panelOpen}
+                        onPanelToggle={isLibrary && onUpdated ? () => setPanelOpen(v => !v) : null}
+                        onEdit={isLibrary && onUpdated && file.type === FILE_TYPES.IMAGE && file.mimeType !== 'image/gif' ? () => setEditing(true) : null}
+                        onApplyLast={isLibrary && onUpdated && file.type === FILE_TYPES.IMAGE && file.mimeType !== 'image/gif' && loadEditPreset() ? handleApplyLast : null}
+                    />
+                )}
 
                 {/* The media area is always rendered in the same spot so toggling the
                     panel never remounts <Video> (which would restart playback). Only
                     the panel / tags sibling swaps. */}
-                <div className="modal-media-area">
+                <div className="modal-media-area" ref={contentRef} onPointerDown={onMediaPointerDown}>
                     <div className="modal-content-wrapper">
-                        {mediaContent}
+                        {editing ? null : mediaContent}
                     </div>
                 </div>
                 {showPanel ? (
@@ -201,14 +253,15 @@ const Modal = ({ fileId, mainArray, modalUpdater, displayFiles, onUpdated }) => 
                 ) : (
                     <Tags file={file} />
                 )}
-            </dialog>
 
-            {deleteCountdown && (
-                <div className="modal-delete-countdown">
-                    <span>Удаление файла... Esc — отмена</span>
-                    <div className="modal-delete-countdown-bar" />
-                </div>
-            )}
+                {editing && (
+                    <ImageEditor
+                        file={file}
+                        onCancel={() => setEditing(false)}
+                        onSaved={() => { setEditing(false); onUpdated?.('refresh'); }}
+                    />
+                )}
+            </dialog>
         </>
     );
 };
