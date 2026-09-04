@@ -340,3 +340,18 @@
   margin-top: 6px;
 }
 
+
+// Inline name entry when saving the current filter as a smart collection.
+.nav-smart-input {
+  flex-shrink: 0;
+  width: 180px;
+  height: 30px;
+  padding: 0 12px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--df-accent-dim);
+  color: var(--bs-body-color);
+  font-size: 13px;
+  outline: none;
+  &::placeholder { color: var(--bs-secondary); }
+}

@@ -177,3 +177,83 @@
   }
 }
 
+
+// ─── Tag manager ──────────────────────────────────────────────────────────────
+.tag-manager { width: 640px; }
+
+.tm-section {
+  margin-top: 18px;
+  &:first-child { margin-top: 6px; }
+}
+
+.tm-section-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--bs-secondary);
+  margin-bottom: 8px;
+}
+
+.tm-rule-add {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+
+  input.form-control { flex: 1; min-width: 0; }
+  .bi-arrow-right { color: var(--bs-secondary); }
+  .tm-check { display: flex; align-items: center; gap: 5px; font-size: 12px; color: var(--bs-secondary); white-space: nowrap; margin: 0; cursor: pointer; }
+}
+
+.tm-rule {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 5px 10px;
+  font-size: 13px;
+  border-radius: 6px;
+  background: var(--bs-tertiary-bg);
+  margin-bottom: 4px;
+  b { color: var(--df-accent); }
+}
+
+.tm-search { margin-bottom: 8px; }
+
+.tm-tags {
+  max-height: 340px;
+  overflow-y: auto;
+  border: 1px solid var(--bs-border-color);
+  border-radius: 8px;
+}
+
+.tm-tag {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 10px;
+  border-bottom: 1px solid var(--bs-border-color);
+  &:last-child { border-bottom: none; }
+  &:hover { background: var(--bs-tertiary-bg); }
+
+  .tm-tag-name { flex: 1; font-size: 13px; cursor: text; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .tm-tag-edit { flex: 1; }
+  .tm-tag-count {
+    font-size: 11px;
+    color: var(--bs-secondary);
+    font-variant-numeric: tabular-nums;
+    min-width: 34px;
+    text-align: right;
+  }
+}
+
+.tm-icon {
+  width: 26px; height: 26px;
+  display: grid; place-items: center;
+  border: none; background: transparent;
+  color: var(--bs-secondary);
+  border-radius: 6px; cursor: pointer;
+  &:hover { background: var(--bs-secondary-bg); color: var(--bs-body-color); }
+  &.danger:hover { color: var(--bs-danger); }
+}
+
+.tm-empty { padding: 12px; text-align: center; font-size: 12px; color: var(--bs-secondary); }
+.tm-hint  { margin-top: 6px; font-size: 11px; color: var(--bs-secondary); }

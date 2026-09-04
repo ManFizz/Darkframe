@@ -303,6 +303,27 @@
 .collection-node--favorites .collection-special-icon { color: #e0245e; }
 .collection-node--trash .collection-special-icon { color: var(--bs-secondary); }
 
+.collection-node--smart {
+  .collection-special-icon { color: var(--df-accent); }
+
+  .collection-smart-delete {
+    flex-shrink: 0;
+    width: 20px;
+    height: 20px;
+    display: grid;
+    place-items: center;
+    border: none;
+    border-radius: 4px;
+    background: transparent;
+    color: var(--bs-secondary);
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.15s, color 0.15s, background 0.15s;
+  }
+  &:hover .collection-smart-delete { opacity: 1; }
+  .collection-smart-delete:hover { color: var(--bs-danger); background: var(--bs-secondary-bg); }
+}
+
 // Trash view toolbar (empty-trash action).
 .trash-toolbar {
   display: flex;
