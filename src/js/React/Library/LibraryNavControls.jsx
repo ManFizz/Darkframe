@@ -1,6 +1,8 @@
 import React, {useEffect, useRef, useState} from 'react';
 import {SORT_FIELDS, SORT_ORDER, RATING_MIN, RATING_MAX} from '@hooks/library/useLibraryFilter'
 import {libraryApi} from '@/Infrastructure/Ipc';
+import LibraryService from '@services/LibraryService';
+import {notify} from '@services/NotificationService';
 import NotificationBell from "@react/Helpers/NotificationBell";
 
 // ─── Tag filter input with live suggestions ───────────────────────────────────
@@ -105,12 +107,27 @@ const TagFilterInput = ({ filters, addTag, removeTag, toggleTagExclude }) => {
 
 export const LibraryNavControls = ({ ctx }) => {
     const { filters, update, addTag, removeTag, toggleTagExclude, reset } = ctx;
+    const [savingSmart, setSavingSmart] = useState(false);
+    const [smartName, setSmartName]     = useState('');
 
     const hasFilters =
         filters.search ||
         filters.tags.length > 0 ||
         filters.ratingMin > RATING_MIN ||
         filters.ratingMax < RATING_MAX;
+
+    const createSmart = async () => {
+        const name = smartName.trim();
+        setSavingSmart(false); setSmartName('');
+        if (!name) return;
+        await LibraryService.createSmartCollection(name, {
+            search:    filters.search,
+            tags:      filters.tags,
+            ratingMin: filters.ratingMin,
+            ratingMax: filters.ratingMax,
+        });
+        notify({ message: `Умная коллекция «${name}» создана`, type: 'success' });
+    };
 
     return (
         <div className="library-nav-controls">
@@ -136,6 +153,23 @@ export const LibraryNavControls = ({ ctx }) => {
                 removeTag={removeTag}
                 toggleTagExclude={toggleTagExclude}
             />
+
+            {/* Save the current filter as a smart collection */}
+            {hasFilters && (savingSmart ? (
+                <input
+                    className="nav-smart-input"
+                    autoFocus
+                    placeholder="Имя умной коллекции…"
+                    value={smartName}
+                    onChange={e => setSmartName(e.target.value)}
+                    onKeyDown={e => { if (e.key === 'Enter') createSmart(); if (e.key === 'Escape') { setSavingSmart(false); setSmartName(''); } }}
+                    onBlur={createSmart}
+                />
+            ) : (
+                <button className="nav-reset" title="Сохранить фильтр как умную коллекцию" onClick={() => setSavingSmart(true)}>
+                    <i className="bi bi-funnel-fill" />
+                </button>
+            ))}
 
             {/* Reset-all sits right next to the filters it clears */}
             {hasFilters && (

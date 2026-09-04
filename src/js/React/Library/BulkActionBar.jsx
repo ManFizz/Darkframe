@@ -1,6 +1,8 @@
 import React, {useState} from 'react';
 import LibraryService from '@services/LibraryService';
 import {notify} from '@services/NotificationService';
+import {loadEditPreset} from '@services/imageEditPreset';
+import {FILE_TYPES} from '@/Constants';
 
 const BulkActionBar = ({ selectedItems, collections, onDone, permanent = false }) => {
     const [targetCollection, setTargetCollection] = useState('');
@@ -63,6 +65,29 @@ const BulkActionBar = ({ selectedItems, collections, onDone, permanent = false }
         onDone();
     };
 
+    // Re-apply the last in-editor rotate/crop to every selected image — the fast path
+    // for a batch of shots with the same black bars / resolution.
+    const applyLastEdit = async () => {
+        const preset = loadEditPreset();
+        if (!preset) return;
+        const targets = selectedItems.filter(f => f.type === FILE_TYPES.IMAGE && f.mimeType !== 'image/gif');
+        if (!targets.length) { notify({ message: 'Нет подходящих изображений', type: 'warning' }); return; }
+        if (!confirm(`Применить последнюю правку к ${targets.length} изображениям?`)) return;
+
+        let ok = 0, fail = 0;
+        for (const f of targets) {
+            try { await LibraryService.editImage(f.id, preset); ok++; }
+            catch { fail++; }
+        }
+        notify({
+            message: fail ? `Применено: ${ok}, ошибок: ${fail}` : `Правка применена: ${ok}`,
+            type: fail ? 'warning' : 'success',
+        });
+        onDone();
+    };
+
+    const hasPreset = !permanent && !!loadEditPreset();
+
     return (
         <div className="bulk-action-bar">
             <span className="bulk-count">
@@ -108,6 +133,17 @@ const BulkActionBar = ({ selectedItems, collections, onDone, permanent = false }
                             Добавить тег
                         </button>
                     </div>
+
+                    {hasPreset && (
+                        <button
+                            className="btn btn-sm btn-outline-primary"
+                            title="Применить последнюю правку (поворот / обрезку) ко всем выбранным"
+                            onClick={applyLastEdit}
+                        >
+                            <i className="bi bi-magic me-1" />
+                            Применить правку
+                        </button>
+                    )}
                 </>
             )}
 

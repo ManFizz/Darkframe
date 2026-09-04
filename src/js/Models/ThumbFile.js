@@ -33,6 +33,9 @@ export class ThumbFile {
         this.importedAt = data.importedAt || null;
         this.size = data.size || null;
         this.deletedAt = data.deletedAt || null;
+        this.editedAt = data.editedAt || null;
+        this.mimeType = data.mimeType || null;
+        this.notes = data.notes || null;
 
         this.type = data.type || this._detectType(this.thumbUrl);
         this._meta = data._meta || null;

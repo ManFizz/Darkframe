@@ -3,17 +3,19 @@ import LibraryService from '@services/LibraryService';
 import {ThumbFile} from '@/Models/ThumbFile';
 import {FILE_TYPES, SOURCE_TYPES} from '@/Constants';
 
-export function useLibraryItems(collectionId, trash = false) {
+export function useLibraryItems(collectionId, trash = false, smartFilterJson = null) {
     const [items, setItems] = useState([]);
     const [loading, setLoading] = useState(false);
 
     const load = useCallback(async () => {
-        if (collectionId === false) {
+        if (collectionId === false && !smartFilterJson) {
             setItems([]);
             return;
         }
         setLoading(true);
-        const raw = await LibraryService.getItems({ collectionId, trash });
+        const raw = smartFilterJson
+            ? await LibraryService.getSmartItems(JSON.parse(smartFilterJson))
+            : await LibraryService.getItems({ collectionId, trash });
 
         const collectionThumbs = (raw.collections || []).map(col =>
             new ThumbFile({
@@ -40,20 +42,23 @@ export function useLibraryItems(collectionId, trash = false) {
             tags:       item.tags,
             width:      item.width,
             height:     item.height,
-            remoteType: SOURCE_TYPES.LIBRARY,
             time:       item.importedAt,
             order:      item.order,
             rating:     item.rating,
+            notes:      item.notes,
             type:       item.mimeType.startsWith('video/') ? FILE_TYPES.VIDEO : FILE_TYPES.IMAGE,
-            collectionId: item.collectionId,
             importedAt: item.importedAt,
-            size: item.size,
-            deletedAt: item.deletedAt,
+            size:       item.size,
+            deletedAt:  item.deletedAt,
+            editedAt:   item.editedAt,
+            mimeType:   item.mimeType,
+            remoteType: SOURCE_TYPES.LIBRARY,
+            collectionId: item.collectionId,
         }));
 
         setItems([...collectionThumbs, ...thumbFiles]);
         setLoading(false);
-    }, [collectionId, trash]);
+    }, [collectionId, trash, smartFilterJson]);
 
     useEffect(() => { load(); }, [load]);
 

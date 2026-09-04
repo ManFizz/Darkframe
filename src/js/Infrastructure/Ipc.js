@@ -37,6 +37,8 @@ export const libraryApi = {
     deleteItem:        (data) => invoke('library:deleteItem', data),
     restoreItem:       (data) => invoke('library:restoreItem', data),
     emptyTrash:        ()     => invoke('library:emptyTrash'),
+    editImage:         (data) => invoke('library:editImage', data),
+    revertImage:       (data) => invoke('library:revertImage', data),
     getCollections:    ()     => invoke('library:getCollections'),
     createCollection:  (data) => invoke('library:createCollection', data),
     updateCollection:  (data) => invoke('library:updateCollection', data),
@@ -52,6 +54,18 @@ export const libraryApi = {
     importUrl:         (data) => invoke('library:importUrl', data),
     getStats:          ()     => invoke('library:getStats'),
     reorderCollections: (data) => invoke('library:reorderCollections', data),
+    // Tag manager
+    getAllTags:        ()     => invoke('library:getAllTags'),
+    renameTag:         (data) => invoke('library:renameTag', data),
+    mergeTags:         (data) => invoke('library:mergeTags', data),
+    deleteTag:         (data) => invoke('library:deleteTag', data),
+    getTagRules:       ()     => invoke('library:getTagRules'),
+    addTagRule:        (data) => invoke('library:addTagRule', data),
+    deleteTagRule:     (data) => invoke('library:deleteTagRule', data),
+    // Smart collections
+    getSmartItems:     (filter) => invoke('library:getSmartItems', { filter }),
+    createSmartCollection: (data) => invoke('library:createSmartCollection', data),
+    updateSmartFilter: (data) => invoke('library:updateSmartFilter', data),
 };
 
 export const libraryRegistryApi = {

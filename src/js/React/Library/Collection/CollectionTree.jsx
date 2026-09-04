@@ -347,14 +347,19 @@ const CollectionTree = ({ selectedId, onSelect, onMediaMoved, onFilesTrashed }) 
     const { total, uncategorized, favoritesId, favoritesCount, trashCount } = useLibraryStats(statsVersion);
 
     const handleDropMedia = useCallback(async (fileIds, collectionId) => {
-        await Promise.all(fileIds.map(id => LibraryService.updateItem(id, { collectionId })));
+        // One transaction for the whole selection — firing N parallel updateItem
+        // calls raced each other into SQLITE_BUSY on the single SQLite connection.
+        await LibraryService.bulkUpdateItems(fileIds.map(id => ({ id, data: { collectionId } })));
         refreshStats();
         onMediaMoved?.(fileIds, collectionId);
     }, [refreshStats, onMediaMoved]);
 
-    // Dropping media on the trash node soft-deletes it (recoverable).
+    // Dropping media on the trash node soft-deletes it (recoverable). Sequential,
+    // not Promise.all, so the writes don't contend for the write lock.
     const handleDropTrash = useCallback(async (fileIds) => {
-        await Promise.all(fileIds.map(id => LibraryService.deleteItem(id, false)));
+        for (const id of fileIds) {
+            await LibraryService.deleteItem(id, false);
+        }
         refreshStats();
         onFilesTrashed?.(fileIds);
     }, [refreshStats, onFilesTrashed]);
@@ -483,7 +488,7 @@ const CollectionTree = ({ selectedId, onSelect, onMediaMoved, onFilesTrashed }) 
 
             {!treeCollapsed && (
                 <>
-                    {tree.map((node) => (
+                    {tree.filter(n => !n.isSmart).map((node) => (
                         <CollectionNode
                             key={node.id}
                             node={node}
@@ -508,6 +513,32 @@ const CollectionTree = ({ selectedId, onSelect, onMediaMoved, onFilesTrashed }) 
                                      onConfirm={n => handleCreate(n, creating.parentId)}
                                      onCancel={() => setCreating(null)} placeholder="Вложенная коллекция..." />
                     )}
+                </>
+            )}
+
+            {/* Smart collections — auto-populated from a saved filter. */}
+            {tree.some(n => n.isSmart) && (
+                <>
+                    <div className="collection-tree-divider" />
+                    {tree.filter(n => n.isSmart).map(sc => (
+                        <div
+                            key={sc.id}
+                            className={`collection-node special collection-node--smart ${selectedId === sc.id ? 'active' : ''}`}
+                            onClick={() => onSelect(sc.id)}
+                            title="Умная коллекция (по фильтру)"
+                        >
+                            <i className="bi bi-funnel-fill collection-special-icon" />
+                            <span className="collection-name">{sc.name}</span>
+                            <span className="collection-item-count">{sc.itemCount ?? 0}</span>
+                            <button
+                                className="collection-smart-delete"
+                                title="Удалить умную коллекцию"
+                                onClick={(e) => { e.stopPropagation(); handleDelete(sc.id); }}
+                            >
+                                <i className="bi bi-x" />
+                            </button>
+                        </div>
+                    ))}
                 </>
             )}
         </div>

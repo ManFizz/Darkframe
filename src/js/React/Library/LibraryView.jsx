@@ -27,8 +27,12 @@ const LibraryView = () => {
 
     const isTrash = selectedCollection === SPECIAL.TRASH;
 
+    // A smart collection loads by its saved filter instead of by id.
+    const smartCol = LibraryService.getCollections().find(c => c.id === selectedCollection && c.isSmart);
+    const smartFilterJson = smartCol ? (smartCol.filter || '{}') : null;
+
     const { items, reload, deleteItem, restoreItem } = useLibraryItems(
-        isTrash
+        isTrash || smartFilterJson
             ? undefined
             : selectedCollection === SPECIAL.NONE
                 ? false
@@ -37,7 +41,8 @@ const LibraryView = () => {
                     : selectedCollection === SPECIAL.UNCATEGORIZED
                         ? null
                         : selectedCollection,
-        isTrash
+        isTrash,
+        smartFilterJson
     );
 
     const handleFileOpen = useCallback((file) => {
@@ -136,6 +141,9 @@ const LibraryView = () => {
             setSelectedFile(null);
             refreshStats();
             await reload();
+        } else if (idOrAction === 'refresh') {
+            // e.g. after an in-modal image edit — reload so the busted URLs refetch.
+            await reload();
         } else {
             if (selectedFile?.id === idOrAction) {
                 setSelectedFile(prev =>
@@ -213,7 +221,7 @@ const LibraryView = () => {
                         setOrderedItems(prev => prev.filter(f => !idSet.has(f.id)));
                     }}
                 />
-                {!isTrash && (
+                {!isTrash && !smartFilterJson && (
                     <ImportButton
                         collectionId={
                             selectedCollection === SPECIAL.ALL || selectedCollection === SPECIAL.UNCATEGORIZED
