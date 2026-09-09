@@ -62,6 +62,29 @@ export const LibraryService = {
         return libraryApi.getItems({});
     },
 
+    async getSmartItems(filter) {
+        return libraryApi.getSmartItems(filter);
+    },
+
+    async createSmartCollection(name, filter) {
+        const created = await libraryApi.createSmartCollection({ name, filter });
+        await this.loadCollections();
+        return created;
+    },
+
+    async updateSmartFilter(id, filter) {
+        return libraryApi.updateSmartFilter({ id, filter });
+    },
+
+    // --- Tag manager ---
+    getAllTags()               { return libraryApi.getAllTags(); },
+    renameTag(id, newName)     { return libraryApi.renameTag({ id, newName }); },
+    mergeTags(sourceId, targetId) { return libraryApi.mergeTags({ sourceId, targetId }); },
+    deleteTag(id)              { return libraryApi.deleteTag({ id }); },
+    getTagRules()              { return libraryApi.getTagRules(); },
+    addTagRule(from, to, applyExisting = true) { return libraryApi.addTagRule({ from, to, applyExisting }); },
+    deleteTagRule(id)          { return libraryApi.deleteTagRule({ id }); },
+
     async importDialog(collectionId) {
         return libraryApi.importDialog({ collectionId });
     },
@@ -101,6 +124,15 @@ export const LibraryService = {
 
     async emptyTrash() {
         return libraryApi.emptyTrash();
+    },
+
+    // transform: { angle, flipH, flipV, crop:{x,y,w,h} } — crop in fractions of the rotated image
+    async editImage(id, transform) {
+        return libraryApi.editImage({ id, ...transform });
+    },
+
+    async revertImage(id) {
+        return libraryApi.revertImage({ id });
     },
 
     async importFromEagle({ csvPath, collectionId } = {}) {

@@ -79,7 +79,8 @@ const ContextMenu = ({ x, y, node, onClose, onRename, onDelete, onCreateChild })
 
 const CollectionNode = ({ node, selectedId, onSelect, onRename, onDelete,
                             onCreateChild, onDropMedia, onDropCollection,
-                            draggedIdRef, collapsed, onToggleCollapse, depth = 0 }) => {
+                            draggedIdRef, collapsed, onToggleCollapse, depth = 0,
+                            targetNodeId = null, onConfirmCreate }) => {
     const isOpen = !collapsed.has(node.id);
     const [isRenaming, setIsRenaming]   = useState(false);
     const [renameValue, setRenameValue] = useState('');
@@ -238,6 +239,16 @@ const CollectionNode = ({ node, selectedId, onSelect, onRename, onDelete,
                 <span className="collection-item-count">{node.itemCount ?? 0}</span>
             </div>
 
+            {targetNodeId !== null && node.id === targetNodeId && (
+                <CreateInput
+                    parentId={node.id}
+                    depth={depth}
+                    onConfirm={(name) => onConfirmCreate(name, node.id)}
+                    onCancel={() => setCreating(null)}
+                    placeholder="Вложенная коллекция..."
+                />
+            )}
+
             {isOpen && hasChildren && (
                 <div className="collection-children">
                     {node.children.map((child) => (
@@ -255,6 +266,8 @@ const CollectionNode = ({ node, selectedId, onSelect, onRename, onDelete,
                             collapsed={collapsed}
                             onToggleCollapse={onToggleCollapse}
                             depth={depth + 1}
+                            targetNodeId={targetNodeId}
+                            onConfirmCreate={onConfirmCreate}
                         />
                     ))}
                 </div>
@@ -273,22 +286,41 @@ const CollectionNode = ({ node, selectedId, onSelect, onRename, onDelete,
     );
 };
 
-const CreateInput = ({ parentId = null, onConfirm, onCancel, placeholder }) => {
+const CreateInput = ({ parentId = null, depth = 0, onConfirm, onCancel, placeholder }) => {
     const [value, setValue] = useState('');
+    const inputRef = useRef(null);
+
+    const handleKeyDown = (e) => {
+        e.stopPropagation();
+        if (e.key === 'Enter' && value.trim()) {
+            onConfirm(value.trim());
+        }
+        if (e.key === 'Escape') {
+            onCancel();
+        }
+    };
+
+    const handleMouseDown = (e) => e.stopPropagation();
+
+    const paddingLeft = 8 + depth * 16;
 
     return (
-        <div className="collection-create-input" style={{ paddingLeft: parentId ? 32 : 8 }}>
+        <div
+            className="collection-create-input"
+            style={{ paddingLeft }}
+            onMouseDown={handleMouseDown}
+            onDragStart={(e) => e.preventDefault()}
+        >
             <i className="bi bi-folder me-1 opacity-50" />
             <input
+                ref={inputRef}
                 autoFocus
                 value={value}
                 onChange={e => setValue(e.target.value)}
                 onBlur={() => value.trim() ? onConfirm(value.trim()) : onCancel()}
-                onKeyDown={e => {
-                    if (e.key === 'Enter' && value.trim()) onConfirm(value.trim());
-                    if (e.key === 'Escape') onCancel();
-                    e.stopPropagation();
-                }}
+                onKeyDown={handleKeyDown}
+                onMouseDown={handleMouseDown}
+                onDragStart={(e) => e.preventDefault()}
                 placeholder={placeholder || 'Название...'}
             />
         </div>
@@ -437,7 +469,7 @@ const CollectionTree = ({ selectedId, onSelect, onMediaMoved, onFilesTrashed }) 
                 </button>
                 <span>Коллекции</span>
                 <button className="collection-add-btn" title="Создать коллекцию"
-                        onClick={() => setCreating({ parentId: null })}>
+                        onClick={() => setCreating({ parentId: null, isTopLevel: true })}>
                     <i className="bi bi-plus" />
                 </button>
             </div>
@@ -486,7 +518,7 @@ const CollectionTree = ({ selectedId, onSelect, onMediaMoved, onFilesTrashed }) 
 
             <div className="collection-tree-divider" />
 
-            {!treeCollapsed && (
+{!treeCollapsed && (
                 <>
                     {tree.filter(n => !n.isSmart).map((node) => (
                         <CollectionNode
@@ -496,22 +528,21 @@ const CollectionTree = ({ selectedId, onSelect, onMediaMoved, onFilesTrashed }) 
                             onSelect={onSelect}
                             onRename={updateCollection}
                             onDelete={handleDelete}
-                            onCreateChild={(parentId) => setCreating({ parentId })}
+                            onCreateChild={(parentId) => setCreating({ parentId, targetNodeId: parentId })}
                             onDropMedia={handleDropMedia}
                             onDropCollection={handleDropCollection}
                             draggedIdRef={draggedIdRef}
                             collapsed={collapsed}
                             onToggleCollapse={handleToggleCollapse}
+                            targetNodeId={creating?.targetNodeId ?? null}
+                            onConfirmCreate={handleCreate}
                         />
                     ))}
-                    {creating?.parentId === null && (
-                        <CreateInput onConfirm={n => handleCreate(n, null)}
-                                     onCancel={() => setCreating(null)} placeholder="Новая коллекция..." />
-                    )}
-                    {creating !== null && creating.parentId !== null && (
-                        <CreateInput parentId={creating.parentId}
-                                     onConfirm={n => handleCreate(n, creating.parentId)}
-                                     onCancel={() => setCreating(null)} placeholder="Вложенная коллекция..." />
+                    {creating && creating.isTopLevel && (
+                        <CreateInput
+                            onConfirm={n => handleCreate(n, null)}
+                            onCancel={() => setCreating(null)}
+                            placeholder="Новая коллекция..." />
                     )}
                 </>
             )}
