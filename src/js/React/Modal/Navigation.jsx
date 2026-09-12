@@ -16,7 +16,7 @@ const isCanDisplayedByIdx = (mainArray, nextIdx) => {
     return item.type === FILE_TYPES.VIDEO || item.type === FILE_TYPES.IMAGE;
 };
 
-const Navigation = ({ file, modalUpdater, mainArray, setDegree, panelOpen, onPanelToggle, onEdit, onApplyLast }) => {
+const Navigation = ({ file, modalUpdater, mainArray, setDegree, panelOpen, onPanelToggle, onEdit, onApplyLast, showFav }) => {
     const { isFav, isPending, toggleFav } = useFavorites();
     const [editingCounter, setEditingCounter] = useState(false);
     const [counterInput, setCounterInput] = useState('');
@@ -87,7 +87,7 @@ const Navigation = ({ file, modalUpdater, mainArray, setDegree, panelOpen, onPan
                     openShift(DIRECTION.RIGHT);
                     break;
                 case 'Enter':
-                    if(onPanelToggle == null) //bypass in library
+                    if (showFav) // favourites only exist outside the library
                         handleToggleFav();
                     break;
                 case 'Escape':
@@ -121,7 +121,7 @@ const Navigation = ({ file, modalUpdater, mainArray, setDegree, panelOpen, onPan
                     title="Закрыть"
                     onClick={() => modalUpdater(null)}
                 />
-                {!onPanelToggle && ( //bypass in library
+                {showFav && (
                     isPending(file)
                         ? <i className="bi bi-arrow-repeat spin" title="Добавление…" />
                         : <i

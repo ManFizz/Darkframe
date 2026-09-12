@@ -3,6 +3,7 @@ import Navigation from "./Navigation";
 import Tags from "./Tags";
 import Video from "./Video";
 import MetadataPanel from "../Library/Metadata/MetadataPanel";
+import RemotePanel from "./RemotePanel";
 import ImageEditor from "./ImageEditor";
 import Settings from "../../../../data/settings";
 import {FILE_TYPES, SOURCE_TYPES} from "@/Constants";
@@ -31,8 +32,10 @@ const Modal = ({ fileId, mainArray, modalUpdater, displayFiles, onUpdated }) => 
         mainArray.find(f => f.uniqueId === fileId) || null,
     [fileId, mainArray]);
 
-    const isLibrary  = file?.remoteType === SOURCE_TYPES.LIBRARY;
-    const showPanel  = isLibrary && panelOpen && onUpdated;
+    const isLibrary   = file?.remoteType === SOURCE_TYPES.LIBRARY;
+    const hasMetaPanel = isLibrary && !!onUpdated;               // editable library metadata
+    const hasRemotePanel = !isLibrary && !!file?.tags?.length;   // read-only booru tag panel
+    const showPanel   = panelOpen && (hasMetaPanel || hasRemotePanel);
 
     // Переход к соседнему файлу (используется при удалении и смене коллекции)
     const navigateToNext = useCallback(() => {
@@ -235,7 +238,8 @@ const Modal = ({ fileId, mainArray, modalUpdater, displayFiles, onUpdated }) => 
                         setDegree={setDegree}
                         displayFiles={displayFiles}
                         panelOpen={panelOpen}
-                        onPanelToggle={isLibrary && onUpdated ? () => setPanelOpen(v => !v) : null}
+                        showFav={!isLibrary}
+                        onPanelToggle={(hasMetaPanel || hasRemotePanel) ? () => setPanelOpen(v => !v) : null}
                         onEdit={isLibrary && onUpdated && file.type === FILE_TYPES.IMAGE && file.mimeType !== 'image/gif' ? () => setEditing(true) : null}
                         onApplyLast={isLibrary && onUpdated && file.type === FILE_TYPES.IMAGE && file.mimeType !== 'image/gif' && loadEditPreset() ? handleApplyLast : null}
                     />
@@ -249,13 +253,15 @@ const Modal = ({ fileId, mainArray, modalUpdater, displayFiles, onUpdated }) => 
                         {editing ? null : mediaContent}
                     </div>
                 </div>
-                {showPanel ? (
+                {showPanel && (
                     <div className="modal-panel-wrapper">
-                        <MetadataPanel file={file} onUpdated={handlePanelUpdated} />
+                        {hasMetaPanel
+                            ? <MetadataPanel file={file} onUpdated={handlePanelUpdated} />
+                            : <RemotePanel file={file} />}
                     </div>
-                ) : (
-                    <Tags file={file} />
                 )}
+                {/* Library keeps its old bottom-tags look when its panel is hidden. */}
+                {hasMetaPanel && !panelOpen && <Tags file={file} />}
 
                 {editing && (
                     <ImageEditor
