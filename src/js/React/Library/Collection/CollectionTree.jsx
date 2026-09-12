@@ -289,15 +289,15 @@ const CollectionNode = ({ node, selectedId, onSelect, onRename, onDelete,
 const CreateInput = ({ parentId = null, depth = 0, onConfirm, onCancel, placeholder }) => {
     const [value, setValue] = useState('');
     const inputRef = useRef(null);
+    const doneRef = useRef(false);
+
+    const confirm = (name) => { if (doneRef.current) return; doneRef.current = true; onConfirm(name); };
+    const cancel  = () => { if (doneRef.current) return; doneRef.current = true; onCancel(); };
 
     const handleKeyDown = (e) => {
         e.stopPropagation();
-        if (e.key === 'Enter' && value.trim()) {
-            onConfirm(value.trim());
-        }
-        if (e.key === 'Escape') {
-            onCancel();
-        }
+        if (e.key === 'Enter' && value.trim()) confirm(value.trim());
+        else if (e.key === 'Escape') cancel();
     };
 
     const handleMouseDown = (e) => e.stopPropagation();
@@ -317,7 +317,7 @@ const CreateInput = ({ parentId = null, depth = 0, onConfirm, onCancel, placehol
                 autoFocus
                 value={value}
                 onChange={e => setValue(e.target.value)}
-                onBlur={() => value.trim() ? onConfirm(value.trim()) : onCancel()}
+                onBlur={() => value.trim() ? confirm(value.trim()) : cancel()}
                 onKeyDown={handleKeyDown}
                 onMouseDown={handleMouseDown}
                 onDragStart={(e) => e.preventDefault()}
