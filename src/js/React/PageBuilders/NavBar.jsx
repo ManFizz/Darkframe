@@ -1,4 +1,5 @@
 import React, {useContext, useState} from 'react';
+import {createPortal} from 'react-dom';
 import {BsCaretDownFill, BsFillGrid1X2Fill, BsGearFill, BsSearch, BsShieldShaded} from "react-icons/bs";
 import ModuleRegistry from '@/ModuleRegistry';
 import {displayImagesByPath} from '@modules/folder/FolderController';
@@ -135,8 +136,16 @@ const NavBar = () => {
                 </div>
             </div>
 
-            {showSettings && <SettingsPanel onClose={() => setShowSettings(false)} />}
-            {showTags && <TagManager onClose={() => setShowTags(false)} />}
+            {/* Portalled to body: the glass navbar's backdrop-filter would otherwise
+                make these fixed overlays position against the navbar box, not the viewport. */}
+            {showSettings && createPortal(
+                <SettingsPanel onClose={() => setShowSettings(false)} />,
+                document.body,
+            )}
+            {showTags && createPortal(
+                <TagManager onClose={() => setShowTags(false)} />,
+                document.body,
+            )}
         </header>
     );
 };
