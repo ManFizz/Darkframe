@@ -1,4 +1,4 @@
-import React, {useCallback, useEffect, useMemo} from 'react';
+import React, {useCallback, useEffect, useMemo, useState} from 'react';
 import {CanMoreMedia, LoadMoreMedia} from "@modules/r34/R34Controller";
 import {FILE_TYPES} from "@/Constants";
 import {useFavorites} from "@hooks/useFavorites";
@@ -18,6 +18,8 @@ const isCanDisplayedByIdx = (mainArray, nextIdx) => {
 
 const Navigation = ({ file, modalUpdater, mainArray, setDegree, panelOpen, onPanelToggle, onEdit, onApplyLast }) => {
     const { isFav, isPending, toggleFav } = useFavorites();
+    const [editingCounter, setEditingCounter] = useState(false);
+    const [counterInput, setCounterInput] = useState('');
 
     const currentIndex = useMemo(() => {
         return mainArray.findIndex(f =>
@@ -25,15 +27,31 @@ const Navigation = ({ file, modalUpdater, mainArray, setDegree, panelOpen, onPan
         );
     }, [mainArray, file]);
 
-    const { position, total } = useMemo(() => {
+    const { displayable, position, total } = useMemo(() => {
         const displayable = mainArray.filter(f =>
             f.type === FILE_TYPES.IMAGE || f.type === FILE_TYPES.VIDEO
         );
         const idx = displayable.findIndex(f =>
             String(f.uniqueId) === String(file.uniqueId)
         );
-        return { position: idx + 1, total: displayable.length };
+        return { displayable, position: idx + 1, total: displayable.length };
     }, [mainArray, file]);
+
+    // Jump to a 1-based position among the displayable items.
+    const jumpTo = useCallback((n) => {
+        if (!displayable.length) return;
+        const target = displayable[Math.max(0, Math.min(n - 1, displayable.length - 1))];
+        if (target) modalUpdater(target);
+    }, [displayable, modalUpdater]);
+
+    const commitCounter = useCallback(() => {
+        const n = parseInt(counterInput, 10);
+        setEditingCounter(false);
+        if (!isNaN(n)) jumpTo(n);
+    }, [counterInput, jumpTo]);
+
+    // Close the input if we navigate away by other means.
+    useEffect(() => { setEditingCounter(false); }, [file?.uniqueId]);
 
     const openShift = useCallback((direction) => {
         const nextIdx = currentIndex + direction;
@@ -138,9 +156,35 @@ const Navigation = ({ file, modalUpdater, mainArray, setDegree, panelOpen, onPan
             </div>
 
             {position > 0 && total > 0 && (
-                <div className="modal-nav-counter">
-                    {position}/{total}{CanMoreMedia() ? '+' : ''}
-                </div>
+                editingCounter ? (
+                    <div className="modal-nav-counter editing">
+                        <input
+                            className="modal-nav-counter-input"
+                            type="number"
+                            min={1}
+                            max={total}
+                            autoFocus
+                            value={counterInput}
+                            onChange={e => setCounterInput(e.target.value)}
+                            onFocus={e => e.target.select()}
+                            onKeyDown={e => {
+                                e.stopPropagation();   // don't let modal arrows/Enter/Escape react
+                                if (e.key === 'Enter') commitCounter();
+                                if (e.key === 'Escape') setEditingCounter(false);
+                            }}
+                            onBlur={() => setEditingCounter(false)}
+                        />
+                        <span className="modal-nav-counter-total">/ {total}{CanMoreMedia() ? '+' : ''}</span>
+                    </div>
+                ) : (
+                    <div
+                        className="modal-nav-counter clickable"
+                        title="Кликните, чтобы перейти к номеру"
+                        onClick={() => { setCounterInput(String(position)); setEditingCounter(true); }}
+                    >
+                        {position}/{total}{CanMoreMedia() ? '+' : ''}
+                    </div>
+                )
             )}
 
             {canGoLeft && (
