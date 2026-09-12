@@ -118,6 +118,7 @@ const Navigation = ({ file, modalUpdater, mainArray, setDegree, panelOpen, onPan
             <div className="modal-nav-row">
                 <i
                     className="bi bi-arrow-left-square btn-cancel"
+                    title="Закрыть"
                     onClick={() => modalUpdater(null)}
                 />
                 {!onPanelToggle && ( //bypass in library
@@ -125,11 +126,13 @@ const Navigation = ({ file, modalUpdater, mainArray, setDegree, panelOpen, onPan
                         ? <i className="bi bi-arrow-repeat spin" title="Добавление…" />
                         : <i
                             className={`bi ${isFav(file) ? "bi-heart-fill" : "bi-heart"}`}
+                            title={isFav(file) ? "Убрать из избранного" : "В избранное"}
                             onClick={handleToggleFav}
                         />
                 )}
                 <i
                     className="bi bi-arrow-clockwise"
+                    title="Повернуть на 90°"
                     onClick={() => setDegree(d => (d + 90) % 360)}
                 />
                 {onEdit && (

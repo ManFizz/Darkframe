@@ -137,19 +137,35 @@
     color: white;
     filter: drop-shadow(0 0 5px black);
   }
-  .modal-nav-row .bi {
-    margin: 4px 7px;
-    font-size: 32px;
-    transition: transform 0.2s;
 
-    &:hover { transform: scale(1.1); }
+  // Toolbar icons share one shape: equal square hit-areas, a uniform glyph size
+  // and a soft hover pad — so the mismatched Bootstrap glyphs read as one set.
+  .modal-nav-row .bi {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 38px;
+    height: 38px;
+    margin: 0;
+    font-size: 19px;
+    border-radius: 50%;
+    filter: none;   // sits on the glass pill now, not over bare media
+    transition: background 0.15s ease, color 0.15s ease, transform 0.1s ease;
+
+    &:hover { background: rgba(255, 255, 255, 0.14); }
+    &:active { transform: scale(0.9); }
   }
+
   .btn-cancel {
-    color: #ff4444 !important;
+    color: #ff6b6b !important;
+    &:hover { background: rgba(255, 75, 75, 0.18); }
   }
 
   .modal-nav-panel-btn {
-    &.active { color: var(--bs-primary) !important; }
+    &.active {
+      color: var(--df-accent, var(--bs-primary)) !important;
+      background: rgba(176, 107, 255, 0.2);
+    }
   }
 
   .modal-nav-counter {
@@ -360,12 +376,20 @@ $delete-delay: 1500ms;
   }
 }
 
+// The action group lives in a floating glass pill in the top-left corner, matching
+// the counter pill at the top-centre. Only the pill catches pointer events; the rest
+// of the nav container stays click-through.
 .modal-nav-row {
-  display: flex;
-  width: 100%;
-  height: 32px;
+  display: inline-flex;
   flex-direction: row;
-  justify-content: flex-start;
-  align-items: flex-start;
-  padding-left: 10px;
+  align-items: center;
+  gap: 2px;
+  width: max-content;
+  margin: 12px 0 0 12px;
+  padding: 4px;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--df-glass-border, rgba(255, 255, 255, 0.08));
+  border-radius: 999px;
+  box-shadow: 0 6px 22px rgba(0, 0, 0, 0.4);
 }

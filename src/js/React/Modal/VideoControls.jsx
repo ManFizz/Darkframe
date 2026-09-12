@@ -189,18 +189,24 @@ const VideoControls = ({ video, isPaused, currentTime, videoDuration, playMode, 
     }, [video]);
 
     // ─── Auto-hide the bar after a moment of stillness while playing ────────────
+    const hideTimerRef = useRef(null);
+    const isPausedRef = useRef(isPaused);
+    useEffect(() => { isPausedRef.current = isPaused; }, [isPaused]);
+
+    // Show the bar and (re)arm the idle timer. Used by both mouse move and keyboard
+    // shortcuts, so any interaction — including seeking via keys — surfaces controls.
+    const reveal = useCallback(() => {
+        setHidden(false);
+        clearTimeout(hideTimerRef.current);
+        if (!isPausedRef.current) hideTimerRef.current = setTimeout(() => setHidden(true), IDLE_MS);
+    }, []);
+
     useEffect(() => {
         if (collapsed) return;
-        let timer;
-        const show = () => {
-            setHidden(false);
-            clearTimeout(timer);
-            if (!isPaused) timer = setTimeout(() => setHidden(true), IDLE_MS);
-        };
-        show();
-        document.addEventListener('mousemove', show);
-        return () => { clearTimeout(timer); document.removeEventListener('mousemove', show); };
-    }, [isPaused, collapsed]);
+        reveal();
+        document.addEventListener('mousemove', reveal);
+        return () => { clearTimeout(hideTimerRef.current); document.removeEventListener('mousemove', reveal); };
+    }, [isPaused, collapsed, reveal]);
 
     // ─── Close the speed menu on outside click ─────────────────────────────────
     useEffect(() => {
@@ -218,6 +224,7 @@ const VideoControls = ({ video, isPaused, currentTime, videoDuration, playMode, 
         };
         const onKeyDown = (e) => {
             if (typing()) return;
+            reveal();   // any interaction surfaces the controls + resets the idle timer
 
             // Ctrl+←/→ seeks; plain ←/→ is left to Navigation (prev/next file).
             if (e.ctrlKey || e.metaKey || e.altKey) {
@@ -252,7 +259,7 @@ const VideoControls = ({ video, isPaused, currentTime, videoDuration, playMode, 
             document.removeEventListener('keydown', onKeyDown);
             document.removeEventListener('keyup', onKeyUp);
         };
-    }, [video, togglePlay, toggleMute, toggleFullscreen, togglePip, setVol, bumpRate, stepFrame, skipSec, jumpPct]);
+    }, [video, togglePlay, toggleMute, toggleFullscreen, togglePip, setVol, bumpRate, stepFrame, skipSec, jumpPct, reveal]);
 
     if (collapsed) {
         return (
