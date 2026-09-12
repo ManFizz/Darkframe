@@ -186,6 +186,7 @@ const Modal = ({ fileId, mainArray, modalUpdater, displayFiles, onUpdated }) => 
     }, [onPanMove]);
     const onMediaPointerDown = useCallback((e) => {
         if (zoom <= 1 || e.button !== 0) return;
+        e.preventDefault();   // stop the browser's native image-drag / text selection
         panDrag.current = { sx: e.clientX, sy: e.clientY, ox: pan.x, oy: pan.y };
         window.addEventListener('pointermove', onPanMove);
         window.addEventListener('pointerup', onPanUp);
@@ -201,6 +202,8 @@ const Modal = ({ fileId, mainArray, modalUpdater, displayFiles, onUpdated }) => 
     const mediaContent = file.type === FILE_TYPES.IMAGE ? (
         <img
             alt={file.title}
+            draggable={false}
+            onDragStart={(e) => e.preventDefault()}
             style={{
                 transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom}) rotate(${degree}deg)`,
                 cursor: zoom > 1 ? 'grab' : 'default',
