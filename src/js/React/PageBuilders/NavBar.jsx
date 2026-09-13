@@ -11,6 +11,7 @@ import {useLibraryContext} from '@/LibraryContext';
 import {LibraryNavControls, LibraryNavSort} from '../Library/LibraryNavControls';
 import SettingsPanel from '../Settings/SettingsPanel';
 import TagManager from '../Settings/TagManager';
+import Dashboard from '../Dashboard/Dashboard';
 
 const NavBar = () => {
     const { state, setCurrentSource, setSortInfo, setTypeView, setSafeMode } = useContext(GalleryContext);
@@ -21,6 +22,7 @@ const NavBar = () => {
     const [searchValue, setSearchValue] = useState('');
     const [showSettings, setShowSettings] = useState(false);
     const [showTags, setShowTags] = useState(false);
+    const [showDashboard, setShowDashboard] = useState(false);
 
     const handleNavigation = (sourceType, action = null) => {
         setCurrentSource(sourceType);
@@ -120,6 +122,15 @@ const NavBar = () => {
                     {isLibrary && (
                         <button
                             className="btn navbar-settings-btn"
+                            onClick={() => setShowDashboard(true)}
+                            title="Статистика"
+                        >
+                            <i className="bi bi-bar-chart-line-fill" />
+                        </button>
+                    )}
+                    {isLibrary && (
+                        <button
+                            className="btn navbar-settings-btn"
                             onClick={() => setShowTags(true)}
                             title="Управление тегами"
                         >
@@ -144,6 +155,10 @@ const NavBar = () => {
             )}
             {showTags && createPortal(
                 <TagManager onClose={() => setShowTags(false)} />,
+                document.body,
+            )}
+            {showDashboard && createPortal(
+                <Dashboard onClose={() => setShowDashboard(false)} />,
                 document.body,
             )}
         </header>

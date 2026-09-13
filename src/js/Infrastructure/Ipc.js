@@ -53,6 +53,7 @@ export const libraryApi = {
     importFromJson:    (data) => invoke('library:importFromJson', data),
     importUrl:         (data) => invoke('library:importUrl', data),
     getStats:          ()     => invoke('library:getStats'),
+    getDashboard:      ()     => invoke('library:getDashboard'),
     reorderCollections: (data) => invoke('library:reorderCollections', data),
     // Tag manager
     getAllTags:        ()     => invoke('library:getAllTags'),

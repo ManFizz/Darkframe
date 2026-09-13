@@ -1,0 +1,195 @@
+// ─── Statistics dashboard ─────────────────────────────────────────────────────
+// Reuses the settings modal shell (.settings-overlay / .settings-modal); this file
+// only styles the wider dashboard body and its CSS-only charts.
+
+.dashboard-modal {
+  width: 860px;
+}
+
+.dashboard-body {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+// KPI strip
+.dash-kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 10px;
+}
+
+.dash-kpi {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--bs-border-color);
+  border-radius: 12px;
+  background: var(--bs-tertiary-bg);
+
+  > .bi {
+    font-size: 22px;
+    color: var(--df-accent, var(--bs-primary));
+    flex-shrink: 0;
+  }
+}
+.dash-kpi-value { font-size: 20px; font-weight: 700; line-height: 1.1; }
+.dash-kpi-label { font-size: 12px; color: var(--bs-secondary); margin-top: 2px; }
+.dash-kpi-hint  { font-size: 11px; color: var(--bs-secondary); opacity: 0.8; margin-top: 1px; }
+
+// Card grid
+.dash-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14px;
+}
+
+.dash-card {
+  border: 1px solid var(--bs-border-color);
+  border-radius: 12px;
+  padding: 14px 16px;
+  background: var(--bs-body-bg);
+
+  &-wide { grid-column: 1 / -1; }
+
+  h3 {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 8px;
+    font-size: 13px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--bs-secondary);
+    margin: 0 0 14px;
+  }
+}
+.dash-card-note {
+  font-size: 11px;
+  font-weight: 500;
+  text-transform: none;
+  letter-spacing: 0;
+  opacity: 0.85;
+}
+
+// Type stacked bar + legend
+.dash-typebar {
+  display: flex;
+  height: 16px;
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--bs-tertiary-bg);
+}
+.dash-typebar-seg { transition: width 0.3s ease; }
+
+.dash-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 18px;
+  margin-top: 12px;
+}
+.dash-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  b { font-weight: 700; }
+}
+.dash-legend-pct { color: var(--bs-secondary); font-size: 12px; }
+.dash-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+
+// Vertical bar charts (rating + timeline)
+.dash-bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  height: 130px;
+  padding-top: 14px;
+}
+.dash-bar-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  height: 100%;
+  min-width: 0;
+}
+.dash-bar {
+  width: 100%;
+  max-width: 28px;
+  min-height: 2px;
+  border-radius: 4px 4px 0 0;
+  // Rating bars (default): accent gradient. Timeline bars use the flat accent below.
+  background: linear-gradient(var(--df-accent, #b06bff), #7a3fd0);
+  transition: height 0.3s ease;
+
+  &-accent { background: var(--df-accent, var(--bs-primary)); }
+}
+.dash-bar-val {
+  font-size: 10px;
+  color: var(--bs-secondary);
+  font-variant-numeric: tabular-nums;
+  margin-bottom: 3px;
+  min-height: 12px;
+}
+.dash-bar-label {
+  font-size: 10px;
+  color: var(--bs-secondary);
+  margin-top: 5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+// Top tags
+.dash-taglist { display: flex; flex-direction: column; gap: 7px; }
+.dash-tagrow {
+  display: grid;
+  grid-template-columns: minmax(80px, 38%) 1fr auto;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+}
+.dash-tagrow-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dash-tagrow-track {
+  height: 8px;
+  border-radius: 6px;
+  background: var(--bs-tertiary-bg);
+  overflow: hidden;
+}
+.dash-tagrow-fill {
+  display: block;
+  height: 100%;
+  border-radius: 6px;
+  background: var(--df-accent, var(--bs-primary));
+}
+.dash-tagrow-count {
+  font-variant-numeric: tabular-nums;
+  color: var(--bs-secondary);
+  font-size: 12px;
+}
+
+// Largest files
+.dash-filelist { display: flex; flex-direction: column; gap: 6px; }
+.dash-filerow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+
+  .bi { color: var(--bs-secondary); flex-shrink: 0; }
+}
+.dash-filerow-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dash-filerow-size {
+  font-variant-numeric: tabular-nums;
+  color: var(--bs-secondary);
+  flex-shrink: 0;
+}
+
+@media (max-width: 720px) {
+  .dash-grid { grid-template-columns: 1fr; }
+}

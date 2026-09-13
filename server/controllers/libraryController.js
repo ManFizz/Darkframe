@@ -13,6 +13,7 @@ const { getFavoritesCollectionId } = require('../favoritesCollection');
 const { editImage, revertImage } = require('../services/imageEditService');
 const tagAdmin = require('../services/tagAdmin');
 const { getSmartItems } = require('../services/smartItems');
+const { getDashboard } = require('../services/dashboard');
 
 // When an item's collection changes, drop it at the end of the destination's order
 // so the just-moved item is easy to find (last relative to "Порядок"). Mutates
@@ -276,6 +277,8 @@ function register() {
         ]);
         return { total, uncategorized, favoritesId, favoritesCount, trashCount };
     });
+
+    ipcMain.handle('library:getDashboard', async () => getDashboard());
 
     ipcMain.handle('library:createCollection', async (_, { name, parentId, icon, color }) => {
         return Collection.create({ name, parentId, icon, color });
