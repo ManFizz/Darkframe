@@ -18,7 +18,6 @@ import {notify} from '@services/NotificationService';
 
 const LibraryView = () => {
     const [selectedCollection, setSelectedCollection] = useState(SPECIAL.NONE);
-    const [selectedFile, setSelectedFile] = useState(null);
     const { filtered, setLibraryItems, refreshStats, statsVersion } = useLibraryContext();
     const { favoritesId } = useLibraryStats(statsVersion);
     const [modalFileId, setModalFileId] = useState(null);
@@ -45,24 +44,52 @@ const LibraryView = () => {
         smartFilterJson
     );
 
+    useEffect(() => { setLibraryItems(items); }, [items]);
+
+    // `orderedItems` is what the gallery actually renders (reorders, in-place patches),
+    // so selection ranges are computed against it — not the raw `filtered` list.
+    const [orderedItems, setOrderedItems] = useState([]);
+    useEffect(() => { setOrderedItems(filtered); }, [filtered]);
+
+    const {
+        selected, selectedItems, isSelected,
+        handleSelect, toggle, range, selectAll, invert, clear,
+    } = useSelection(orderedItems);
+
+    // A single selected item drives the (editable) metadata panel; 2+ → bulk panel.
+    const focused = selectedItems.length === 1 ? selectedItems[0] : null;
+
+    const { tree } = useCollections();
+
     const handleFileOpen = useCallback((file) => {
         if (file.type === FILE_TYPES.IMAGE || file.type === FILE_TYPES.VIDEO) {
             setModalFileId(file.uniqueId);
         }
     }, []);
 
-    useEffect(() => {
-        setLibraryItems(items);
-    }, [items]);
+    const handleCollectionSelect = useCallback((id) => {
+        setSelectedCollection(id);
+    }, []);
 
-    const { selected, selectedItems, toggle, selectAll, clear, isSelected } = useSelection(filtered);
+    // Clicking a thumb body selects it (Explorer-style: plain = single, ctrl = toggle,
+    // shift = range). Opening the viewer is the overlay button / context menu / dbl-click.
+    const handleFileClick = useCallback((file, e) => {
+        if (file.type === FILE_TYPES.LIBRARY) {
+            handleCollectionSelect(file._meta.collectionId);
+            return;
+        }
+        handleSelect(file.uniqueId, e || {});
+    }, [handleSelect, handleCollectionSelect]);
 
-    const [orderedItems, setOrderedItems] = useState([]);
-    useEffect(() => {
-        setOrderedItems(filtered);
-    }, [filtered]);
+    // Checkbox overlay: toggle (shift extends the range) without disturbing modifiers.
+    const handleCheckbox = useCallback((file, e) => {
+        if (file.type === FILE_TYPES.LIBRARY) return;
+        if (e?.shiftKey) range(file.uniqueId);
+        else toggle(file.uniqueId);
+    }, [range, toggle]);
 
-    const { tree } = useCollections();
+    // Selection resets whenever the collection/filter view changes.
+    useEffect(() => { clear(); }, [selectedCollection, clear]);
 
     const currentCollectionName = useMemo(() => {
         if (selectedCollection === SPECIAL.ALL ||
@@ -89,36 +116,41 @@ const LibraryView = () => {
         setOrderedItems(reordered);
     }, []);
 
-    const handleFileClick = useCallback((file, e) => {
-        if (file.type === FILE_TYPES.LIBRARY) {
-            handleCollectionSelect(file._meta.collectionId);
-            return;
-        }
-
-        if (e?.ctrlKey || e?.shiftKey || e?.metaKey) {
-            toggle(file.uniqueId, e);
-        } else if (selected.size > 0) {
-            toggle(file.uniqueId, e);
-        } else {
-            setSelectedFile(file);
-        }
-    }, [selected, toggle, handleCollectionSelect]);
-
-    useEffect(() => { clear(); }, [selectedCollection]);
-
     const handleEmptyTrash = useCallback(async () => {
         if (!confirm('Очистить корзину? Все элементы будут удалены навсегда.')) return;
         await LibraryService.emptyTrash();
-        setSelectedFile(null);
+        clear();
         refreshStats();
         await reload();
-    }, [refreshStats, reload]);
+    }, [refreshStats, reload, clear]);
+
+    // Trash every selected item at once (one IPC call), with an Undo toast.
+    const bulkTrash = useCallback(async () => {
+        if (!selectedItems.length || isTrash) return;
+        const ids = selectedItems.map(f => f.id);
+        await LibraryService.deleteItems(ids, false);
+        clear();
+        refreshStats();
+        await reload();
+        notify({
+            message: `Перемещено в корзину: ${ids.length}`,
+            type: 'info',
+            duration: 6000,
+            action: {
+                label: 'Отменить',
+                onClick: async () => {
+                    await LibraryService.restoreItems(ids);
+                    refreshStats();
+                    await reload();
+                },
+            },
+        });
+    }, [selectedItems, isTrash, clear, refreshStats, reload]);
 
     const handleUpdated = useCallback(async (idOrAction, data) => {
         if (idOrAction === 'delete') {
             // In the trash view "delete" means gone for good; elsewhere it's a soft delete.
             await deleteItem(data, isTrash);
-            setSelectedFile(null);
             refreshStats();
             await reload();
             if (!isTrash) {
@@ -138,18 +170,12 @@ const LibraryView = () => {
             }
         } else if (idOrAction === 'restore') {
             await restoreItem(data);
-            setSelectedFile(null);
             refreshStats();
             await reload();
         } else if (idOrAction === 'refresh') {
             // e.g. after an in-modal image edit — reload so the busted URLs refetch.
             await reload();
         } else {
-            if (selectedFile?.id === idOrAction) {
-                setSelectedFile(prev =>
-                    Object.assign(Object.create(Object.getPrototypeOf(prev)), prev, data)
-                );
-            }
             setOrderedItems(prev => {
                 const idx = prev.findIndex(f => f.id === idOrAction);
                 if (idx === -1) return prev;
@@ -175,12 +201,21 @@ const LibraryView = () => {
                 return stillVisible ? [...without, patched] : without;
             });
         }
-    }, [deleteItem, restoreItem, reload, refreshStats, isTrash, selectedCollection, selectedFile]);
+    }, [deleteItem, restoreItem, reload, refreshStats, isTrash, selectedCollection]);
 
-    const handleCollectionSelect = useCallback((id) => {
-        setSelectedCollection(id);
-        setSelectedFile(null);
-    }, []);
+    const onGalleryKeyDown = useCallback((e) => {
+        const k = e.key.toLowerCase();
+        if ((e.ctrlKey || e.metaKey) && k === 'a')      { e.preventDefault(); selectAll(); }
+        else if ((e.ctrlKey || e.metaKey) && k === 'i') { e.preventDefault(); invert(); }
+        else if (e.key === 'Escape' && selected.size)   { clear(); }
+        else if (e.key === 'Delete' && selectedItems.length && !isTrash) { e.preventDefault(); bulkTrash(); }
+    }, [selectAll, invert, clear, selected.size, selectedItems.length, isTrash, bulkTrash]);
+
+    const bulkOnDone = useCallback(async () => {
+        clear();
+        refreshStats();
+        await reload();
+    }, [clear, refreshStats, reload]);
 
     return (
         <div className="library-layout">
@@ -215,10 +250,12 @@ const LibraryView = () => {
                             });
                             return stillVisibleAfterMove ? [...rest, ...moved] : rest;
                         });
+                        clear();
                     }}
                     onFilesTrashed={(fileIds) => {
                         const idSet = new Set(fileIds);
                         setOrderedItems(prev => prev.filter(f => !idSet.has(f.id)));
+                        clear();
                     }}
                 />
                 {!isTrash && !smartFilterJson && (
@@ -234,7 +271,7 @@ const LibraryView = () => {
                 )}
             </div>
 
-            <div className={`library-main ${selected.size === 0 ? 'panel-open' : ''}`}>
+            <div className="library-main">
             {isTrash && (
                 <div className="trash-toolbar">
                     <i className="bi bi-trash me-1" />
@@ -249,12 +286,16 @@ const LibraryView = () => {
                     selectedItems={selectedItems}
                     collections={LibraryService.getCollections()}
                     permanent={isTrash}
-                    onDone={async () => { clear(); refreshStats(); await reload(); }}
+                    totalCount={orderedItems.length}
+                    onSelectAll={selectAll}
+                    onInvert={invert}
+                    onClear={clear}
+                    onDone={bulkOnDone}
                 />
                 <div
                     ref={galleryScrollRef}
                     className="library-gallery"
-                    onKeyDown={e => { if (e.ctrlKey && e.key === 'a') { e.preventDefault(); selectAll(); }}}
+                    onKeyDown={onGalleryKeyDown}
                     tabIndex={0}
                     style={{ outline: 'none' }}
                 >
@@ -263,7 +304,9 @@ const LibraryView = () => {
                         onReordered={handleReordered}
                         isSelected={isSelected}
                         selectedIds={selected}
+                        selectionActive={selected.size > 0}
                         modalUpdater={handleFileClick}
+                        onToggleSelect={handleCheckbox}
                         onFileOpen={handleFileOpen}
                         typeView={2}
                         scrollRef={galleryScrollRef}
@@ -277,7 +320,7 @@ const LibraryView = () => {
                     onUpdated={reload}
                   />
                 : <MetadataPanel
-                    file={selectedFile}
+                    file={focused}
                     onUpdated={handleUpdated}
                   />
             }

@@ -18,6 +18,26 @@
   white-space: nowrap;
 }
 
+.bulk-select-controls {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.bulk-linkbtn {
+  border: none;
+  background: none;
+  color: var(--bs-primary);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 5px;
+  white-space: nowrap;
+
+  &:hover { background: rgba(var(--bs-primary-rgb), 0.14); }
+}
+
 .bulk-action-group {
   display: flex;
   gap: 4px;

@@ -316,6 +316,12 @@ function register() {
         return revertImage(id);
     });
 
+    ipcMain.handle('library:restoreItems', async (_, { ids = [] }) => {
+        if (!ids.length) return { ok: true, count: 0 };
+        await Item.unscoped().update({ deletedAt: null }, { where: { id: { [Op.in]: ids } } });
+        return { ok: true, count: ids.length };
+    });
+
     ipcMain.handle('library:restoreItem', async (_, { id }) => {
         // Unscoped: the row we're restoring is currently trashed.
         await Item.unscoped().update({ deletedAt: null }, { where: { id } });

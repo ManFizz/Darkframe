@@ -12,24 +12,35 @@
     pointer-events: none;
     z-index: 1;
   }
-
-  &::before {
-    content: '✓';
-    position: absolute;
-    top: 6px;
-    right: 6px;
-    width: 20px;
-    height: 20px;
-    background: var(--bs-primary);
-    color: white;
-    border-radius: 50%;
-    font-size: 12px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 2;
-  }
 }
+
+// Selection checkbox (library grid). Hidden until the thumb is hovered, or once a
+// selection is in progress / this item is selected, so the grid stays clean at rest.
+.thumb-check {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  z-index: 3;
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  border: none;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.5);
+  color: #fff;
+  font-size: 15px;
+  line-height: 1;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.12s, background 0.12s, transform 0.1s;
+
+  &:hover { background: rgba(0, 0, 0, 0.78); }
+  &:active { transform: scale(0.9); }
+  &.checked { opacity: 1; color: var(--bs-primary); background: rgba(0, 0, 0, 0.7); }
+}
+.thumb:hover .thumb-check,
+.thumb.selection-active .thumb-check { opacity: 1; }
 
 .thumb-drag-wrapper {
   position: relative;

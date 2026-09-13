@@ -4,11 +4,13 @@ import {notify} from '@services/NotificationService';
 import {loadEditPreset} from '@services/imageEditPreset';
 import {FILE_TYPES} from '@/Constants';
 
-const BulkActionBar = ({ selectedItems, collections, onDone, permanent = false }) => {
+const BulkActionBar = ({ selectedItems, collections, onDone, permanent = false, totalCount = 0, onSelectAll, onInvert, onClear }) => {
     const [targetCollection, setTargetCollection] = useState('');
     const [tagInput, setTagInput] = useState('');
 
     if (selectedItems.length === 0) return null;
+
+    const allSelected = totalCount > 0 && selectedItems.length >= totalCount;
 
     const moveToCollection = async () => {
         const collectionId = targetCollection || null;
@@ -37,9 +39,7 @@ const BulkActionBar = ({ selectedItems, collections, onDone, permanent = false }
         if (permanent && !confirm(`Удалить ${selectedItems.length} элементов навсегда?`)) return;
 
         const ids = selectedItems.map(f => f.id);
-        for (const id of ids) {
-            await LibraryService.deleteItem(id, permanent);
-        }
+        await LibraryService.deleteItems(ids, permanent);   // one IPC call
         onDone();
 
         if (!permanent) {
@@ -49,19 +49,14 @@ const BulkActionBar = ({ selectedItems, collections, onDone, permanent = false }
                 duration: 6000,
                 action: {
                     label: 'Отменить',
-                    onClick: async () => {
-                        for (const id of ids) await LibraryService.restoreItem(id);
-                        onDone();
-                    },
+                    onClick: async () => { await LibraryService.restoreItems(ids); onDone(); },
                 },
             });
         }
     };
 
     const restoreAll = async () => {
-        for (const f of selectedItems) {
-            await LibraryService.restoreItem(f.id);
-        }
+        await LibraryService.restoreItems(selectedItems.map(f => f.id));
         onDone();
     };
 
@@ -91,8 +86,23 @@ const BulkActionBar = ({ selectedItems, collections, onDone, permanent = false }
     return (
         <div className="bulk-action-bar">
             <span className="bulk-count">
-                Выбрано: {selectedItems.length}
+                <i className="bi bi-check2-square me-1" />
+                {selectedItems.length}
             </span>
+
+            {/* Selection controls */}
+            <div className="bulk-select-controls">
+                {!allSelected && onSelectAll && (
+                    <button className="bulk-linkbtn" onClick={onSelectAll} title="Выделить всё (Ctrl+A)">
+                        Все{totalCount ? ` (${totalCount})` : ''}
+                    </button>
+                )}
+                {onInvert && (
+                    <button className="bulk-linkbtn" onClick={onInvert} title="Инвертировать (Ctrl+I)">
+                        Инверт.
+                    </button>
+                )}
+            </div>
 
             {/* In the trash we only offer restore / permanent delete. */}
             {!permanent && (
@@ -167,7 +177,8 @@ const BulkActionBar = ({ selectedItems, collections, onDone, permanent = false }
 
             <button
                 className="btn btn-sm btn-outline-secondary"
-                onClick={onDone}
+                onClick={onClear || onDone}
+                title="Снять выделение (Esc)"
             >
                 <i className="bi bi-x" />
             </button>

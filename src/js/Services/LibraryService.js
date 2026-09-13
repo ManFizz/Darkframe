@@ -126,6 +126,10 @@ export const LibraryService = {
         return libraryApi.restoreItem({ id });
     },
 
+    async restoreItems(ids) {
+        return libraryApi.restoreItems({ ids });
+    },
+
     async findDuplicates() {
         return libraryApi.findDuplicates();
     },

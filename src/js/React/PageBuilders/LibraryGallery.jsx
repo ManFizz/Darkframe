@@ -9,7 +9,7 @@ import {useItemReorder} from '@hooks/library/useItemReorder';
 const INITIAL = 150;
 const CHUNK   = 150;
 
-const LibraryGallery = ({ items, onReordered, isSelected, selectedIds, modalUpdater, typeView = 2, onFileOpen, scrollRef, resetKey }) => {
+const LibraryGallery = ({ items, onReordered, isSelected, selectedIds, selectionActive, modalUpdater, onToggleSelect, typeView = 2, onFileOpen, scrollRef, resetKey }) => {
     const { isDragging, overId, onDragStart, onDragOver, onDrop, onDragEnd } =
         useItemReorder(items, onReordered, selectedIds);
 
@@ -69,6 +69,8 @@ const LibraryGallery = ({ items, onReordered, isSelected, selectedIds, modalUpda
                         modalUpdater={modalUpdater}
                         isModal={false}
                         isSelected={isSelected?.(file.uniqueId)}
+                        selectionActive={selectionActive}
+                        onToggleSelect={onToggleSelect}
                         onOpen={onFileOpen}
                     />
                 </div>

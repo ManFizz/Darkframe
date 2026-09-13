@@ -37,6 +37,7 @@ export const libraryApi = {
     deleteItem:        (data) => invoke('library:deleteItem', data),
     deleteItems:       (data) => invoke('library:deleteItems', data),
     restoreItem:       (data) => invoke('library:restoreItem', data),
+    restoreItems:      (data) => invoke('library:restoreItems', data),
     emptyTrash:        ()     => invoke('library:emptyTrash'),
     duplicateItem:     (data) => invoke('library:duplicateItem', data),
     editImage:         (data) => invoke('library:editImage', data),

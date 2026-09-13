@@ -8,7 +8,7 @@ import {FILE_TYPES, SOURCE_TYPES} from "@/Constants";
 import {useFavorites} from "@hooks/useFavorites";
 import Collection from "./Collection";
 
-const Thumb = (({ file, isModal, modalUpdater, isSelected, onOpen }) => {
+const Thumb = (({ file, isModal, modalUpdater, isSelected, onOpen, onToggleSelect, selectionActive }) => {
     const handleClick = useCallback((e) => {
         if (file.type === FILE_TYPES.IMAGE ||
             file.type === FILE_TYPES.VIDEO ||
@@ -27,6 +27,11 @@ const Thumb = (({ file, isModal, modalUpdater, isSelected, onOpen }) => {
     const handleOpenClick = (event) => {
         event.stopPropagation();
         onOpen?.(file);
+    };
+
+    const handleCheckClick = (event) => {
+        event.stopPropagation();   // don't also trigger the body-click select
+        onToggleSelect?.(file, event);
     };
 
     const handleContextMenu = (event) => {
@@ -56,12 +61,24 @@ const Thumb = (({ file, isModal, modalUpdater, isSelected, onOpen }) => {
     // view so they can be un-favourited there.
     const showHeart = hasOverlay && !onOpen && (file.remoteType !== SOURCE_TYPES.LIBRARY || isFav(file));
 
+    const selectable = hasOverlay && !!onToggleSelect;
+
     return (
         <div
-            className={`card thumb bg-dark ${isModal ? 'modal-active' : ''} ${isRemovedInFavs ? 'opacity-50' : ''} ${isSelected ? 'thumb-selected' : ''}`}
+            className={`card thumb bg-dark ${isModal ? 'modal-active' : ''} ${isRemovedInFavs ? 'opacity-50' : ''} ${isSelected ? 'thumb-selected' : ''} ${selectionActive ? 'selection-active' : ''}`}
             onClick={handleClick}
             onContextMenu={handleContextMenu}
         >
+            {selectable && (
+                <button
+                    type="button"
+                    className={`thumb-check ${isSelected ? 'checked' : ''}`}
+                    title="Выделить (Shift — диапазон)"
+                    onClick={handleCheckClick}
+                >
+                    <i className={`bi ${isSelected ? 'bi-check-square-fill' : 'bi-square'}`} />
+                </button>
+            )}
             {hasOverlay && (
                 <div className="overlay">
                     {onOpen && !isModal && (
