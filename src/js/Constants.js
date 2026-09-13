@@ -9,7 +9,6 @@ export const FILE_TYPES = {
 export const SOURCE_TYPES = {
     FOLDER: 1,
     R34: 2,
-    P365: 3,
     GELBOORU: 4,
     FAVORITE: 5,
     LIBRARY: 6,

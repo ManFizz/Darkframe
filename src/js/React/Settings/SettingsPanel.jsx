@@ -4,7 +4,15 @@ import {configApi} from '@/Infrastructure/Ipc';
 const SECRET_RE = /key|password|token/i;
 
 // Human labels + descriptions. Unknown keys fall back to the raw key, no desc.
+// Remote-section toggles, split out of the generic "settings" into their own card.
+const MODULE_KEYS = ['EnableR34', 'EnableGelbooru', 'EnableR34Favs'];
+
 const META = {
+    modules: {
+        EnableR34:      { label: 'Rule34',   desc: 'Показывать раздел rule34.xxx' },
+        EnableGelbooru: { label: 'Gelbooru', desc: 'Показывать раздел gelbooru.com' },
+        EnableR34Favs:  { label: 'R34 Favs', desc: 'Показывать раздел избранного rule34.xxx' },
+    },
     settings: {
         SafeView:         { label: 'Безопасный просмотр',     desc: 'Скрывать чувствительный контент по умолчанию' },
         MaxThumbsPerPage: { label: 'Превью на страницу',      desc: 'Сколько миниатюр подгружать за раз' },
@@ -15,7 +23,6 @@ const META = {
     },
     private: {
         startPath:   { label: 'Стартовая папка',  desc: 'С какой папки открывается файловый источник' },
-        P365UserId:  { label: 'Porno365 User ID', desc: 'Идентификатор пользователя porno365' },
         RealBooruId: { label: 'RealBooru ID',     desc: 'Идентификатор пользователя RealBooru' },
         R34ApiKey:   { label: 'Rule34 API Key',   desc: 'Ключ API для rule34.xxx' },
         R34UserId:   { label: 'Rule34 User ID',   desc: 'Идентификатор пользователя rule34.xxx' },
@@ -112,18 +119,20 @@ const FieldRow = ({ name, value, meta = {}, onChange }) => {
     );
 };
 
-const Section = ({ icon, title, value, meta, onChange }) => (
+// `keys` optionally restricts which fields render; onChange still merges back into
+// the full `value`, so a filtered section never drops the hidden keys.
+const Section = ({ icon, title, value, meta, keys, onChange }) => (
     <div className="settings-section">
         <div className="settings-section-title">
             <i className={`bi ${icon} me-2`} />
             {title}
         </div>
         <div className="settings-section-body">
-            {Object.entries(value).map(([key, val]) => (
+            {(keys ?? Object.keys(value)).map(key => (
                 <FieldRow
                     key={key}
                     name={key}
-                    value={val}
+                    value={value[key]}
                     meta={meta[key] || {}}
                     onChange={nv => onChange({ ...value, [key]: nv })}
                 />
@@ -158,6 +167,14 @@ const SettingsPanel = ({ onClose }) => {
 
     const loading = !settings || !priv;
 
+    // Hide a section's credentials while that section is disabled. rule34's key/id
+    // back both the R34 and R34 Favs sections, so either one keeps them visible.
+    const r34On = !!(settings?.EnableR34 || settings?.EnableR34Favs);
+    const privateKeys = priv
+        ? Object.keys(priv).filter(k =>
+            !((k === 'R34ApiKey' || k === 'R34UserId') && !r34On))
+        : [];
+
     return (
         <div className="settings-overlay" onMouseDown={onClose}>
             <div className="settings-modal" onMouseDown={e => e.stopPropagation()}>
@@ -177,12 +194,22 @@ const SettingsPanel = ({ onClose }) => {
                     ) : (
                         <>
                             <Section
+                                icon="bi-grid" title="Разделы"
+                                value={settings} meta={META.modules}
+                                keys={MODULE_KEYS.filter(k => k in settings)}
+                                onChange={setSettings}
+                            />
+                            <Section
                                 icon="bi-sliders" title="Общие"
-                                value={settings} meta={META.settings} onChange={setSettings}
+                                value={settings} meta={META.settings}
+                                keys={Object.keys(settings).filter(k => !MODULE_KEYS.includes(k))}
+                                onChange={setSettings}
                             />
                             <Section
                                 icon="bi-shield-lock" title="Приватные"
-                                value={priv} meta={META.private} onChange={setPriv}
+                                value={priv} meta={META.private}
+                                keys={privateKeys}
+                                onChange={setPriv}
                             />
                         </>
                     )}

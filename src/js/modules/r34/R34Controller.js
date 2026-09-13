@@ -42,7 +42,6 @@ export function GetSourceDataById(sourceId) {
         case SOURCE_TYPES.REALBOORU:
             return sources.realbooru;
         case SOURCE_TYPES.FOLDER:
-        case SOURCE_TYPES.P365:
         case SOURCE_TYPES.FAVORITE:
         case SOURCE_TYPES.COLLECTION:
             throw new Error("Unknown source type");

@@ -5,6 +5,9 @@ const Settings = {
     LongView: true,
     HttpProxy: false,
     LibraryPath: 'D:\\MyLibrary',
+    EnableR34: false,
+    EnableGelbooru: false,
+    EnableR34Favs: false,
 };
 
 module.exports = Settings;
