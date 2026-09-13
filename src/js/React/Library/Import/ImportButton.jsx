@@ -96,6 +96,34 @@ const ImportButton = ({ collectionId, collectionName, onImported }) => {
             notify({ message: 'Подходящих файлов не найдено', type: 'warning' });
         }
 
+        // Files matching something already in the trash aren't silently restored:
+        // ask once whether to pull them out. "No" (ignoring the toast) leaves both the
+        // import and the trash untouched.
+        const trashed = skipped.filter(s => s.reason === 'trashed' && s.existingId);
+        if (trashed.length) {
+            notify({
+                message: trashed.length === 1
+                    ? `«${trashed[0].existingTitle}» лежит в корзине`
+                    : `В корзине: ${trashed.length} (совпадают с импортируемыми)`,
+                type: 'warning',
+                duration: 12000,
+                action: {
+                    label: 'Достать из корзины',
+                    onClick: async () => {
+                        let ok = 0;
+                        for (const t of trashed) {
+                            try { await LibraryService.restoreItem(t.existingId); ok++; } catch { /* skip */ }
+                        }
+                        notify({
+                            message: ok ? `Восстановлено из корзины: ${ok}` : 'Не удалось восстановить',
+                            type: ok ? 'success' : 'danger',
+                        });
+                        if (ok) onImported?.();
+                    },
+                },
+            });
+        }
+
         // Duplicates aren't dropped silently anymore: ask once (per import) whether to
         // add them anyway. Non-blocking — the unique files are already in by now, and
         // this single toast lets the user opt the duplicates in with one click.

@@ -90,14 +90,12 @@ async function importFile({ filePath, collectionId = null, tags = [], sourceUrl 
         });
 
         if (existing) {
-            // Re-importing a file that's sitting in the trash brings it back.
-            if (existing.deletedAt) {
-                await existing.update({ deletedAt: null });
-                return { skipped: false, item: existing.toJSON(), restored: true };
-            }
+            // A matching file already exists. If it's in the trash, don't silently
+            // restore it — report it back so the UI can ask whether to pull it out.
+            // Nothing is added and the trash is untouched unless the user opts in.
             return {
                 skipped: true,
-                reason: 'duplicate',
+                reason: existing.deletedAt ? 'trashed' : 'duplicate',
                 existingId: existing.id,
                 existingTitle: existing.title || existing.fileName,
                 collectionName: existing.collection?.name || 'Без коллекции',
