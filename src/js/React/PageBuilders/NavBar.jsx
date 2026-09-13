@@ -1,6 +1,6 @@
 import React, {useContext, useState} from 'react';
 import {createPortal} from 'react-dom';
-import {BsCaretDownFill, BsFillGrid1X2Fill, BsGearFill, BsSearch, BsShieldShaded} from "react-icons/bs";
+import {BsCaretDownFill, BsFillGrid1X2Fill, BsSearch, BsShieldShaded, BsSliders} from "react-icons/bs";
 import ModuleRegistry from '@/ModuleRegistry';
 import {displayImagesByPath} from '@modules/folder/FolderController';
 
@@ -9,9 +9,8 @@ import {SORT_TYPE, SOURCE_TYPES} from "@/Constants";
 import {SORT_ORDER} from '@hooks/library/useLibraryFilter';
 import {useLibraryContext} from '@/LibraryContext';
 import {LibraryNavControls, LibraryNavSort} from '../Library/LibraryNavControls';
-import SettingsPanel from '../Settings/SettingsPanel';
 import TagManager from '../Settings/TagManager';
-import Dashboard from '../Dashboard/Dashboard';
+import ControlPanel from '../ControlPanel/ControlPanel';
 
 const NavBar = () => {
     const { state, setCurrentSource, setSortInfo, setTypeView, setSafeMode } = useContext(GalleryContext);
@@ -20,9 +19,11 @@ const NavBar = () => {
     const isLibrary = state.currentSource === SOURCE_TYPES.LIBRARY;
 
     const [searchValue, setSearchValue] = useState('');
-    const [showSettings, setShowSettings] = useState(false);
+    const [showPanel, setShowPanel] = useState(false);
+    const [panelTab, setPanelTab] = useState('manage');
     const [showTags, setShowTags] = useState(false);
-    const [showDashboard, setShowDashboard] = useState(false);
+
+    const openPanel = (tab = 'manage') => { setPanelTab(tab); setShowPanel(true); };
 
     const handleNavigation = (sourceType, action = null) => {
         setCurrentSource(sourceType);
@@ -122,15 +123,6 @@ const NavBar = () => {
                     {isLibrary && (
                         <button
                             className="btn navbar-settings-btn"
-                            onClick={() => setShowDashboard(true)}
-                            title="Статистика"
-                        >
-                            <i className="bi bi-bar-chart-line-fill" />
-                        </button>
-                    )}
-                    {isLibrary && (
-                        <button
-                            className="btn navbar-settings-btn"
                             onClick={() => setShowTags(true)}
                             title="Управление тегами"
                         >
@@ -139,26 +131,22 @@ const NavBar = () => {
                     )}
                     <button
                         className="btn navbar-settings-btn"
-                        onClick={() => setShowSettings(true)}
-                        title="Настройки"
+                        onClick={() => openPanel(isLibrary ? 'manage' : 'settings')}
+                        title="Панель управления"
                     >
-                        <BsGearFill />
+                        <BsSliders />
                     </button>
                 </div>
             </div>
 
             {/* Portalled to body: the glass navbar's backdrop-filter would otherwise
                 make these fixed overlays position against the navbar box, not the viewport. */}
-            {showSettings && createPortal(
-                <SettingsPanel onClose={() => setShowSettings(false)} />,
+            {showPanel && createPortal(
+                <ControlPanel initialTab={panelTab} onClose={() => setShowPanel(false)} />,
                 document.body,
             )}
             {showTags && createPortal(
                 <TagManager onClose={() => setShowTags(false)} />,
-                document.body,
-            )}
-            {showDashboard && createPortal(
-                <Dashboard onClose={() => setShowDashboard(false)} />,
                 document.body,
             )}
         </header>

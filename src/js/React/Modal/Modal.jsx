@@ -173,6 +173,19 @@ const Modal = ({ fileId, mainArray, modalUpdater, displayFiles, onUpdated }) => 
         }
     }, [file, onUpdated]);
 
+    // Full copy of the current item (files + metadata + tags), so one can be cropped
+    // independently. Reloads the list so the new copy shows up (right after the source).
+    const handleDuplicate = useCallback(async () => {
+        if (!file || !onUpdated) return;
+        try {
+            await LibraryService.duplicateItem(file.id);
+            notify({ message: 'Дубликат создан', type: 'success' });
+            onUpdated('refresh');
+        } catch (e) {
+            notify({ message: `Не удалось дублировать: ${e.message}`, type: 'danger' });
+        }
+    }, [file, onUpdated]);
+
     const handlePanelUpdated = useCallback((idOrAction, data) => {
         if (idOrAction === 'delete') {
             handleDelete();
@@ -274,6 +287,7 @@ const Modal = ({ fileId, mainArray, modalUpdater, displayFiles, onUpdated }) => 
                         onPanelToggle={(hasMetaPanel || hasRemotePanel) ? () => setPanelOpen(v => !v) : null}
                         onEdit={isLibrary && onUpdated && file.type === FILE_TYPES.IMAGE && file.mimeType !== 'image/gif' ? () => setEditing(true) : null}
                         onApplyLast={isLibrary && onUpdated && file.type === FILE_TYPES.IMAGE && file.mimeType !== 'image/gif' && loadEditPreset() ? handleApplyLast : null}
+                        onDuplicate={isLibrary && onUpdated ? handleDuplicate : null}
                     />
                 )}
 

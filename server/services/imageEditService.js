@@ -1,8 +1,13 @@
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
 const sharp = require('sharp');
 const { getActive } = require('../libraryRegistry');
 const Item = require('../models/Item');
+
+// fileHash follows the actual file bytes, so a cropped copy stops matching its
+// source in the duplicate finder (and a revert makes it match again).
+const hashBuffer = (buf) => crypto.createHash('sha256').update(buf).digest('hex');
 
 // Don't let libvips keep input files memory-mapped/open between calls — otherwise the
 // original stays locked and the *next* edit's write-back fails (Windows sharing violation).
@@ -116,7 +121,7 @@ async function editImage(id, { angle = 0, flipH = false, flipV = false, crop } =
 
     const editedAt = Math.floor(Date.now() / 1000);
     await Item.unscoped().update(
-        { width: size.width, height: size.height, editedAt },
+        { width: size.width, height: size.height, editedAt, fileHash: hashBuffer(outBuf) },
         { where: { id } },
     );
 
@@ -138,7 +143,7 @@ async function revertImage(id) {
     fs.unlinkSync(backup);
 
     await Item.unscoped().update(
-        { width: size.width, height: size.height, editedAt: null },
+        { width: size.width, height: size.height, editedAt: null, fileHash: hashBuffer(pristine) },
         { where: { id } },
     );
 

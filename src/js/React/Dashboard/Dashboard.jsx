@@ -64,18 +64,9 @@ const Dashboard = ({ onClose }) => {
     const timeline = data ? data.timeline.slice(-12) : [];
     const tagMax = data && data.topTags.length ? data.topTags[0].count : 1;
 
+    // Rendered as a tab inside the Control Panel — just the scrolling body.
     return (
-        <div className="settings-overlay" onMouseDown={onClose}>
-            <div className="settings-modal dashboard-modal" onMouseDown={e => e.stopPropagation()}>
-                <div className="settings-header">
-                    <i className="bi bi-bar-chart-line-fill me-2" />
-                    <span>Статистика</span>
-                    <button className="settings-close" onClick={onClose} title="Закрыть">
-                        <i className="bi bi-x-lg" />
-                    </button>
-                </div>
-
-                <div className="settings-body dashboard-body">
+        <div className="settings-body dashboard-body">
                     {error && <div className="settings-error">{error}</div>}
                     {!data && !error && (
                         <div className="settings-loading">
@@ -199,8 +190,6 @@ const Dashboard = ({ onClose }) => {
                             </div>
                         </>
                     )}
-                </div>
-            </div>
         </div>
     );
 };

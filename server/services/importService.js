@@ -74,34 +74,36 @@ function isVideo(mimeType) {
     return mimeType.startsWith('video/');
 }
 
-async function importFile({ filePath, collectionId = null, tags = [], sourceUrl = '', overrides = {} }) {
+async function importFile({ filePath, collectionId = null, tags = [], sourceUrl = '', overrides = {}, allowDuplicate = false }) {
     const safeCollectionId =
         collectionId === 'ALL' || collectionId === 'UNCATEGORIZED' ? null : collectionId || null;
 
     const fileHash = await getFileHash(filePath);
 
-    // Unscoped: fileHash is UNIQUE, so we must also see trashed rows to avoid an
-    // INSERT that would violate the constraint.
-    const existing = await Item.unscoped().findOne({
-        where: { fileHash },
-        include: [{ model: Collection, as: 'collection', attributes: ['id', 'name'] }],
-    });
+    // When the user hasn't opted into duplicates, a matching hash either restores a
+    // trashed copy or is reported back as a skipped duplicate. With allowDuplicate
+    // we skip this check entirely and add a fresh copy (fileHash is no longer unique).
+    if (!allowDuplicate) {
+        const existing = await Item.unscoped().findOne({
+            where: { fileHash },
+            include: [{ model: Collection, as: 'collection', attributes: ['id', 'name'] }],
+        });
 
-    if (existing) {
-        // Re-importing a file that's sitting in the trash brings it back instead
-        // of failing as a "duplicate".
-        if (existing.deletedAt) {
-            await existing.update({ deletedAt: null });
-            return { skipped: false, item: existing.toJSON(), restored: true };
+        if (existing) {
+            // Re-importing a file that's sitting in the trash brings it back.
+            if (existing.deletedAt) {
+                await existing.update({ deletedAt: null });
+                return { skipped: false, item: existing.toJSON(), restored: true };
+            }
+            return {
+                skipped: true,
+                reason: 'duplicate',
+                existingId: existing.id,
+                existingTitle: existing.title || existing.fileName,
+                collectionName: existing.collection?.name || 'Без коллекции',
+                filePath,
+            };
         }
-        return {
-            skipped: true,
-            reason: 'duplicate',
-            existingId: existing.id,
-            existingTitle: existing.title || existing.fileName,
-            collectionName: existing.collection?.name || 'Без коллекции',
-            filePath,
-        };
     }
 
     const id = uuidv4();
@@ -173,14 +175,14 @@ async function importFile({ filePath, collectionId = null, tags = [], sourceUrl 
     return { skipped: false, item: item.toJSON() };
 }
 
-async function importFiles({ filePaths, collectionId, tags, sourceUrl }) {
+async function importFiles({ filePaths, collectionId, tags, sourceUrl, allowDuplicate = false }) {
     const results = [];
     const skipped = [];
     const errors  = [];
 
     for (const filePath of filePaths) {
         try {
-            const result = await importFile({ filePath, collectionId, tags, sourceUrl });
+            const result = await importFile({ filePath, collectionId, tags, sourceUrl, allowDuplicate });
             if (result.skipped) skipped.push(result);
             else                results.push(result.item);
         } catch (e) {

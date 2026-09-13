@@ -16,7 +16,7 @@ const isCanDisplayedByIdx = (mainArray, nextIdx) => {
     return item.type === FILE_TYPES.VIDEO || item.type === FILE_TYPES.IMAGE;
 };
 
-const Navigation = ({ file, modalUpdater, mainArray, setDegree, panelOpen, onPanelToggle, onEdit, onApplyLast, showFav }) => {
+const Navigation = ({ file, modalUpdater, mainArray, setDegree, panelOpen, onPanelToggle, onEdit, onApplyLast, onDuplicate, showFav }) => {
     const { isFav, isPending, toggleFav } = useFavorites();
     const [editingCounter, setEditingCounter] = useState(false);
     const [counterInput, setCounterInput] = useState('');
@@ -147,6 +147,13 @@ const Navigation = ({ file, modalUpdater, mainArray, setDegree, panelOpen, onPan
                         className="bi bi-magic"
                         title="Применить последнюю правку (поворот / обрезку)"
                         onClick={onApplyLast}
+                    />
+                )}
+                {onDuplicate && (
+                    <i
+                        className="bi bi-copy"
+                        title="Дублировать (полная копия)"
+                        onClick={onDuplicate}
                     />
                 )}
                 {onPanelToggle && (

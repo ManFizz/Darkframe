@@ -6,6 +6,7 @@ const { Op } = require('sequelize');
 const sequelize = require('../database');
 const path = require('path');
 const fs = require('fs');
+const crypto = require('crypto');
 const { importFromEagleCsv } = require('../services/eagleImportService');
 const { importFromUrl } = require('../services/urlImportService');
 const { importFromJson } = require('../services/jsonImportService');
@@ -14,6 +15,7 @@ const { editImage, revertImage } = require('../services/imageEditService');
 const tagAdmin = require('../services/tagAdmin');
 const { getSmartItems } = require('../services/smartItems');
 const { getDashboard } = require('../services/dashboard');
+const { findDuplicates } = require('../services/duplicates');
 
 // When an item's collection changes, drop it at the end of the destination's order
 // so the just-moved item is easy to find (last relative to "Порядок"). Mutates
@@ -24,6 +26,23 @@ async function moveToEndOnCollectionChange(id, fields, t) {
     if (!cur || cur.collectionId === fields.collectionId) return;
     const maxOrder = await Item.max('order', { where: { collectionId: fields.collectionId }, transaction: t });
     fields.order = (Number.isFinite(maxOrder) ? maxOrder : -1) + 1;
+}
+
+// Next free "(N)" title for a duplicate: "cat" → "cat (2)", "cat (2)" → "cat (3)",
+// skipping numbers already taken by siblings in the same collection.
+function nextDuplicateTitle(title, siblingTitles) {
+    const m = String(title || '').match(/^(.*?)\s*\((\d+)\)\s*$/);
+    const base = (m ? m[1] : String(title || '')).trim();
+
+    let maxN = 1;   // the plain base counts as copy #1
+    for (const t of siblingTitles) {
+        const s = String(t || '').trim();
+        if (base && s === base) continue;
+        const mm = s.match(/^(.*?)\s*\((\d+)\)\s*$/);
+        if (mm && mm[1].trim() === base) maxN = Math.max(maxN, parseInt(mm[2], 10));
+    }
+    const n = maxN + 1;
+    return base ? `${base} (${n})` : `(${n})`;
 }
 
 function register() {
@@ -40,8 +59,8 @@ function register() {
         return importFiles({ filePaths, collectionId });
     });
 
-    ipcMain.handle('library:importFiles', async (_, { filePaths, collectionId, tags, sourceUrl }) => {
-        return importFiles({ filePaths, collectionId, tags, sourceUrl });
+    ipcMain.handle('library:importFiles', async (_, { filePaths, collectionId, tags, sourceUrl, allowDuplicate = false }) => {
+        return importFiles({ filePaths, collectionId, tags, sourceUrl, allowDuplicate });
     });
 
     ipcMain.handle('library:getItems', async (_, params = {}) => {
@@ -196,6 +215,99 @@ function register() {
         return { ok: true };
     });
 
+    // Full copy of an item: its files (original + thumb) plus every field and tag,
+    // as a new independent item placed right after the source. Lets the user
+    // edit/crop one copy without touching the other.
+    ipcMain.handle('library:duplicateItem', async (_, { id }) => {
+        const src = await Item.unscoped().findByPk(id, {
+            include: [{ model: Tag, as: 'tags', through: { attributes: [] } }],
+        });
+        if (!src) throw new Error('Элемент не найден');
+
+        const srcDir = path.join(ITEMS_PATH, src.id);
+        const files = fs.existsSync(srcDir) ? fs.readdirSync(srcDir) : [];
+        if (!files.length) throw new Error('Файлы элемента не найдены');
+
+        const newId  = crypto.randomUUID();
+        const dstDir = path.join(ITEMS_PATH, newId);
+        fs.mkdirSync(dstDir, { recursive: true });
+
+        try {
+            for (const f of files) {
+                fs.copyFileSync(path.join(srcDir, f), path.join(dstDir, f));
+            }
+
+            const s = src.toJSON();
+
+            // Sibling titles in the same collection → next free "(N)" title.
+            const sibTitles = await Item.unscoped().findAll({
+                where: { collectionId: s.collectionId, deletedAt: null },
+                attributes: ['title'],
+            });
+            const newTitle = nextDuplicateTitle(s.title, sibTitles.map(r => r.title));
+
+            const created = await sequelize.transaction(async (t) => {
+                // Current display order of the collection's live items.
+                const sibs = await Item.unscoped().findAll({
+                    where: { collectionId: s.collectionId, deletedAt: null },
+                    attributes: ['id'],
+                    order: [['order', 'ASC']],
+                    transaction: t,
+                });
+
+                const ids = sibs.map(r => r.id);
+                const at  = ids.indexOf(src.id);
+                const insertPos = at === -1 ? ids.length : at + 1;
+                ids.splice(insertPos, 0, newId);   // drop the copy right after the source
+
+                const item = await Item.create({
+                    id: newId,
+                    fileName:   s.fileName,
+                    title:      newTitle,
+                    sourceUrl:  s.sourceUrl,
+                    notes:      s.notes,
+                    rating:     s.rating,
+                    width:      s.width,
+                    height:     s.height,
+                    size:       s.size,
+                    mimeType:   s.mimeType,
+                    duration:   s.duration,
+                    collectionId: s.collectionId,
+                    fileHash:   s.fileHash,
+                    importedAt: Math.floor(Date.now() / 1000),
+                    createdAt:  s.createdAt,
+                    editedAt:   s.editedAt,
+                    order:      insertPos,
+                    deletedAt:  null,
+                }, { transaction: t });
+
+                if (src.tags?.length) {
+                    await ItemTag.bulkCreate(
+                        src.tags.map(tag => ({ itemId: newId, tagId: tag.id })),
+                        { transaction: t },
+                    );
+                }
+
+                // Renumber the whole sequence so orders are contiguous and the copy
+                // stays put (many collections import with every order = 0, so a plain
+                // "shift the tail" wouldn't be enough to place it after the source).
+                for (let idx = 0; idx < ids.length; idx++) {
+                    await Item.unscoped().update(
+                        { order: idx }, { where: { id: ids[idx] }, transaction: t },
+                    );
+                }
+
+                return item;
+            });
+
+            return { ok: true, id: created.id };
+        } catch (e) {
+            // Row couldn't be created — don't leave orphaned copied files behind.
+            fs.rmSync(dstDir, { recursive: true, force: true });
+            throw e;
+        }
+    });
+
     ipcMain.handle('library:editImage', async (_, { id, ...transform }) => {
         return editImage(id, transform);
     });
@@ -279,6 +391,23 @@ function register() {
     });
 
     ipcMain.handle('library:getDashboard', async () => getDashboard());
+
+    ipcMain.handle('library:findDuplicates', async () => findDuplicates());
+
+    // Soft-delete (or permanently delete) many items at once — used by the duplicate
+    // finder to trash the extra copies in one call.
+    ipcMain.handle('library:deleteItems', async (_, { ids = [], permanent = false }) => {
+        if (!ids.length) return { ok: true, count: 0 };
+        if (permanent) {
+            for (const id of ids) await hardDeleteItem(id);   // sequential: single SQLite writer
+        } else {
+            await Item.unscoped().update(
+                { deletedAt: Math.floor(Date.now() / 1000) },
+                { where: { id: { [Op.in]: ids } } },
+            );
+        }
+        return { ok: true, count: ids.length };
+    });
 
     ipcMain.handle('library:createCollection', async (_, { name, parentId, icon, color }) => {
         return Collection.create({ name, parentId, icon, color });

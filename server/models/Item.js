@@ -19,7 +19,9 @@ const Item = sequelize.define('Item', {
     duration:       { type: DataTypes.FLOAT, allowNull: true },
     collectionId:   { type: DataTypes.UUID, allowNull: true },
     order:          { type: DataTypes.INTEGER, defaultValue: 0, allowNull: false },
-    fileHash:       { type: DataTypes.STRING(64), allowNull: true, unique: true, },
+    // Not unique: duplicates may be imported on purpose (user opts in at import),
+    // then reviewed in the duplicate finder. Indexed (non-unique) for fast grouping.
+    fileHash:       { type: DataTypes.STRING(64), allowNull: true, },
     importedAt:     { type: DataTypes.INTEGER, defaultValue: () => Math.floor(Date.now() / 1000), },
     createdAt:      { type: DataTypes.INTEGER, allowNull: true, },
     // Soft-delete: NULL = live item, unix timestamp = moved to trash.

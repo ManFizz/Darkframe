@@ -96,11 +96,35 @@ const ImportButton = ({ collectionId, collectionName, onImported }) => {
             notify({ message: 'Подходящих файлов не найдено', type: 'warning' });
         }
 
-        skipped.forEach(s => notify({
-            message: `«${s.existingTitle}» уже есть в «${s.collectionName}»`,
-            type: 'warning',
-            duration: 5000,
-        }));
+        // Duplicates aren't dropped silently anymore: ask once (per import) whether to
+        // add them anyway. Non-blocking — the unique files are already in by now, and
+        // this single toast lets the user opt the duplicates in with one click.
+        const dupes = skipped.filter(s => s.reason === 'duplicate' && s.filePath);
+        if (dupes.length) {
+            notify({
+                message: dupes.length === 1
+                    ? `«${dupes[0].existingTitle}» уже есть в библиотеке`
+                    : `Дубликатов пропущено: ${dupes.length} (уже есть в библиотеке)`,
+                type: 'warning',
+                duration: 12000,
+                action: {
+                    label: 'Добавить всё равно',
+                    onClick: async () => {
+                        const r = await LibraryService.importFiles({
+                            filePaths: dupes.map(d => d.filePath),
+                            collectionId,
+                            allowDuplicate: true,
+                        });
+                        const added = r.results?.length || 0;
+                        notify({
+                            message: added ? `Добавлено дубликатов: ${added}` : 'Не удалось добавить дубликаты',
+                            type: added ? 'success' : 'danger',
+                        });
+                        if (added) onImported?.();
+                    },
+                },
+            });
+        }
 
         errors.forEach(() => notify({
             message: `Ошибка импорта: ${errors.length} файлов`,

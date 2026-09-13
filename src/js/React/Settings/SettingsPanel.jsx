@@ -175,59 +175,51 @@ const SettingsPanel = ({ onClose }) => {
             !((k === 'R34ApiKey' || k === 'R34UserId') && !r34On))
         : [];
 
+    // Rendered as a tab inside the Control Panel: no overlay/header of its own,
+    // just the settings body + a save/relaunch footer.
     return (
-        <div className="settings-overlay" onMouseDown={onClose}>
-            <div className="settings-modal" onMouseDown={e => e.stopPropagation()}>
-                <div className="settings-header">
-                    <i className="bi bi-gear-fill me-2" />
-                    <span>Настройки</span>
-                    <button className="settings-close" onClick={onClose} title="Закрыть">
-                        <i className="bi bi-x-lg" />
-                    </button>
-                </div>
-
-                <div className="settings-body">
-                    {loading ? (
-                        <div className="settings-loading">
-                            <i className="bi bi-arrow-repeat spin me-2" />Загрузка…
-                        </div>
-                    ) : (
-                        <>
-                            <Section
-                                icon="bi-grid" title="Разделы"
-                                value={settings} meta={META.modules}
-                                keys={MODULE_KEYS.filter(k => k in settings)}
-                                onChange={setSettings}
-                            />
-                            <Section
-                                icon="bi-sliders" title="Общие"
-                                value={settings} meta={META.settings}
-                                keys={Object.keys(settings).filter(k => !MODULE_KEYS.includes(k))}
-                                onChange={setSettings}
-                            />
-                            <Section
-                                icon="bi-shield-lock" title="Приватные"
-                                value={priv} meta={META.private}
-                                keys={privateKeys}
-                                onChange={setPriv}
-                            />
-                        </>
-                    )}
-                </div>
-
-                <div className="settings-footer">
-                    {error && <span className="settings-error">{error}</span>}
-                    <button className="btn btn-outline-secondary btn-sm" onClick={onClose} disabled={saving}>
-                        Отмена
-                    </button>
-                    <button className="btn btn-primary btn-sm" onClick={handleSave} disabled={loading || saving}>
-                        {saving
-                            ? <><i className="bi bi-arrow-repeat spin me-1" />Перезапуск…</>
-                            : <><i className="bi bi-check2 me-1" />Сохранить и перезапустить</>}
-                    </button>
-                </div>
+        <>
+            <div className="settings-body">
+                {loading ? (
+                    <div className="settings-loading">
+                        <i className="bi bi-arrow-repeat spin me-2" />Загрузка…
+                    </div>
+                ) : (
+                    <>
+                        <Section
+                            icon="bi-grid" title="Разделы"
+                            value={settings} meta={META.modules}
+                            keys={MODULE_KEYS.filter(k => k in settings)}
+                            onChange={setSettings}
+                        />
+                        <Section
+                            icon="bi-sliders" title="Общие"
+                            value={settings} meta={META.settings}
+                            keys={Object.keys(settings).filter(k => !MODULE_KEYS.includes(k))}
+                            onChange={setSettings}
+                        />
+                        <Section
+                            icon="bi-shield-lock" title="Приватные"
+                            value={priv} meta={META.private}
+                            keys={privateKeys}
+                            onChange={setPriv}
+                        />
+                    </>
+                )}
             </div>
-        </div>
+
+            <div className="settings-footer">
+                {error && <span className="settings-error">{error}</span>}
+                <button className="btn btn-outline-secondary btn-sm" onClick={onClose} disabled={saving}>
+                    Закрыть
+                </button>
+                <button className="btn btn-primary btn-sm" onClick={handleSave} disabled={loading || saving}>
+                    {saving
+                        ? <><i className="bi bi-arrow-repeat spin me-1" />Перезапуск…</>
+                        : <><i className="bi bi-check2 me-1" />Сохранить и перезапустить</>}
+                </button>
+            </div>
+        </>
     );
 };
 

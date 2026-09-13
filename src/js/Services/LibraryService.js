@@ -89,8 +89,8 @@ export const LibraryService = {
         return libraryApi.importDialog({ collectionId });
     },
 
-    async importFiles({ filePaths, collectionId, tags = [], sourceUrl = '' }) {
-        return libraryApi.importFiles({ filePaths, collectionId, tags, sourceUrl });
+    async importFiles({ filePaths, collectionId, tags = [], sourceUrl = '', allowDuplicate = false }) {
+        return libraryApi.importFiles({ filePaths, collectionId, tags, sourceUrl, allowDuplicate });
     },
 
     async importDirectoryDialog(collectionId) {
@@ -118,12 +118,24 @@ export const LibraryService = {
         return libraryApi.deleteItem({ id, permanent });
     },
 
+    async deleteItems(ids, permanent = false) {
+        return libraryApi.deleteItems({ ids, permanent });
+    },
+
     async restoreItem(id) {
         return libraryApi.restoreItem({ id });
     },
 
+    async findDuplicates() {
+        return libraryApi.findDuplicates();
+    },
+
     async emptyTrash() {
         return libraryApi.emptyTrash();
+    },
+
+    async duplicateItem(id) {
+        return libraryApi.duplicateItem({ id });
     },
 
     // transform: { angle, flipH, flipV, crop:{x,y,w,h} } — crop in fractions of the rotated image

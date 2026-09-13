@@ -33,11 +33,16 @@ async function migrations() {
             type: DataTypes.STRING(64),
             allowNull: true,
         });
+    }
 
-        await queryInterface.addIndex('Items', ['fileHash'], {
-            unique: true,
-            name: 'items_fileHash_unique',
-        });
+    // fileHash used to be UNIQUE (dedup on import). Duplicates are now allowed on
+    // purpose, so drop the unique index and keep a plain one for fast grouping.
+    const itemIndexes = await queryInterface.showIndex('Items');
+    if (itemIndexes.find(i => i.name === 'items_fileHash_unique')) {
+        await queryInterface.removeIndex('Items', 'items_fileHash_unique');
+    }
+    if (!itemIndexes.find(i => i.name === 'items_fileHash_idx')) {
+        await queryInterface.addIndex('Items', ['fileHash'], { name: 'items_fileHash_idx' });
     }
     const indexes = await queryInterface.showIndex('Tags');
     if (!indexes.find(i => i.name === 'tags_name_idx')) {
