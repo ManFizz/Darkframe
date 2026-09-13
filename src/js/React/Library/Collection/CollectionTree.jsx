@@ -10,6 +10,7 @@ export const SPECIAL = {
     ALL: 'ALL',
     UNCATEGORIZED: 'UNCATEGORIZED',
     TRASH: 'TRASH',
+    HISTORY: 'HISTORY',
 };
 
 // Which tree branches the user has collapsed — persisted so the tree looks the
@@ -504,6 +505,15 @@ const CollectionTree = ({ selectedId, onSelect, onMediaMoved, onFilesTrashed }) 
                     <span className="collection-item-count">{favoritesCount}</span>
                 </SpecialFileDropTarget>
             )}
+
+            <div
+                className={`collection-node special ${selectedId === SPECIAL.HISTORY ? 'active' : ''}`}
+                onClick={() => onSelect(SPECIAL.HISTORY)}
+                title="Недавно просмотренное (по секциям)"
+            >
+                <i className="bi bi-clock-history collection-special-icon" />
+                <span className="collection-name">История</span>
+            </div>
 
             <SpecialFileDropTarget
                 className={`collection-node special collection-node--trash ${selectedId === SPECIAL.TRASH ? 'active' : ''}`}

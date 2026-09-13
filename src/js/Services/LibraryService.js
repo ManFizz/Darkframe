@@ -146,6 +146,23 @@ export const LibraryService = {
         return libraryApi.generateMissingMedia();
     },
 
+    // --- View history ---
+    async recordView(payload) {
+        return libraryApi.recordView(payload);
+    },
+    async getHistory(section = null) {
+        return libraryApi.getHistory({ section });
+    },
+    async getHistorySections() {
+        return libraryApi.getHistorySections();
+    },
+    async clearHistory(section = null) {
+        return libraryApi.clearHistory({ section });
+    },
+    async removeHistory(ids) {
+        return libraryApi.removeHistory({ ids });
+    },
+
     async emptyTrash() {
         return libraryApi.emptyTrash();
     },

@@ -61,6 +61,12 @@ export const libraryApi = {
     checkIntegrity:    ()     => invoke('library:checkIntegrity'),
     cleanupIntegrity:  (data) => invoke('library:cleanupIntegrity', data),
     generateMissingMedia: ()  => invoke('library:generateMissingMedia'),
+    // View history / recently viewed
+    recordView:        (data) => invoke('library:recordView', data),
+    getHistory:        (params) => invoke('library:getHistory', params),
+    getHistorySections: ()    => invoke('library:getHistorySections'),
+    clearHistory:      (params) => invoke('library:clearHistory', params),
+    removeHistory:     (data) => invoke('library:removeHistory', data),
     reorderCollections: (data) => invoke('library:reorderCollections', data),
     // Tag manager
     getAllTags:        ()     => invoke('library:getAllTags'),

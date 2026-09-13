@@ -9,12 +9,24 @@ import BulkActionBar from "./BulkActionBar";
 import useSelection from "@hooks/gallery/useSelection";
 import LibraryService from "@services/LibraryService"
 import LibraryGallery from "../PageBuilders/LibraryGallery";
-import {FILE_TYPES} from "@/Constants";
+import {FILE_TYPES, SOURCE_TYPES} from "@/Constants";
+import {ThumbFile} from "@/Models/ThumbFile";
 import useCollections from "@hooks/library/useCollections"
 import {useLibraryStats} from "@hooks/library/useLibraryStats";
 import {useLibraryContext} from '@/LibraryContext';
 import Modal from "@react/Modal/Modal";
 import {notify} from '@services/NotificationService';
+
+// Human labels for the history section selector (keys are SOURCE_TYPES / remoteType).
+const SECTION_LABELS = {
+    [SOURCE_TYPES.LIBRARY]:   'Библиотека',
+    [SOURCE_TYPES.R34]:       'R34',
+    [SOURCE_TYPES.GELBOORU]:  'Gelbooru',
+    [SOURCE_TYPES.REALBOORU]: 'Realbooru',
+    [SOURCE_TYPES.FOLDER]:    'Папки',
+    [SOURCE_TYPES.FAVORITE]:  'Избранное',
+};
+const sectionLabel = (s) => SECTION_LABELS[s] || `Секция ${s}`;
 
 const LibraryView = () => {
     const [selectedCollection, setSelectedCollection] = useState(SPECIAL.NONE);
@@ -25,13 +37,20 @@ const LibraryView = () => {
     useDragAutoScroll(galleryScrollRef);
 
     const isTrash = selectedCollection === SPECIAL.TRASH;
+    const isHistory = selectedCollection === SPECIAL.HISTORY;
+
+    // History view: which section is shown (null = all) + the sections that have data.
+    const [historySection, setHistorySection] = useState(null);
+    const [historySections, setHistorySections] = useState([]);
 
     // A smart collection loads by its saved filter instead of by id.
     const smartCol = LibraryService.getCollections().find(c => c.id === selectedCollection && c.isSmart);
     const smartFilterJson = smartCol ? (smartCol.filter || '{}') : null;
 
     const { items, reload, deleteItem, restoreItem } = useLibraryItems(
-        isTrash || smartFilterJson
+        isHistory
+            ? false                              // history is loaded separately, not from the item DB
+            : isTrash || smartFilterJson
             ? undefined
             : selectedCollection === SPECIAL.NONE
                 ? false
@@ -48,8 +67,30 @@ const LibraryView = () => {
 
     // `orderedItems` is what the gallery actually renders (reorders, in-place patches),
     // so selection ranges are computed against it — not the raw `filtered` list.
+    // In the history view it's driven by loadHistory() instead of the item DB.
     const [orderedItems, setOrderedItems] = useState([]);
-    useEffect(() => { setOrderedItems(filtered); }, [filtered]);
+    useEffect(() => { if (!isHistory) setOrderedItems(filtered); }, [filtered, isHistory]);
+
+    // Load recently-viewed for the chosen section, newest first. Snapshots are rebuilt
+    // into ThumbFiles so the gallery + viewer work uniformly across sources.
+    const loadHistory = useCallback(async () => {
+        const [rows, sections] = await Promise.all([
+            LibraryService.getHistory(historySection),
+            LibraryService.getHistorySections(),
+        ]);
+        setHistorySections(sections);
+        setOrderedItems(rows.map(r => {
+            const tf = new ThumbFile(r.data || {});
+            tf.uniqueId  = `hist-${r.historyId}`;   // stable & unique across sections
+            tf.historyId = r.historyId;
+            tf.viewedAt  = r.lastViewedAt;
+            tf.viewCount = r.viewCount;
+            tf.section   = r.section;
+            return tf;
+        }));
+    }, [historySection]);
+
+    useEffect(() => { if (isHistory) loadHistory(); }, [isHistory, loadHistory]);
 
     const {
         selected, selectedItems, isSelected,
@@ -147,6 +188,22 @@ const LibraryView = () => {
         });
     }, [selectedItems, isTrash, clear, refreshStats, reload]);
 
+    const clearCurrentHistory = useCallback(async () => {
+        const scope = historySection == null ? 'всю историю' : `историю раздела «${sectionLabel(historySection)}»`;
+        if (!confirm(`Очистить ${scope}?`)) return;
+        await LibraryService.clearHistory(historySection);
+        clear();
+        await loadHistory();
+    }, [historySection, clear, loadHistory]);
+
+    const removeSelectedFromHistory = useCallback(async () => {
+        const ids = selectedItems.map(f => f.historyId).filter(Boolean);
+        if (!ids.length) return;
+        await LibraryService.removeHistory(ids);
+        clear();
+        await loadHistory();
+    }, [selectedItems, clear, loadHistory]);
+
     const handleUpdated = useCallback(async (idOrAction, data) => {
         if (idOrAction === 'delete') {
             // In the trash view "delete" means gone for good; elsewhere it's a soft delete.
@@ -224,7 +281,7 @@ const LibraryView = () => {
                 mainArray={orderedItems}
                 modalUpdater={(file) => setModalFileId(file?.uniqueId || null)}
                 displayFiles={orderedItems}
-                onUpdated={handleUpdated}
+                onUpdated={isHistory ? undefined : handleUpdated}
             />
             <div className="library-sidebar" onDragOver={e => e.stopPropagation()}>
                 <CollectionTree
@@ -258,7 +315,7 @@ const LibraryView = () => {
                         clear();
                     }}
                 />
-                {!isTrash && !smartFilterJson && (
+                {!isTrash && !smartFilterJson && !isHistory && (
                     <ImportButton
                         collectionId={
                             selectedCollection === SPECIAL.ALL || selectedCollection === SPECIAL.UNCATEGORIZED
@@ -282,7 +339,43 @@ const LibraryView = () => {
                     </button>
                 </div>
             )}
-            <BulkActionBar
+            {isHistory && (
+                <div className="history-toolbar">
+                    <i className="bi bi-clock-history history-toolbar-icon" />
+                    <div className="history-sections">
+                        <button
+                            className={`history-sec ${historySection == null ? 'active' : ''}`}
+                            onClick={() => setHistorySection(null)}
+                        >
+                            Все
+                        </button>
+                        {historySections.map(s => (
+                            <button
+                                key={s.section}
+                                className={`history-sec ${historySection === s.section ? 'active' : ''}`}
+                                onClick={() => setHistorySection(s.section)}
+                            >
+                                {sectionLabel(s.section)}
+                                <span className="history-sec-count">{s.count}</span>
+                            </button>
+                        ))}
+                    </div>
+                    <div className="history-actions ms-auto">
+                        {selectedItems.length > 0 && (
+                            <button className="btn btn-sm btn-outline-secondary" onClick={removeSelectedFromHistory}>
+                                <i className="bi bi-x-lg me-1" />
+                                Убрать ({selectedItems.length})
+                            </button>
+                        )}
+                        <button className="btn btn-sm btn-outline-danger" onClick={clearCurrentHistory}>
+                            <i className="bi bi-trash3 me-1" />
+                            Очистить
+                        </button>
+                    </div>
+                </div>
+            )}
+            {!isHistory && (
+                <BulkActionBar
                     selectedItems={selectedItems}
                     collections={LibraryService.getCollections()}
                     permanent={isTrash}
@@ -292,6 +385,7 @@ const LibraryView = () => {
                     onClear={clear}
                     onDone={bulkOnDone}
                 />
+            )}
                 <div
                     ref={galleryScrollRef}
                     className="library-gallery"
@@ -310,11 +404,70 @@ const LibraryView = () => {
                         onFileOpen={handleFileOpen}
                         typeView={2}
                         scrollRef={galleryScrollRef}
-                        resetKey={selectedCollection}
+                        resetKey={isHistory ? `history:${historySection ?? 'all'}` : selectedCollection}
                     />
                 </div>
             </div>
-            {selectedItems.length > 1
+            {isHistory ? (
+                <div className="metadata-panel">
+                    {focused ? (
+                        <>
+                            <div className="metadata-preview">
+                                {focused.type === FILE_TYPES.VIDEO
+                                    ? <video src={focused.thumbUrl} muted loop autoPlay />
+                                    : <img src={focused.thumbUrl} alt={focused.title} />}
+                            </div>
+                            <div className="metadata-content">
+                                <div className="metadata-section">
+                                    <label>Раздел</label>
+                                    <span className="metadata-value">{sectionLabel(focused.section)}</span>
+                                </div>
+                                <div className="metadata-section">
+                                    <label>Название</label>
+                                    <span className="metadata-value">{focused.title}</span>
+                                </div>
+                                <div className="metadata-section">
+                                    <label>Просмотров</label>
+                                    <span className="metadata-value">{focused.viewCount}</span>
+                                </div>
+                                {focused.viewedAt && (
+                                    <div className="metadata-section">
+                                        <label>Последний просмотр</label>
+                                        <span className="metadata-value">
+                                            {new Date(focused.viewedAt * 1000).toLocaleString('ru-RU')}
+                                        </span>
+                                    </div>
+                                )}
+                                {focused.tags?.length > 0 && (
+                                    <div className="metadata-section">
+                                        <label>Теги</label>
+                                        <div className="remote-tags">
+                                            {focused.tags.map(t => (
+                                                <span key={t} className="badge tag bg-secondary">{t}</span>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+                                {focused.sourceUrl && (
+                                    <div className="metadata-section">
+                                        <label>Источник</label>
+                                        <a className="btn btn-sm btn-outline-secondary"
+                                           href={focused.sourceUrl} target="_blank" rel="noreferrer">
+                                            <i className="bi bi-box-arrow-up-right me-1" />
+                                            Открыть источник
+                                        </a>
+                                    </div>
+                                )}
+                            </div>
+                        </>
+                    ) : (
+                        <div className="metadata-panel-empty">
+                            <i className="bi bi-clock-history" />
+                            <span>Выбери элемент</span>
+                        </div>
+                    )}
+                </div>
+            ) : selectedItems.length > 1
                 ? <BulkMetadataPanel
                     items={selectedItems}
                     onUpdated={reload}

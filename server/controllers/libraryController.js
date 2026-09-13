@@ -17,6 +17,7 @@ const { getSmartItems } = require('../services/smartItems');
 const { getDashboard } = require('../services/dashboard');
 const { findDuplicates } = require('../services/duplicates');
 const maintenance = require('../services/maintenance');
+const viewHistory = require('../services/viewHistory');
 
 // When an item's collection changes, drop it at the end of the destination's order
 // so the just-moved item is easy to find (last relative to "Порядок"). Mutates
@@ -400,6 +401,13 @@ function register() {
     ipcMain.handle('library:getDashboard', async () => getDashboard());
 
     ipcMain.handle('library:findDuplicates', async () => findDuplicates());
+
+    // ─── View history / recently viewed (per section) ────────────────────────
+    ipcMain.handle('library:recordView',        async (_, p)  => viewHistory.recordView(p || {}));
+    ipcMain.handle('library:getHistory',        async (_, p)  => viewHistory.getHistory(p || {}));
+    ipcMain.handle('library:getHistorySections', async ()     => viewHistory.getHistorySections());
+    ipcMain.handle('library:clearHistory',      async (_, p)  => viewHistory.clearHistory(p || {}));
+    ipcMain.handle('library:removeHistory',     async (_, p)  => viewHistory.removeHistory(p || {}));
 
     // ─── Maintenance (Панель управления → Управление) ─────────────────────────
     ipcMain.handle('library:checkIntegrity', async () => maintenance.checkIntegrity());

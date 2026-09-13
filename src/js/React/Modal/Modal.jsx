@@ -130,6 +130,36 @@ const Modal = ({ fileId, mainArray, modalUpdater, displayFiles, onUpdated }) => 
         return () => { cancelled = true; };
     }, [file?.uniqueId]);
 
+    // Record a view once the item has actually been looked at for a moment — a short
+    // dwell keeps arrow-key fly-throughs out of the history. Dedup + per-section
+    // storage happens server-side; the key is stable per source (lib id / media URL).
+    useEffect(() => {
+        if (!file || (file.type !== FILE_TYPES.IMAGE && file.type !== FILE_TYPES.VIDEO)) return;
+        const section = file.remoteType;
+        if (section == null) return;
+
+        const timer = setTimeout(() => {
+            const key = section === SOURCE_TYPES.LIBRARY && file.id
+                ? `lib:${file.id}`
+                : (file.getUrl?.() || file.thumbUrl);
+            if (!key) return;
+            LibraryService.recordView({
+                section,
+                key,
+                data: {
+                    id: file.id, title: file.title, remoteId: file.remoteId,
+                    width: file.width, height: file.height,
+                    previewUrl: file.previewUrl, thumbUrl: file.thumbUrl, contentUrl: file.contentUrl,
+                    sourceUrl: file.sourceUrl, tags: file.tags, type: file.type,
+                    remoteType: file.remoteType, localUrl: file.localUrl, mimeType: file.mimeType,
+                    rating: file.rating, time: file.time, size: file.size,
+                },
+            }).catch(() => {});
+        }, 900);
+
+        return () => clearTimeout(timer);
+    }, [file?.uniqueId]);
+
     useEffect(() => {
         if (!file) return;
 

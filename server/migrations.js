@@ -70,6 +70,9 @@ async function migrations() {
 
     // Tag rename rules (from → to). New table — create it if missing.
     await require('./models/TagAlias').sync();
+
+    // Deduplicated "recently viewed" log (per section). New table — create if missing.
+    await require('./models/ViewHistory').sync();
 }
 
 module.exports = { migrations};

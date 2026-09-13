@@ -336,6 +336,48 @@
   flex-shrink: 0;
 }
 
+// ─── History (recently viewed) ────────────────────────────────────────────────
+.history-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--bs-border-color);
+  flex-shrink: 0;
+  flex-wrap: wrap;
+}
+.history-toolbar-icon { color: var(--df-accent, var(--bs-primary)); font-size: 15px; }
+
+.history-sections {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.history-sec {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border: 1px solid var(--bs-border-color);
+  background: none;
+  color: var(--bs-secondary);
+  border-radius: 999px;
+  padding: 3px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+
+  &:hover { color: var(--bs-body-color); }
+  &.active {
+    color: #fff;
+    background: var(--df-accent, var(--bs-primary));
+    border-color: transparent;
+  }
+}
+.history-sec-count { font-size: 11px; opacity: 0.7; }
+
+.history-actions { display: flex; gap: 8px; }
+
 .collection-icon {
   font-size: 14px;
   flex-shrink: 0;
