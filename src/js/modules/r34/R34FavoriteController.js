@@ -57,7 +57,7 @@ export async function DisplayRemoteFavoriteR34() {
             }
 
             pid += postsPerPage;
-            await new Promise(r => setTimeout(r, 300));
+            await new Promise(r => setTimeout(r, 500));
         }
     } catch (error) {
         if (error.name === 'AbortError' || error.message === 'AbortError') {
@@ -68,14 +68,67 @@ export async function DisplayRemoteFavoriteR34() {
     }
 }
 
+// rule34's API rate-limits bursts, so we cap how many detail requests run at once
+// and back off (honouring Retry-After) when it answers 429/503 instead of firing
+// one request per id simultaneously.
+const DETAIL_CONCURRENCY = 3;
+const MAX_RETRIES = 5;
+const BASE_BACKOFF = 600;
+
+const sleep = (ms, signal) => new Promise((resolve, reject) => {
+    const t = setTimeout(resolve, ms);
+    signal?.addEventListener('abort', () => {
+        clearTimeout(t);
+        reject(new DOMException('Aborted', 'AbortError'));
+    }, { once: true });
+});
+
+// Fetch JSON, retrying on 429/503 with exponential backoff + jitter. Returns null
+// for other non-OK responses; aborts propagate.
+async function fetchJsonWithRetry(url, signal, attempt = 0) {
+    if (signal.aborted) throw new DOMException('Aborted', 'AbortError');
+
+    const res = await fetch(url, { signal });
+
+    if (res.status === 429 || res.status === 503) {
+        if (attempt >= MAX_RETRIES) return null;
+        const retryAfter = parseInt(res.headers.get('Retry-After'), 10);
+        const wait = Number.isFinite(retryAfter)
+            ? retryAfter * 1000
+            : BASE_BACKOFF * 2 ** attempt + Math.random() * 300;
+        await sleep(wait, signal);
+        return fetchJsonWithRetry(url, signal, attempt + 1);
+    }
+
+    if (!res.ok) return null;
+    return res.json();
+}
+
+// Run `worker` over `items` with at most `limit` in flight at a time.
+async function mapLimit(items, limit, worker) {
+    const results = new Array(items.length);
+    let next = 0;
+    const run = async () => {
+        while (next < items.length) {
+            const i = next++;
+            results[i] = await worker(items[i], i);
+        }
+    };
+    await Promise.all(Array.from({ length: Math.min(limit, items.length) }, run));
+    return results;
+}
+
 async function fetchPostDetails(ids, signal) {
-    const promises = ids.map(id =>
-        fetch(`${API_URL}&tags=id:${id}`, { signal })
-            .then(res => res.json())
-            .then(data => data[0])
-            .catch(() => null)
-    );
-    return (await Promise.all(promises)).filter(p => p);
+    const results = await mapLimit(ids, DETAIL_CONCURRENCY, async (id) => {
+        try {
+            const data = await fetchJsonWithRetry(`${API_URL}&tags=id:${id}`, signal);
+            return data?.[0] ?? null;
+        } catch (e) {
+            if (e.name === 'AbortError') throw e;   // let the caller stop the whole load
+            return null;
+        }
+    });
+    return results.filter(Boolean);
 }
 
 export function StopR34Loading() {
