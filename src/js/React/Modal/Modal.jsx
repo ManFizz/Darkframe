@@ -73,6 +73,38 @@ const Modal = ({ fileId, mainArray, modalUpdater, displayFiles, onUpdated }) => 
         return () => document.removeEventListener('keydown', handleKey, true);
     }, [isLibrary, onUpdated, handleDelete]);
 
+    // Number keys rate a library image: 1–9 set the rating, 0 sets 10, and pressing
+    // the current rating again clears it. Videos keep digits for percentage seeking
+    // (VideoControls), so this is images-only to avoid fighting over the same keys.
+    useEffect(() => {
+        if (!hasMetaPanel || !file || file.type !== FILE_TYPES.IMAGE) return;
+
+        const onKey = (e) => {
+            if (e.repeat || e.ctrlKey || e.metaKey || e.altKey || e.shiftKey) return;
+            if (!/^(Digit|Numpad)[0-9]$/.test(e.code)) return;   // top-row and numpad
+            const el = document.activeElement;
+            if (el?.tagName === 'INPUT' || el?.tagName === 'TEXTAREA' || el?.isContentEditable) return;
+            if (document.querySelector('.img-editor')) return;   // editor owns the keyboard
+
+            e.preventDefault();
+            const digit  = Number(e.code.slice(-1));
+            const rating = digit === 0 ? 10 : digit;
+            const next   = (file.rating || 0) === rating ? 0 : rating;   // same value toggles off
+
+            LibraryService.updateItem(file.id, { rating: next })
+                .then(() => onUpdated?.(file.id, { rating: next }))
+                .catch(err => notify({ message: `Не удалось: ${err.message}`, type: 'danger' }));
+            notify({
+                message: next ? `Рейтинг: ${next}/10` : 'Рейтинг снят',
+                type: 'success',
+                duration: 1200,
+            });
+        };
+
+        document.addEventListener('keydown', onKey);
+        return () => document.removeEventListener('keydown', onKey);
+    }, [hasMetaPanel, file, onUpdated]);
+
     useEffect(() => {
         if (!file) return;
         let cancelled = false;

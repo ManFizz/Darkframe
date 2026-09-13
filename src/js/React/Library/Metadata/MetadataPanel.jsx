@@ -54,6 +54,17 @@ const MetadataPanel = ({ file, onUpdated }) => {
         });
     }, [file?.id]);
 
+    // Reflect a rating changed from outside the panel (the modal's number-key
+    // shortcut) without clobbering an edit the user is still typing.
+    useEffect(() => {
+        if (!file || pendingFormRef.current) return;
+        setForm(prev =>
+            prev && prev.rating !== (file.rating || 0)
+                ? { ...prev, rating: file.rating || 0 }
+                : prev
+        );
+    }, [file?.rating]);
+
     const update = useCallback((field, value) => {
         setForm(prev => {
             const next = { ...prev, [field]: value };
