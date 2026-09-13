@@ -12,6 +12,13 @@
   pointer-events: none;
 }
 
+// While a modal is open, its delete button lives in the bottom-right panel footer —
+// right where a toast would land. Lift the toasts above it so the Undo notification
+// doesn't cover the button and block deleting the next item.
+body:has(.modal-view) .notifications-container {
+  bottom: 76px;
+}
+
 .notification-item {
   display: flex;
   align-items: center;
