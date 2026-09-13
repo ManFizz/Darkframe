@@ -16,6 +16,7 @@ const tagAdmin = require('../services/tagAdmin');
 const { getSmartItems } = require('../services/smartItems');
 const { getDashboard } = require('../services/dashboard');
 const { findDuplicates } = require('../services/duplicates');
+const maintenance = require('../services/maintenance');
 
 // When an item's collection changes, drop it at the end of the destination's order
 // so the just-moved item is easy to find (last relative to "Порядок"). Mutates
@@ -399,6 +400,21 @@ function register() {
     ipcMain.handle('library:getDashboard', async () => getDashboard());
 
     ipcMain.handle('library:findDuplicates', async () => findDuplicates());
+
+    // ─── Maintenance (Панель управления → Управление) ─────────────────────────
+    ipcMain.handle('library:checkIntegrity', async () => maintenance.checkIntegrity());
+
+    ipcMain.handle('library:cleanupIntegrity', async (_, { missingIds = [], orphanNames = [] }) => {
+        const rec = await maintenance.removeMissingRecords(missingIds);
+        const orp = await maintenance.removeOrphanFolders(orphanNames);
+        return { ok: true, records: rec.count, folders: orp.count };
+    });
+
+    ipcMain.handle('library:generateMissingMedia', async (event) => {
+        return maintenance.generateMissingMedia(
+            (p) => event.sender.send('library:maintenanceProgress', p),
+        );
+    });
 
     // Soft-delete (or permanently delete) many items at once — used by the duplicate
     // finder to trash the extra copies in one call.

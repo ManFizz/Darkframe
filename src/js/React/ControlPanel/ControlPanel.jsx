@@ -1,7 +1,7 @@
 import React, {useState} from 'react';
 import SettingsPanel from '../Settings/SettingsPanel';
 import Dashboard from '../Dashboard/Dashboard';
-import DuplicatesTab from './DuplicatesTab';
+import ManagementTab from './ManagementTab';
 
 const TABS = [
     { id: 'manage',   label: 'Управление', icon: 'bi-wrench-adjustable' },
@@ -39,7 +39,7 @@ const ControlPanel = ({ onClose, initialTab = 'manage' }) => {
                 </div>
 
                 {/* Each tab owns its own scrolling body (and, for settings, a footer). */}
-                {tab === 'manage'   && <DuplicatesTab />}
+                {tab === 'manage'   && <ManagementTab />}
                 {tab === 'stats'    && <Dashboard />}
                 {tab === 'settings' && <SettingsPanel onClose={onClose} />}
             </div>

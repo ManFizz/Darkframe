@@ -134,6 +134,18 @@ export const LibraryService = {
         return libraryApi.findDuplicates();
     },
 
+    async checkIntegrity() {
+        return libraryApi.checkIntegrity();
+    },
+
+    async cleanupIntegrity(missingIds, orphanNames) {
+        return libraryApi.cleanupIntegrity({ missingIds, orphanNames });
+    },
+
+    async generateMissingMedia() {
+        return libraryApi.generateMissingMedia();
+    },
+
     async emptyTrash() {
         return libraryApi.emptyTrash();
     },

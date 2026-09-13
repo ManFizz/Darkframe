@@ -58,6 +58,9 @@ export const libraryApi = {
     getStats:          ()     => invoke('library:getStats'),
     getDashboard:      ()     => invoke('library:getDashboard'),
     findDuplicates:    ()     => invoke('library:findDuplicates'),
+    checkIntegrity:    ()     => invoke('library:checkIntegrity'),
+    cleanupIntegrity:  (data) => invoke('library:cleanupIntegrity', data),
+    generateMissingMedia: ()  => invoke('library:generateMissingMedia'),
     reorderCollections: (data) => invoke('library:reorderCollections', data),
     // Tag manager
     getAllTags:        ()     => invoke('library:getAllTags'),
