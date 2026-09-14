@@ -19,7 +19,10 @@ function dirSize(dir) {
         for (const name of fs.readdirSync(dir)) {
             const p = path.join(dir, name);
             try {
-                const st = fs.statSync(p);
+                // lstat, not stat: never follow symlinks — a link cycle would
+                // otherwise recurse forever / count foreign trees.
+                const st = fs.lstatSync(p);
+                if (st.isSymbolicLink()) continue;
                 total += st.isDirectory() ? dirSize(p) : st.size;
             } catch { /* ignore */ }
         }
