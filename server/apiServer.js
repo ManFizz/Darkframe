@@ -4,6 +4,7 @@ const fs = require('fs');
 const os = require('os');
 const { net } = require('electron');
 const { importFile } = require('./services/importService');
+const apiTokens = require('./apiTokens');
 
 const PORT = 45678;
 let server = null;
@@ -128,9 +129,28 @@ function respond(res, status, data) {
         'Content-Type': 'application/json',
         'Access-Control-Allow-Origin':  '*',
         'Access-Control-Allow-Methods': 'POST, GET, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-DF-Token',
     });
     res.end(JSON.stringify(data));
+}
+
+// Token is presented as `Authorization: Bearer <token>` or `X-DF-Token: <token>`.
+function extractToken(req) {
+    const auth = req.headers['authorization'];
+    if (auth && /^Bearer\s+/i.test(auth)) return auth.replace(/^Bearer\s+/i, '').trim();
+    const x = req.headers['x-df-token'];
+    return typeof x === 'string' ? x.trim() : null;
+}
+
+// Gate a request behind a scope. Returns true when allowed; otherwise writes 401 and
+// returns false. With auth disabled (token system off) everything passes.
+function authorize(req, res, scope) {
+    const ok = apiTokens.verify(extractToken(req), scope);
+    if (!ok) {
+        respond(res, 401, { error: 'unauthorized', requiredScope: scope });
+        return false;
+    }
+    return true;
 }
 
 async function handleAdd(req, res) {
@@ -263,13 +283,19 @@ async function handleRequest(req, res) {
     try {
         if (req.method === 'OPTIONS') { respond(res, 204, {}); return; }
 
-        if (req.method === 'GET'  && req.url === '/api/ping')              { respond(res, 200, { ok: true, version: '1.0' }); return; }
-        if (req.method === 'POST' && req.url === '/api/add')               { await handleAdd(req, res);        return; }
-        if (req.method === 'POST' && req.url === '/api/addBase64')         { await handleAddBase64(req, res);  return; }
-        if (req.method === 'GET'  && req.url.startsWith('/api/rim?'))      { await handleRim(req, res);        return; }
-        if (req.method === 'GET'  && req.url === '/api/collections')       { await handleCollections(res);     return; }
-        if (req.method === 'GET' && req.url === '/api/stats')              { await handleGetStats(res); return; }
-        if (req.method === 'POST' && req.url === '/api/collections')       { await handleCreateCollection(req, res); return; }
+        // Open handshake endpoint: no token needed, and it advertises whether auth is on
+        // so a userscript can tell the user to configure a token.
+        if (req.method === 'GET'  && req.url === '/api/ping') {
+            respond(res, 200, { ok: true, version: '1.1', requireAuth: apiTokens.getConfig().requireAuth });
+            return;
+        }
+
+        if (req.method === 'POST' && req.url === '/api/add')          { if (authorize(req, res, 'import'))      await handleAdd(req, res);        return; }
+        if (req.method === 'POST' && req.url === '/api/addBase64')    { if (authorize(req, res, 'import'))      await handleAddBase64(req, res);  return; }
+        if (req.method === 'GET'  && req.url.startsWith('/api/rim?')) { if (authorize(req, res, 'rim'))         await handleRim(req, res);        return; }
+        if (req.method === 'GET'  && req.url === '/api/collections')  { if (authorize(req, res, 'read'))        await handleCollections(res);     return; }
+        if (req.method === 'GET'  && req.url === '/api/stats')        { if (authorize(req, res, 'read'))        await handleGetStats(res);        return; }
+        if (req.method === 'POST' && req.url === '/api/collections')  { if (authorize(req, res, 'collections')) await handleCreateCollection(req, res); return; }
 
         respond(res, 404, { error: 'Not found' });
     } catch (e) {

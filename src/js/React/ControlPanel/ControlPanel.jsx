@@ -2,10 +2,12 @@ import React, {useState} from 'react';
 import SettingsPanel from '../Settings/SettingsPanel';
 import Dashboard from '../Dashboard/Dashboard';
 import ManagementTab from './ManagementTab';
+import ApiTokensTab from './ApiTokensTab';
 
 const TABS = [
     { id: 'manage',   label: 'Управление', icon: 'bi-wrench-adjustable' },
     { id: 'stats',    label: 'Статистика', icon: 'bi-bar-chart-line-fill' },
+    { id: 'access',   label: 'Доступ',     icon: 'bi-key-fill' },
     { id: 'settings', label: 'Настройки',  icon: 'bi-gear-fill' },
 ];
 
@@ -41,6 +43,7 @@ const ControlPanel = ({ onClose, initialTab = 'manage' }) => {
                 {/* Each tab owns its own scrolling body (and, for settings, a footer). */}
                 {tab === 'manage'   && <ManagementTab />}
                 {tab === 'stats'    && <Dashboard />}
+                {tab === 'access'   && <ApiTokensTab />}
                 {tab === 'settings' && <SettingsPanel onClose={onClose} />}
             </div>
         </div>

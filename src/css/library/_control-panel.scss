@@ -103,6 +103,113 @@
 }
 .cp-intg-more { padding: 6px 10px; font-size: 12px; color: var(--bs-secondary); }
 
+// ─── API tokens ───────────────────────────────────────────────────────────────
+.apitok-master {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--bs-border-color);
+  border-radius: 10px;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+}
+.apitok-switch {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+  margin: 0;
+  input { width: 16px; height: 16px; cursor: pointer; }
+}
+.apitok-status {
+  font-size: 12px;
+  &.on  { color: var(--bs-success); }
+  &.off { color: var(--bs-danger); }
+}
+
+.apitok-new {
+  border: 1px solid var(--df-accent, var(--bs-primary));
+  background: rgba(176, 107, 255, 0.1);
+  border-radius: 10px;
+  padding: 12px;
+  margin-bottom: 14px;
+}
+.apitok-new-head { font-size: 13px; font-weight: 600; margin-bottom: 8px; }
+.apitok-new-value {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+  code {
+    flex: 1;
+    padding: 6px 10px;
+    background: rgba(0, 0, 0, 0.35);
+    border-radius: 8px;
+    font-size: 12px;
+    word-break: break-all;
+    user-select: all;
+  }
+}
+
+.apitok-create {
+  border: 1px solid var(--bs-border-color);
+  border-radius: 10px;
+  padding: 12px;
+  margin-bottom: 16px;
+}
+.apitok-create-row { display: flex; gap: 8px; margin-bottom: 10px; }
+.apitok-scopes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+}
+.apitok-scope {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  cursor: pointer;
+  margin: 0;
+  input { cursor: pointer; }
+}
+
+.apitok-list { display: flex; flex-direction: column; gap: 8px; }
+.apitok-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--bs-border-color);
+  border-radius: 10px;
+  flex-wrap: wrap;
+
+  &.disabled { opacity: 0.55; }
+}
+.apitok-row-main { flex: 1; min-width: 200px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.apitok-name { font-weight: 600; font-size: 13px; }
+.apitok-prefix { font-size: 11px; color: var(--bs-secondary); }
+.apitok-chips { display: flex; gap: 4px; flex-wrap: wrap; }
+.apitok-chip {
+  font-size: 10px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: var(--df-accent, var(--bs-primary));
+  color: #fff;
+  &--none { background: var(--bs-secondary); }
+}
+.apitok-row-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  font-size: 11px;
+  color: var(--bs-secondary);
+  white-space: nowrap;
+}
+.apitok-row-actions { display: flex; gap: 6px; }
+
 // ─── Media generation ─────────────────────────────────────────────────────────
 .cp-gen-progress { margin-top: 8px; }
 .cp-gen-stats {

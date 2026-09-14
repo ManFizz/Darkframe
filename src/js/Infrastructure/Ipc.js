@@ -82,6 +82,15 @@ export const libraryApi = {
     updateSmartFilter: (data) => invoke('library:updateSmartFilter', data),
 };
 
+export const apiTokensApi = {
+    config:         ()             => invoke('apitokens:config'),
+    list:           ()             => invoke('apitokens:list'),
+    create:         (data)         => invoke('apitokens:create', data),
+    revoke:         (id)           => invoke('apitokens:revoke', { id }),
+    setEnabled:     (id, enabled)  => invoke('apitokens:setEnabled', { id, enabled }),
+    setRequireAuth: (value)        => invoke('apitokens:setRequireAuth', { value }),
+};
+
 export const libraryRegistryApi = {
     list:        ()                       => invoke('library:registry:list'),
     pickFolder:  ()                       => invoke('library:registry:pickFolder'),
