@@ -419,9 +419,11 @@ function register() {
     });
 
     ipcMain.handle('library:generateMissingMedia', async (event) => {
-        return maintenance.generateMissingMedia(
-            (p) => event.sender.send('library:maintenanceProgress', p),
-        );
+        // The job keeps running in the main process even if the panel/window closes,
+        // so guard the progress send against a destroyed webContents.
+        return maintenance.generateMissingMedia((p) => {
+            if (!event.sender.isDestroyed()) event.sender.send('library:maintenanceProgress', p);
+        });
     });
 
     // Soft-delete (or permanently delete) many items at once — used by the duplicate
