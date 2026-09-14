@@ -78,6 +78,12 @@ function registerLibraryProtocol() {
             const type = url.hostname;                          // 'thumb' или 'item'
             const id = url.pathname.replace(/^\//, '');        // uuid
 
+            // The id names a folder under ITEMS_PATH — reject anything that isn't a
+            // plain id segment so a crafted URL can't escape the items directory.
+            if (!/^[A-Za-z0-9._-]+$/.test(id)) {
+                return callback({ error: -6 });
+            }
+
             let filePath;
 
             if (type === 'thumb') {
