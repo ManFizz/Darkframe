@@ -13,8 +13,15 @@ const { startApiServer, stopApiServer } = require('./server/apiServer');
 
 app.commandLine.appendSwitch('disable-quic');
 app.commandLine.appendSwitch('disable-http2');
-app.commandLine.appendSwitch('ignore-certificate-errors');
-app.commandLine.appendSwitch('ignore-ssl-errors');
+
+// TLS-certificate errors are ignored ONLY for these content hosts (and their CDNs /
+// subdomains), which are the sources that need it. Everything else keeps strict TLS,
+// so a MITM on, say, a bank or update server is no longer silently accepted.
+// Matching by target host works even behind a TLS-intercepting proxy, since the SNI
+// host is still the real destination.
+const TLS_BYPASS_HOSTS = ['rule34.xxx', 'realbooru.com', 'gelbooru.com'];
+const isTlsBypassHost = (host) =>
+    !!host && TLS_BYPASS_HOSTS.some(h => host === h || host.endsWith('.' + h));
 
 let openDevTools = process.argv.includes('devtools');
 
@@ -154,11 +161,15 @@ app.whenReady().then(async () => {
     setupRequestHeaders();
 
     app.on('certificate-error', (event, webContents, url, error, certificate, callback) => {
-        event.preventDefault();
-        callback(true);
+        let host = '';
+        try { host = new URL(url).hostname; } catch { /* ignore */ }
+        if (isTlsBypassHost(host)) {
+            event.preventDefault();
+            callback(true);   // trusted content host — accept
+        } else {
+            callback(false);  // strict TLS everywhere else
+        }
     });
-
-    process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
 
     await createWindow();
 
