@@ -8,6 +8,10 @@ const { importFile } = require('./services/importService');
 const PORT = 45678;
 let server = null;
 
+// Caps so a hostile/looping request can't exhaust memory or fill the disk.
+const MAX_BODY_BYTES     = 64 * 1024 * 1024;         // JSON body (base64 media)
+const MAX_DOWNLOAD_BYTES = 2 * 1024 * 1024 * 1024;   // remote media download
+
 // Map the response Content-Type to a file extension. Needed for media served
 // behind extensionless / query-string URLs (e.g. hulkporn's /video.php?video=…),
 // where the URL path tells us nothing about the real format.
@@ -64,7 +68,16 @@ function downloadWithNet(url, destPath) {
             }
             contentType = response.headers['content-type'];
             if (Array.isArray(contentType)) contentType = contentType[0];
-            response.on('data', (chunk) => file.write(chunk));
+            let received = 0;
+            response.on('data', (chunk) => {
+                received += chunk.length;
+                if (received > MAX_DOWNLOAD_BYTES) {
+                    request.abort();
+                    done(new Error('File too large'));
+                    return;
+                }
+                file.write(chunk);
+            });
             response.on('end',  () => done(null));
             response.on('error', done);
         });
@@ -90,12 +103,23 @@ async function downloadWithRetry(url, destPath, retries = 3) {
 function parseBody(req) {
     return new Promise((resolve, reject) => {
         let body = '';
-        req.on('data',  chunk => body += chunk);
-        req.on('end',   () => {
+        let size = 0;
+        let done = false;
+        const fail = (e) => { if (done) return; done = true; req.destroy(); reject(e); };
+
+        req.on('data', chunk => {
+            if (done) return;
+            size += chunk.length;
+            if (size > MAX_BODY_BYTES) { fail(new Error('Body too large')); return; }
+            body += chunk;
+        });
+        req.on('end', () => {
+            if (done) return;
+            done = true;
             try { resolve(JSON.parse(body)); }
             catch { reject(new Error('Invalid JSON')); }
         });
-        req.on('error', reject);
+        req.on('error', fail);
     });
 }
 
