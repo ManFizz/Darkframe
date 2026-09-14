@@ -159,7 +159,11 @@ async function handleAddBase64(req, res) {
 
     if (!base64) { respond(res, 400, { error: 'base64 required' }); return; }
 
-    const ext     = '.' + mimeType.split('/')[1].replace('jpeg', 'jpg');
+    // Resolve extension from a *supported* mime type only — a missing or unknown
+    // mimeType used to throw (TypeError → 500); now it's a clean 400.
+    const ext = extFromContentType(mimeType);
+    if (!ext) { respond(res, 400, { error: 'valid mimeType required' }); return; }
+
     const tmpPath = path.join(os.tmpdir(), `jsgallery_tg_${Date.now()}${ext}`);
 
     fs.writeFileSync(tmpPath, Buffer.from(base64, 'base64'));
