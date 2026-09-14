@@ -37,16 +37,49 @@ async function createWindow() {
             allowDisplayingInsecureContent: true,
             allowRunningInsecureContent: true,
             webSecurity: false,
+            webviewTag: false,   // no <webview> — one less way to load foreign content
         },
         autoHideMenuBar: true,
     });
 
     win.maximize();
+
+    // Never spawn extra windows for foreign URLs (e.g. a link in remote content).
+    win.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
+
     await win.loadFile('dist/index.html');
 
     if (openDevTools) {
         win.webContents.openDevTools();
     }
+}
+
+function setupContentSecurityPolicy() {
+    // The bundle relies on eval() (dependencies), so 'unsafe-eval' has to stay; there's
+    // no HTML-injection sink in the app, so 'unsafe-inline' is harmless. The value of
+    // this policy is what it forbids: remote scripts, plugins and framed documents —
+    // i.e. it stops injected/foreign <script src>, <object> and <iframe> from running,
+    // which is the actual RCE path in a nodeIntegration renderer.
+    const csp =
+        "default-src 'self' library: mediacache:; " +
+        "script-src 'self' 'unsafe-eval' 'unsafe-inline'; " +
+        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
+        "img-src 'self' data: blob: library: mediacache: https: http:; " +
+        "media-src 'self' data: blob: library: mediacache: https: http:; " +
+        "font-src 'self' data: https://fonts.gstatic.com; " +
+        "connect-src 'self' data: blob: library: mediacache: https: http: ws:; " +
+        "worker-src 'self' blob:; " +
+        "object-src 'none'; " +
+        "frame-src 'none';";
+
+    session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
+        callback({
+            responseHeaders: {
+                ...details.responseHeaders,
+                'Content-Security-Policy': [csp],
+            },
+        });
+    });
 }
 
 function setupRequestHeaders() {
@@ -158,6 +191,7 @@ app.whenReady().then(async () => {
 
     backupDatabase();
 
+    setupContentSecurityPolicy();
     setupRequestHeaders();
 
     app.on('certificate-error', (event, webContents, url, error, certificate, callback) => {
