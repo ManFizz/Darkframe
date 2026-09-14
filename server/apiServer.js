@@ -258,8 +258,6 @@ function startApiServer() {
         console.log(`[API] Server running on http://127.0.0.1:${PORT}`);
     });
     server.on('error', (e) => console.error('[API] Server error:', e.message));
-
-    process.on('uncaughtException', (e) => console.error('[API] Uncaught exception:', e.message));
 }
 
 function stopApiServer() {
