@@ -77,6 +77,17 @@ function registerProtocol() {
         }
         if (!realUrl) return new Response('missing url', { status: 400 });
 
+        // Only proxy real remote media — never file:// or other schemes (which would
+        // otherwise let this handler read local files and serve them with CORS:*).
+        try {
+            const scheme = new URL(realUrl).protocol;
+            if (scheme !== 'http:' && scheme !== 'https:') {
+                return new Response('forbidden', { status: 403 });
+            }
+        } catch {
+            return new Response('bad url', { status: 400 });
+        }
+
         try {
             const cachePath = await getCachedFile(realUrl);
 
