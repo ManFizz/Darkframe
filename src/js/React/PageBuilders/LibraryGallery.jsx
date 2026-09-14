@@ -9,7 +9,7 @@ import {useItemReorder} from '@hooks/library/useItemReorder';
 const INITIAL = 150;
 const CHUNK   = 150;
 
-const LibraryGallery = ({ items, onReordered, isSelected, selectedIds, selectionActive, modalUpdater, onToggleSelect, typeView = 2, onFileOpen, scrollRef, resetKey }) => {
+const LibraryGallery = ({ items, onReordered, isSelected, selectedIds, selectionActive, modalUpdater, onToggleSelect, typeView = 2, onFileOpen, scrollRef, resetKey, reorderable = true }) => {
     const { isDragging, overId, onDragStart, onDragOver, onDrop, onDragEnd } =
         useItemReorder(items, onReordered, selectedIds);
 
@@ -47,8 +47,8 @@ const LibraryGallery = ({ items, onReordered, isSelected, selectedIds, selection
                         ${isDragging(file.uniqueId) ? 'dragging' : ''}
                         ${overId === file.uniqueId ? 'drag-over' : ''}
                     `}
-                    draggable
-                    onDragStart={e => {
+                    draggable={reorderable}
+                    onDragStart={reorderable ? (e => {
                         const isMulti = selectedIds?.has(file.uniqueId) && selectedIds.size > 1;
                         if (isMulti) {
                             const draggedFileIds = items
@@ -59,10 +59,10 @@ const LibraryGallery = ({ items, onReordered, isSelected, selectedIds, selection
                         e.dataTransfer.setData('jsg/fileId', file.id);
                         e.dataTransfer.setData('jsg/reorder', 'true');
                         onDragStart(e, file.uniqueId);
-                    }}
-                    onDragOver={e => onDragOver(e, file.uniqueId)}
-                    onDrop={e => onDrop(e, file.uniqueId)}
-                    onDragEnd={onDragEnd}
+                    }) : undefined}
+                    onDragOver={reorderable ? (e => onDragOver(e, file.uniqueId)) : undefined}
+                    onDrop={reorderable ? (e => onDrop(e, file.uniqueId)) : undefined}
+                    onDragEnd={reorderable ? onDragEnd : undefined}
                 >
                     <Thumb
                         file={file}

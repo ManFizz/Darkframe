@@ -404,6 +404,7 @@ const LibraryView = () => {
                         onFileOpen={handleFileOpen}
                         typeView={2}
                         scrollRef={galleryScrollRef}
+                        reorderable={!isHistory}
                         resetKey={isHistory ? `history:${historySection ?? 'all'}` : selectedCollection}
                     />
                 </div>
