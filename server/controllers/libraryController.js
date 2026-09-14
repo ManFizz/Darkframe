@@ -447,8 +447,18 @@ function register() {
         const col = await Collection.findByPk(id);
         if (!col) throw new Error('Collection not found');
 
-        if (data.parentId !== undefined && data.parentId === id) {
-            throw new Error('Cannot set collection as its own parent');
+        // Reject a move that would create a cycle: walk up from the proposed parent —
+        // if we reach this collection, the new parent is its own descendant.
+        if (data.parentId !== undefined && data.parentId !== null) {
+            if (data.parentId === id) throw new Error('Cannot set collection as its own parent');
+            let cur = data.parentId;
+            const seen = new Set();
+            while (cur && !seen.has(cur)) {
+                if (cur === id) throw new Error('Cannot move a collection into its own descendant');
+                seen.add(cur);
+                const node = await Collection.findByPk(cur, { attributes: ['parentId'] });
+                cur = node?.parentId;
+            }
         }
 
         await col.update(data);
