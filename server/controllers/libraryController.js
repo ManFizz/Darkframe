@@ -466,14 +466,16 @@ function register() {
     });
 
     ipcMain.handle('library:reorderCollections', async (_, { updates }) => {
-        await Promise.all(
-            updates.map(({ id, order, parentId }) =>
-                Collection.update(
+        // Sequential inside one transaction: parallel writes contend for SQLite's
+        // single writer and can throw SQLITE_BUSY.
+        await sequelize.transaction(async (t) => {
+            for (const { id, order, parentId } of updates) {
+                await Collection.update(
                     { order, ...(parentId !== undefined ? { parentId } : {}) },
-                    { where: { id } }
-                )
-            )
-        );
+                    { where: { id }, transaction: t },
+                );
+            }
+        });
         return { ok: true };
     });
 
@@ -509,11 +511,15 @@ function register() {
     });
 
     ipcMain.handle('library:reorderItems', async (_, { orderedIds }) => {
-        await Promise.all(
-            orderedIds.map((id, index) =>
-                Item.unscoped().update({ order: index }, { where: { id } })
-            )
-        );
+        // Sequential inside one transaction: parallel writes contend for SQLite's
+        // single writer and can throw SQLITE_BUSY on a large reorder.
+        await sequelize.transaction(async (t) => {
+            for (let index = 0; index < orderedIds.length; index++) {
+                await Item.unscoped().update(
+                    { order: index }, { where: { id: orderedIds[index] }, transaction: t },
+                );
+            }
+        });
         return { ok: true };
     });
 
