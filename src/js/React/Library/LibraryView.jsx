@@ -6,6 +6,7 @@ import MetadataPanel from './Metadata/MetadataPanel';
 import BulkMetadataPanel from './Metadata/BulkMetadataPanel';
 import {useLibraryItems} from '@hooks/library/useLibraryItems';
 import BulkActionBar from "./BulkActionBar";
+import QuickFilters from "./Filters/QuickFilters";
 import useSelection from "@hooks/gallery/useSelection";
 import LibraryService from "@services/LibraryService"
 import LibraryGallery from "../PageBuilders/LibraryGallery";
@@ -374,6 +375,7 @@ const LibraryView = () => {
                     </div>
                 </div>
             )}
+            {!isHistory && <QuickFilters />}
             {!isHistory && (
                 <BulkActionBar
                     selectedItems={selectedItems}

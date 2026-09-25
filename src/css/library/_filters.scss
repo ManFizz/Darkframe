@@ -153,6 +153,117 @@
   b { color: var(--bs-body-color); }
 }
 
+// ─── Quick filter presets row (above the gallery) ──────────────────────────────
+.quick-filters {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-bottom: 1px solid var(--bs-border-color);
+  flex-shrink: 0;
+  min-width: 0;
+
+  &.collapsed { padding-top: 3px; padding-bottom: 3px; }
+}
+.quick-filters-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  flex-shrink: 0;
+  padding: 2px 6px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--bs-secondary);
+  font-size: 12px;
+  cursor: pointer;
+
+  .bi-lightning-charge-fill { color: var(--df-accent); }
+  &:hover { color: var(--bs-body-color); background: var(--bs-tertiary-bg); }
+}
+.quick-filters-chips {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+.qf-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 26px;
+  padding: 0 10px;
+  border: 1px solid var(--bs-border-color);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--bs-body-color);
+  font-size: 12px;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: all 0.12s;
+
+  .bi { font-size: 12px; opacity: 0.85; }
+  &:hover:not(:disabled) { border-color: var(--df-accent-dim); }
+  &.active {
+    color: #fff;
+    background: var(--df-accent);
+    border-color: transparent;
+    .bi { opacity: 1; }
+  }
+  &:disabled { opacity: 0.45; cursor: default; }
+
+  // Custom preset: main toggle + a delete "x"
+  &--custom {
+    padding: 0 2px 0 0;
+    .qf-chip-main {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      height: 100%;
+      padding: 0 6px 0 10px;
+      border: none;
+      background: transparent;
+      color: inherit;
+      font-size: inherit;
+      cursor: pointer;
+    }
+    .qf-chip-del {
+      width: 20px;
+      height: 20px;
+      display: grid;
+      place-items: center;
+      border: none;
+      border-radius: 50%;
+      background: transparent;
+      color: inherit;
+      opacity: 0;
+      cursor: pointer;
+      transition: opacity 0.12s, background 0.12s;
+      &:hover { background: rgba(0, 0, 0, 0.2); }
+    }
+    &:hover .qf-chip-del { opacity: 0.8; }
+  }
+
+  &--add { border-style: dashed; color: var(--bs-secondary); }
+}
+.qf-sep {
+  width: 1px;
+  height: 18px;
+  background: var(--bs-border-color);
+}
+.qf-name-input {
+  height: 26px;
+  width: 170px;
+  padding: 0 10px;
+  border: 1px solid var(--df-accent-dim);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--bs-body-color);
+  font-size: 12px;
+  outline: none;
+}
+
 // Edit button next to delete on smart nodes
 .collection-node--smart .collection-smart-edit:hover {
   color: var(--df-accent) !important;
