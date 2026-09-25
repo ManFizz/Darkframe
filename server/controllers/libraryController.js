@@ -11,7 +11,7 @@ const { importFromEagleCsv } = require('../services/eagleImportService');
 const { importFromUrl } = require('../services/urlImportService');
 const { importFromJson } = require('../services/jsonImportService');
 const { getFavoritesCollectionId } = require('../favoritesCollection');
-const { editImage, revertImage } = require('../services/imageEditService');
+const { editImage, revertImage, recompressImage } = require('../services/imageEditService');
 const tagAdmin = require('../services/tagAdmin');
 const { getSmartItems } = require('../services/smartItems');
 const { getDashboard } = require('../services/dashboard');
@@ -316,6 +316,9 @@ function register() {
     ipcMain.handle('library:revertImage', async (_, { id }) => {
         return revertImage(id);
     });
+
+    // New output settings (format / quality / max side), keeping the item's edits.
+    ipcMain.handle('library:recompressImage', async (_, { id, output }) => recompressImage(id, output));
 
     // ─── Video editing (trim / revert) ─────────────────────────────────────────
     ipcMain.handle('library:trimVideo', async (event, { id, start, end, mode, backup }) => {

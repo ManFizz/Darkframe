@@ -14,6 +14,7 @@ export class ThumbFile {
 
         this.id = data.id || null;
         this.title = data.title || "Untitled";
+        this.fileName = data.fileName || null;
         this.remoteId = data.remoteId || null;
         this.width = data.width || 0;
         this.height = data.height || 0;
@@ -34,6 +35,8 @@ export class ThumbFile {
         this.size = data.size || null;
         this.deletedAt = data.deletedAt || null;
         this.editedAt = data.editedAt || null;
+        this.editParams = data.editParams || null;   // JSON string of the last image edit
+        this.thumbAt = data.thumbAt ?? null;
         this.mimeType = data.mimeType || null;
         this.notes = data.notes || null;
 

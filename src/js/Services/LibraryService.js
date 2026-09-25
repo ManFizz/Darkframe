@@ -206,6 +206,11 @@ export const LibraryService = {
         return libraryApi.revertImage({ id });
     },
 
+    // output: { format: 'keep' | 'jpeg' | 'webp', quality, maxSide }
+    async recompressImage(id, output) {
+        return libraryApi.recompressImage({ id, output });
+    },
+
     async importFromEagle({ csvPath, collectionId } = {}) {
         if (csvPath) {
             return libraryApi.importFromEagle({ csvPath, collectionId });

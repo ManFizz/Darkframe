@@ -128,6 +128,16 @@ function registerLibraryProtocol() {
 
             if (type === 'thumb') {
                 filePath = path.join(ITEMS_PATH, id, 'thumb.jpg');
+            } else if (type === 'source') {
+                // The image editor's starting point: base.* (old cumulative edits kept
+                // as the baseline) → source.* (pristine backup) → the original itself.
+                const itemDir = path.join(ITEMS_PATH, id);
+                if (!fs.existsSync(itemDir)) return callback({ error: -6 });
+                const files = fs.readdirSync(itemDir);
+                const pick = files.find(f => /^base\./i.test(f))
+                    || files.find(f => /^source\./i.test(f))
+                    || files.find(f => f.startsWith('original'));
+                filePath = pick ? path.join(itemDir, pick) : null;
             } else if (type === 'item') {
                 const itemDir = path.join(ITEMS_PATH, id);
                 if (!fs.existsSync(itemDir)) return callback({ error: -6 });

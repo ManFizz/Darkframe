@@ -131,6 +131,116 @@
 
   &:hover { background: rgba(255, 255, 255, 0.1); }
   &.on { color: var(--df-accent); border-color: var(--df-accent-dim); background: var(--df-accent-soft); }
+
+  // Small marker: this panel holds non-default settings.
+  &.dot { position: relative; }
+  &.dot::after {
+    content: '';
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--df-accent);
+  }
+}
+
+// ─── Floating colour / export panels (bottom-right of the stage) ───────────────
+.ie-panel {
+  position: absolute;
+  right: 16px;
+  bottom: 16px;
+  z-index: 5;
+  width: 300px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px;
+  border-radius: 14px;
+  background: var(--df-glass-strong);
+  border: 1px solid var(--df-glass-border);
+  backdrop-filter: blur(18px);
+  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.5);
+  color: #fff;
+  cursor: default;
+}
+.ie-panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 13px;
+  font-weight: 700;
+  .bi { color: var(--df-accent); margin-right: 4px; }
+}
+.ie-panel-link {
+  border: none;
+  background: none;
+  color: var(--df-accent);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  &:hover { text-decoration: underline; }
+}
+.ie-slider {
+  display: grid;
+  grid-template-columns: 96px 1fr 36px;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-size: 12px;
+  color: var(--df-text-dim, #b9b3c6);
+
+  input[type="range"] { width: 100%; accent-color: var(--df-accent); cursor: pointer; }
+  b { text-align: right; color: #fff; font-variant-numeric: tabular-nums; }
+}
+.ie-seg {
+  display: flex;
+  border: 1px solid var(--df-glass-border);
+  border-radius: 9px;
+  overflow: hidden;
+
+  button {
+    flex: 1;
+    padding: 6px 8px;
+    border: none;
+    border-right: 1px solid var(--df-glass-border);
+    background: transparent;
+    color: var(--df-text-dim, #b9b3c6);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    &:last-child { border-right: none; }
+    &:hover { color: #fff; }
+    &.on { color: #fff; background: var(--df-accent-soft); }
+  }
+}
+.ie-field {
+  display: grid;
+  grid-template-columns: 96px 1fr auto;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-size: 12px;
+  color: var(--df-text-dim, #b9b3c6);
+
+  input {
+    width: 100%;
+    padding: 5px 8px;
+    border: 1px solid var(--df-glass-border);
+    border-radius: 8px;
+    background: rgba(0, 0, 0, 0.3);
+    color: #fff;
+    font-size: 12px;
+    outline: none;
+    &:focus { border-color: var(--df-accent-dim); }
+  }
+  em { font-style: normal; }
+}
+.ie-panel-hint {
+  font-size: 11.5px;
+  color: var(--df-text-dim, #b9b3c6);
+  font-variant-numeric: tabular-nums;
 }
 
 .img-editor-straighten {

@@ -2,6 +2,22 @@ import React, {useCallback, useEffect, useLayoutEffect, useMemo, useRef, useStat
 import LibraryService from '@services/LibraryService';
 import {notify} from '@services/NotificationService';
 import {saveEditPreset} from '@services/imageEditPreset';
+import {NEUTRAL_COLOR, DEFAULT_OUTPUT, cssFilter, colorFactors, normalizeEditParams} from '@/shared/imageAdjust';
+
+const GAMMA_FILTER_ID = 'df-ie-gamma';
+
+const COLOR_SLIDERS = [
+    ['brightness', 'Яркость'],
+    ['contrast',   'Контраст'],
+    ['saturation', 'Насыщенность'],
+    ['gamma',      'Гамма'],
+];
+
+const FORMATS = [
+    ['keep', 'Как есть'],
+    ['jpeg', 'JPEG'],
+    ['webp', 'WebP'],
+];
 
 const ASPECTS = [
     { label: 'Свободно', value: null },
@@ -28,14 +44,29 @@ const clamp = (v, lo, hi) => Math.max(lo, Math.min(v, hi));
 const rotateCropCW  = (c) => ({ x: 1 - c.y - c.h, y: c.x,           w: c.h, h: c.w });
 const rotateCropCCW = (c) => ({ x: c.y,           y: 1 - c.x - c.w, w: c.h, h: c.w });
 
+// Saved parameters of the previous edit (edits are re-applied to the pristine source,
+// so the editor starts from the source with these values pre-filled).
+function savedParams(file) {
+    if (!file.editParams) return null;
+    try { return normalizeEditParams(JSON.parse(file.editParams)); }
+    catch { return null; }
+}
+
 const ImageEditor = ({ file, onCancel, onSaved }) => {
+    const saved = useMemo(() => savedParams(file), []);   // eslint-disable-line react-hooks/exhaustive-deps
+    const initRot  = saved ? Math.round(saved.angle / 90) : 0;
+    const initFine = saved ? clamp(saved.angle - initRot * 90, -45, 45) : 0;
+
     const [img, setImg]           = useState(null);
-    const [rot90, setRot90]       = useState(0);
-    const [fine, setFine]         = useState(0);
-    const [flipH, setFlipH]       = useState(false);
-    const [flipV, setFlipV]       = useState(false);
+    const [rot90, setRot90]       = useState(initRot);
+    const [fine, setFine]         = useState(initFine);
+    const [flipH, setFlipH]       = useState(saved?.flipH ?? false);
+    const [flipV, setFlipV]       = useState(saved?.flipV ?? false);
     const [aspect, setAspect]     = useState(null);
-    const [crop, setCrop]         = useState({ x: 0, y: 0, w: 1, h: 1 });
+    const [crop, setCrop]         = useState(saved?.crop ?? { x: 0, y: 0, w: 1, h: 1 });
+    const [color, setColor]       = useState(saved?.color ?? NEUTRAL_COLOR);
+    const [output, setOutput]     = useState(saved?.output ?? DEFAULT_OUTPUT);
+    const [panel, setPanel]       = useState(null);   // null | 'color' | 'export'
     const [stageSize, setStage]   = useState({ w: 0, h: 0 });
     const [zoom, setZoom]         = useState(1);
     const [offset, setOffset]     = useState({ x: 0, y: 0 });
@@ -54,12 +85,21 @@ const ImageEditor = ({ file, onCancel, onSaved }) => {
     const rowEdgeRef = useRef(null);   // per-row horizontal-edge strength
 
     const angle = rot90 * 90 + fine;
+    // Gamma has no CSS filter function → an SVG feComponentTransfer referenced by id.
+    // The id carries the value so the canvas never reuses a cached filter.
+    const gammaId = `${GAMMA_FILTER_ID}-${Math.round(Number(color.gamma) || 0) + 100}`;
+    const previewFilter = cssFilter(color, `#${gammaId}`);
+    const gammaExp = 1 / colorFactors(color).g;
 
     // ─── Load image + measure the stage ────────────────────────────────────────
+    // Edit from the pristine source (library://source → base/source/original). Items
+    // edited the old cumulative way (no stored params) start from their current look,
+    // which the server then keeps as their baseline.
     useEffect(() => {
+        const legacy = !!file.editedAt && !file.editParams;
         const im = new window.Image();
         im.onload = () => setImg(im);
-        im.src = file.getUrl();
+        im.src = legacy ? file.getUrl() : `library://source/${file.id}?v=${file.editedAt || 0}`;
     }, [file]);
 
     useLayoutEffect(() => {
@@ -108,11 +148,13 @@ const ImageEditor = ({ file, onCancel, onSaved }) => {
         ctx.imageSmoothingEnabled = view.drawScale < 1;   // crisp pixels when zoomed in
         ctx.imageSmoothingQuality = 'high';
 
-        // Black backing behind the image box (matches sharp's JPEG corner fill).
+        // Colour preview: the same CSS filter maths the server applies to the pixels.
+        // The black backing (sharp's JPEG corner fill) is filtered too, like on save.
+        ctx.save();
+        ctx.filter = previewFilter;
         ctx.fillStyle = '#000';
         ctx.fillRect(view.origin.x, view.origin.y, view.boxW, view.boxH);
 
-        ctx.save();
         ctx.translate(view.origin.x + view.boxW / 2, view.origin.y + view.boxH / 2);
         ctx.rotate(layout.rad);
         ctx.scale(flipH ? -1 : 1, flipV ? -1 : 1);
@@ -136,7 +178,7 @@ const ImageEditor = ({ file, onCancel, onSaved }) => {
             }
             ctx.stroke();
         }
-    }, [img, layout, view, flipH, flipV, gridOn, stageSize]);
+    }, [img, layout, view, flipH, flipV, gridOn, stageSize, previewFilter, gammaExp]);
 
     // ─── Edge analysis for magnetic snapping ───────────────────────────────────
     // Uses the discrete (90°) orientation only — the straighten slider is ignored so
@@ -244,6 +286,7 @@ const ImageEditor = ({ file, onCancel, onSaved }) => {
         ctx.fillRect(0, 0, LOUPE_D, LOUPE_D);
         ctx.imageSmoothingEnabled = false;
         ctx.save();
+        ctx.filter = previewFilter;
         ctx.translate(ox + RW * s / 2, oy + RH * s / 2);
         ctx.rotate(layout.rad);
         ctx.scale(flipH ? -1 : 1, flipV ? -1 : 1);
@@ -266,7 +309,7 @@ const ImageEditor = ({ file, onCancel, onSaved }) => {
         ctx.rect(0, 0, LOUPE_D, LOUPE_D);
         ctx.rect(cl, ctp, cw, chh);
         ctx.fill('evenodd');
-        ctx.strokeStyle = '#b06bff';
+        ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--df-accent').trim() || '#b06bff';
         ctx.lineWidth = 2;
         ctx.strokeRect(cl, ctp, cw, chh);
 
@@ -277,7 +320,7 @@ const ImageEditor = ({ file, onCancel, onSaved }) => {
         ctx.moveTo(LOUPE_D / 2 - 6, LOUPE_D / 2); ctx.lineTo(LOUPE_D / 2 + 6, LOUPE_D / 2);
         ctx.moveTo(LOUPE_D / 2, LOUPE_D / 2 - 6); ctx.lineTo(LOUPE_D / 2, LOUPE_D / 2 + 6);
         ctx.stroke();
-    }, [loupePos, view, img, layout, crop, flipH, flipV]);
+    }, [loupePos, view, img, layout, crop, flipH, flipV, previewFilter, gammaExp]);
 
     // ─── Aspect / rotate / flip ────────────────────────────────────────────────
     const axisSwapped = (((rot90 % 2) + 2) % 2) === 1;
@@ -410,9 +453,11 @@ const ImageEditor = ({ file, onCancel, onSaved }) => {
     const handleSave = async () => {
         setSaving(true);
         try {
-            const transform = { angle, flipH, flipV, crop };
-            await LibraryService.editImage(file.id, transform);
-            saveEditPreset(transform);   // remember for one-click re-apply / batch
+            // The full edit — applied to the pristine source, so it replaces (not
+            // stacks on) whatever was saved before.
+            const params = { angle, flipH, flipV, crop, color, output };
+            await LibraryService.editImage(file.id, params);
+            saveEditPreset(params);   // remember for one-click re-apply / batch
             notify({ message: 'Изменения сохранены', type: 'success' });
             onSaved();
         } catch (e) {
@@ -433,6 +478,23 @@ const ImageEditor = ({ file, onCancel, onSaved }) => {
         }
     };
 
+    // Resulting pixel size (crop of the rotated box, then the optional max side).
+    const outSize = (() => {
+        if (!layout) return null;
+        let w = Math.max(1, Math.round(crop.w * layout.RW));
+        let h = Math.max(1, Math.round(crop.h * layout.RH));
+        const m = output.maxSide;
+        if (m && Math.max(w, h) > m) {
+            const k = m / Math.max(w, h);
+            w = Math.round(w * k); h = Math.round(h * k);
+        }
+        return { w, h };
+    })();
+    const srcIsLossy = /jpe?g|webp/i.test(file.mimeType || '');
+    const qualityApplies = output.format !== 'keep' || srcIsLossy;
+    const colorTouched = COLOR_SLIDERS.some(([k]) => Number(color[k]));
+    const exportTouched = output.format !== 'keep' || !!output.maxSide;
+
     const HANDLES = ['nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'w'];
     const cropStyle = view ? {
         left:   view.origin.x + crop.x * view.boxW,
@@ -443,6 +505,17 @@ const ImageEditor = ({ file, onCancel, onSaved }) => {
 
     return (
         <div className="img-editor" onContextMenu={e => { e.preventDefault(); e.stopPropagation(); }}>
+            {/* Gamma for the canvas preview (sRGB, like the server-side LUT). */}
+            <svg width="0" height="0" style={{ position: 'absolute' }} aria-hidden="true">
+                <filter id={gammaId} colorInterpolationFilters="sRGB">
+                    <feComponentTransfer>
+                        <feFuncR type="gamma" amplitude="1" exponent={gammaExp} offset="0" />
+                        <feFuncG type="gamma" amplitude="1" exponent={gammaExp} offset="0" />
+                        <feFuncB type="gamma" amplitude="1" exponent={gammaExp} offset="0" />
+                    </feComponentTransfer>
+                </filter>
+            </svg>
+
             <div
                 className={`img-editor-stage ${zoom > 1 ? 'pannable' : ''}`}
                 ref={stageRef}
@@ -472,6 +545,82 @@ const ImageEditor = ({ file, onCancel, onSaved }) => {
                         <button className="ie-zoom-reset" title="Сбросить масштаб" onClick={resetZoom}>
                             <i className="bi bi-arrows-angle-contract" />
                         </button>
+                    </div>
+                )}
+
+                {panel === 'color' && (
+                    <div className="ie-panel" onPointerDown={e => e.stopPropagation()}>
+                        <div className="ie-panel-head">
+                            <span><i className="bi bi-palette" /> Цвет</span>
+                            {colorTouched && (
+                                <button className="ie-panel-link" onClick={() => setColor(NEUTRAL_COLOR)}>Сбросить</button>
+                            )}
+                        </div>
+                        {COLOR_SLIDERS.map(([key, label]) => (
+                            <label className="ie-slider" key={key} title="Двойной клик — сбросить">
+                                <span>{label}</span>
+                                <input
+                                    type="range" min={-100} max={100} step={1}
+                                    value={color[key]}
+                                    onChange={e => setColor(c => ({ ...c, [key]: Number(e.target.value) }))}
+                                    onDoubleClick={() => setColor(c => ({ ...c, [key]: 0 }))}
+                                />
+                                <b>{color[key] > 0 ? `+${color[key]}` : color[key]}</b>
+                            </label>
+                        ))}
+                    </div>
+                )}
+
+                {panel === 'export' && (
+                    <div className="ie-panel" onPointerDown={e => e.stopPropagation()}>
+                        <div className="ie-panel-head">
+                            <span><i className="bi bi-file-earmark-zip" /> Экспорт и сжатие</span>
+                            {exportTouched && (
+                                <button className="ie-panel-link" onClick={() => setOutput(DEFAULT_OUTPUT)}>Сбросить</button>
+                            )}
+                        </div>
+                        <div className="ie-seg">
+                            {FORMATS.map(([id, label]) => (
+                                <button
+                                    key={id}
+                                    className={output.format === id ? 'on' : ''}
+                                    onClick={() => setOutput(o => ({ ...o, format: id }))}
+                                >
+                                    {label}
+                                </button>
+                            ))}
+                        </div>
+                        {qualityApplies && (
+                            <label className="ie-slider">
+                                <span>Качество</span>
+                                <input
+                                    type="range" min={30} max={100} step={1}
+                                    value={output.quality}
+                                    onChange={e => setOutput(o => ({ ...o, quality: Number(e.target.value) }))}
+                                />
+                                <b>{output.quality}</b>
+                            </label>
+                        )}
+                        <label className="ie-field">
+                            <span>Макс. сторона</span>
+                            <input
+                                type="number" min={16} step={1}
+                                placeholder="без изменений"
+                                value={output.maxSide ?? ''}
+                                onChange={e => {
+                                    const v = e.target.value === '' ? null : Math.max(0, Math.round(Number(e.target.value)));
+                                    setOutput(o => ({ ...o, maxSide: v || null }));
+                                }}
+                            />
+                            <em>px</em>
+                        </label>
+                        {outSize && (
+                            <div className="ie-panel-hint">
+                                Итог: {outSize.w}×{outSize.h}
+                                {output.format !== 'keep' && <> · {output.format === 'jpeg' ? 'JPEG' : 'WebP'}</>}
+                                {output.format === 'jpeg' && !srcIsLossy && <> · прозрачность станет белой</>}
+                            </div>
+                        )}
                     </div>
                 )}
             </div>
@@ -507,6 +656,24 @@ const ImageEditor = ({ file, onCancel, onSaved }) => {
                     </button>
                     <button className={`ie-btn ${loupeOn ? 'on' : ''}`} title="Лупа (пиксели под курсором)" onClick={() => setLoupeOn(v => !v)}>
                         <i className="bi bi-search" />
+                    </button>
+                </div>
+
+                {/* Colour / export panels */}
+                <div className="img-editor-group">
+                    <button
+                        className={`ie-btn ${panel === 'color' ? 'on' : ''} ${colorTouched ? 'dot' : ''}`}
+                        title="Цвет: яркость, контраст, насыщенность, гамма"
+                        onClick={() => setPanel(p => (p === 'color' ? null : 'color'))}
+                    >
+                        <i className="bi bi-palette" />
+                    </button>
+                    <button
+                        className={`ie-btn ${panel === 'export' ? 'on' : ''} ${exportTouched ? 'dot' : ''}`}
+                        title="Экспорт и сжатие: формат, качество, размер"
+                        onClick={() => setPanel(p => (p === 'export' ? null : 'export'))}
+                    >
+                        <i className="bi bi-file-earmark-zip" />
                     </button>
                 </div>
 

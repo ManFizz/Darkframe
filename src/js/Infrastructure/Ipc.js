@@ -48,6 +48,7 @@ export const libraryApi = {
     saveVideoPosition: (data) => invoke('library:saveVideoPosition', data),
     editImage:         (data) => invoke('library:editImage', data),
     revertImage:       (data) => invoke('library:revertImage', data),
+    recompressImage:   (data) => invoke('library:recompressImage', data),
     getCollections:    ()     => invoke('library:getCollections'),
     createCollection:  (data) => invoke('library:createCollection', data),
     updateCollection:  (data) => invoke('library:updateCollection', data),
