@@ -17,6 +17,7 @@ import {SOURCE_TYPES} from "./Constants";
 
 import {AppController, galleryReducer, initialState} from "@controllers/AppInitializerController";
 import Notifications from "./React/Helpers/Notifications";
+import HotkeysHelp from "./React/Helpers/HotkeysHelp";
 
 import {LibraryContext} from './LibraryContext';
 import {useLibraryFilter} from '@hooks/library/useLibraryFilter';
@@ -125,6 +126,7 @@ const Main = () => {
             }}>
             <div className={`main-root ${state.safeMode ? "safe-view" : ""}`}>
                 <Notifications />
+                <HotkeysHelp />
                 <NavBar setLibraryItems={setLibraryItems} />
 
                 {!isLibrary && (

@@ -154,6 +154,71 @@
 
 .settings-secret { font-family: ui-monospace, monospace; font-size: 12px; }
 
+// ─── Hotkeys cheat sheet ──────────────────────────────────────────────────────
+.hotkeys-modal { width: 820px; }
+.hotkeys-body {
+  columns: 2 340px;
+  column-gap: 18px;
+}
+.hotkeys-group {
+  break-inside: avoid;
+  margin: 8px 0 16px;
+  padding: 12px 14px;
+  border: 1px solid var(--bs-border-color);
+  border-radius: 12px;
+
+  &.current {
+    border-color: var(--df-accent-dim);
+    box-shadow: 0 0 0 3px var(--df-accent-soft);
+  }
+
+  h3 {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0 0 10px;
+    font-size: 13px;
+    font-weight: 700;
+    .bi { color: var(--df-accent); }
+  }
+}
+.hotkeys-now {
+  margin-left: auto;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--df-accent);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+}
+.hotkeys-row {
+  display: grid;
+  grid-template-columns: minmax(120px, auto) 1fr;
+  align-items: center;
+  gap: 12px;
+  padding: 4px 0;
+  font-size: 12.5px;
+}
+.hotkeys-keys {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 3px;
+
+  kbd {
+    padding: 2px 7px;
+    border: 1px solid var(--bs-border-color);
+    border-bottom-width: 2px;
+    border-radius: 6px;
+    background: var(--bs-tertiary-bg);
+    color: var(--bs-body-color);
+    font: 600 11.5px/1.4 var(--mono, ui-monospace, monospace);
+    white-space: nowrap;
+  }
+}
+.hotkeys-or { color: var(--bs-secondary); font-size: 11px; }
+.hotkeys-desc { color: var(--bs-secondary); }
+
 // ─── Appearance (live) ────────────────────────────────────────────────────────
 .appearance-live {
   margin-left: 8px;

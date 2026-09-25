@@ -2,6 +2,7 @@ import React, {useCallback, useEffect, useMemo, useState} from 'react';
 import {CanMoreMedia, LoadMoreMedia} from "@modules/r34/R34Controller";
 import {FILE_TYPES} from "@/Constants";
 import {useFavorites} from "@hooks/useFavorites";
+import {openHotkeysHelp} from "../Helpers/HotkeysHelp";
 
 const DIRECTION = {
     LEFT: -1,
@@ -164,6 +165,11 @@ const Navigation = ({ file, modalUpdater, mainArray, setDegree, panelOpen, onPan
                         onClick={onSlideshow}
                     />
                 )}
+                <i
+                    className="bi bi-keyboard"
+                    title="Горячие клавиши (?)"
+                    onClick={openHotkeysHelp}
+                />
                 {onPanelToggle && (
                     <i
                         className={`bi bi-layout-sidebar-reverse modal-nav-panel-btn ${panelOpen ? 'active' : ''}`}

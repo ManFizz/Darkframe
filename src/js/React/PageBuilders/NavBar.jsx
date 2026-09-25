@@ -11,6 +11,7 @@ import {useLibraryContext} from '@/LibraryContext';
 import {LibraryNavControls, LibraryNavSort} from '../Library/LibraryNavControls';
 import TagManager from '../Settings/TagManager';
 import ControlPanel from '../ControlPanel/ControlPanel';
+import {openHotkeysHelp} from '../Helpers/HotkeysHelp';
 
 const NavBar = () => {
     const { state, setCurrentSource, setSortInfo, setTypeView, setSafeMode } = useContext(GalleryContext);
@@ -130,6 +131,13 @@ const NavBar = () => {
                             <i className="bi bi-tags-fill" />
                         </button>
                     )}
+                    <button
+                        className="btn navbar-settings-btn"
+                        onClick={openHotkeysHelp}
+                        title="Горячие клавиши (?)"
+                    >
+                        <i className="bi bi-keyboard" />
+                    </button>
                     <button
                         className="btn navbar-settings-btn"
                         onClick={() => openPanel(isLibrary ? 'manage' : 'settings')}
