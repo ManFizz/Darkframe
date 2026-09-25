@@ -81,6 +81,9 @@ async function migrations() {
 
     // Deduplicated "recently viewed" log (per section). New table — create if missing.
     await require('./models/ViewHistory').sync();
+
+    // Resume positions for long videos. New table — create if missing.
+    await require('./models/VideoPosition').sync();
 }
 
 module.exports = { migrations};

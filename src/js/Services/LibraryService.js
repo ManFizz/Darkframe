@@ -185,6 +185,14 @@ export const LibraryService = {
         return libraryApi.captureVideoFrame(params);
     },
 
+    // mk = mediaKey(file): { section, key }
+    async getVideoPosition(mk) {
+        return libraryApi.getVideoPosition(mk);
+    },
+    async saveVideoPosition(mk, position, duration) {
+        return libraryApi.saveVideoPosition({ ...mk, position, duration });
+    },
+
     // transform: { angle, flipH, flipV, crop:{x,y,w,h} } — crop in fractions of the rotated image
     async editImage(id, transform) {
         return libraryApi.editImage({ id, ...transform });

@@ -19,6 +19,7 @@ const { findDuplicates } = require('../services/duplicates');
 const maintenance = require('../services/maintenance');
 const { itemUrls } = require('../services/itemUrls');
 const videoEdit = require('../services/videoEditService');
+const videoPositions = require('../services/videoPositions');
 const viewHistory = require('../services/viewHistory');
 
 // When an item's collection changes, drop it at the end of the destination's order
@@ -326,6 +327,10 @@ function register() {
     ipcMain.handle('library:revertVideo', async (_, { id }) => videoEdit.revertVideo(id));
 
     ipcMain.handle('library:captureVideoFrame', async (_, p) => videoEdit.captureVideoFrame(p || {}));
+
+    // ─── Resume positions for long videos ─────────────────────────────────────
+    ipcMain.handle('library:getVideoPosition',  async (_, p) => videoPositions.getPosition(p || {}));
+    ipcMain.handle('library:saveVideoPosition', async (_, p) => videoPositions.savePosition(p || {}));
 
     ipcMain.handle('library:restoreItems', async (_, { ids = [] }) => {
         if (!ids.length) return { ok: true, count: 0 };

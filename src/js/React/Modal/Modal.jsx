@@ -12,6 +12,7 @@ import {cachedMediaUrl} from "@/Infrastructure/MediaCache";
 import LibraryService from "@services/LibraryService";
 import {notify} from "@services/NotificationService";
 import {loadEditPreset} from "@services/imageEditPreset";
+import {mediaKey} from "@services/mediaKey";
 
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(v, hi));
 
@@ -136,17 +137,12 @@ const Modal = ({ fileId, mainArray, modalUpdater, displayFiles, onUpdated }) => 
     // storage happens server-side; the key is stable per source (lib id / media URL).
     useEffect(() => {
         if (!file || (file.type !== FILE_TYPES.IMAGE && file.type !== FILE_TYPES.VIDEO)) return;
-        const section = file.remoteType;
-        if (section == null) return;
+        const mk = mediaKey(file);
+        if (!mk) return;
 
         const timer = setTimeout(() => {
-            const key = section === SOURCE_TYPES.LIBRARY && file.id
-                ? `lib:${file.id}`
-                : (file.getUrl?.() || file.thumbUrl);
-            if (!key) return;
             LibraryService.recordView({
-                section,
-                key,
+                ...mk,
                 data: {
                     id: file.id, title: file.title, remoteId: file.remoteId,
                     width: file.width, height: file.height,

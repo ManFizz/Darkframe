@@ -43,7 +43,11 @@ const BusyIndicator = ({ busy }) => (
 // tools — actions from <Video>: captureFrame (any source) plus, for editable library
 //         videos, { trim, revert, canRevert }
 // busy  — { label, percent } while such an edit is running
-const VideoControls = ({ video, isPaused, currentTime, videoDuration, playMode, cyclePlayMode, tools, busy }) => {
+// resume — { position } when a saved spot can be continued (onResume / onDismissResume)
+const VideoControls = ({
+    video, isPaused, currentTime, videoDuration, playMode, cyclePlayMode,
+    tools, busy, resume, onResume, onDismissResume,
+}) => {
     const [volume, setVolume]     = useState(1);
     const [muted, setMuted]       = useState(false);
     const [rate, setRate]         = useState(1);
@@ -301,6 +305,18 @@ const VideoControls = ({ video, isPaused, currentTime, videoDuration, playMode, 
         return (
             <>
                 {busy && <div className="vc-busy-float"><BusyIndicator busy={busy} /></div>}
+                {resume && !busy && (
+                    <div className="vc-busy-float">
+                        <div className="vc-resume">
+                            <i className="bi bi-clock-history" />
+                            <span>Продолжить с <b>{formatTime(resume.position)}</b>?</span>
+                            <button className="vc-panel-btn primary" onClick={onResume}>
+                                <i className="bi bi-play-fill" /> Продолжить
+                            </button>
+                            <button className="vc-panel-btn" onClick={onDismissResume}>С начала</button>
+                        </div>
+                    </div>
+                )}
                 <button className="vc-expand" title="Показать управление" onClick={toggleCollapsed}>
                     <i className="bi bi-chevron-up" />
                 </button>
@@ -308,8 +324,9 @@ const VideoControls = ({ video, isPaused, currentTime, videoDuration, playMode, 
         );
     }
 
-    // Keep the bar on screen while a menu/panel is open or an edit is running.
-    const pinned = toolsOpen || trimOpen || !!busy;
+    // Keep the bar on screen while a menu/panel is open, an edit runs or a resume
+    // offer is waiting for an answer.
+    const pinned = toolsOpen || trimOpen || !!busy || !!resume;
 
     const mode = PLAY_MODE_META[playMode] || PLAY_MODE_META.repeat;
     const abLabel = startRec === null ? 'A‑B' : endRec === null ? 'A →' : 'A‑B';
@@ -320,6 +337,17 @@ const VideoControls = ({ video, isPaused, currentTime, videoDuration, playMode, 
     return (
         <div className={`video-controls v2 ${hidden && !pinned ? 'idle' : ''}`}>
             {busy && <BusyIndicator busy={busy} />}
+
+            {resume && !busy && (
+                <div className="vc-resume">
+                    <i className="bi bi-clock-history" />
+                    <span>Продолжить с <b>{formatTime(resume.position)}</b>?</span>
+                    <button className="vc-panel-btn primary" onClick={onResume}>
+                        <i className="bi bi-play-fill" /> Продолжить
+                    </button>
+                    <button className="vc-panel-btn" onClick={onDismissResume}>С начала</button>
+                </div>
+            )}
 
             {trimOpen && tools?.trim && abActive && !busy && (
                 <div className="vc-panel">

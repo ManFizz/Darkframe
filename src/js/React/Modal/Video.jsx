@@ -3,6 +3,11 @@ import VideoControls from "./VideoControls";
 import {FILE_TYPES, SOURCE_TYPES} from "@/Constants";
 import LibraryService from "@services/LibraryService";
 import {notify} from "@services/NotificationService";
+import {mediaKey} from "@services/mediaKey";
+
+// Resume support: only long videos, saved every few seconds while playing.
+const RESUME_MIN_DURATION = 180;   // seconds
+const RESUME_SAVE_EVERY   = 5000;  // ms
 
 const PLAY_MODE_KEY = 'jsg_video_playmode';
 export const PLAY_MODES = ['repeat', 'next', 'shuffle'];
@@ -22,6 +27,64 @@ const Video = ({ file, mainArray = [], modalUpdater, canEdit = false, onEdited }
     const [videoDuration, setVideoDuration] = useState(0);
     const [playMode, setPlayMode] = useState(loadPlayMode);
     const [busy, setBusy] = useState(null);   // { label, percent } while an edit runs
+    const [resume, setResume] = useState(null);   // { position } offered to the user
+
+    // ─── Resume position ────────────────────────────────────────────────────────
+    // `track` always describes the file currently playing; the file-change cleanup
+    // below saves it before it's replaced (the old <video> is already gone by then).
+    const track       = useRef({ mk: null, time: 0, dur: 0 });
+    const lastSaved   = useRef(0);
+    const checkedFor  = useRef(null);
+
+    const savePosition = useCallback((t = track.current) => {
+        if (!t.mk || !(t.dur >= RESUME_MIN_DURATION)) return;
+        // A barely-started session (opened and closed right away, or the file was just
+        // unloaded for an edit) must not wipe an earlier resume point.
+        if (!(t.time >= 5)) return;
+        lastSaved.current = Date.now();
+        LibraryService.saveVideoPosition(t.mk, t.time, t.dur).catch(() => {});
+    }, []);
+
+    useEffect(() => {
+        track.current = { mk: mediaKey(file), time: 0, dur: 0 };
+        lastSaved.current = 0;
+        checkedFor.current = null;
+        setResume(null);
+        return () => savePosition({ ...track.current });
+    }, [file?.uniqueId, savePosition]);
+
+    // Once the duration is known, offer to continue from the saved spot.
+    useEffect(() => {
+        const mk = track.current.mk;
+        if (!mk || !(videoDuration >= RESUME_MIN_DURATION)) return;
+        if (checkedFor.current === file?.uniqueId) return;
+        checkedFor.current = file?.uniqueId;
+        LibraryService.getVideoPosition(mk).then(p => {
+            if (p && p.position > 5 && p.position < videoDuration * 0.95) setResume({ position: p.position });
+        }).catch(() => {});
+    }, [videoDuration, file?.uniqueId]);
+
+    // The offer goes away on its own after a while.
+    useEffect(() => {
+        if (!resume) return;
+        const t = setTimeout(() => setResume(null), 12000);
+        return () => clearTimeout(t);
+    }, [resume]);
+
+    const acceptResume = useCallback(() => {
+        const v = videoRef.current;
+        if (v && resume) v.currentTime = resume.position;
+        setResume(null);
+    }, [resume]);
+
+    const onTimeUpdate = useCallback(() => {
+        const v = videoRef.current;
+        if (!v) return;
+        setCurrentTime(v.currentTime);
+        track.current.time = v.currentTime;
+        track.current.dur = v.duration || 0;
+        if (Date.now() - lastSaved.current > RESUME_SAVE_EVERY && !v.paused) savePosition();
+    }, [savePosition]);
 
     // Run a file-replacing edit. The <video> is unloaded first: on Windows a file that
     // is still being streamed can't be overwritten. On failure the source is restored;
@@ -156,10 +219,10 @@ const Video = ({ file, mainArray = [], modalUpdater, canEdit = false, onEdited }
                 src={file.getUrl()}
                 onClick={handleClick}
                 onDoubleClick={handleDoubleClick}
-                onPause={() => setIsPaused(true)}
+                onPause={() => { setIsPaused(true); savePosition(); }}
                 onEnded={() => { setIsPaused(true); if (!loop) advance(); }}
                 onPlay={() => setIsPaused(false)}
-                onTimeUpdate={() => setCurrentTime(videoRef.current?.currentTime ?? 0)}
+                onTimeUpdate={onTimeUpdate}
                 onDurationChange={() => setVideoDuration(videoRef.current?.duration || 0)}
             />
             <VideoControls
@@ -172,6 +235,9 @@ const Video = ({ file, mainArray = [], modalUpdater, canEdit = false, onEdited }
                 cyclePlayMode={cyclePlayMode}
                 tools={tools}
                 busy={busy}
+                resume={resume}
+                onResume={acceptResume}
+                onDismissResume={() => setResume(null)}
             />
         </>
     );
