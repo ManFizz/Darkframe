@@ -187,6 +187,7 @@ async function editImage(id, rawParams = {}) {
         fileName,
         editedAt,
         editParams: JSON.stringify(params),
+        phash: null,   // content changed → recompute for the near-duplicate finder
     }, { where: { id } });
 
     return { ok: true, width: size.width, height: size.height, editedAt, size: outBuf.length };
@@ -233,6 +234,7 @@ async function revertImage(id) {
         fileName,
         editedAt: null,
         editParams: null,
+        phash: null,
     }, { where: { id } });
 
     return { ok: true, width: size.width, height: size.height };

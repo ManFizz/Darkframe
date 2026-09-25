@@ -134,6 +134,11 @@ export const LibraryService = {
         return libraryApi.findDuplicates();
     },
 
+    // Near-duplicates (perceptual hash)
+    async phashStatus()             { return libraryApi.phashStatus(); },
+    async computePhashes()          { return libraryApi.computePhashes(); },
+    async findSimilar(maxDistance)  { return libraryApi.findSimilar({ maxDistance }); },
+
     async checkIntegrity() {
         return libraryApi.checkIntegrity();
     },

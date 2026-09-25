@@ -1,0 +1,140 @@
+const fs = require('fs');
+const path = require('path');
+const { Op } = require('sequelize');
+const sequelize = require('../database');
+const { Item } = require('../models/associations');
+const Collection = require('../models/Collection');
+const { getActive } = require('../libraryRegistry');
+const { phashOf, groupSimilar } = require('./phash');
+const { itemUrls } = require('./itemUrls');
+
+// Near-duplicate finder (perceptual hash). Still images only — GIFs by their first
+// frame; videos are not compared. Hashes are computed lazily (NULL = not yet,
+// '' = couldn't be hashed) and reset whenever an image is edited.
+
+const ITEMS_PATH = getActive().itemsPath;
+const IMAGES = { mimeType: { [Op.like]: 'image/%' } };
+
+async function phashStatus() {
+    const [total, missing] = await Promise.all([
+        Item.count({ where: IMAGES }),
+        Item.count({ where: { ...IMAGES, phash: null } }),
+    ]);
+    return { total, missing };
+}
+
+// What the library actually displays: display.jpg for HEIC originals, else original.*
+function imageFileFor(id) {
+    const dir = path.join(ITEMS_PATH, id);
+    const display = path.join(dir, 'display.jpg');
+    if (fs.existsSync(display)) return display;
+    try {
+        const f = fs.readdirSync(dir).find(x => /^original\./i.test(x));
+        return f ? path.join(dir, f) : null;
+    } catch { return null; }
+}
+
+let running = null;   // one computation at a time
+
+async function computeMissing(onProgress) {
+    if (running) return running;
+    running = (async () => {
+        const rows = await Item.findAll({ where: { ...IMAGES, phash: null }, attributes: ['id'], raw: true });
+        const total = rows.length;
+        let done = 0, ok = 0, failed = 0;
+        onProgress?.({ done, total, ok, failed });
+
+        // Write results in small transactions — thousands of lone UPDATEs are slow.
+        let pending = [];
+        const flush = async () => {
+            if (!pending.length) return;
+            const batch = pending; pending = [];
+            await sequelize.transaction(async (t) => {
+                for (const { id, phash } of batch) {
+                    await Item.unscoped().update({ phash }, { where: { id }, transaction: t });
+                }
+            });
+        };
+
+        for (const { id } of rows) {
+            let value = '';   // '' marks "unhashable" so it isn't retried forever
+            try {
+                const file = imageFileFor(id);
+                if (file) { value = await phashOf(fs.readFileSync(file)); ok++; }
+                else failed++;
+            } catch { failed++; }
+            pending.push({ id, phash: value });
+            done++;
+            if (pending.length >= 100) await flush();
+            if (done % 10 === 0 || done === total) onProgress?.({ done, total, ok, failed });
+        }
+        await flush();
+        return { total, ok, failed };
+    })();
+    try { return await running; } finally { running = null; }
+}
+
+const chunk = (arr, n) => Array.from({ length: Math.ceil(arr.length / n) }, (_, i) => arr.slice(i * n, i * n + n));
+
+/**
+ * Groups of visually similar images. maxDistance = allowed differing bits (of 64).
+ * Within a group the best copy (most pixels, then biggest file) comes first — the
+ * natural one to keep.
+ */
+async function findSimilar(maxDistance = 8, onProgress) {
+    const d = Math.max(0, Math.min(20, Math.round(Number(maxDistance) || 8)));
+    const entries = await Item.findAll({
+        where: { ...IMAGES, phash: { [Op.and]: [{ [Op.ne]: null }, { [Op.ne]: '' }] } },
+        attributes: ['id', 'phash'],
+        raw: true,
+    });
+
+    const raw = await groupSimilar(entries, d, onProgress);
+    const ids = raw.flat().map(x => x.id);
+    const distance = new Map(raw.flat().map(x => [x.id, x.distance]));
+
+    const details = [];
+    for (const part of chunk(ids, 900)) {   // stay under SQLite's variable limit
+        details.push(...await Item.findAll({
+            where: { id: { [Op.in]: part } },
+            include: [{ model: Collection, as: 'collection', attributes: ['id', 'name'] }],
+        }));
+    }
+    const byId = new Map(details.map(it => [it.id, it]));
+
+    let totalItems = 0, reclaimable = 0;
+    const groups = [];
+    for (const g of raw) {
+        const rows = g.map(({ id }) => {
+            const it = byId.get(id);
+            if (!it) return null;
+            const dist = distance.get(id);
+            return {
+                id: it.id,
+                title: it.title || it.fileName,
+                fileName: it.fileName,
+                size: it.size,
+                mimeType: it.mimeType,
+                width: it.width,
+                height: it.height,
+                importedAt: it.importedAt,
+                collectionId: it.collectionId,
+                collectionName: it.collection?.name || 'Без коллекции',
+                thumbPath: itemUrls(it).thumbPath,
+                distance: dist,
+                similarity: Math.round(((64 - dist) / 64) * 100),
+            };
+        }).filter(Boolean);
+        if (rows.length < 2) continue;
+
+        rows.sort((a, b) => ((b.width * b.height) - (a.width * a.height)) || ((b.size || 0) - (a.size || 0)));
+        totalItems += rows.length;
+        reclaimable += rows.slice(1).reduce((s, r) => s + (r.size || 0), 0);
+        groups.push({ hash: rows.map(r => r.id).join('|'), items: rows });
+    }
+    groups.sort((a, b) => b.items.length - a.items.length);
+
+    return { groups, totalGroups: groups.length, totalItems, reclaimable };
+}
+
+module.exports = { phashStatus, computeMissing, findSimilar };

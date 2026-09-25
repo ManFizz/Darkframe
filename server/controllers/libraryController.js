@@ -16,6 +16,7 @@ const tagAdmin = require('../services/tagAdmin');
 const { getSmartItems } = require('../services/smartItems');
 const { getDashboard } = require('../services/dashboard');
 const { findDuplicates } = require('../services/duplicates');
+const similarity = require('../services/similarity');
 const maintenance = require('../services/maintenance');
 const { itemUrls } = require('../services/itemUrls');
 const videoEdit = require('../services/videoEditService');
@@ -420,6 +421,15 @@ function register() {
     ipcMain.handle('library:getDashboard', async () => getDashboard());
 
     ipcMain.handle('library:findDuplicates', async () => findDuplicates());
+
+    // ─── Near-duplicates (perceptual hash) ────────────────────────────────────
+    ipcMain.handle('library:phashStatus', async () => similarity.phashStatus());
+    ipcMain.handle('library:computePhashes', async (event) => similarity.computeMissing((p) => {
+        if (!event.sender.isDestroyed()) event.sender.send('library:phashProgress', p);
+    }));
+    ipcMain.handle('library:findSimilar', async (event, { maxDistance }) => similarity.findSimilar(maxDistance, (pct) => {
+        if (!event.sender.isDestroyed()) event.sender.send('library:similarProgress', pct);
+    }));
 
     // ─── View history / recently viewed (per section) ────────────────────────
     ipcMain.handle('library:recordView',        async (_, p)  => viewHistory.recordView(p || {}));

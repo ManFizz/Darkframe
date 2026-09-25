@@ -31,6 +31,9 @@ const Item = sequelize.define('Item', {
     // JSON of the full image edit (geometry / colour / output), re-applied from the
     // pristine source on every save so edits never stack up. NULL = not edited.
     editParams:     { type: DataTypes.TEXT, allowNull: true, defaultValue: null },
+    // 64-bit perceptual hash (hex) for the near-duplicate finder.
+    // NULL = not computed yet, '' = couldn't be hashed. Reset on every image edit.
+    phash:          { type: DataTypes.STRING(16), allowNull: true, defaultValue: null },
     // Video only: second of the frame chosen as the gallery thumbnail (NULL = default 10%).
     thumbAt:        { type: DataTypes.FLOAT, allowNull: true, defaultValue: null },
 }, {

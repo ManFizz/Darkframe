@@ -20,6 +20,14 @@ async function migrations() {
             defaultValue: null,
         });
     }
+    if (!tableDesc.phash) {
+        // Perceptual hash for near-duplicates (computed lazily).
+        await queryInterface.addColumn('Items', 'phash', {
+            type: DataTypes.STRING(16),
+            allowNull: true,
+            defaultValue: null,
+        });
+    }
     if (!tableDesc.editParams) {
         // Full image-edit parameters (JSON), re-applied from the source on each save.
         await queryInterface.addColumn('Items', 'editParams', {
