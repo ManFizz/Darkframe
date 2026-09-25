@@ -50,6 +50,37 @@
   }
 }
 
+// Batch re-compression popover
+.bulk-compress { position: relative; }
+.bulk-compress-panel {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 1200;
+  width: 260px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  border-radius: 12px;
+  background: var(--df-glass-strong);
+  border: 1px solid var(--df-glass-border);
+  backdrop-filter: blur(16px);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5);
+}
+.bulk-compress-row {
+  display: grid;
+  grid-template-columns: 96px 1fr auto;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--bs-secondary);
+
+  .form-select, .form-control { grid-column: 2 / span 2; }
+  input[type="range"] { accent-color: var(--df-accent); }
+  b { color: var(--bs-body-color); font-variant-numeric: tabular-nums; }
+}
+
 @keyframes slideDown {
   from { transform: translateY(-100%); opacity: 0; }
   to   { transform: translateY(0);    opacity: 1; }

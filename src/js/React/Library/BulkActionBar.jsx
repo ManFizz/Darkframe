@@ -4,11 +4,53 @@ import {notify} from '@services/NotificationService';
 import {loadEditPreset} from '@services/imageEditPreset';
 import {FILE_TYPES} from '@/Constants';
 
+const fmtMB = (b) => `${(b / 1024 / 1024).toFixed(1)} МБ`;
+
 const BulkActionBar = ({ selectedItems, collections, onDone, permanent = false, totalCount = 0, onSelectAll, onInvert, onClear }) => {
     const [targetCollection, setTargetCollection] = useState('');
     const [tagInput, setTagInput] = useState('');
+    const [compressOpen, setCompressOpen] = useState(false);
+    const [cFormat, setCFormat]   = useState('webp');
+    const [cQuality, setCQuality] = useState(85);
+    const [cMaxSide, setCMaxSide] = useState('');
+    const [busy, setBusy] = useState(null);   // progress label while a batch runs
 
     if (selectedItems.length === 0) return null;
+
+    // Re-encode every selected still image (format / quality / max side). Each keeps
+    // its own crop/colour edits, and the pristine original stays available for revert.
+    const compressAll = async () => {
+        const targets = selectedItems.filter(f => f.type === FILE_TYPES.IMAGE && f.mimeType !== 'image/gif');
+        if (!targets.length) { notify({ message: 'Нет подходящих изображений (GIF и видео пропускаются)', type: 'warning' }); return; }
+        if (!confirm(`Пересжать ${targets.length} изображений? Оригиналы сохранятся — можно будет откатить.`)) return;
+        setCompressOpen(false);
+
+        const output = {
+            format: cFormat,
+            quality: cQuality,
+            maxSide: cMaxSide ? Math.max(16, Math.round(Number(cMaxSide))) : null,
+        };
+        let ok = 0, fail = 0, before = 0, after = 0;
+        for (let i = 0; i < targets.length; i++) {
+            const f = targets[i];
+            setBusy(`Сжатие ${i + 1} / ${targets.length}`);
+            try {
+                const res = await LibraryService.recompressImage(f.id, output);
+                ok++;
+                before += f.size || 0;
+                after += res?.size || 0;
+            } catch { fail++; }
+        }
+        setBusy(null);
+        const saved = before - after;
+        notify({
+            message: `Пересжато: ${ok}${fail ? `, ошибок: ${fail}` : ''}` +
+                (before ? ` · ${fmtMB(before)} → ${fmtMB(after)}${saved > 0 ? ` (−${fmtMB(saved)})` : ''}` : ''),
+            type: fail ? 'warning' : 'success',
+            duration: 8000,
+        });
+        onDone();
+    };
 
     const allSelected = totalCount > 0 && selectedItems.length >= totalCount;
 
@@ -147,13 +189,54 @@ const BulkActionBar = ({ selectedItems, collections, onDone, permanent = false, 
                     {hasPreset && (
                         <button
                             className="btn btn-sm btn-outline-primary"
-                            title="Применить последнюю правку (поворот / обрезку) ко всем выбранным"
+                            title="Применить последнюю правку (поворот / обрезку / цвет) ко всем выбранным"
                             onClick={applyLastEdit}
                         >
                             <i className="bi bi-magic me-1" />
                             Применить правку
                         </button>
                     )}
+
+                    <div className="bulk-compress">
+                        <button
+                            className={`btn btn-sm btn-outline-secondary ${compressOpen ? 'active' : ''}`}
+                            title="Пересжать выбранные изображения"
+                            onClick={() => setCompressOpen(v => !v)}
+                            disabled={!!busy}
+                        >
+                            <i className="bi bi-file-earmark-zip me-1" />
+                            {busy || 'Сжать'}
+                        </button>
+                        {compressOpen && (
+                            <div className="bulk-compress-panel">
+                                <div className="bulk-compress-row">
+                                    <span>Формат</span>
+                                    <select className="form-select form-select-sm" value={cFormat} onChange={e => setCFormat(e.target.value)}>
+                                        <option value="keep">Как есть</option>
+                                        <option value="jpeg">JPEG</option>
+                                        <option value="webp">WebP</option>
+                                    </select>
+                                </div>
+                                <div className="bulk-compress-row">
+                                    <span>Качество</span>
+                                    <input type="range" min={30} max={100} value={cQuality} onChange={e => setCQuality(Number(e.target.value))} />
+                                    <b>{cQuality}</b>
+                                </div>
+                                <div className="bulk-compress-row">
+                                    <span>Макс. сторона</span>
+                                    <input
+                                        className="form-control form-control-sm"
+                                        type="number" min={16} placeholder="без изменений"
+                                        value={cMaxSide}
+                                        onChange={e => setCMaxSide(e.target.value)}
+                                    />
+                                </div>
+                                <button className="btn btn-sm btn-primary w-100" onClick={compressAll}>
+                                    Пересжать
+                                </button>
+                            </div>
+                        )}
+                    </div>
                 </>
             )}
 
