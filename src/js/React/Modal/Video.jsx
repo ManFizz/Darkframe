@@ -19,7 +19,8 @@ const loadPlayMode = () => {
 
 // canEdit  — a library video the user may modify (trim etc.)
 // onEdited — called after the file changed on disk, so the list reloads fresh URLs
-const Video = ({ file, mainArray = [], modalUpdater, canEdit = false, onEdited }) => {
+// slideshow  — part of a running slideshow: play once, then onSlideEnd() moves on
+const Video = ({ file, mainArray = [], modalUpdater, canEdit = false, onEdited, slideshow = false, onSlideEnd }) => {
     const videoRef = useRef(null);
     const clickTimer = useRef(null);
     const [isPaused, setIsPaused] = useState(true);
@@ -53,10 +54,11 @@ const Video = ({ file, mainArray = [], modalUpdater, canEdit = false, onEdited }
         return () => savePosition({ ...track.current });
     }, [file?.uniqueId, savePosition]);
 
-    // Once the duration is known, offer to continue from the saved spot.
+    // Once the duration is known, offer to continue from the saved spot (not during a
+    // slideshow — there every clip simply plays from the start).
     useEffect(() => {
         const mk = track.current.mk;
-        if (!mk || !(videoDuration >= RESUME_MIN_DURATION)) return;
+        if (slideshow || !mk || !(videoDuration >= RESUME_MIN_DURATION)) return;
         if (checkedFor.current === file?.uniqueId) return;
         checkedFor.current = file?.uniqueId;
         LibraryService.getVideoPosition(mk).then(p => {
@@ -169,7 +171,8 @@ const Video = ({ file, mainArray = [], modalUpdater, canEdit = false, onEdited }
 
     // "next"/"shuffle" need somewhere to jump to; without navigation we can only loop.
     const canAdvance = typeof modalUpdater === 'function' && mainArray.length > 0;
-    const loop = playMode === 'repeat' || !canAdvance;
+    // In a slideshow the clip plays once; the slideshow decides what comes next.
+    const loop = !slideshow && (playMode === 'repeat' || !canAdvance);
 
     const cyclePlayMode = useCallback(() => {
         setPlayMode(prev => {
@@ -235,7 +238,11 @@ const Video = ({ file, mainArray = [], modalUpdater, canEdit = false, onEdited }
                 onClick={handleClick}
                 onDoubleClick={handleDoubleClick}
                 onPause={() => { setIsPaused(true); savePosition(); }}
-                onEnded={() => { setIsPaused(true); if (!loop) advance(); }}
+                onEnded={() => {
+                    setIsPaused(true);
+                    if (slideshow) onSlideEnd?.();
+                    else if (!loop) advance();
+                }}
                 onPlay={() => setIsPaused(false)}
                 onTimeUpdate={onTimeUpdate}
                 onDurationChange={() => setVideoDuration(videoRef.current?.duration || 0)}

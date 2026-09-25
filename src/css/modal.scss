@@ -255,6 +255,124 @@
   }
 }
 
+// Slideshow running: the toolbar/arrows/counter fade out but stay mounted, so
+// their keyboard handling (Escape, arrows) keeps working.
+.modal-nav-container.nav-hidden {
+  > * { opacity: 0; pointer-events: none !important; transition: opacity 0.25s ease; }
+  i, .modal-nav-counter { pointer-events: none !important; }
+}
+
+// ─── Slideshow HUD ────────────────────────────────────────────────────────────
+.ss-hud {
+  position: fixed;
+  top: calc(#{variables.$modal-top} + 12px);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1150;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 8px;
+  border-radius: 999px;
+  background: var(--df-glass-strong, rgba(20, 16, 28, 0.8));
+  border: 1px solid var(--df-glass-border, rgba(255, 255, 255, 0.1));
+  backdrop-filter: blur(14px);
+  box-shadow: 0 8px 26px rgba(0, 0, 0, 0.45);
+  color: #fff;
+  transition: opacity 0.25s ease;
+
+  &.idle { opacity: 0; pointer-events: none; }
+}
+.ss-pos {
+  padding: 0 8px 0 6px;
+  font: 600 12px/1 var(--mono, ui-monospace, monospace);
+  font-variant-numeric: tabular-nums;
+  opacity: 0.85;
+}
+.ss-btn {
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: #fff;
+  font-size: 15px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+
+  &:hover { background: rgba(255, 255, 255, 0.14); }
+  &.on { color: var(--df-accent); }
+}
+.ss-play {
+  width: 36px;
+  height: 36px;
+  font-size: 19px;
+  background: linear-gradient(135deg, var(--df-accent), var(--df-accent-dim));
+  &:hover { filter: brightness(1.08); background: linear-gradient(135deg, var(--df-accent), var(--df-accent-dim)); }
+}
+.ss-stop:hover { color: #ff8b8b; }
+.ss-sep {
+  width: 1px;
+  height: 18px;
+  margin: 0 4px;
+  background: rgba(255, 255, 255, 0.18);
+}
+.ss-intervals {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+
+  button {
+    height: 26px;
+    padding: 0 8px;
+    border: none;
+    border-radius: 999px;
+    background: transparent;
+    color: rgba(255, 255, 255, 0.75);
+    font: 600 11.5px/1 var(--mono, ui-monospace, monospace);
+    cursor: pointer;
+    &:hover { color: #fff; background: rgba(255, 255, 255, 0.1); }
+    &.on { color: #fff; background: var(--df-accent-soft, rgba(176, 107, 255, 0.3)); }
+  }
+}
+.ss-custom {
+  width: 54px;
+  height: 26px;
+  padding: 0 6px;
+  border: 1px solid var(--df-accent-dim, rgba(176, 107, 255, 0.6));
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.35);
+  color: #fff;
+  font: 600 11.5px/1 var(--mono, ui-monospace, monospace);
+  outline: none;
+}
+
+// Countdown to the next image slide.
+.ss-progress {
+  position: fixed;
+  top: variables.$modal-top;
+  left: 0;
+  right: 0;
+  z-index: 1150;
+  height: 3px;
+  background: rgba(255, 255, 255, 0.08);
+  pointer-events: none;
+}
+.ss-progress-fill {
+  height: 100%;
+  width: 0;
+  background: linear-gradient(90deg, var(--df-accent-dim), var(--df-accent));
+  animation-name: ss-countdown;
+  animation-timing-function: linear;
+  animation-fill-mode: forwards;
+}
+@keyframes ss-countdown {
+  from { width: 0; }
+  to   { width: 100%; }
+}
+
 .thumb.modal-active {
   filter: brightness(0.5);
   z-index: 3;

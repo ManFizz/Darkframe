@@ -13,6 +13,8 @@ import LibraryService from "@services/LibraryService";
 import {notify} from "@services/NotificationService";
 import {loadEditPreset} from "@services/imageEditPreset";
 import {mediaKey} from "@services/mediaKey";
+import {useSlideshow} from "./useSlideshow";
+import SlideshowHud from "./SlideshowHud";
 
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(v, hi));
 
@@ -33,10 +35,39 @@ const Modal = ({ fileId, mainArray, modalUpdater, displayFiles, onUpdated }) => 
         mainArray.find(f => f.uniqueId === fileId) || null,
     [fileId, mainArray]);
 
+    const ss = useSlideshow({ file, mainArray, modalUpdater });
+
     const isLibrary   = file?.remoteType === SOURCE_TYPES.LIBRARY;
     const hasMetaPanel = isLibrary && !!onUpdated;               // editable library metadata
     const hasRemotePanel = !isLibrary && !!file?.tags?.length;   // read-only booru tag panel
-    const showPanel   = panelOpen && (hasMetaPanel || hasRemotePanel);
+    // The side panel steps aside for the whole slideshow (no layout jumps on pause).
+    const showPanel   = panelOpen && (hasMetaPanel || hasRemotePanel) && !ss.active;
+
+    // S starts the slideshow / toggles pause. While it runs, any other key, a click
+    // on the media or the wheel pauses it (arrows still navigate).
+    useEffect(() => {
+        if (!file) return;
+        const typing = () => {
+            const el = document.activeElement;
+            return el?.tagName === 'INPUT' || el?.tagName === 'TEXTAREA' || el?.isContentEditable;
+        };
+        const onKey = (e) => {
+            if (typing() || document.querySelector('.img-editor')) return;
+            if (e.code === 'KeyS' && !e.ctrlKey && !e.metaKey && !e.altKey) {
+                e.preventDefault();
+                ss.active ? ss.togglePause() : ss.start();
+                return;
+            }
+            if (ss.active && !ss.paused && !['Shift', 'Control', 'Alt', 'Meta'].includes(e.key)) ss.pause();
+        };
+        const onWheel = () => { if (ss.active && !ss.paused) ss.pause(); };
+        document.addEventListener('keydown', onKey);
+        document.addEventListener('wheel', onWheel, { passive: true });
+        return () => {
+            document.removeEventListener('keydown', onKey);
+            document.removeEventListener('wheel', onWheel);
+        };
+    }, [file, ss]);
 
     // Переход к соседнему файлу (используется при удалении и смене коллекции)
     const navigateToNext = useCallback(() => {
@@ -260,12 +291,13 @@ const Modal = ({ fileId, mainArray, modalUpdater, displayFiles, onUpdated }) => 
         window.removeEventListener('pointerup', onPanUp);
     }, [onPanMove]);
     const onMediaPointerDown = useCallback((e) => {
+        if (ss.active && !ss.paused) ss.pause();   // touching the media pauses the show
         if (zoom <= 1 || e.button !== 0) return;
         e.preventDefault();   // stop the browser's native image-drag / text selection
         panDrag.current = { sx: e.clientX, sy: e.clientY, ox: pan.x, oy: pan.y };
         window.addEventListener('pointermove', onPanMove);
         window.addEventListener('pointerup', onPanUp);
-    }, [zoom, pan, onPanMove, onPanUp]);
+    }, [zoom, pan, onPanMove, onPanUp, ss]);
 
     useEffect(() => () => {
         window.removeEventListener('pointermove', onPanMove);
@@ -292,6 +324,8 @@ const Modal = ({ fileId, mainArray, modalUpdater, displayFiles, onUpdated }) => 
             modalUpdater={modalUpdater}
             canEdit={hasMetaPanel}
             onEdited={() => onUpdated?.('refresh')}
+            slideshow={ss.active}
+            onSlideEnd={ss.onVideoEnded}
         />
     );
 
@@ -321,8 +355,12 @@ const Modal = ({ fileId, mainArray, modalUpdater, displayFiles, onUpdated }) => 
                         onEdit={isLibrary && onUpdated && file.type === FILE_TYPES.IMAGE && file.mimeType !== 'image/gif' ? () => setEditing(true) : null}
                         onApplyLast={isLibrary && onUpdated && file.type === FILE_TYPES.IMAGE && file.mimeType !== 'image/gif' && loadEditPreset() ? handleApplyLast : null}
                         onDuplicate={isLibrary && onUpdated ? handleDuplicate : null}
+                        onSlideshow={ss.active ? null : ss.start}
+                        hidden={ss.active && !ss.paused}
                     />
                 )}
+
+                {ss.active && !editing && <SlideshowHud ss={ss} file={file} />}
 
                 {/* The media area is always rendered in the same spot so toggling the
                     panel never remounts <Video> (which would restart playback). Only
@@ -340,7 +378,7 @@ const Modal = ({ fileId, mainArray, modalUpdater, displayFiles, onUpdated }) => 
                     </div>
                 )}
                 {/* Library keeps its old bottom-tags look when its panel is hidden. */}
-                {hasMetaPanel && !panelOpen && <Tags file={file} />}
+                {hasMetaPanel && !panelOpen && !ss.active && <Tags file={file} />}
 
                 {editing && (
                     <ImageEditor

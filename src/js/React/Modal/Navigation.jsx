@@ -16,7 +16,8 @@ const isCanDisplayedByIdx = (mainArray, nextIdx) => {
     return item.type === FILE_TYPES.VIDEO || item.type === FILE_TYPES.IMAGE;
 };
 
-const Navigation = ({ file, modalUpdater, mainArray, setDegree, panelOpen, onPanelToggle, onEdit, onApplyLast, onDuplicate, showFav }) => {
+// hidden — visually hidden (slideshow running) but still mounted, so Escape / arrows work
+const Navigation = ({ file, modalUpdater, mainArray, setDegree, panelOpen, onPanelToggle, onEdit, onApplyLast, onDuplicate, onSlideshow, showFav, hidden = false }) => {
     const { isFav, isPending, toggleFav } = useFavorites();
     const [editingCounter, setEditingCounter] = useState(false);
     const [counterInput, setCounterInput] = useState('');
@@ -114,7 +115,7 @@ const Navigation = ({ file, modalUpdater, mainArray, setDegree, panelOpen, onPan
     const canGoRight = isCanDisplayedByIdx(mainArray, currentIndex + 1);
 
     return (
-        <div className="modal-nav-container">
+        <div className={`modal-nav-container ${hidden ? 'nav-hidden' : ''}`}>
             <div className="modal-nav-row">
                 <i
                     className="bi bi-arrow-left-square btn-cancel"
@@ -154,6 +155,13 @@ const Navigation = ({ file, modalUpdater, mainArray, setDegree, panelOpen, onPan
                         className="bi bi-copy"
                         title="Дублировать (полная копия)"
                         onClick={onDuplicate}
+                    />
+                )}
+                {onSlideshow && (
+                    <i
+                        className="bi bi-play-btn"
+                        title="Слайдшоу (S)"
+                        onClick={onSlideshow}
                     />
                 )}
                 {onPanelToggle && (
