@@ -29,15 +29,26 @@ async function resolveAlias(name) {
 // ─── Tag listing with live-item usage counts ──────────────────────────────────
 async function getAllTags() {
     // COUNT(i.id) counts only non-trashed items linked to the tag.
-    return sequelize.query(
-        `SELECT t.id AS id, t.name AS name, COUNT(i.id) AS count
+    const rows = await sequelize.query(
+        `SELECT t.id AS id, t.name AS name, t.pinned AS pinned, COUNT(i.id) AS count
          FROM Tags t
          LEFT JOIN ItemTags it ON it.tagId = t.id
          LEFT JOIN Items i ON i.id = it.itemId AND i.deletedAt IS NULL
-         GROUP BY t.id, t.name
-         ORDER BY count DESC, t.name ASC`,
+         GROUP BY t.id, t.name, t.pinned
+         ORDER BY t.pinned DESC, count DESC, t.name ASC`,
         { type: QueryTypes.SELECT },
     );
+    return rows.map(r => ({ ...r, pinned: !!r.pinned }));
+}
+
+// ─── Pinned tags ──────────────────────────────────────────────────────────────
+async function setPinned(id, pinned) {
+    await Tag.update({ pinned: !!pinned }, { where: { id } });
+    return { ok: true };
+}
+
+async function getPinned() {
+    return Tag.findAll({ where: { pinned: true }, attributes: ['id', 'name', 'type'], order: [['name', 'ASC']], raw: true });
 }
 
 // Move every association from one tag to another, de-duplicating, then drop the source.
@@ -110,6 +121,6 @@ async function deleteRule(id) {
 
 module.exports = {
     resolveAlias, invalidateAliasCache,
-    getAllTags, renameTag, mergeTags, deleteTag,
+    getAllTags, renameTag, mergeTags, deleteTag, setPinned, getPinned,
     getRules, addRule, deleteRule,
 };

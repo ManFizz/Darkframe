@@ -68,6 +68,16 @@ async function migrations() {
     if (!itemIndexes.find(i => i.name === 'items_fileHash_idx')) {
         await queryInterface.addIndex('Items', ['fileHash'], { name: 'items_fileHash_idx' });
     }
+    const tagsDesc = await queryInterface.describeTable('Tags');
+    if (!tagsDesc.pinned) {
+        // User-pinned tags float to the top of pickers and filters.
+        await queryInterface.addColumn('Tags', 'pinned', {
+            type: DataTypes.BOOLEAN,
+            allowNull: false,
+            defaultValue: false,
+        });
+    }
+
     const indexes = await queryInterface.showIndex('Tags');
     if (!indexes.find(i => i.name === 'tags_name_idx')) {
         await queryInterface.addIndex('Tags', ['name'], { name: 'tags_name_idx' });

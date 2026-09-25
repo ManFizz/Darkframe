@@ -363,6 +363,8 @@ function register() {
     ipcMain.handle('library:renameTag',    async (_, { id, newName }) => tagAdmin.renameTag(id, newName));
     ipcMain.handle('library:mergeTags',    async (_, { sourceId, targetId }) => tagAdmin.mergeTags(sourceId, targetId));
     ipcMain.handle('library:deleteTag',    async (_, { id })       => tagAdmin.deleteTag(id));
+    ipcMain.handle('library:setTagPinned', async (_, { id, pinned }) => tagAdmin.setPinned(id, pinned));
+    ipcMain.handle('library:getPinnedTags', async ()              => tagAdmin.getPinned());
     ipcMain.handle('library:getTagRules',  async ()               => tagAdmin.getRules());
     ipcMain.handle('library:addTagRule',   async (_, data)         => tagAdmin.addRule(data));
     ipcMain.handle('library:deleteTagRule', async (_, { id })      => tagAdmin.deleteRule(id));
@@ -528,13 +530,13 @@ function register() {
                     through: { attributes: [] },
                     attributes: [],
                 }],
-                attributes: ['id', 'name', 'type'],
+                attributes: ['id', 'name', 'type', 'pinned'],
                 limit: 10,
-                order: [['name', 'ASC']],
+                order: [['pinned', 'DESC'], ['name', 'ASC']],   // pinned matches first
                 subQuery: false, // ← ускоряет запрос с include + limit
             });
 
-            return tags.map(t => ({ name: t.name, type: t.type, value: t.name, label: t.name }));
+            return tags.map(t => ({ name: t.name, type: t.type, pinned: !!t.pinned, value: t.name, label: t.name }));
         } catch (e) {
             console.error('[searchTags] error:', e.message);
             return [];

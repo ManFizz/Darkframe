@@ -1,6 +1,7 @@
 import React, {useEffect, useState} from 'react';
 import LibraryService from '@services/LibraryService';
 import {notify} from '@services/NotificationService';
+import {setTagPinned, loadPinned} from '@services/tagPrefs';
 
 const TagManager = ({ onClose }) => {
     const [tags, setTags]       = useState([]);
@@ -16,6 +17,7 @@ const TagManager = ({ onClose }) => {
     const reload = async () => {
         const [t, r] = await Promise.all([LibraryService.getAllTags(), LibraryService.getTagRules()]);
         setTags(t); setRules(r); setLoading(false);
+        loadPinned(true);   // renames / deletes may have changed the pinned set
     };
     useEffect(() => { reload(); }, []);
 
@@ -46,6 +48,12 @@ const TagManager = ({ onClose }) => {
         }
     };
     const delRule = async (id) => { await LibraryService.deleteTagRule(id); reload(); };
+
+    // Pinned tags come first in every tag picker and filter.
+    const togglePin = async (tag) => {
+        await setTagPinned(tag.id, !tag.pinned);
+        reload();
+    };
 
     const q = search.trim().toLowerCase();
     const filtered = (q ? tags.filter(t => t.name.includes(q)) : tags).slice(0, 500);
@@ -91,7 +99,14 @@ const TagManager = ({ onClose }) => {
                         <div className="tm-tags">
                             {loading && <div className="tm-empty">Загрузка…</div>}
                             {filtered.map(tag => (
-                                <div key={tag.id} className="tm-tag">
+                                <div key={tag.id} className={`tm-tag ${tag.pinned ? 'pinned' : ''}`}>
+                                    <button
+                                        className={`tm-icon tm-pin ${tag.pinned ? 'on' : ''}`}
+                                        title={tag.pinned ? 'Открепить' : 'Закрепить — будет первым в подсказках'}
+                                        onClick={() => togglePin(tag)}
+                                    >
+                                        <i className={`bi ${tag.pinned ? 'bi-pin-angle-fill' : 'bi-pin-angle'}`} />
+                                    </button>
                                     {editId === tag.id ? (
                                         <input autoFocus className="form-control form-control-sm tm-tag-edit"
                                                value={editVal}
@@ -108,7 +123,10 @@ const TagManager = ({ onClose }) => {
                             ))}
                             {!loading && !filtered.length && <div className="tm-empty">Ничего не найдено</div>}
                         </div>
-                        <div className="tm-hint">Переименование в имя существующего тега объединит их.</div>
+                        <div className="tm-hint">
+                            Переименование в имя существующего тега объединит их.
+                            Закреплённые теги показываются первыми в подсказках и фильтрах.
+                        </div>
                     </div>
                 </div>
             </div>

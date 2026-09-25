@@ -1,6 +1,7 @@
 import React, {useCallback, useState} from 'react';
 import {useLibraryContext} from '@/LibraryContext';
 import {FILTER_DEFAULTS} from '@/shared/filterPredicate';
+import {useTagPrefs} from '@services/tagPrefs';
 
 const CUSTOM_KEY    = 'jsg_quick_filters';
 const COLLAPSED_KEY = 'jsg_quick_filters_collapsed';
@@ -70,6 +71,7 @@ function currentPatch(filters) {
 
 const QuickFilters = () => {
     const ctx = useLibraryContext();
+    const prefs = useTagPrefs();
     const [custom, setCustom] = useState(loadCustom);
     const [collapsed, setCollapsed] = useState(() => localStorage.getItem(COLLAPSED_KEY) === '1');
     const [naming, setNaming] = useState(false);
@@ -127,6 +129,22 @@ const QuickFilters = () => {
                             <i className={`bi ${p.icon}`} />{p.label}
                         </button>
                     ))}
+
+                    {/* Pinned tags (Tag Manager) as one-click tag filters */}
+                    {prefs.pinned.length > 0 && <span className="qf-sep" />}
+                    {prefs.pinned.map(name => {
+                        const preset = { patch: { tags: [{ name, exclude: false }] } };
+                        return (
+                            <button
+                                key={`tag:${name}`}
+                                className={`qf-chip qf-chip--tag ${isActive(preset.patch, filters) ? 'active' : ''}`}
+                                title="Закреплённый тег"
+                                onClick={() => toggle(preset)}
+                            >
+                                <i className="bi bi-hash" />{name}
+                            </button>
+                        );
+                    })}
 
                     {custom.length > 0 && <span className="qf-sep" />}
                     {custom.map(p => (

@@ -255,5 +255,18 @@
   &.danger:hover { color: var(--bs-danger); }
 }
 
+.tm-tag.pinned .tm-tag-name { font-weight: 600; }
+.tm-pin {
+  &.on { color: var(--df-accent, var(--bs-primary)); }
+  &.on:hover { color: var(--df-accent, var(--bs-primary)); }
+}
+
+// Pin marker in tag pickers / filter suggestions
+.tag-pin-mark {
+  margin-left: auto;
+  font-size: 11px;
+  color: var(--df-accent, var(--bs-primary));
+}
+
 .tm-empty { padding: 12px; text-align: center; font-size: 12px; color: var(--bs-secondary); }
 .tm-hint  { margin-top: 6px; font-size: 11px; color: var(--bs-secondary); }

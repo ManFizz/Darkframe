@@ -6,6 +6,7 @@ import {notify} from '@services/NotificationService';
 import NotificationBell from "@react/Helpers/NotificationBell";
 import {normalizeFilter, advancedCount, isFilterActive, toSmartFilter} from '@/shared/filterPredicate';
 import AdvancedFilterFields, {ADVANCED_RESET} from './Filters/AdvancedFilterFields';
+import {useTagPrefs} from '@services/tagPrefs';
 
 // ─── Tag filter input with live suggestions ───────────────────────────────────
 // Reuses the same libraryApi.searchTags source the metadata TagEditor uses, so
@@ -16,6 +17,16 @@ export const TagFilterInput = ({ filters, addTag, removeTag, toggleTagExclude })
     const [open, setOpen]               = useState(false);
     const wrapperRef                    = useRef(null);
     const lastQueryRef                  = useRef('');
+    const prefs                         = useTagPrefs();
+
+    // Nothing typed yet → offer pinned tags first, then the ones you use most.
+    const already = new Set(filters.tags.map(t => t.name));
+    const idleSuggestions = [
+        ...prefs.pinned.filter(n => !already.has(n)).map(name => ({ name, pinned: true })),
+        ...prefs.frequent(8, [...already, ...prefs.pinned]).map(name => ({ name })),
+    ];
+    const typed = tagInput.trim().replace(/^[-!]/, '');
+    const shown = typed ? suggestions : idleSuggestions;
 
     // Close the suggestion list on any outside click.
     useEffect(() => {
@@ -88,17 +99,18 @@ export const TagFilterInput = ({ filters, addTag, removeTag, toggleTagExclude })
                 />
             </div>
 
-            {open && suggestions.length > 0 && (
+            {open && shown.length > 0 && (
                 <div className="tag-filter-suggestions">
-                    {suggestions.map(t => (
+                    {shown.map(t => (
                         <div
                             key={t.name}
                             className="tag-filter-suggestion"
                             onMouseDown={e => e.preventDefault()}
-                            onClick={() => commit(t.name)}
+                            onClick={() => commit(tagInput.trim().startsWith('-') || tagInput.trim().startsWith('!') ? `-${t.name}` : t.name)}
                         >
                             {t.type != null && <span className={`tag-dot tag-type-${t.type}`} />}
                             <span>{t.name}</span>
+                            {t.pinned && <i className="bi bi-pin-angle-fill tag-pin-mark" />}
                         </div>
                     ))}
                 </div>

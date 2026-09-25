@@ -3,6 +3,7 @@ import LibraryService from '@services/LibraryService';
 import {notify} from '@services/NotificationService';
 import {loadEditPreset} from '@services/imageEditPreset';
 import {FILE_TYPES} from '@/Constants';
+import {recordTagUse} from '@services/tagPrefs';
 
 const fmtMB = (b) => `${(b / 1024 / 1024).toFixed(1)} МБ`;
 
@@ -65,6 +66,7 @@ const BulkActionBar = ({ selectedItems, collections, onDone, permanent = false, 
     const addTagToAll = async () => {
         const tag = tagInput.trim().toLowerCase();
         if (!tag) return;
+        recordTagUse(tag);
 
         await LibraryService.bulkUpdateItems(
             selectedItems.map(f => ({

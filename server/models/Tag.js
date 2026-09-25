@@ -20,6 +20,12 @@ const Tag = sequelize.define('Tags', {
 	},
 	count: {
 		type: DataTypes.INTEGER
+	},
+	// Pinned by the user: shown first in tag pickers / filters.
+	pinned: {
+		type: DataTypes.BOOLEAN,
+		allowNull: false,
+		defaultValue: false
 	}
 }, {
 	timestamps: false
