@@ -1,5 +1,6 @@
 import React, {useEffect, useState} from 'react';
 import {configApi} from '@/Infrastructure/Ipc';
+import AppearanceSection from './AppearanceSection';
 
 const SECRET_RE = /key|password|token/i;
 
@@ -180,6 +181,7 @@ const SettingsPanel = ({ onClose }) => {
     return (
         <>
             <div className="settings-body">
+                <AppearanceSection />
                 {loading ? (
                     <div className="settings-loading">
                         <i className="bi bi-arrow-repeat spin me-2" />Загрузка…

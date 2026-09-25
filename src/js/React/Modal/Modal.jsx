@@ -331,8 +331,10 @@ const Modal = ({ fileId, mainArray, modalUpdater, displayFiles, onUpdated }) => 
 
     return (
         <>
+            {/* The media viewer stays dark in the light theme too (data-bs-theme island). */}
             <dialog
                 className={`modal-view ${isFav(file) ? "favorite" : ""} ${showPanel ? 'with-panel' : ''} ${Settings.LongView && isLong ? "long" : ""}`}
+                data-bs-theme="dark"
                 open
                 ref={modalRef}
                 tabIndex="-1"

@@ -123,7 +123,7 @@
   min-height: 2px;
   border-radius: 4px 4px 0 0;
   // Rating bars (default): accent gradient. Timeline bars use the flat accent below.
-  background: linear-gradient(var(--df-accent, #b06bff), #7a3fd0);
+  background: linear-gradient(var(--df-accent), var(--df-accent-dim));
   transition: height 0.3s ease;
 
   &-accent { background: var(--df-accent, var(--bs-primary)); }

@@ -108,7 +108,7 @@
     border-radius: 50%;
     background: #fff;
     transform: translateY(-50%);
-    box-shadow: 0 0 0 4px rgba(176, 107, 255, 0.35);
+    box-shadow: 0 0 0 4px rgba(var(--df-accent-rgb), 0.35);
   }
 
   .vc-tooltip {

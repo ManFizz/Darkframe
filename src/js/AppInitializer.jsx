@@ -20,6 +20,10 @@ import Notifications from "./React/Helpers/Notifications";
 
 import {LibraryContext} from './LibraryContext';
 import {useLibraryFilter} from '@hooks/library/useLibraryFilter';
+import {initTheme} from '@services/theme';
+
+// Colour mode + accent before the first paint.
+initTheme();
 
 export const GalleryContext = createContext(null);
 

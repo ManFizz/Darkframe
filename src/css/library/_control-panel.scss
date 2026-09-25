@@ -132,7 +132,7 @@
 
 .apitok-new {
   border: 1px solid var(--df-accent, var(--bs-primary));
-  background: rgba(176, 107, 255, 0.1);
+  background: rgba(var(--df-accent-rgb), 0.1);
   border-radius: 10px;
   padding: 12px;
   margin-bottom: 14px;
@@ -146,7 +146,7 @@
   code {
     flex: 1;
     padding: 6px 10px;
-    background: rgba(0, 0, 0, 0.35);
+    background: var(--df-code-bg);
     border-radius: 8px;
     font-size: 12px;
     word-break: break-all;

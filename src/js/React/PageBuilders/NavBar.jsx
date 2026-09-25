@@ -44,7 +44,8 @@ const NavBar = () => {
     ];
 
     return (
-        <header className="navbar navbar-expand-lg sticky-top navbar-dark text-white navbar-glass">
+        // The glass top bar stays dark in either colour mode (a dark "island").
+        <header className="navbar navbar-expand-lg sticky-top navbar-dark text-white navbar-glass" data-bs-theme="dark">
             <div className="container-fluid">
                 <div className="navbar-nav flex-row flex-wrap">
                     <div className="btn-group nav-source-group">
