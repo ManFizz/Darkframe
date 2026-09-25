@@ -3,6 +3,7 @@ const path = require('path');
 const { Item, ItemTag } = require('../models/associations');
 const { getActive } = require('../libraryRegistry');
 const { generateImageThumb, generateVideoThumb, getVideoDuration } = require('./thumbService');
+const { thumbAt } = require('./ffmpegOps');
 
 const ITEMS_PATH = getActive().itemsPath;
 
@@ -116,7 +117,9 @@ async function generateMissingMedia(onProgress) {
             const thumbPath = path.join(dir, 'thumb.jpg');
             const patch = {};
             if (isVideo(it.mimeType)) {
-                await generateVideoThumb(original, thumbPath);
+                // Respect a thumbnail frame the user picked; otherwise the default (10%).
+                if (it.thumbAt != null) await thumbAt(original, thumbPath, it.thumbAt);
+                else await generateVideoThumb(original, thumbPath);
                 if (it.duration == null) {
                     const d = await getVideoDuration(original);
                     if (d != null) patch.duration = d;

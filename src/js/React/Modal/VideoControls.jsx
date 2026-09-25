@@ -41,7 +41,7 @@ const BusyIndicator = ({ busy }) => (
 );
 
 // tools — actions from <Video>: captureFrame (any source) plus, for editable library
-//         videos, { trim, revert, canRevert }
+//         videos, { setThumb, trim, revert, canRevert }
 // busy  — { label, percent } while such an edit is running
 // resume — { position } when a saved spot can be continued (onResume / onDismissResume)
 const VideoControls = ({
@@ -503,6 +503,12 @@ const VideoControls = ({
                                         <i className="bi bi-camera" />
                                         Сохранить кадр в библиотеку
                                     </button>
+                                    {tools.setThumb && (
+                                        <button onClick={() => { setToolsOpen(false); tools.setThumb(); }}>
+                                            <i className="bi bi-image" />
+                                            Сделать этот кадр превью
+                                        </button>
+                                    )}
                                     {tools.trim && (
                                         <button
                                             disabled={!abActive}

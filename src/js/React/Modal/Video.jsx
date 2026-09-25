@@ -134,10 +134,25 @@ const Video = ({ file, mainArray = [], modalUpdater, canEdit = false, onEdited }
         }
     }, [file, canEdit, onEdited]);
 
+    // Current frame → gallery thumbnail. Only the thumb URL changes, so the reload
+    // doesn't remount (restart) the playing video.
+    const setThumbFromFrame = useCallback(async () => {
+        const v = videoRef.current;
+        if (!v || !file) return;
+        try {
+            await LibraryService.setVideoThumb(file.id, v.currentTime);
+            notify({ message: 'Превью обновлено', type: 'success' });
+            onEdited?.();
+        } catch (e) {
+            notify({ message: `Не удалось обновить превью: ${e.message}`, type: 'danger' });
+        }
+    }, [file, onEdited]);
+
     const tools = file ? {
         captureFrame,
         // Library-only edits that rewrite the file:
         ...(canEdit ? {
+            setThumb: setThumbFromFrame,
             canRevert: !!file.editedAt,
             trim: ({ start, end, mode, backup }) => runFileEdit(
                 'Обрезка',

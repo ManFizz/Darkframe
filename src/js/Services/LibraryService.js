@@ -185,6 +185,10 @@ export const LibraryService = {
         return libraryApi.captureVideoFrame(params);
     },
 
+    async setVideoThumb(id, time) {
+        return libraryApi.setVideoThumb({ id, time });
+    },
+
     // mk = mediaKey(file): { section, key }
     async getVideoPosition(mk) {
         return libraryApi.getVideoPosition(mk);

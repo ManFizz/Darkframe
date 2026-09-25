@@ -328,6 +328,8 @@ function register() {
 
     ipcMain.handle('library:captureVideoFrame', async (_, p) => videoEdit.captureVideoFrame(p || {}));
 
+    ipcMain.handle('library:setVideoThumb', async (_, { id, time }) => videoEdit.setVideoThumb(id, time));
+
     // ─── Resume positions for long videos ─────────────────────────────────────
     ipcMain.handle('library:getVideoPosition',  async (_, p) => videoPositions.getPosition(p || {}));
     ipcMain.handle('library:saveVideoPosition', async (_, p) => videoPositions.savePosition(p || {}));

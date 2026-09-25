@@ -96,6 +96,17 @@ async function revertVideo(id) {
     return { ok: true };
 }
 
+// Use the frame at `time` as the gallery thumbnail. Remembered in thumbAt so later
+// regenerations (maintenance, trims) keep the choice. The file itself is untouched,
+// so neither editedAt nor fileHash change.
+async function setVideoThumb(id, time) {
+    const { dir, original } = await loadVideo(id);
+    const at = Math.max(0, Number(time) || 0);
+    await ops.thumbAt(original, path.join(dir, 'thumb.jpg'), at);
+    await Item.unscoped().update({ thumbAt: at }, { where: { id } });
+    return { ok: true, thumbAt: at };
+}
+
 const fmtTime = (t) => {
     t = Math.max(0, Math.floor(t));
     const m = Math.floor(t / 60), s = String(t % 60).padStart(2, '0');
@@ -159,4 +170,4 @@ async function captureVideoFrame({ itemId, url, time, title, tags = [], sourceUr
     }
 }
 
-module.exports = { trimVideo, revertVideo, captureVideoFrame };
+module.exports = { trimVideo, revertVideo, captureVideoFrame, setVideoThumb };

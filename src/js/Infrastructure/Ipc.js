@@ -43,6 +43,7 @@ export const libraryApi = {
     trimVideo:         (data) => invoke('library:trimVideo', data),
     revertVideo:       (data) => invoke('library:revertVideo', data),
     captureVideoFrame: (data) => invoke('library:captureVideoFrame', data),
+    setVideoThumb:     (data) => invoke('library:setVideoThumb', data),
     getVideoPosition:  (data) => invoke('library:getVideoPosition', data),
     saveVideoPosition: (data) => invoke('library:saveVideoPosition', data),
     editImage:         (data) => invoke('library:editImage', data),
