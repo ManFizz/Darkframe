@@ -38,9 +38,13 @@ function probe(src) {
     });
 }
 
-// Input options for remote sources (booru CDNs want a browser UA).
-function remoteInputOptions(src) {
-    return isUrl(src) ? ['-user_agent', USER_AGENT] : [];
+// Input options for remote sources: booru CDNs want a browser UA and often a
+// same-site Referer (hot-link protection).
+function remoteInputOptions(src, referer) {
+    if (!isUrl(src)) return [];
+    const opts = ['-user_agent', USER_AGENT];
+    if (referer) opts.push('-headers', `Referer: ${referer}\r\n`);
+    return opts;
 }
 
 function run(cmd, { total, onProgress } = {}) {
@@ -100,9 +104,9 @@ function trimFile(src, dst, { start, end, mode = 'precise', onProgress } = {}) {
 }
 
 // One full-resolution JPEG frame at `time` seconds (q:v 2 ≈ JPEG quality 95).
-function captureFrame(src, dst, time) {
+function captureFrame(src, dst, time, { referer } = {}) {
     const cmd = ffmpeg(src)
-        .inputOptions([...remoteInputOptions(src), '-ss', Math.max(0, time).toFixed(3)])
+        .inputOptions([...remoteInputOptions(src, referer), '-ss', Math.max(0, time).toFixed(3)])
         .outputOptions(['-frames:v', '1', '-q:v', '2', '-y'])
         .output(dst);
     return run(cmd);

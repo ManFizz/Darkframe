@@ -40,7 +40,8 @@ const BusyIndicator = ({ busy }) => (
     </div>
 );
 
-// tools — library-only edit actions from <Video> ({ trim, revert, canRevert }), or null
+// tools — actions from <Video>: captureFrame (any source) plus, for editable library
+//         videos, { trim, revert, canRevert }
 // busy  — { label, percent } while such an edit is running
 const VideoControls = ({ video, isPaused, currentTime, videoDuration, playMode, cyclePlayMode, tools, busy }) => {
     const [volume, setVolume]     = useState(1);
@@ -240,7 +241,7 @@ const VideoControls = ({ video, isPaused, currentTime, videoDuration, playMode, 
     }, [toolsOpen]);
 
     const startTrim = useCallback(() => {
-        if (!tools || !abActive) return;
+        if (!tools?.trim || !abActive) return;
         setTrimOpen(false);
         tools.trim({ start: startRec, end: endRec, mode: trimMode, backup: trimBackup });
     }, [tools, abActive, startRec, endRec, trimMode, trimBackup]);
@@ -320,7 +321,7 @@ const VideoControls = ({ video, isPaused, currentTime, videoDuration, playMode, 
         <div className={`video-controls v2 ${hidden && !pinned ? 'idle' : ''}`}>
             {busy && <BusyIndicator busy={busy} />}
 
-            {trimOpen && tools && abActive && !busy && (
+            {trimOpen && tools?.trim && abActive && !busy && (
                 <div className="vc-panel">
                     <div className="vc-panel-title">
                         <i className="bi bi-scissors" />
@@ -470,14 +471,20 @@ const VideoControls = ({ video, isPaused, currentTime, videoDuration, playMode, 
                             </button>
                             {toolsOpen && (
                                 <div className="vc-tools-menu">
-                                    <button
-                                        disabled={!abActive}
-                                        title={abActive ? '' : 'Сначала отметьте A и B кнопкой «A‑B»'}
-                                        onClick={() => { setToolsOpen(false); setTrimOpen(true); }}
-                                    >
-                                        <i className="bi bi-scissors" />
-                                        Обрезать по A–B
+                                    <button onClick={() => { setToolsOpen(false); tools.captureFrame(); }}>
+                                        <i className="bi bi-camera" />
+                                        Сохранить кадр в библиотеку
                                     </button>
+                                    {tools.trim && (
+                                        <button
+                                            disabled={!abActive}
+                                            title={abActive ? '' : 'Сначала отметьте A и B кнопкой «A‑B»'}
+                                            onClick={() => { setToolsOpen(false); setTrimOpen(true); }}
+                                        >
+                                            <i className="bi bi-scissors" />
+                                            Обрезать по A–B
+                                        </button>
+                                    )}
                                     {tools.canRevert && (
                                         <button onClick={startRevert}>
                                             <i className="bi bi-arrow-counterclockwise" />

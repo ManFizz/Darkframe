@@ -1,7 +1,8 @@
 const fs = require('fs');
+const os = require('os');
 const path = require('path');
 const { getActive } = require('../libraryRegistry');
-const { Item } = require('../models/associations');
+const { Item, Tag } = require('../models/associations');
 const ops = require('./ffmpegOps');
 
 const ITEMS_PATH = getActive().itemsPath;
@@ -95,4 +96,67 @@ async function revertVideo(id) {
     return { ok: true };
 }
 
-module.exports = { trimVideo, revertVideo };
+const fmtTime = (t) => {
+    t = Math.max(0, Math.floor(t));
+    const m = Math.floor(t / 60), s = String(t % 60).padStart(2, '0');
+    return `${m}:${s}`;
+};
+const safeName = (s) => String(s || 'video').replace(/[\\/:*?"<>|]+/g, '_').slice(0, 80).trim() || 'video';
+
+/**
+ * Grab the frame at `time` as a JPEG (q≈95, full resolution) and import it.
+ *   { itemId }                      — a library video: the frame joins the same
+ *                                     collection with the video's tags and source
+ *   { url, title, tags, sourceUrl } — a remote / folder video (r34, folders):
+ *                                     imported uncategorized
+ */
+async function captureVideoFrame({ itemId, url, time, title, tags = [], sourceUrl = '' } = {}) {
+    const { importFile } = require('./importService');
+
+    let src, collectionId = null, baseTitle = title;
+    if (itemId) {
+        const item = await Item.unscoped().findByPk(itemId, {
+            include: [{ model: Tag, as: 'tags', through: { attributes: [] } }],
+        });
+        if (!item) throw new Error('Элемент не найден');
+        src = findOriginal(path.join(ITEMS_PATH, item.id));
+        if (!src) throw new Error('Файл видео не найден');
+        collectionId = item.collectionId;
+        baseTitle = item.title || item.fileName;
+        tags = (item.tags || []).map(t => t.name);
+        sourceUrl = item.sourceUrl || '';
+    } else if (ops.isUrl(url)) {
+        src = url;
+    } else if (url && fs.existsSync(url) && fs.statSync(url).isFile()) {
+        src = url;   // a file from the Folders source
+    } else {
+        throw new Error('Неподдерживаемый источник видео');
+    }
+
+    // Hot-link protected CDNs want a same-site Referer: prefer the post page's origin.
+    let referer;
+    try {
+        if (ops.isUrl(src)) referer = new URL(ops.isUrl(sourceUrl) ? sourceUrl : src).origin + '/';
+    } catch { /* ignore */ }
+
+    const label = fmtTime(time);
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'df-frame-'));
+    const tmp = path.join(tmpDir, `${safeName(baseTitle)}_${label.replace(':', '-')}.jpg`);
+    try {
+        await ops.captureFrame(src, tmp, Number(time) || 0, { referer });
+        const res = await importFile({
+            filePath: tmp,
+            collectionId,
+            tags: Array.isArray(tags) ? tags : [],
+            sourceUrl,
+            allowDuplicate: true,
+            overrides: { title: `${baseTitle || 'Видео'} — кадр ${label}` },
+        });
+        if (res.skipped) throw new Error('Кадр не импортирован');
+        return { ok: true, id: res.item.id };
+    } finally {
+        try { fs.rmSync(tmpDir, { recursive: true, force: true }); } catch { /* ignore */ }
+    }
+}
+
+module.exports = { trimVideo, revertVideo, captureVideoFrame };

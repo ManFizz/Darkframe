@@ -42,6 +42,7 @@ export const libraryApi = {
     duplicateItem:     (data) => invoke('library:duplicateItem', data),
     trimVideo:         (data) => invoke('library:trimVideo', data),
     revertVideo:       (data) => invoke('library:revertVideo', data),
+    captureVideoFrame: (data) => invoke('library:captureVideoFrame', data),
     editImage:         (data) => invoke('library:editImage', data),
     revertImage:       (data) => invoke('library:revertImage', data),
     getCollections:    ()     => invoke('library:getCollections'),

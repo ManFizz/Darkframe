@@ -325,6 +325,8 @@ function register() {
 
     ipcMain.handle('library:revertVideo', async (_, { id }) => videoEdit.revertVideo(id));
 
+    ipcMain.handle('library:captureVideoFrame', async (_, p) => videoEdit.captureVideoFrame(p || {}));
+
     ipcMain.handle('library:restoreItems', async (_, { ids = [] }) => {
         if (!ids.length) return { ok: true, count: 0 };
         await Item.unscoped().update({ deletedAt: null }, { where: { id: { [Op.in]: ids } } });

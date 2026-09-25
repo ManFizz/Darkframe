@@ -180,6 +180,11 @@ export const LibraryService = {
         return libraryApi.revertVideo({ id });
     },
 
+    // { itemId } for a library video, or { url, title, tags, sourceUrl } for remote/folder
+    async captureVideoFrame(params) {
+        return libraryApi.captureVideoFrame(params);
+    },
+
     // transform: { angle, flipH, flipV, crop:{x,y,w,h} } — crop in fractions of the rotated image
     async editImage(id, transform) {
         return libraryApi.editImage({ id, ...transform });

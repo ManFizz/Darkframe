@@ -1,6 +1,6 @@
 import React, {useCallback, useEffect, useRef, useState} from 'react';
 import VideoControls from "./VideoControls";
-import {FILE_TYPES} from "@/Constants";
+import {FILE_TYPES, SOURCE_TYPES} from "@/Constants";
 import LibraryService from "@services/LibraryService";
 import {notify} from "@services/NotificationService";
 
@@ -50,18 +50,43 @@ const Video = ({ file, mainArray = [], modalUpdater, canEdit = false, onEdited }
         }
     }, [file, onEdited]);
 
-    const tools = canEdit ? {
-        canRevert: !!file?.editedAt,
-        trim: ({ start, end, mode, backup }) => runFileEdit(
-            'Обрезка',
-            () => LibraryService.trimVideo(file.id, { start, end, mode, backup }),
-            'Видео обрезано',
-        ),
-        revert: () => runFileEdit(
-            'Откат',
-            () => LibraryService.revertVideo(file.id),
-            'Восстановлен оригинал видео',
-        ),
+    // Save the current frame as a new image in the library. Works for any source:
+    // a library video by id (same collection/tags), remote/folder videos by URL/path.
+    const captureFrame = useCallback(async () => {
+        const v = videoRef.current;
+        if (!v || !file) return;
+        const time = v.currentTime;
+        setBusy({ label: 'Сохранение кадра', percent: null });
+        try {
+            const isLib = file.remoteType === SOURCE_TYPES.LIBRARY && file.id;
+            await LibraryService.captureVideoFrame(isLib
+                ? { itemId: file.id, time }
+                : { url: file.getUrl(), time, title: file.title, tags: file.tags || [], sourceUrl: file.sourceUrl || '' });
+            notify({ message: 'Кадр сохранён в библиотеку', type: 'success' });
+            if (canEdit) onEdited?.();
+        } catch (e) {
+            notify({ message: `Не удалось сохранить кадр: ${e.message}`, type: 'danger', duration: 8000 });
+        } finally {
+            setBusy(null);
+        }
+    }, [file, canEdit, onEdited]);
+
+    const tools = file ? {
+        captureFrame,
+        // Library-only edits that rewrite the file:
+        ...(canEdit ? {
+            canRevert: !!file.editedAt,
+            trim: ({ start, end, mode, backup }) => runFileEdit(
+                'Обрезка',
+                () => LibraryService.trimVideo(file.id, { start, end, mode, backup }),
+                'Видео обрезано',
+            ),
+            revert: () => runFileEdit(
+                'Откат',
+                () => LibraryService.revertVideo(file.id),
+                'Восстановлен оригинал видео',
+            ),
+        } : {}),
     } : null;
 
     // "next"/"shuffle" need somewhere to jump to; without navigation we can only loop.
