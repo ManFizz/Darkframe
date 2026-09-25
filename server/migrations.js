@@ -20,6 +20,14 @@ async function migrations() {
             defaultValue: null,
         });
     }
+    if (!tableDesc.thumbAt) {
+        // Video only: the second of the frame chosen as the thumbnail.
+        await queryInterface.addColumn('Items', 'thumbAt', {
+            type: DataTypes.FLOAT,
+            allowNull: true,
+            defaultValue: null,
+        });
+    }
     if (!tableDesc.deletedAt) {
         // Soft-delete marker: NULL = live, a unix timestamp = in the trash.
         await queryInterface.addColumn('Items', 'deletedAt', {

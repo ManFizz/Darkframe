@@ -73,11 +73,12 @@ const Modal = ({ fileId, mainArray, modalUpdater, displayFiles, onUpdated }) => 
         return () => document.removeEventListener('keydown', handleKey, true);
     }, [isLibrary, onUpdated, handleDelete]);
 
-    // Number keys rate a library image: 1–9 set the rating, 0 sets 10, and pressing
-    // the current rating again clears it. Videos keep digits for percentage seeking
-    // (VideoControls), so this is images-only to avoid fighting over the same keys.
+    // Number keys rate a library item: 1–9 set the rating, 0 sets 10, and pressing
+    // the current rating again clears it. Works for both images and videos — the
+    // video player no longer steals digits for percentage seeking.
     useEffect(() => {
-        if (!hasMetaPanel || !file || file.type !== FILE_TYPES.IMAGE) return;
+        if (!hasMetaPanel || !file ||
+            (file.type !== FILE_TYPES.IMAGE && file.type !== FILE_TYPES.VIDEO)) return;
 
         const onKey = (e) => {
             if (e.repeat || e.ctrlKey || e.metaKey || e.altKey || e.shiftKey) return;
@@ -289,7 +290,13 @@ const Modal = ({ fileId, mainArray, modalUpdater, displayFiles, onUpdated }) => 
             src={cachedMediaUrl(file.getUrl())}
         />
     ) : (
-        <Video file={file} mainArray={mainArray} modalUpdater={modalUpdater} />
+        <Video
+            file={file}
+            mainArray={mainArray}
+            modalUpdater={modalUpdater}
+            canEdit={hasMetaPanel}
+            onEdited={() => onUpdated?.('refresh')}
+        />
     );
 
     return (

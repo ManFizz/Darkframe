@@ -27,7 +27,22 @@ const volumeIcon = (muted, v) =>
         : v < 0.5     ? 'bi-volume-down-fill'
         :               'bi-volume-up-fill';
 
-const VideoControls = ({ video, isPaused, currentTime, videoDuration, playMode, cyclePlayMode }) => {
+// Progress pill shown while a file edit (trim / revert) runs in the main process.
+const BusyIndicator = ({ busy }) => (
+    <div className="vc-busy">
+        <div className="vc-busy-label">
+            <i className="bi bi-arrow-repeat spin" />
+            {busy.label}{busy.percent != null ? ` ${Math.round(busy.percent)}%` : '…'}
+        </div>
+        <div className="vc-busy-bar">
+            <div style={{ width: `${busy.percent ?? 0}%` }} />
+        </div>
+    </div>
+);
+
+// tools — library-only edit actions from <Video> ({ trim, revert, canRevert }), or null
+// busy  — { label, percent } while such an edit is running
+const VideoControls = ({ video, isPaused, currentTime, videoDuration, playMode, cyclePlayMode, tools, busy }) => {
     const [volume, setVolume]     = useState(1);
     const [muted, setMuted]       = useState(false);
     const [rate, setRate]         = useState(1);
@@ -38,11 +53,16 @@ const VideoControls = ({ video, isPaused, currentTime, videoDuration, playMode, 
     const [hoverPct, setHoverPct] = useState(null);   // seek-bar hover position
     const [hidden, setHidden]     = useState(false);   // auto-hide while playing
     const [collapsed, setCollapsed] = useState(() => localStorage.getItem(COLLAPSED_KEY) === '1');
+    const [toolsOpen, setToolsOpen] = useState(false);
+    const [trimOpen, setTrimOpen]   = useState(false);
+    const [trimMode, setTrimMode]   = useState('precise');
+    const [trimBackup, setTrimBackup] = useState(true);
 
     const isSpaceDown = useRef(false);
     const wasPlaying  = useRef(false);
     const trackRef    = useRef(null);
     const speedRef    = useRef(null);
+    const toolsRef    = useRef(null);
     const fillRef     = useRef(null);
     const thumbRef    = useRef(null);
 
@@ -112,10 +132,6 @@ const VideoControls = ({ video, isPaused, currentTime, videoDuration, playMode, 
         if (!video) return;
         video.pause();
         video.currentTime = clamp(video.currentTime + dir * FRAME, 0, video.duration || 0);
-    }, [video]);
-
-    const jumpPct = useCallback((p) => {
-        if (video && video.duration) video.currentTime = video.duration * p;
     }, [video]);
 
     const setPlaybackRate = useCallback((r) => {
@@ -208,13 +224,33 @@ const VideoControls = ({ video, isPaused, currentTime, videoDuration, playMode, 
         return () => { clearTimeout(hideTimerRef.current); document.removeEventListener('mousemove', reveal); };
     }, [isPaused, collapsed, reveal]);
 
-    // ─── Close the speed menu on outside click ─────────────────────────────────
+    // ─── Close the speed / tools menus on outside click ─────────────────────────
     useEffect(() => {
         if (!speedOpen) return;
         const onDown = (e) => { if (speedRef.current && !speedRef.current.contains(e.target)) setSpeedOpen(false); };
         document.addEventListener('mousedown', onDown);
         return () => document.removeEventListener('mousedown', onDown);
     }, [speedOpen]);
+
+    useEffect(() => {
+        if (!toolsOpen) return;
+        const onDown = (e) => { if (toolsRef.current && !toolsRef.current.contains(e.target)) setToolsOpen(false); };
+        document.addEventListener('mousedown', onDown);
+        return () => document.removeEventListener('mousedown', onDown);
+    }, [toolsOpen]);
+
+    const startTrim = useCallback(() => {
+        if (!tools || !abActive) return;
+        setTrimOpen(false);
+        tools.trim({ start: startRec, end: endRec, mode: trimMode, backup: trimBackup });
+    }, [tools, abActive, startRec, endRec, trimMode, trimBackup]);
+
+    const startRevert = useCallback(() => {
+        setToolsOpen(false);
+        if (!tools) return;
+        if (!confirm('Вернуть исходное видео? Обрезка будет отменена.')) return;
+        tools.revert();
+    }, [tools]);
 
     // ─── Keyboard shortcuts ────────────────────────────────────────────────────
     useEffect(() => {
@@ -247,8 +283,7 @@ const VideoControls = ({ video, isPaused, currentTime, videoDuration, playMode, 
                 case 'ArrowDown': e.preventDefault(); setVol((video?.volume ?? 1) - 0.05); break;
                 case 'Comma':  e.shiftKey ? bumpRate(-1) : stepFrame(-1); break;   // "<" slower, "," frame back
                 case 'Period': e.shiftKey ? bumpRate(1)  : stepFrame(1);  break;   // ">" faster, "." frame fwd
-                default:
-                    if (/^Digit[0-9]$/.test(e.code)) jumpPct(Number(e.code.slice(5)) / 10);
+                // Digits are reserved for rating in the modal (0 = 10); use Ctrl+←/→ to seek.
             }
         };
         const onKeyUp = (e) => { if (e.code === 'Space') isSpaceDown.current = false; };
@@ -259,15 +294,21 @@ const VideoControls = ({ video, isPaused, currentTime, videoDuration, playMode, 
             document.removeEventListener('keydown', onKeyDown);
             document.removeEventListener('keyup', onKeyUp);
         };
-    }, [video, togglePlay, toggleMute, toggleFullscreen, togglePip, setVol, bumpRate, stepFrame, skipSec, jumpPct, reveal]);
+    }, [video, togglePlay, toggleMute, toggleFullscreen, togglePip, setVol, bumpRate, stepFrame, skipSec, reveal]);
 
     if (collapsed) {
         return (
-            <button className="vc-expand" title="Показать управление" onClick={toggleCollapsed}>
-                <i className="bi bi-chevron-up" />
-            </button>
+            <>
+                {busy && <div className="vc-busy-float"><BusyIndicator busy={busy} /></div>}
+                <button className="vc-expand" title="Показать управление" onClick={toggleCollapsed}>
+                    <i className="bi bi-chevron-up" />
+                </button>
+            </>
         );
     }
+
+    // Keep the bar on screen while a menu/panel is open or an edit is running.
+    const pinned = toolsOpen || trimOpen || !!busy;
 
     const mode = PLAY_MODE_META[playMode] || PLAY_MODE_META.repeat;
     const abLabel = startRec === null ? 'A‑B' : endRec === null ? 'A →' : 'A‑B';
@@ -276,7 +317,37 @@ const VideoControls = ({ video, isPaused, currentTime, videoDuration, playMode, 
         : 'Сбросить A–B повтор';
 
     return (
-        <div className={`video-controls v2 ${hidden ? 'idle' : ''}`}>
+        <div className={`video-controls v2 ${hidden && !pinned ? 'idle' : ''}`}>
+            {busy && <BusyIndicator busy={busy} />}
+
+            {trimOpen && tools && abActive && !busy && (
+                <div className="vc-panel">
+                    <div className="vc-panel-title">
+                        <i className="bi bi-scissors" />
+                        Оставить {formatTime(startRec)} – {formatTime(endRec)}
+                        <span className="vc-panel-dim">({formatTime(endRec - startRec)})</span>
+                    </div>
+                    <label className="vc-option">
+                        <input type="radio" checked={trimMode === 'precise'} onChange={() => setTrimMode('precise')} />
+                        <span><b>Точно</b> — с перекодированием, режет по кадру; дольше</span>
+                    </label>
+                    <label className="vc-option">
+                        <input type="radio" checked={trimMode === 'fast'} onChange={() => setTrimMode('fast')} />
+                        <span><b>Быстро</b> — без перекодирования и потерь; начало может сдвинуться к ближайшему ключевому кадру</span>
+                    </label>
+                    <label className="vc-option">
+                        <input type="checkbox" checked={trimBackup} onChange={e => setTrimBackup(e.target.checked)} />
+                        <span>Сохранить оригинал, чтобы можно было откатить</span>
+                    </label>
+                    <div className="vc-panel-actions">
+                        <button className="vc-panel-btn" onClick={() => setTrimOpen(false)}>Отмена</button>
+                        <button className="vc-panel-btn primary" onClick={startTrim}>
+                            <i className="bi bi-scissors" /> Обрезать
+                        </button>
+                    </div>
+                </div>
+            )}
+
             {/* Progress track */}
             <div
                 className="vc-track"
@@ -387,6 +458,36 @@ const VideoControls = ({ video, isPaused, currentTime, videoDuration, playMode, 
                             </div>
                         )}
                     </div>
+                    {tools && (
+                        <div className="vc-tools-wrap" ref={toolsRef}>
+                            <button
+                                className={`vc-btn ${toolsOpen ? 'on' : ''}`}
+                                title="Инструменты"
+                                onClick={() => setToolsOpen(v => !v)}
+                                disabled={!!busy}
+                            >
+                                <i className="bi bi-tools" />
+                            </button>
+                            {toolsOpen && (
+                                <div className="vc-tools-menu">
+                                    <button
+                                        disabled={!abActive}
+                                        title={abActive ? '' : 'Сначала отметьте A и B кнопкой «A‑B»'}
+                                        onClick={() => { setToolsOpen(false); setTrimOpen(true); }}
+                                    >
+                                        <i className="bi bi-scissors" />
+                                        Обрезать по A–B
+                                    </button>
+                                    {tools.canRevert && (
+                                        <button onClick={startRevert}>
+                                            <i className="bi bi-arrow-counterclockwise" />
+                                            Вернуть оригинал
+                                        </button>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+                    )}
                     <button className="vc-btn" title="Картинка-в-картинке (P)" onClick={togglePip}>
                         <i className="bi bi-pip" />
                     </button>

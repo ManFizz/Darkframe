@@ -1,6 +1,8 @@
 import React, {useCallback, useEffect, useRef, useState} from 'react';
 import VideoControls from "./VideoControls";
 import {FILE_TYPES} from "@/Constants";
+import LibraryService from "@services/LibraryService";
+import {notify} from "@services/NotificationService";
 
 const PLAY_MODE_KEY = 'jsg_video_playmode';
 export const PLAY_MODES = ['repeat', 'next', 'shuffle'];
@@ -10,13 +12,57 @@ const loadPlayMode = () => {
     return PLAY_MODES.includes(m) ? m : 'repeat';
 };
 
-const Video = ({ file, mainArray = [], modalUpdater }) => {
+// canEdit  — a library video the user may modify (trim etc.)
+// onEdited — called after the file changed on disk, so the list reloads fresh URLs
+const Video = ({ file, mainArray = [], modalUpdater, canEdit = false, onEdited }) => {
     const videoRef = useRef(null);
     const clickTimer = useRef(null);
     const [isPaused, setIsPaused] = useState(true);
     const [currentTime, setCurrentTime] = useState(0);
     const [videoDuration, setVideoDuration] = useState(0);
     const [playMode, setPlayMode] = useState(loadPlayMode);
+    const [busy, setBusy] = useState(null);   // { label, percent } while an edit runs
+
+    // Run a file-replacing edit. The <video> is unloaded first: on Windows a file that
+    // is still being streamed can't be overwritten. On failure the source is restored;
+    // on success onEdited() reloads the list and the new URL remounts the player.
+    const runFileEdit = useCallback(async (label, action, doneMessage) => {
+        const v = videoRef.current;
+        const { ipcRenderer } = window.require('electron');
+        const onProgress = (_, p) => {
+            if (p?.id === file.id) setBusy({ label, percent: p.percent });
+        };
+        ipcRenderer.on('library:videoEditProgress', onProgress);
+        setBusy({ label, percent: null });
+
+        const src = v?.getAttribute('src');
+        if (v) { v.pause(); v.removeAttribute('src'); v.load(); }
+        try {
+            await action();
+            notify({ message: doneMessage, type: 'success' });
+            onEdited?.();
+        } catch (e) {
+            notify({ message: `Не удалось: ${e.message}`, type: 'danger', duration: 8000 });
+            if (v && src) { v.setAttribute('src', src); v.load(); }
+        } finally {
+            ipcRenderer.removeListener('library:videoEditProgress', onProgress);
+            setBusy(null);
+        }
+    }, [file, onEdited]);
+
+    const tools = canEdit ? {
+        canRevert: !!file?.editedAt,
+        trim: ({ start, end, mode, backup }) => runFileEdit(
+            'Обрезка',
+            () => LibraryService.trimVideo(file.id, { start, end, mode, backup }),
+            'Видео обрезано',
+        ),
+        revert: () => runFileEdit(
+            'Откат',
+            () => LibraryService.revertVideo(file.id),
+            'Восстановлен оригинал видео',
+        ),
+    } : null;
 
     // "next"/"shuffle" need somewhere to jump to; without navigation we can only loop.
     const canAdvance = typeof modalUpdater === 'function' && mainArray.length > 0;
@@ -99,6 +145,8 @@ const Video = ({ file, mainArray = [], modalUpdater }) => {
                 videoDuration={videoDuration}
                 playMode={playMode}
                 cyclePlayMode={cyclePlayMode}
+                tools={tools}
+                busy={busy}
             />
         </>
     );

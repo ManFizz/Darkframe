@@ -2,6 +2,7 @@ const { Op } = require('sequelize');
 const Item = require('../models/Item');
 const Tag = require('../models/Tag');
 const ItemTag = require('../models/ItemTag');
+const { itemUrls } = require('./itemUrls');
 
 // Items matching a saved smart-collection filter:
 //   { search, tags:[{name,exclude}], ratingMin, ratingMax }
@@ -54,15 +55,11 @@ async function getSmartItems(filter = {}) {
 
     const plain = items
         .filter(i => !excludeSet.has(i.id))
-        .map(item => {
-            const v = item.editedAt ? `?v=${item.editedAt}` : '';
-            return {
-                ...item.toJSON(),
-                tags: item.tags.map(t => t.name),
-                thumbPath: `library://thumb/${item.id}${v}`,
-                originalPath: `library://item/${item.id}${v}`,
-            };
-        });
+        .map(item => ({
+            ...item.toJSON(),
+            tags: item.tags.map(t => t.name),
+            ...itemUrls(item),
+        }));
 
     return { collections: [], items: plain };
 }

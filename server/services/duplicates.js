@@ -2,6 +2,7 @@ const { QueryTypes, Op } = require('sequelize');
 const sequelize = require('../database');
 const { Item } = require('../models/associations');
 const Collection = require('../models/Collection');
+const { itemUrls } = require('./itemUrls');
 
 // Exact duplicates: live items sharing the same fileHash. Returns one group per
 // hash (2+ copies), each item enriched with its thumb URL and collection name so
@@ -26,7 +27,6 @@ async function findDuplicates() {
     // Group by hash, preserving the importedAt order.
     const byHash = new Map();
     for (const it of items) {
-        const v = it.editedAt ? `?v=${it.editedAt}` : '';
         const row = {
             id: it.id,
             title: it.title || it.fileName,
@@ -38,7 +38,7 @@ async function findDuplicates() {
             importedAt: it.importedAt,
             collectionId: it.collectionId,
             collectionName: it.collection?.name || 'Без коллекции',
-            thumbPath: `library://thumb/${it.id}${v}`,
+            thumbPath: itemUrls(it).thumbPath,
         };
         if (!byHash.has(it.fileHash)) byHash.set(it.fileHash, []);
         byHash.get(it.fileHash).push(row);

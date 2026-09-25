@@ -60,6 +60,8 @@
 
   &:hover { background: rgba(255, 255, 255, 0.14); }
   &:active { transform: scale(0.94); }
+  &.on { background: rgba(255, 255, 255, 0.16); color: var(--df-accent); }
+  &:disabled { opacity: 0.4; cursor: default; }
 }
 
 .vc-play {
@@ -217,6 +219,152 @@
   &:hover { border-color: var(--df-accent-dim); }
   &.armed { color: #f4c95d; border-color: rgba(244, 201, 93, 0.6); }
   &.active { color: #1a1420; background: #f4c95d; border-color: #f4c95d; }
+}
+
+// ─── Tools menu (trim / frame / thumbnail / revert) ────────────────────────────
+.vc-tools-wrap { position: relative; }
+
+.vc-tools-menu {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 8px);
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 220px;
+  padding: 4px;
+  border-radius: 10px;
+  background: var(--df-glass-strong);
+  border: 1px solid var(--df-glass-border);
+  backdrop-filter: blur(16px);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.5);
+
+  button {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px;
+    border: none;
+    border-radius: 7px;
+    background: transparent;
+    color: #fff;
+    font-size: 13px;
+    text-align: left;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: background 0.12s;
+
+    .bi { font-size: 15px; opacity: 0.85; }
+    &:hover:not(:disabled) { background: rgba(255, 255, 255, 0.12); }
+    &:disabled { opacity: 0.4; cursor: default; }
+  }
+}
+
+// ─── Inline panel above the bar (trim options) ─────────────────────────────────
+.vc-panel {
+  align-self: center;
+  width: min(460px, 100%);
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: var(--df-glass-strong);
+  border: 1px solid var(--df-glass-border);
+  backdrop-filter: blur(18px);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
+  font-size: 13px;
+}
+.vc-panel-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 700;
+  margin-bottom: 10px;
+  .bi { font-size: 15px; color: var(--df-accent); }
+}
+.vc-panel-dim { font-weight: 500; opacity: 0.6; font-variant-numeric: tabular-nums; }
+
+.vc-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 0 0 7px;
+  line-height: 1.35;
+  cursor: pointer;
+  input { margin-top: 3px; accent-color: var(--df-accent); cursor: pointer; flex-shrink: 0; }
+  span { opacity: 0.9; }
+}
+
+.vc-panel-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 10px;
+}
+.vc-panel-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 30px;
+  padding: 0 12px;
+  border: 1px solid var(--df-glass-border);
+  border-radius: 8px;
+  background: transparent;
+  color: #fff;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.12s;
+
+  .bi { font-size: 13px; }
+  &:hover { background: rgba(255, 255, 255, 0.1); }
+  &.primary {
+    border-color: transparent;
+    background: linear-gradient(135deg, var(--df-accent), var(--df-accent-dim));
+    &:hover { filter: brightness(1.08); }
+  }
+}
+
+// ─── Busy indicator (edit in progress) ─────────────────────────────────────────
+.vc-busy {
+  align-self: center;
+  width: min(320px, 100%);
+  padding: 9px 12px;
+  border-radius: 12px;
+  background: var(--df-glass-strong);
+  border: 1px solid var(--df-glass-border);
+  backdrop-filter: blur(16px);
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.45);
+  font-size: 12.5px;
+  font-weight: 600;
+}
+.vc-busy-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 7px;
+  font-variant-numeric: tabular-nums;
+  .bi { font-size: 14px; }
+}
+.vc-busy-bar {
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.15);
+  overflow: hidden;
+  > div {
+    height: 100%;
+    border-radius: 999px;
+    background: linear-gradient(90deg, var(--df-accent-dim), var(--df-accent));
+    transition: width 0.2s;
+  }
+}
+// Same pill when the bar itself is collapsed.
+.vc-busy-float {
+  position: absolute;
+  left: 50%;
+  bottom: 50px;
+  transform: translateX(-50%);
+  z-index: 2;
+  display: flex;
+  color: #fff;
 }
 
 // ─── Speed: compact narrow menu ────────────────────────────────────────────────

@@ -171,6 +171,15 @@ export const LibraryService = {
         return libraryApi.duplicateItem({ id });
     },
 
+    // opts: { start, end, mode: 'precise' | 'fast', backup }
+    async trimVideo(id, opts) {
+        return libraryApi.trimVideo({ id, ...opts });
+    },
+
+    async revertVideo(id) {
+        return libraryApi.revertVideo({ id });
+    },
+
     // transform: { angle, flipH, flipV, crop:{x,y,w,h} } — crop in fractions of the rotated image
     async editImage(id, transform) {
         return libraryApi.editImage({ id, ...transform });

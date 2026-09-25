@@ -17,6 +17,8 @@ const { getSmartItems } = require('../services/smartItems');
 const { getDashboard } = require('../services/dashboard');
 const { findDuplicates } = require('../services/duplicates');
 const maintenance = require('../services/maintenance');
+const { itemUrls } = require('../services/itemUrls');
+const videoEdit = require('../services/videoEditService');
 const viewHistory = require('../services/viewHistory');
 
 // When an item's collection changes, drop it at the end of the destination's order
@@ -107,16 +109,12 @@ function register() {
             })
         );
 
-        const plainItems = items.map(item => {
-            // editedAt cache-busts both URLs after an in-app rotate/crop.
-            const v = item.editedAt ? `?v=${item.editedAt}` : '';
-            return {
-                ...item.toJSON(),
-                tags: item.tags.map(t => t.name),
-                thumbPath: `library://thumb/${item.id}${v}`,
-                originalPath: `library://item/${item.id}${v}`,
-            };
-        });   // toJSON already carries deletedAt / editedAt through to the client
+        // editedAt / thumbAt cache-bust the URLs after an in-app edit (see itemUrls).
+        const plainItems = items.map(item => ({
+            ...item.toJSON(),
+            tags: item.tags.map(t => t.name),
+            ...itemUrls(item),
+        }));   // toJSON already carries deletedAt / editedAt through to the client
 
         return { collections: collectionItems, items: plainItems };
     });
@@ -317,6 +315,15 @@ function register() {
     ipcMain.handle('library:revertImage', async (_, { id }) => {
         return revertImage(id);
     });
+
+    // ─── Video editing (trim / revert) ─────────────────────────────────────────
+    ipcMain.handle('library:trimVideo', async (event, { id, start, end, mode, backup }) => {
+        return videoEdit.trimVideo(id, { start, end, mode, backup }, (percent) => {
+            if (!event.sender.isDestroyed()) event.sender.send('library:videoEditProgress', { id, percent });
+        });
+    });
+
+    ipcMain.handle('library:revertVideo', async (_, { id }) => videoEdit.revertVideo(id));
 
     ipcMain.handle('library:restoreItems', async (_, { ids = [] }) => {
         if (!ids.length) return { ok: true, count: 0 };

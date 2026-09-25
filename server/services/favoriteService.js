@@ -4,6 +4,7 @@ const { Item, Tag, ItemTag } = require('../models/associations');
 const { importFile, ITEMS_PATH } = require('./importService');
 const { importFromUrl } = require('./urlImportService');
 const { getFavoritesCollectionId } = require('../favoritesCollection');
+const { itemUrls } = require('./itemUrls');
 
 const isRemote = (url) => /^https?:\/\//i.test(url || '');
 
@@ -64,15 +65,11 @@ async function listFavoriteItems() {
         order: [['order', 'ASC']],
     });
 
-    return items.map(item => {
-        const v = item.editedAt ? `?v=${item.editedAt}` : '';
-        return {
-            ...item.toJSON(),
-            tags: item.tags.map(t => t.name),
-            thumbPath: `library://thumb/${item.id}${v}`,
-            originalPath: `library://item/${item.id}${v}`,
-        };
-    });
+    return items.map(item => ({
+        ...item.toJSON(),
+        tags: item.tags.map(t => t.name),
+        ...itemUrls(item),
+    }));
 }
 
 module.exports = { addFavorite, removeFavoriteByPost, listFavoriteItems };

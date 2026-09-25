@@ -28,6 +28,8 @@ const Item = sequelize.define('Item', {
     deletedAt:      { type: DataTypes.INTEGER, allowNull: true, defaultValue: null },
     // Last in-app edit (rotate/crop) timestamp; NULL = never edited. Cache-busts URLs.
     editedAt:       { type: DataTypes.INTEGER, allowNull: true, defaultValue: null },
+    // Video only: second of the frame chosen as the gallery thumbnail (NULL = default 10%).
+    thumbAt:        { type: DataTypes.FLOAT, allowNull: true, defaultValue: null },
 }, {
     timestamps: false,
     // Every ordinary read/count automatically hides trashed items. The trash and
