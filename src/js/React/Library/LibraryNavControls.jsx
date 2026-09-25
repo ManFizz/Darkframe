@@ -4,11 +4,13 @@ import {libraryApi} from '@/Infrastructure/Ipc';
 import LibraryService from '@services/LibraryService';
 import {notify} from '@services/NotificationService';
 import NotificationBell from "@react/Helpers/NotificationBell";
+import {normalizeFilter, advancedCount, isFilterActive, toSmartFilter} from '@/shared/filterPredicate';
+import AdvancedFilterFields, {ADVANCED_RESET} from './Filters/AdvancedFilterFields';
 
 // ─── Tag filter input with live suggestions ───────────────────────────────────
 // Reuses the same libraryApi.searchTags source the metadata TagEditor uses, so
 // the navbar filter offers the very tags that actually exist in the library.
-const TagFilterInput = ({ filters, addTag, removeTag, toggleTagExclude }) => {
+export const TagFilterInput = ({ filters, addTag, removeTag, toggleTagExclude }) => {
     const [tagInput, setTagInput]       = useState('');
     const [suggestions, setSuggestions] = useState([]);
     const [open, setOpen]               = useState(false);
@@ -110,22 +112,14 @@ export const LibraryNavControls = ({ ctx }) => {
     const [savingSmart, setSavingSmart] = useState(false);
     const [smartName, setSmartName]     = useState('');
 
-    const hasFilters =
-        filters.search ||
-        filters.tags.length > 0 ||
-        filters.ratingMin > RATING_MIN ||
-        filters.ratingMax < RATING_MAX;
+    const hasFilters = isFilterActive(normalizeFilter(filters));
 
     const createSmart = async () => {
         const name = smartName.trim();
         setSavingSmart(false); setSmartName('');
         if (!name) return;
-        await LibraryService.createSmartCollection(name, {
-            search:    filters.search,
-            tags:      filters.tags,
-            ratingMin: filters.ratingMin,
-            ratingMax: filters.ratingMax,
-        });
+        // Every condition (incl. type / size / resolution / dates) goes into the rule.
+        await LibraryService.createSmartCollection(name, toSmartFilter(filters));
         notify({ message: `Умная коллекция «${name}» создана`, type: 'success' });
     };
 
@@ -254,12 +248,53 @@ const RatingFilter = ({ filters, update }) => {
     );
 };
 
+// ─── Advanced conditions popover (type, size, resolution, dates, …) ─────────
+const AdvancedFilter = ({ filters, patch }) => {
+    const [open, setOpen] = useState(false);
+    const ref = useRef(null);
+    const count = advancedCount(normalizeFilter(filters));
+
+    useEffect(() => {
+        const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+        document.addEventListener('mousedown', handler);
+        return () => document.removeEventListener('mousedown', handler);
+    }, []);
+
+    return (
+        <div className="adv-filter" ref={ref}>
+            <button
+                className={`btn btn-outline-secondary ${count ? 'rating-filter-active' : ''}`}
+                title="Дополнительные условия: тип, размер, разрешение, дата…"
+                onClick={() => setOpen(v => !v)}
+            >
+                <i className="bi bi-sliders2" />
+                {count > 0 && <span className="adv-filter-badge">{count}</span>}
+            </button>
+
+            {open && (
+                <div className="adv-filter-panel" onMouseDown={e => e.stopPropagation()}>
+                    <div className="adv-filter-head">
+                        <span>Условия</span>
+                        {count > 0 && (
+                            <button className="adv-filter-reset" onClick={() => patch(ADVANCED_RESET)}>
+                                Сбросить
+                            </button>
+                        )}
+                    </div>
+                    <AdvancedFilterFields value={normalizeFilter(filters)} onChange={patch} />
+                </div>
+            )}
+        </div>
+    );
+};
+
 // Сортировка в navbar для library
 export const LibraryNavSort = ({ ctx }) => {
-    const { filters, update } = ctx;
+    const { filters, update, patch } = ctx;
 
     return (
         <div className="d-flex btn-group">
+            <AdvancedFilter filters={filters} patch={patch} />
             <RatingFilter filters={filters} update={update} />
 
             {/* Сортировка */}

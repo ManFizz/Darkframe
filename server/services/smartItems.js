@@ -3,22 +3,16 @@ const Item = require('../models/Item');
 const Tag = require('../models/Tag');
 const ItemTag = require('../models/ItemTag');
 const { itemUrls } = require('./itemUrls');
+const { normalizeFilter, matchItem } = require('../../src/js/shared/filterPredicate');
 
-// Items matching a saved smart-collection filter:
-//   { search, tags:[{name,exclude}], ratingMin, ratingMax }
-// Mirrors the client-side useLibraryFilter semantics, but runs on the server so the
-// smart collection is independent of the transient navbar filter.
+// Items matching a saved smart-collection filter (see shared/filterPredicate for the
+// model). SQL narrows by rating and required tags cheaply; the shared predicate then
+// applies every condition exactly like the renderer's live filter does.
 async function getSmartItems(filter = {}) {
-    const { search = '', tags = [], ratingMin = 0, ratingMax = 10 } = filter;
-    const includeNames = tags.filter(t => !t.exclude).map(t => t.name);
-    const excludeNames = tags.filter(t => t.exclude).map(t => t.name);
+    const f = normalizeFilter(filter);
+    const includeNames = f.tags.filter(t => !t.exclude).map(t => t.name);
 
-    const where = {};
-    if (search.trim()) {
-        const q = `%${search.trim().toLowerCase()}%`;
-        where[Op.or] = [{ title: { [Op.like]: q } }, { fileName: { [Op.like]: q } }];
-    }
-    where.rating = { [Op.gte]: ratingMin, [Op.lte]: ratingMax };
+    const where = { rating: { [Op.gte]: f.ratingMin, [Op.lte]: f.ratingMax } };
 
     // Must have ALL include tags.
     if (includeNames.length) {
@@ -36,30 +30,20 @@ async function getSmartItems(filter = {}) {
         where.id = { [Op.in]: ids };
     }
 
-    // Must have NONE of the exclude tags.
-    let excludeSet = new Set();
-    if (excludeNames.length) {
-        const exTags = await Tag.findAll({ where: { name: excludeNames }, attributes: ['id'], raw: true });
-        const exIds = exTags.map(t => t.id);
-        if (exIds.length) {
-            const exRows = await ItemTag.findAll({ where: { tagId: exIds }, attributes: ['itemId'], raw: true });
-            excludeSet = new Set(exRows.map(r => r.itemId));
-        }
-    }
-
     const items = await Item.findAll({
         where,
         include: [{ model: Tag, as: 'tags', through: { attributes: [] } }],
         order: [['order', 'ASC']],
     });
 
+    const now = Math.floor(Date.now() / 1000);
     const plain = items
-        .filter(i => !excludeSet.has(i.id))
         .map(item => ({
             ...item.toJSON(),
             tags: item.tags.map(t => t.name),
             ...itemUrls(item),
-        }));
+        }))
+        .filter(p => matchItem(p, f, now));
 
     return { collections: [], items: plain };
 }

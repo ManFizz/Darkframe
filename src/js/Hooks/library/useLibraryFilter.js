@@ -1,4 +1,5 @@
 import {useCallback, useMemo, useState} from 'react';
+import {FILTER_DEFAULTS, normalizeFilter, matchItem} from '@/shared/filterPredicate';
 
 export const SORT_FIELDS = {
     ORDER:       'order',
@@ -19,11 +20,10 @@ export const SORT_ORDER = {
 export const RATING_MIN = 0;
 export const RATING_MAX = 10;
 
+// Filter conditions live in shared/filterPredicate (same model as smart collections);
+// sorting is a view concern and stays here.
 const initialFilters = {
-    search:    '',
-    tags:      [],
-    ratingMin: RATING_MIN,
-    ratingMax: RATING_MAX,
+    ...FILTER_DEFAULTS,
     sortBy:    SORT_FIELDS.ORDER,
     order:     SORT_ORDER.ASC,
 };
@@ -33,6 +33,11 @@ export function useLibraryFilter(items) {
 
     const update = useCallback((field, value) => {
         setFilters(prev => ({ ...prev, [field]: value }));
+    }, []);
+
+    // Merge several fields at once (quick presets, the advanced filter panel).
+    const patch = useCallback((values) => {
+        setFilters(prev => ({ ...prev, ...values }));
     }, []);
 
     const addTag = useCallback((tag) => {
@@ -61,36 +66,15 @@ export function useLibraryFilter(items) {
         }));
     }, []);
 
-    const reset = useCallback(() => setFilters(initialFilters), []);
+    // Clears every condition but keeps the chosen sorting.
+    const reset = useCallback(() => {
+        setFilters(prev => ({ ...initialFilters, sortBy: prev.sortBy, order: prev.order }));
+    }, []);
 
     const filtered = useMemo(() => {
-        let result = [...items];
-
-        if (filters.search.trim()) {
-            const q = filters.search.toLowerCase();
-            result = result.filter(f =>
-                f.title?.toLowerCase().includes(q) ||
-                f.fileName?.toLowerCase().includes(q)
-            );
-        }
-
-        if (filters.tags.length > 0) {
-            const includeTags = filters.tags.filter(t => !t.exclude).map(t => t.name);
-            const excludeTags = filters.tags.filter(t => t.exclude).map(t => t.name);
-            result = result.filter(f => {
-                const itemTags = Array.isArray(f.tags) ? f.tags : [];
-                return includeTags.every(tag => itemTags.includes(tag))
-                    && excludeTags.every(tag => !itemTags.includes(tag));
-            });
-        }
-
-        const { ratingMin = RATING_MIN, ratingMax = RATING_MAX } = filters;
-        if (ratingMin > RATING_MIN || ratingMax < RATING_MAX) {
-            result = result.filter(f => {
-                const r = f.rating || 0;
-                return r >= ratingMin && r <= ratingMax;
-            });
-        }
+        const f = normalizeFilter(filters);
+        const now = Math.floor(Date.now() / 1000);
+        const result = items.filter(item => matchItem(item, f, now));
 
         result.sort((a, b) => {
             let va = a[filters.sortBy] ?? 0;
@@ -103,5 +87,5 @@ export function useLibraryFilter(items) {
         return result;
     }, [items, filters]);
 
-    return { filters, filtered, update, addTag, removeTag, toggleTagExclude, reset };
+    return { filters, filtered, update, patch, addTag, removeTag, toggleTagExclude, reset };
 }

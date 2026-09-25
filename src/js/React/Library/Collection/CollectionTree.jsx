@@ -1,5 +1,7 @@
 import React, {useCallback, useEffect, useRef, useState} from 'react';
+import {createPortal} from 'react-dom';
 import {useCollections} from '@hooks/library/useCollections';
+import SmartFilterEditor from '../Filters/SmartFilterEditor';
 import {useLibraryStats} from "@hooks/library/useLibraryStats";
 import {useLibraryContext} from "@/LibraryContext";
 import LibraryService from '@services/LibraryService';
@@ -364,6 +366,7 @@ const CollectionTree = ({ selectedId, onSelect, onMediaMoved, onFilesTrashed }) 
     const { tree, createCollection, updateCollection, deleteCollection, reorderCollections } = useCollections();
     const [creating, setCreating] = useState(null);
     const [treeCollapsed, setTreeCollapsed] = useState(false);
+    const [editingSmart, setEditingSmart] = useState(null);   // smart collection being edited
     const [collapsed, setCollapsed] = useState(loadCollapsed);
     const draggedIdRef = useRef(null);
 
@@ -572,6 +575,13 @@ const CollectionTree = ({ selectedId, onSelect, onMediaMoved, onFilesTrashed }) 
                             <span className="collection-name">{sc.name}</span>
                             <span className="collection-item-count">{sc.itemCount ?? 0}</span>
                             <button
+                                className="collection-smart-delete collection-smart-edit"
+                                title="Изменить условия"
+                                onClick={(e) => { e.stopPropagation(); setEditingSmart(sc); }}
+                            >
+                                <i className="bi bi-pencil" />
+                            </button>
+                            <button
                                 className="collection-smart-delete"
                                 title="Удалить умную коллекцию"
                                 onClick={(e) => { e.stopPropagation(); handleDelete(sc.id); }}
@@ -581,6 +591,11 @@ const CollectionTree = ({ selectedId, onSelect, onMediaMoved, onFilesTrashed }) 
                         </div>
                     ))}
                 </>
+            )}
+
+            {editingSmart && createPortal(
+                <SmartFilterEditor collection={editingSmart} onClose={() => setEditingSmart(null)} />,
+                document.body,
             )}
         </div>
     );
