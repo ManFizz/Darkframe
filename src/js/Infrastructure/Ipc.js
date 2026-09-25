@@ -64,6 +64,7 @@ export const libraryApi = {
     importUrl:         (data) => invoke('library:importUrl', data),
     getStats:          ()     => invoke('library:getStats'),
     getDashboard:      ()     => invoke('library:getDashboard'),
+    revealItem:        (data) => invoke('library:revealItem', data),
     findDuplicates:    ()     => invoke('library:findDuplicates'),
     phashStatus:       ()     => invoke('library:phashStatus'),
     computePhashes:    ()     => invoke('library:computePhashes'),

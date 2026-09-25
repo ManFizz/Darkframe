@@ -1,5 +1,6 @@
 import React, {useCallback, useEffect, useRef, useState} from 'react';
 import LibraryService from '@services/LibraryService';
+import {libraryApi} from '@/Infrastructure/Ipc';
 import RatingStars from './RatingStars';
 import TagEditor from './TagEditor';
 import CollectionPicker from '../Collection/CollectionPicker';
@@ -220,10 +221,7 @@ const MetadataPanel = ({ file, onUpdated }) => {
                     <div className="metadata-section">
                         <button
                             className="btn btn-sm btn-outline-secondary w-100"
-                            onClick={() => {
-                                const { shell } = window.require('electron');
-                                shell.showItemInFolder(file.contentUrl.replace('library://item/', ''));
-                            }}
+                            onClick={() => libraryApi.revealItem({ id: file.id })}
                         >
                             <i className="bi bi-folder2-open me-1" />
                             Показать в проводнике

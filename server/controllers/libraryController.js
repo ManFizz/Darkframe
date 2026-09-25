@@ -1,4 +1,4 @@
-const { ipcMain, dialog } = require('electron');
+const { ipcMain, dialog, shell } = require('electron');
 const { importFiles, ITEMS_PATH, importDirectory, ensureTag } = require('../services/importService');
 const { Item, Tag, ItemTag } = require('../models/associations');
 const Collection = require('../models/Collection');
@@ -421,6 +421,20 @@ function register() {
     });
 
     ipcMain.handle('library:getDashboard', async () => getDashboard());
+
+    // Show the item's file in the OS file manager (the renderer only knows its
+    // library:// URL, not the on-disk path).
+    ipcMain.handle('library:revealItem', async (_, { id }) => {
+        if (!/^[A-Za-z0-9._-]+$/.test(String(id || ''))) return { ok: false };
+        const dir = path.join(ITEMS_PATH, id);
+        let target = dir;
+        try {
+            const f = fs.readdirSync(dir).find(x => /^original\./i.test(x));
+            if (f) target = path.join(dir, f);
+        } catch { return { ok: false }; }
+        shell.showItemInFolder(target);
+        return { ok: true };
+    });
 
     ipcMain.handle('library:findDuplicates', async () => findDuplicates());
 
