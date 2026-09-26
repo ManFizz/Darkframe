@@ -3,6 +3,7 @@ const Item = require('../models/Item');
 const Tag = require('../models/Tag');
 const ItemTag = require('../models/ItemTag');
 const { itemUrls } = require('./itemUrls');
+const { withTagNames } = require('./itemTags');
 const { normalizeFilter, matchItem } = require('../../src/js/shared/filterPredicate');
 
 // Items matching a saved smart-collection filter (see shared/filterPredicate for the
@@ -30,19 +31,11 @@ async function getSmartItems(filter = {}) {
         where.id = { [Op.in]: ids };
     }
 
-    const items = await Item.findAll({
-        where,
-        include: [{ model: Tag, as: 'tags', through: { attributes: [] } }],
-        order: [['order', 'ASC']],
-    });
+    const items = await withTagNames(await Item.findAll({ where, order: [['order', 'ASC']], raw: true }));
 
     const now = Math.floor(Date.now() / 1000);
     const plain = items
-        .map(item => ({
-            ...item.toJSON(),
-            tags: item.tags.map(t => t.name),
-            ...itemUrls(item),
-        }))
+        .map(item => ({ ...item, ...itemUrls(item) }))
         .filter(p => matchItem(p, f, now));
 
     return { collections: [], items: plain };

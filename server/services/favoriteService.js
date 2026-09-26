@@ -4,6 +4,7 @@ const { Item, Tag, ItemTag } = require('../models/associations');
 const { importFile, ITEMS_PATH } = require('./importService');
 const { importFromUrl } = require('./urlImportService');
 const { getFavoritesCollectionId } = require('../favoritesCollection');
+const { withTagNames } = require('./itemTags');
 const { itemUrls } = require('./itemUrls');
 
 const isRemote = (url) => /^https?:\/\//i.test(url || '');
@@ -59,17 +60,13 @@ async function removeFavoriteByPost(postUrl) {
 
 async function listFavoriteItems() {
     const collectionId = await getFavoritesCollectionId();
-    const items = await Item.findAll({
+    const items = await withTagNames(await Item.findAll({
         where: { collectionId },   // default scope already hides trashed items
-        include: [{ model: Tag, as: 'tags', through: { attributes: [] } }],
         order: [['order', 'ASC']],
-    });
-
-    return items.map(item => ({
-        ...item.toJSON(),
-        tags: item.tags.map(t => t.name),
-        ...itemUrls(item),
+        raw: true,
     }));
+
+    return items.map(item => ({ ...item, ...itemUrls(item) }));
 }
 
 module.exports = { addFavorite, removeFavoriteByPost, listFavoriteItems };

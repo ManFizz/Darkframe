@@ -110,6 +110,14 @@ async function migrations() {
 
     // Resume positions for long videos. New table — create if missing.
     await require('./models/VideoPosition').sync();
+
+    // Lookup indexes. Tags also holds the remote (r34 / gelbooru) tag cache — well over
+    // a million rows — so "pinned" / per-tag lookups without an index were full scans
+    // that stalled every other query at startup (one SQLite connection).
+    await sequelize.query('CREATE INDEX IF NOT EXISTS tags_pinned_idx ON Tags (pinned)');
+    await sequelize.query('CREATE INDEX IF NOT EXISTS itemtags_tagId_idx ON ItemTags (tagId)');
+    await sequelize.query('CREATE INDEX IF NOT EXISTS items_collectionId_idx ON Items (collectionId)');
+    await sequelize.query('CREATE INDEX IF NOT EXISTS items_deletedAt_idx ON Items (deletedAt)');
 }
 
 module.exports = { migrations};

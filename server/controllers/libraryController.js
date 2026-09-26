@@ -4,6 +4,7 @@ const { Item, Tag, ItemTag } = require('../models/associations');
 const Collection = require('../models/Collection');
 const { Op } = require('sequelize');
 const sequelize = require('../database');
+const { withTagNames } = require('../services/itemTags');
 const path = require('path');
 const fs = require('fs');
 const crypto = require('crypto');
@@ -86,11 +87,7 @@ function register() {
         if (rating) where.rating = { [Op.gte]: rating };
 
         const [items, childCollections] = await Promise.all([
-            itemModel.findAll({
-                where,
-                include: [{ model: Tag, as: 'tags', through: { attributes: [] } }],
-                order: [['order', 'ASC']],
-            }),
+            itemModel.findAll({ where, order: [['order', 'ASC']], raw: true }).then(withTagNames),
 
             !trash && !isUncategorized && params.hasOwnProperty('collectionId')
                 ? Collection.findAll({
@@ -112,11 +109,7 @@ function register() {
         );
 
         // editedAt / thumbAt cache-bust the URLs after an in-app edit (see itemUrls).
-        const plainItems = items.map(item => ({
-            ...item.toJSON(),
-            tags: item.tags.map(t => t.name),
-            ...itemUrls(item),
-        }));   // toJSON already carries deletedAt / editedAt through to the client
+        const plainItems = items.map(item => ({ ...item, ...itemUrls(item) }));
 
         return { collections: collectionItems, items: plainItems };
     });
@@ -393,20 +386,30 @@ function register() {
             order: [['order', 'ASC']],
         });
 
-        return await Promise.all(
-            collections.map(async (col) => {
-                const j = col.toJSON();
-                let itemCount;
-                if (j.isSmart) {
-                    let f = {};
-                    try { f = JSON.parse(j.filter || '{}'); } catch { /* ignore */ }
-                    itemCount = (await getSmartItems(f)).items.length;
-                } else {
-                    itemCount = await Item.count({ where: { collectionId: col.id } });
-                }
-                return { ...j, itemCount };
-            })
+        // One grouped count for every regular collection instead of a query each.
+        const counts = new Map(
+            (await Item.findAll({
+                attributes: ['collectionId', [sequelize.fn('COUNT', sequelize.col('id')), 'n']],
+                where: { collectionId: { [Op.ne]: null } },
+                group: ['collectionId'],
+                raw: true,
+            })).map(r => [r.collectionId, Number(r.n)])
         );
+
+        const out = [];
+        for (const col of collections) {
+            const j = col.toJSON();
+            let itemCount;
+            if (j.isSmart) {
+                let f = {};
+                try { f = JSON.parse(j.filter || '{}'); } catch { /* ignore */ }
+                itemCount = (await getSmartItems(f)).items.length;
+            } else {
+                itemCount = counts.get(j.id) || 0;
+            }
+            out.push({ ...j, itemCount });
+        }
+        return out;
     });
 
     ipcMain.handle('library:getStats', async () => {

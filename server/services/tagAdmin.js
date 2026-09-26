@@ -28,13 +28,19 @@ async function resolveAlias(name) {
 
 // ─── Tag listing with live-item usage counts ──────────────────────────────────
 async function getAllTags() {
+    // Library tags only: anything linked to an item (trashed ones too, count 0) or
+    // pinned. Tags also stores the remote-source tag cache (1M+ rows) — never list it.
     // COUNT(i.id) counts only non-trashed items linked to the tag.
     const rows = await sequelize.query(
-        `SELECT t.id AS id, t.name AS name, t.pinned AS pinned, COUNT(i.id) AS count
+        `SELECT t.id AS id, t.name AS name, t.pinned AS pinned, COALESCE(c.count, 0) AS count
          FROM Tags t
-         LEFT JOIN ItemTags it ON it.tagId = t.id
-         LEFT JOIN Items i ON i.id = it.itemId AND i.deletedAt IS NULL
-         GROUP BY t.id, t.name, t.pinned
+         LEFT JOIN (
+             SELECT it.tagId AS tagId, COUNT(i.id) AS count
+             FROM ItemTags it
+             LEFT JOIN Items i ON i.id = it.itemId AND i.deletedAt IS NULL
+             GROUP BY it.tagId
+         ) c ON c.tagId = t.id
+         WHERE c.tagId IS NOT NULL OR t.pinned = 1
          ORDER BY t.pinned DESC, count DESC, t.name ASC`,
         { type: QueryTypes.SELECT },
     );
