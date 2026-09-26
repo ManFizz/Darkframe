@@ -19,32 +19,12 @@ export function getSortedArray(array, sortInfo, sourceType) {
     if (!Array.isArray(array)) return [];
 
     const order = sortInfo?.order ?? SORT_ORDER.ASC;
-    const strategy = SORT_STRATEGIES[sortInfo?.type];
 
     if (sourceType === SOURCE_TYPES.FAVORITE) {
-        console.log(array);
         return [...array].sort((a, b) => (a.id - b.id) * order);
     }
 
-    if (sourceType === SOURCE_TYPES.FOLDER) {
-        return [...array].sort((a, b) => {
-            if (a.priority !== b.priority) {
-                return (b.priority || 0) - (a.priority || 0);
-            }
-
-            let result = strategy ? strategy(a, b) : 0;
-            result *= order;
-
-            if (result === 0) {
-                const idA = String(a.uniqueId || "");
-                const idB = String(b.uniqueId || "");
-                return idA.localeCompare(idB);
-            }
-
-            return result;
-        });
-    }
-
+    // Booru results keep the API order (Folders sorts inside FolderView).
     return array;
 }
 

@@ -568,6 +568,9 @@
 }
 
 // ─── Pagination: floating glass pill ─────────────────────────────────────────
+// Room under the grid so the last row isn't hidden behind the floating pill.
+.main-split > .container-fluid > [class^="gallery-view-"] { padding-bottom: 64px; }
+
 .custom-pagination.fixed-bottom {
   left: 50%;
   right: auto;

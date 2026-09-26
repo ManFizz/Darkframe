@@ -121,16 +121,6 @@
   transition: all 0.3s;
 }
 
-.video-mark {
-  font-size: 80px;
-  color: white;
-  animation: pulse 1s linear infinite;
-  top: calc(50% - 47px);
-  position: absolute;
-  left: calc(50% - 35px);
-  filter: drop-shadow(1px 1px 1px black);
-}
-
 body {
   height: 100vh;
 }
@@ -141,19 +131,6 @@ body {
   nav {
     height: calc(100vh - #{variables.$navbar-height});
   }
-}
-
-#section-r34 {
-  height: 100%;
-}
-
-#tags-fav-select {
-  overflow-y: auto;
-  display: flex;
-  flex-wrap: wrap;
-  flex-direction: row;
-  align-content: flex-start;
-  max-height: 60vh;
 }
 
 .modal > i {
@@ -263,21 +240,6 @@ $tag-colors: (
 
 .main-root  .pagination {
   z-index: 50;
-}
-
-.tag-search-container {
-  .input-group {
-    position: relative;
-
-    .dropdown-menu {
-      top: 100%;
-      left: 0;
-      margin-top: 2px;
-      overflow-y: auto;
-      z-index: 1050;
-      display: block;
-    }
-  }
 }
 
 :focus-visible {
