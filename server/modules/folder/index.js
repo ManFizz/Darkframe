@@ -1,7 +1,7 @@
-const directoryController = require('../../controllers/directoryController');
+const fsController = require('../../controllers/fsController');
 
-function registerHandlers() {
-    directoryController.registerHandlers();
-}
-
-module.exports = { registerHandlers };
+module.exports = {
+    registerHandlers() {
+        fsController.register();
+    },
+};

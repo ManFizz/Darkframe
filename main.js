@@ -72,7 +72,7 @@ function setupContentSecurityPolicy() {
         "default-src 'self' library: mediacache:; " +
         "script-src 'self' 'unsafe-eval' 'unsafe-inline'; " +
         "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
-        "img-src 'self' data: blob: library: mediacache: https: http:; " +
+        "img-src 'self' data: blob: library: mediacache: fsthumb: https: http:; " +
         "media-src 'self' data: blob: library: mediacache: https: http:; " +
         "font-src 'self' data: https://fonts.gstatic.com; " +
         "connect-src 'self' data: blob: library: mediacache: https: http: ws:; " +
@@ -185,6 +185,11 @@ protocol.registerSchemesAsPrivileged([
         }
     },
     {
+        // Cached thumbnails of files on disk (Folders browser) — see fsController.
+        scheme: 'fsthumb',
+        privileges: { secure: true, standard: true, supportFetchAPI: true },
+    },
+    {
         scheme: mediaCache.SCHEME,
         privileges: {
             secure: true,
@@ -198,6 +203,7 @@ protocol.registerSchemesAsPrivileged([
 
 app.whenReady().then(async () => {
     registerLibraryProtocol();
+    require('./server/controllers/fsController').registerProtocol();
 
     // Fresh media cache each session, then register the caching protocol
     mediaCache.clearCache();
