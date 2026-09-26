@@ -1,5 +1,6 @@
 import React from 'react';
 import {ACCENT_PRESETS, useTheme} from '@services/theme';
+import {useViewPref} from '@services/viewPrefs';
 
 const MODES = [
     { id: 'dark',   label: 'Тёмная',    icon: 'bi-moon-stars' },
@@ -10,6 +11,7 @@ const MODES = [
 // Colour mode + accent. Applied instantly (no "save & relaunch" needed).
 const AppearanceSection = () => {
     const [theme, setTheme] = useTheme();
+    const [ratingDividers, setRatingDividers] = useViewPref('ratingDividers');
     const isPreset = ACCENT_PRESETS.some(p => p.value.toLowerCase() === String(theme.accent).toLowerCase());
 
     return (
@@ -64,6 +66,21 @@ const AppearanceSection = () => {
                                 onChange={e => setTheme({ accent: e.target.value })}
                             />
                         </label>
+                    </div>
+                </div>
+
+                <div className="settings-item settings-item--inline">
+                    <div className="settings-item-info">
+                        <div className="settings-item-label">Разделители по рейтингу</div>
+                        <div className="settings-item-desc">При сортировке по рейтингу делить галерею на группы с подписью «★ N»</div>
+                    </div>
+                    <div className="form-check form-switch settings-switch">
+                        <input
+                            className="form-check-input"
+                            type="checkbox"
+                            checked={ratingDividers}
+                            onChange={e => setRatingDividers(e.target.checked)}
+                        />
                     </div>
                 </div>
             </div>

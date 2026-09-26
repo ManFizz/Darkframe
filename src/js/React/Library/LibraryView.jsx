@@ -10,6 +10,7 @@ import QuickFilters from "./Filters/QuickFilters";
 import useSelection from "@hooks/gallery/useSelection";
 import LibraryService from "@services/LibraryService"
 import LibraryGallery from "../PageBuilders/LibraryGallery";
+import {useViewPref} from '@services/viewPrefs';
 import {FILE_TYPES, SOURCE_TYPES} from "@/Constants";
 import {ThumbFile} from "@/Models/ThumbFile";
 import useCollections from "@hooks/library/useCollections"
@@ -31,7 +32,8 @@ const sectionLabel = (s) => SECTION_LABELS[s] || `Секция ${s}`;
 
 const LibraryView = () => {
     const [selectedCollection, setSelectedCollection] = useState(SPECIAL.NONE);
-    const { filtered, setLibraryItems, refreshStats, statsVersion } = useLibraryContext();
+    const { filtered, filters, setLibraryItems, refreshStats, statsVersion } = useLibraryContext();
+    const [ratingDividers] = useViewPref('ratingDividers');
     const { favoritesId } = useLibraryStats(statsVersion);
     const [modalFileId, setModalFileId] = useState(null);
     const galleryScrollRef = useRef(null);
@@ -430,6 +432,7 @@ const LibraryView = () => {
                         typeView={2}
                         scrollRef={galleryScrollRef}
                         reorderable={!isHistory}
+                        groupByRating={ratingDividers && filters.sortBy === 'rating' && !isHistory}
                         resetKey={isHistory ? `history:${historySection ?? 'all'}` : selectedCollection}
                     />
                 </div>

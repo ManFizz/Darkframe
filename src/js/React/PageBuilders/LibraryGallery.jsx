@@ -1,6 +1,29 @@
-import React, {useEffect, useRef, useState} from 'react';
+import React, {useEffect, useMemo, useRef, useState} from 'react';
 import Thumb from '../Thumb/Thumb';
 import {useItemReorder} from '@hooks/library/useItemReorder';
+import {FILE_TYPES} from '@/Constants';
+
+const isCollection = (f) => f.type === FILE_TYPES.COLLECTION;
+
+const plural = (n) => {
+    const m10 = n % 10, m100 = n % 100;
+    if (m10 === 1 && m100 !== 11) return 'файл';
+    if (m10 >= 2 && m10 <= 4 && (m100 < 12 || m100 > 14)) return 'файла';
+    return 'файлов';
+};
+
+// Full-row header between rating groups: label, rule and count on one line.
+const RatingDivider = ({ rating, count }) => (
+    <div className={`gallery-divider ${rating ? '' : 'unrated'}`} role="separator">
+        <span className="gallery-divider-label">
+            {rating
+                ? <><i className="bi bi-star-fill" />{rating}<small>/ 10</small></>
+                : <><i className="bi bi-star" />Без оценки</>}
+        </span>
+        <span className="gallery-divider-line" />
+        <span className="gallery-divider-count">{count} {plural(count)}</span>
+    </div>
+);
 
 // The library can hold thousands of items; rendering them all at once is what made
 // big collections crawl. We render a growing window instead — the first chunk, then
@@ -9,11 +32,23 @@ import {useItemReorder} from '@hooks/library/useItemReorder';
 const INITIAL = 150;
 const CHUNK   = 150;
 
-const LibraryGallery = ({ items, onReordered, isSelected, selectedIds, selectionActive, modalUpdater, onToggleSelect, typeView = 2, onFileOpen, scrollRef, resetKey, reorderable = true }) => {
+const LibraryGallery = ({ items, onReordered, isSelected, selectedIds, selectionActive, modalUpdater, onToggleSelect, typeView = 2, onFileOpen, scrollRef, resetKey, reorderable = true, groupByRating = false }) => {
     const { isDragging, overId, onDragStart, onDragOver, onDrop, onDragEnd } =
         useItemReorder(items, onReordered, selectedIds);
 
     const [visibleCount, setVisibleCount] = useState(INITIAL);
+
+    // Group sizes come from the whole list, not just the rendered window.
+    const ratingCounts = useMemo(() => {
+        if (!groupByRating) return null;
+        const counts = new Map();
+        for (const f of items) {
+            if (isCollection(f)) continue;
+            const r = f.rating || 0;
+            counts.set(r, (counts.get(r) || 0) + 1);
+        }
+        return counts;
+    }, [items, groupByRating]);
     const sentinelRef = useRef(null);
 
     // Start over only when the dataset genuinely changes (collection / filter switch),
@@ -39,9 +74,20 @@ const LibraryGallery = ({ items, onReordered, isSelected, selectedIds, selection
 
     return (
         <div className={`gallery-view-${typeView}`}>
-            {items.slice(0, visibleCount).map(file => (
+            {items.slice(0, visibleCount).map((file, i, shown) => {
+                // Sub-collections aren't rated: they neither get nor break a group.
+                let divider = null;
+                if (ratingCounts && !isCollection(file)) {
+                    const r = file.rating || 0;
+                    let prev = null;
+                    for (let j = i - 1; j >= 0; j--) {
+                        if (!isCollection(shown[j])) { prev = shown[j].rating || 0; break; }
+                    }
+                    if (prev !== r) divider = <RatingDivider key={`rating-${r}`} rating={r} count={ratingCounts.get(r) || 0} />;
+                }
+                return <React.Fragment key={file.uniqueId}>
+                {divider}
                 <div
-                    key={file.uniqueId}
                     className={`
                         thumb-drag-wrapper
                         ${isDragging(file.uniqueId) ? 'dragging' : ''}
@@ -74,7 +120,8 @@ const LibraryGallery = ({ items, onReordered, isSelected, selectedIds, selection
                         onOpen={onFileOpen}
                     />
                 </div>
-            ))}
+                </React.Fragment>;
+            })}
             {/* Full-row sentinel: when it scrolls into view, render the next chunk. */}
             <div ref={sentinelRef} style={{ flexBasis: '100%', width: '100%', height: 1 }} aria-hidden="true" />
         </div>

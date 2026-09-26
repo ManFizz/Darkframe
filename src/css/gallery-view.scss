@@ -35,6 +35,58 @@
   }
 }
 
+// Rating group header (sort by rating): label · rule · count, all on one line.
+.gallery-divider {
+  flex: 0 0 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 18px 14px 8px;
+
+  &:first-child { padding-top: 8px; }
+}
+
+.gallery-divider-label {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  flex-shrink: 0;
+  padding: 3px 12px;
+  border-radius: 999px;
+  background: var(--df-accent-soft);
+  border: 1px solid var(--df-accent-dim);
+  color: var(--df-accent);
+  font-size: 13px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.4;
+
+  .bi { font-size: 12px; }
+  small { font-size: 10.5px; font-weight: 600; opacity: 0.65; }
+
+  .unrated & {
+    background: var(--bs-secondary-bg);
+    border-color: var(--bs-border-color);
+    color: var(--bs-secondary);
+    font-weight: 600;
+  }
+}
+
+.gallery-divider-line {
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, var(--df-accent-dim), var(--bs-border-color) 40%, transparent);
+
+  .unrated & { background: linear-gradient(90deg, var(--bs-border-color), transparent); }
+}
+
+.gallery-divider-count {
+  flex-shrink: 0;
+  font-size: 11.5px;
+  color: var(--bs-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
 
 .gallery-view-3 {
   display: grid;
