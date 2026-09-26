@@ -2,6 +2,7 @@ import PrivateData from "@data/private";
 import {setGallery} from "@controllers/AppInitializerController";
 import {GetThumbByData} from "@controllers/GalleryController";
 import {FILE_TYPES, SOURCE_TYPES} from "@/Constants";
+import {setSearchStatus} from "./R34Controller";
 
 const favUrl = `https://rule34.xxx/index.php?page=favorites&s=view&id=${PrivateData.R34UserId}`;
 const API_URL = `https://api.rule34.xxx/index.php?page=dapi&s=post&q=index&json=1&api_key=${PrivateData.R34ApiKey}&user_id=${PrivateData.R34UserId}`;
@@ -16,6 +17,7 @@ export async function DisplayRemoteFavoriteR34() {
 
     favoriteAbortController = new AbortController();
     const signal = favoriteAbortController.signal;
+    setSearchStatus({ loading: true, error: null, query: 'favorites', source: SOURCE_TYPES.R34, total: null });
 
     let allProcessedData = [];
     let pid = 0;
@@ -41,15 +43,24 @@ export async function DisplayRemoteFavoriteR34() {
 
             const detailedPosts = await fetchPostDetails(postIds, signal);
 
-            let chunkData = detailedPosts.map(post => GetThumbByData({
-                remoteId: post.id,
-                previewUrl: post.preview_url,
-                thumbUrl: post.file_url,
-                remoteType: SOURCE_TYPES.R34,
-                tags: post.tags,
-                sourceUrl: `https://rule34.xxx/index.php?page=post&s=view&id=${post.id}`,
-                type: (post.file_url.endsWith(".mp4") || post.file_url.endsWith(".webm")) ? FILE_TYPES.VIDEO : FILE_TYPES.IMAGE
-            }));
+            let chunkData = detailedPosts.map(post => {
+                const isVideo = /\.(mp4|webm)(\?|$)/i.test(post.file_url || '');
+                return GetThumbByData({
+                    remoteId: post.id,
+                    previewUrl: post.preview_url,
+                    // light preview in the grid, the original in the viewer
+                    thumbUrl: (isVideo ? post.preview_url : (post.sample_url || post.preview_url)) || post.file_url,
+                    contentUrl: post.file_url,
+                    remoteType: SOURCE_TYPES.R34,
+                    tags: post.tags,
+                    width: post.width,
+                    height: post.height,
+                    score: post.score,
+                    remoteRating: post.rating,
+                    sourceUrl: `https://rule34.xxx/index.php?page=post&s=view&id=${post.id}`,
+                    type: isVideo ? FILE_TYPES.VIDEO : FILE_TYPES.IMAGE,
+                });
+            });
             chunkData = chunkData.filter(item => item !== null);
             allProcessedData = [...allProcessedData, ...chunkData];
             if (!signal.aborted) {
@@ -59,11 +70,13 @@ export async function DisplayRemoteFavoriteR34() {
             pid += postsPerPage;
             await new Promise(r => setTimeout(r, 500));
         }
+        setSearchStatus({ loading: false, total: allProcessedData.length });
     } catch (error) {
         if (error.name === 'AbortError' || error.message === 'AbortError') {
             console.log(">>> [R34] Загрузка успешно прервана пользователем.");
         } else {
             console.error(">>> [R34] Ошибка:", error);
+            setSearchStatus({ loading: false, error: error.message || 'Ошибка загрузки избранного' });
         }
     }
 }

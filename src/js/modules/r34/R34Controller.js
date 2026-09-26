@@ -80,6 +80,9 @@ function setStatus(patch) {
 
 export const getSearchStatus = () => ({ ...status });
 
+// For loaders that don't go through SearchMedia (R34 favourites).
+export const setSearchStatus = (patch) => setStatus(patch);
+
 export function subscribeSearchStatus(fn) {
     statusListeners.add(fn);
     return () => statusListeners.delete(fn);
