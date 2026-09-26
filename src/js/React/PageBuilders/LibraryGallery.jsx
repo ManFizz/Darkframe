@@ -105,8 +105,8 @@ const LibraryGallery = ({ items, onReordered, isSelected, selectedIds, selection
         if (!el || visibleCount >= entries.length) return;
 
         const observer = new IntersectionObserver(
-            entries => {
-                if (entries[0].isIntersecting) {
+            ([hit]) => {
+                if (hit.isIntersecting) {
                     setVisibleCount(c => Math.min(c + CHUNK, entries.length));
                 }
             },
