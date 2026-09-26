@@ -1,5 +1,4 @@
 import React, {useMemo, useState} from "react";
-import {BiSolidVideo} from "react-icons/bi";
 import Settings from "@data/settings";
 import Image from "./Image";
 import {cachedMediaUrl} from "@/Infrastructure/MediaCache";
@@ -18,7 +17,7 @@ const Video = ({ file }) => {
         return (
             <>
                 <Image file={file} />
-                <BiSolidVideo className="video-mark" />
+                <span className="video-mark"><i className="bi bi-play-fill" /></span>
             </>
         );
     }
@@ -34,7 +33,7 @@ const Video = ({ file }) => {
                 onLoadedData={() => setIsLoading(false)}
                 style={{ display: isLoading ? 'none' : 'block' }}
             />
-            <BiSolidVideo className="video-mark" />
+            <span className="video-mark"><i className="bi bi-play-fill" /></span>
         </>
     );
 }

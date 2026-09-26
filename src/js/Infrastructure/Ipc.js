@@ -17,6 +17,7 @@ export const favoritesApi = {
 export const favoriteTagsApi = {
     getAll: ()                => invoke("getFavTags"),
     add:    (tag, remoteType) => invoke("AddFavTags", tag, remoteType),
+    remove: (tag, remoteType) => invoke("RemoveFavTags", tag, remoteType),
 };
 
 export const tagsApi = {
@@ -32,6 +33,8 @@ export const fsApi = {
     reveal: (file) => invoke('fs:reveal', { file }),
     open:   (file) => invoke('fs:open', { file }),
 };
+
+export const openExternalUrl = (url) => invoke('shell:openUrl', { url });
 
 // fsthumb:// URL of a cached thumbnail for a file on disk.
 export const fsThumbUrl = (file, width = 360) =>

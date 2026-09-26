@@ -94,6 +94,9 @@ const Thumb = (({ file, isModal, modalUpdater, isSelected, onOpen, onToggleSelec
                     )}
                 </div>
             )}
+            {file.score != null && hasOverlay && (
+                <span className="thumb-score" title="Score"><i className="bi bi-star-fill" /> {file.score}</span>
+            )}
             {renderContent()}
         </div>
     );

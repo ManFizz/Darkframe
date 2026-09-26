@@ -27,6 +27,8 @@ const META = {
         RealBooruId: { label: 'RealBooru ID',     desc: 'Идентификатор пользователя RealBooru' },
         R34ApiKey:   { label: 'Rule34 API Key',   desc: 'Ключ API для rule34.xxx' },
         R34UserId:   { label: 'Rule34 User ID',   desc: 'Идентификатор пользователя rule34.xxx' },
+        GelbooruApiKey: { label: 'Gelbooru API Key', desc: 'Ключ API для gelbooru.com (Настройки аккаунта → API Access)' },
+        GelbooruUserId: { label: 'Gelbooru User ID', desc: 'Идентификатор пользователя gelbooru.com' },
         HttpProxy:   {
             label: 'HTTP-прокси', desc: 'Параметры прокси-сервера',
             children: {
@@ -150,7 +152,11 @@ const SettingsPanel = ({ onClose }) => {
 
     useEffect(() => {
         configApi.get()
-            .then(({ settings, private: p }) => { setSettings(settings); setPriv(p); })
+            .then(({ settings, private: p }) => {
+                setSettings(settings);
+                // Keys added after a user's data/private.js was created still get a field.
+                setPriv({ GelbooruApiKey: '', GelbooruUserId: '', ...p });
+            })
             .catch(e => setError(e.message));
     }, []);
 
@@ -171,9 +177,11 @@ const SettingsPanel = ({ onClose }) => {
     // Hide a section's credentials while that section is disabled. rule34's key/id
     // back both the R34 and R34 Favs sections, so either one keeps them visible.
     const r34On = !!(settings?.EnableR34 || settings?.EnableR34Favs);
+    const gelOn = !!settings?.EnableGelbooru;
     const privateKeys = priv
         ? Object.keys(priv).filter(k =>
-            !((k === 'R34ApiKey' || k === 'R34UserId') && !r34On))
+            !((k === 'R34ApiKey' || k === 'R34UserId') && !r34On) &&
+            !((k === 'GelbooruApiKey' || k === 'GelbooruUserId') && !gelOn))
         : [];
 
     // Rendered as a tab inside the Control Panel: no overlay/header of its own,

@@ -28,7 +28,7 @@ const PregeneratedImage = ({ thumbUrl }) => {
 
     return (
         <img
-            src={normalizeUrl(thumbUrl)}
+            src={cachedMediaUrl(normalizeUrl(thumbUrl))}
             alt="preview"
             loading="lazy"
             onLoad={() => setIsLoaded(true)}

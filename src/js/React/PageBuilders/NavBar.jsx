@@ -1,19 +1,22 @@
 import React, {useContext, useState} from 'react';
 import {createPortal} from 'react-dom';
-import {BsCaretDownFill, BsFillGrid1X2Fill, BsShieldShaded, BsSliders} from "react-icons/bs";
+import {BsSliders} from "react-icons/bs";
 import ModuleRegistry from '@/ModuleRegistry';
 
 import {GalleryContext} from '@/AppInitializer';
-import {SORT_TYPE, SOURCE_TYPES} from "@/Constants";
-import {SORT_ORDER} from '@hooks/library/useLibraryFilter';
+import {SOURCE_TYPES} from "@/Constants";
 import {useLibraryContext} from '@/LibraryContext';
 import {LibraryNavControls, LibraryNavSort} from '../Library/LibraryNavControls';
 import TagManager from '../Settings/TagManager';
 import ControlPanel from '../ControlPanel/ControlPanel';
 import {openHotkeysHelp} from '../Helpers/HotkeysHelp';
+import BooruSearchBar from '@modules/r34/BooruSearchBar';
+
+const VIEW_ICONS = { 1: 'bi-grid-3x3-gap-fill', 2: 'bi-grid-1x2', 3: 'bi-columns-gap' };
+const VIEW_NAMES = { 1: 'квадраты', 2: 'плитка', 3: 'колонки' };
 
 const NavBar = () => {
-    const { state, setCurrentSource, setSortInfo, setTypeView, setSafeMode } = useContext(GalleryContext);
+    const { state, setCurrentSource, setTypeView, setSafeMode } = useContext(GalleryContext);
     const libraryCtx = useLibraryContext();
 
     const isLibrary = state.currentSource === SOURCE_TYPES.LIBRARY;
@@ -65,8 +68,10 @@ const NavBar = () => {
 
                 {isLibrary && libraryCtx ? (
                     <LibraryNavControls ctx={libraryCtx} />
-                ) : (
+                ) : isFolder ? (
                     <div className="navbar-spacer" />
+                ) : (
+                    <BooruSearchBar sourceType={state.currentSource} />
                 )}
 
                 {/* Right-side actions collapse into one glass "island" */}
@@ -74,34 +79,22 @@ const NavBar = () => {
                     {isLibrary && libraryCtx ? (
                         <LibraryNavSort ctx={libraryCtx} />
                     ) : isFolder ? null : (
-                        <div className="d-flex btn-group">
-                            <div className="btn-group dropdown">
-                                <button className="btn btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">
-                                    Sort by {state.sortInfo.type === SORT_TYPE.NAME ? 'name' :
-                                    state.sortInfo.type === SORT_TYPE.ID ? 'id' :
-                                        state.sortInfo.type === SORT_TYPE.TIME ? 'time' : "priority"
-                                }
-                                </button>
-                                <ul className="dropdown-menu dropdown-menu-end">
-                                    <li><button className="dropdown-item" onClick={() => setSortInfo({ type: SORT_TYPE.ID })}>Id</button></li>
-                                    <li><button className="dropdown-item" onClick={() => setSortInfo({ type: SORT_TYPE.NAME })}>Name</button></li>
-                                    <li><button className="dropdown-item" onClick={() => setSortInfo({ type: SORT_TYPE.TIME })}>Time</button></li>
-                                    <li><button className="dropdown-item" onClick={() => setSortInfo({ type: SORT_TYPE.PRIORITY })}>Priority</button></li>
-                                </ul>
-                            </div>
-                            <button className="btn btn-outline-secondary" onClick={() => setSortInfo({ order: state.sortInfo.order * -1 })}>
-                                Order <BsCaretDownFill className={state.sortInfo.order === SORT_ORDER.ASC ? 'flip' : ''} />
-                            </button>
-                            <button className="btn btn-outline-secondary" onClick={() => setTypeView(null)}>
-                                <BsFillGrid1X2Fill />
+                        <>
+                            <button
+                                className="btn navbar-settings-btn"
+                                onClick={() => setTypeView(null)}
+                                title={`Вид сетки: ${VIEW_NAMES[state.typeView] || state.typeView}`}
+                            >
+                                <i className={`bi ${VIEW_ICONS[state.typeView] || 'bi-grid'}`} />
                             </button>
                             <button
-                                className={`btn ${state.safeMode ? 'btn-success' : 'btn-outline-secondary'}`}
+                                className={`btn navbar-settings-btn ${state.safeMode ? 'on' : ''}`}
                                 onClick={() => setSafeMode(!state.safeMode)}
+                                title={state.safeMode ? 'Безопасный режим включён (размытие)' : 'Безопасный режим'}
                             >
-                                <BsShieldShaded />
+                                <i className={`bi ${state.safeMode ? 'bi-eye-slash-fill' : 'bi-eye'}`} />
                             </button>
-                        </div>
+                        </>
                     )}
 
                     {isLibrary && (

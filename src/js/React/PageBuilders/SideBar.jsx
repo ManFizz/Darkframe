@@ -1,7 +1,7 @@
 import React, {useEffect, useState} from 'react';
-import {BsList} from "react-icons/bs";
 import ModuleRegistry from '@/ModuleRegistry';
 
+// Docked, collapsible sidebar of the booru sources (search modifiers, saved tags…).
 const SideBar = ({ currentSource }) => {
     const SideSection = ModuleRegistry.getSidebarSection(currentSource);
     const [sidebarOpen, setSidebarOpen] = useState(!!SideSection);
@@ -11,15 +11,19 @@ const SideBar = ({ currentSource }) => {
     }, [currentSource, SideSection]);
 
     return (
-        <nav className={`sidebar bg-dark text-white ${sidebarOpen ? 'open' : ''}`}>
+        <nav className={`sidebar ${sidebarOpen ? 'open' : ''}`}>
             <div className="custom-menu">
-                <button className="btn btn-primary" onClick={() => setSidebarOpen(!sidebarOpen)}>
-                    <BsList />
+                <button
+                    className="btn"
+                    onClick={() => setSidebarOpen(!sidebarOpen)}
+                    title={sidebarOpen ? 'Скрыть панель' : 'Показать панель'}
+                >
+                    <i className={`bi ${sidebarOpen ? 'bi-chevron-left' : 'bi-chevron-right'}`} />
                 </button>
             </div>
             {SideSection && <SideSection currentSource={currentSource} />}
         </nav>
     );
-}
+};
 
 export default SideBar;
