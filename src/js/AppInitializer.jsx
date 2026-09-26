@@ -25,6 +25,7 @@ import {initTheme} from '@services/theme';
 import LibraryService from '@services/LibraryService';
 import ImportActivity from './React/Library/Import/ImportActivity';
 import BootOverlay from './React/Helpers/BootOverlay';
+import FolderView from './modules/folder/FolderView';
 
 // Colour mode + accent before the first paint.
 initTheme();
@@ -120,6 +121,10 @@ const Main = () => {
     }, []);
 
     const isLibrary = state.currentSource === SOURCE_TYPES.LIBRARY;
+    const isFolder  = state.currentSource === SOURCE_TYPES.FOLDER;
+    // Library and Folders are self-contained views (own sidebar, grid and viewer);
+    // the booru sources share the generic gallery + pagination below.
+    const isGeneric = !isLibrary && !isFolder;
 
     return (
         <GalleryContext.Provider value={contextValue}>
@@ -137,7 +142,7 @@ const Main = () => {
                 <BootOverlay />
                 <NavBar setLibraryItems={setLibraryItems} />
 
-                {!isLibrary && (
+                {isGeneric && (
                     <Modal
                         fileId={state.modalFileId}
                         modalUpdater={contextValue.setModalFile}
@@ -147,11 +152,13 @@ const Main = () => {
                 )}
 
                 <div className="wrapper d-flex align-items-stretch main-split overflow-auto">
-                    {!isLibrary && <SideBar currentSource={state.currentSource} />}
+                    {isGeneric && <SideBar currentSource={state.currentSource} />}
 
                     <div className="container-fluid p-0">
                         {isLibrary ? (
                             <LibraryView />
+                        ) : isFolder ? (
+                            <FolderView />
                         ) : (
                             <Gallery
                                 modalFileId={state.modalFileId}
@@ -163,7 +170,7 @@ const Main = () => {
                         )}
                     </div>
 
-                    {!isLibrary && (
+                    {isGeneric && (
                         <CustomPagination
                             anchorPage={currentPage}
                             lastLoadedPage={maxPage}

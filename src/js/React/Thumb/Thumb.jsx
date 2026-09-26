@@ -1,8 +1,6 @@
 import React, {useCallback} from "react";
 import Image from "./Image";
 import Video from "./Video";
-import Folder from "./Folder";
-import Return from "./Return";
 import {getCurrentSource} from "@controllers/AppInitializerController";
 import {FILE_TYPES, SOURCE_TYPES} from "@/Constants";
 import {useFavorites} from "@hooks/useFavorites";
@@ -45,8 +43,6 @@ const Thumb = (({ file, isModal, modalUpdater, isSelected, onOpen, onToggleSelec
         switch (file.type) {
             case FILE_TYPES.IMAGE: return <Image file={file} />;
             case FILE_TYPES.VIDEO: return <Video file={file} />;
-            case FILE_TYPES.FOLDER: return <Folder file={file} />;
-            case FILE_TYPES.RETURN: return <Return file={file} />;
             case FILE_TYPES.LIBRARY: return <Collection file={file} />;
             default: return null;
         }

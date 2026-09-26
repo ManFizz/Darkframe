@@ -1,8 +1,7 @@
 import React, {useContext, useState} from 'react';
 import {createPortal} from 'react-dom';
-import {BsCaretDownFill, BsFillGrid1X2Fill, BsSearch, BsShieldShaded, BsSliders} from "react-icons/bs";
+import {BsCaretDownFill, BsFillGrid1X2Fill, BsShieldShaded, BsSliders} from "react-icons/bs";
 import ModuleRegistry from '@/ModuleRegistry';
-import {displayImagesByPath} from '@modules/folder/FolderController';
 
 import {GalleryContext} from '@/AppInitializer';
 import {SORT_TYPE, SOURCE_TYPES} from "@/Constants";
@@ -18,8 +17,7 @@ const NavBar = () => {
     const libraryCtx = useLibraryContext();
 
     const isLibrary = state.currentSource === SOURCE_TYPES.LIBRARY;
-
-    const [searchValue, setSearchValue] = useState('');
+    const isFolder  = state.currentSource === SOURCE_TYPES.FOLDER;
     const [showPanel, setShowPanel] = useState(false);
     const [panelTab, setPanelTab] = useState('manage');
     const [showTags, setShowTags] = useState(false);
@@ -29,12 +27,6 @@ const NavBar = () => {
     const handleNavigation = (sourceType, action = null) => {
         setCurrentSource(sourceType);
         if (action) action();
-    };
-
-    const handleSearch = () => {
-        if (state.currentSource === SOURCE_TYPES.FOLDER) {
-            displayImagesByPath(searchValue);
-        }
     };
 
     // Favourites now live in the library sidebar (next to "Все файлы"), so the
@@ -74,24 +66,14 @@ const NavBar = () => {
                 {isLibrary && libraryCtx ? (
                     <LibraryNavControls ctx={libraryCtx} />
                 ) : (
-                    <form className="d-flex col-5">
-                        <input
-                            className="form-control me-2"
-                            type="search"
-                            placeholder="Search"
-                            onChange={e => setSearchValue(e.target.value)}
-                        />
-                        <button className="btn btn-outline-success" type="button" onClick={handleSearch}>
-                            <BsSearch />
-                        </button>
-                    </form>
+                    <div className="navbar-spacer" />
                 )}
 
                 {/* Right-side actions collapse into one glass "island" */}
                 <div className="navbar-actions">
                     {isLibrary && libraryCtx ? (
                         <LibraryNavSort ctx={libraryCtx} />
-                    ) : (
+                    ) : isFolder ? null : (
                         <div className="d-flex btn-group">
                             <div className="btn-group dropdown">
                                 <button className="btn btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">

@@ -39,6 +39,9 @@ export class ThumbFile {
         this.thumbAt = data.thumbAt ?? null;
         this.mimeType = data.mimeType || null;
         this.notes = data.notes || null;
+        this.filePath = data.filePath || null;     // Folders browser: absolute path on disk
+        this.score = data.score ?? null;           // booru posts
+        this.remoteRating = data.remoteRating || null;
 
         this.type = data.type || this._detectType(this.thumbUrl);
         this._meta = data._meta || null;

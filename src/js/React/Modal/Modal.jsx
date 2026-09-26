@@ -4,6 +4,7 @@ import Tags from "./Tags";
 import Video from "./Video";
 import MetadataPanel from "../Library/Metadata/MetadataPanel";
 import RemotePanel from "./RemotePanel";
+import FolderPanel from "./FolderPanel";
 import ImageEditor from "./ImageEditor";
 import Settings from "../../../../data/settings";
 import {FILE_TYPES, SOURCE_TYPES} from "@/Constants";
@@ -45,9 +46,11 @@ const Modal = ({ fileId, mainArray, modalUpdater, displayFiles, onUpdated }) => 
 
     const isLibrary   = file?.remoteType === SOURCE_TYPES.LIBRARY;
     const hasMetaPanel = isLibrary && !!onUpdated;               // editable library metadata
-    const hasRemotePanel = !isLibrary && !!file?.tags?.length;   // read-only booru tag panel
+    const hasFolderPanel = file?.remoteType === SOURCE_TYPES.FOLDER && !!file?.filePath;   // file on disk
+    const hasRemotePanel = !isLibrary && !hasFolderPanel && !!file?.tags?.length;   // read-only booru tag panel
+    const hasSidePanel = hasMetaPanel || hasRemotePanel || hasFolderPanel;
     // The side panel steps aside for the whole slideshow (no layout jumps on pause).
-    const showPanel   = panelOpen && (hasMetaPanel || hasRemotePanel) && !ss.active;
+    const showPanel   = panelOpen && hasSidePanel && !ss.active;
 
     // S starts the slideshow / toggles pause. While it runs, any other key, a click
     // on the media or the wheel pauses it (arrows still navigate).
@@ -187,6 +190,7 @@ const Modal = ({ fileId, mainArray, modalUpdater, displayFiles, onUpdated }) => 
                     sourceUrl: file.sourceUrl, tags: file.tags, type: file.type,
                     remoteType: file.remoteType, localUrl: file.localUrl, mimeType: file.mimeType,
                     rating: file.rating, time: file.time, size: file.size,
+                    filePath: file.filePath, score: file.score,
                 },
             }).catch(() => {});
         }, 900);
@@ -358,8 +362,8 @@ const Modal = ({ fileId, mainArray, modalUpdater, displayFiles, onUpdated }) => 
                         setDegree={setDegree}
                         displayFiles={displayFiles}
                         panelOpen={panelOpen}
-                        showFav={!isLibrary}
-                        onPanelToggle={(hasMetaPanel || hasRemotePanel) ? () => setPanelOpen(v => !v) : null}
+                        showFav={!isLibrary && !hasFolderPanel}
+                        onPanelToggle={hasSidePanel ? () => setPanelOpen(v => !v) : null}
                         onEdit={isLibrary && onUpdated && file.type === FILE_TYPES.IMAGE && file.mimeType !== 'image/gif' ? () => setEditing(true) : null}
                         onApplyLast={isLibrary && onUpdated && file.type === FILE_TYPES.IMAGE && file.mimeType !== 'image/gif' && loadEditPreset() ? handleApplyLast : null}
                         onDuplicate={isLibrary && onUpdated ? handleDuplicate : null}
@@ -382,7 +386,9 @@ const Modal = ({ fileId, mainArray, modalUpdater, displayFiles, onUpdated }) => 
                     <div className="modal-panel-wrapper">
                         {hasMetaPanel
                             ? <MetadataPanel file={file} onUpdated={handlePanelUpdated} />
-                            : <RemotePanel file={file} />}
+                            : hasFolderPanel
+                                ? <FolderPanel file={file} />
+                                : <RemotePanel file={file} />}
                     </div>
                 )}
                 {/* Library keeps its old bottom-tags look when its panel is hidden. */}

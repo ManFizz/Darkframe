@@ -24,9 +24,18 @@ export const tagsApi = {
     saveTags:   (tags)  => invoke("saveTags", tags),
 };
 
-export const filesApi = {
-    getFilesByPath: (path) => invoke("getDirFiles", path),
+// Folders browser (see server/controllers/fsController).
+export const fsApi = {
+    list:   (dir)  => invoke('fs:list', { dir }),
+    drives: ()     => invoke('fs:drives'),
+    info:   (file) => invoke('fs:info', { file }),
+    reveal: (file) => invoke('fs:reveal', { file }),
+    open:   (file) => invoke('fs:open', { file }),
 };
+
+// fsthumb:// URL of a cached thumbnail for a file on disk.
+export const fsThumbUrl = (file, width = 360) =>
+    `fsthumb://t/?p=${encodeURIComponent(file)}&w=${width}`;
 
 export const libraryApi = {
     importDialog:      (data) => invoke('library:importDialog', data),
