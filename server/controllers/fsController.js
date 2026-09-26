@@ -40,6 +40,12 @@ function register() {
         catch (e) { return { ok: false, error: e.message }; }
     });
     ipcMain.handle('fs:reveal', (_, { file }) => { shell.showItemInFolder(file); return { ok: true }; });
+    // External links (post pages etc.) open in the system browser — http(s) only.
+    ipcMain.handle('shell:openUrl', async (_, { url }) => {
+        if (!/^https?:\/\//i.test(String(url || ''))) return { ok: false, error: 'bad url' };
+        await shell.openExternal(url);
+        return { ok: true };
+    });
     ipcMain.handle('fs:open', async (_, { file }) => {
         const err = await shell.openPath(file);
         return err ? { ok: false, error: err } : { ok: true };

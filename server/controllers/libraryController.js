@@ -621,11 +621,14 @@ function register() {
         return importFromEagleCsv({ csvPath, collectionId });
     });
 
-    ipcMain.handle('library:importUrl', async (event, { url, collectionId }) => {
+    ipcMain.handle('library:importUrl', async (event, { url, collectionId, tags, sourceUrl, title }) => {
         return importFromUrl({
             url,
             collectionId,
-            onProgress: (p) => event.sender.send('library:urlImportProgress', p),
+            tags: Array.isArray(tags) ? tags : [],
+            sourceUrl,
+            title,
+            onProgress: (p) => { if (!event.sender.isDestroyed()) event.sender.send('library:urlImportProgress', p); },
         });
     });
 

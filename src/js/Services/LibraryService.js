@@ -118,8 +118,8 @@ export const LibraryService = {
         return libraryApi.importDirectory({ dirPath, collectionId });
     },
 
-    async importUrl({ url, collectionId }) {
-        return libraryApi.importUrl({ url, collectionId });
+    async importUrl({ url, collectionId, tags, sourceUrl, title }) {
+        return libraryApi.importUrl({ url, collectionId, tags, sourceUrl, title });
     },
 
     async updateItem(id, data) {
