@@ -170,7 +170,8 @@ async function fetchTagInfo({ name, sourceType }) {
 			return null;
 		}
 
-		setTagToCache(tag);
+		// Not cached here: updateTags() caches it and marks it dirty so it gets saved
+		// to the DB. Caching first made updateTags see it as already known → never saved.
 		return tag;
 
 	} catch (e) {

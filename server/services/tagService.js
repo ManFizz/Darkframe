@@ -1,5 +1,5 @@
 const { Op } = require("sequelize");
-const Tag = require('../models/tag');
+const Tag = require('../models/Tag');
 
 async function getTags() {
 	try {
