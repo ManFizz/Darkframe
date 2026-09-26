@@ -6,6 +6,7 @@ const KEY = 'jsg_view_prefs';
 
 const DEFAULTS = {
     ratingDividers: true,   // group the gallery under "★ N" headers when sorted by rating
+    collapsedRatings: [],   // rating groups folded by clicking their header
 };
 
 let current = load();

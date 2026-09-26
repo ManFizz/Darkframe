@@ -42,9 +42,32 @@
   align-items: center;
   gap: 12px;
   padding: 18px 14px 8px;
+  cursor: pointer;
+  user-select: none;
+  outline: none;
 
   &:first-child { padding-top: 8px; }
+
+  &:hover .gallery-divider-label,
+  &:focus-visible .gallery-divider-label { box-shadow: 0 0 0 3px var(--df-accent-soft); }
+  &:hover .gallery-divider-caret { color: var(--bs-body-color); }
+
+  // Folded: dimmed header, caret points right.
+  &.collapsed {
+    .gallery-divider-label, .gallery-divider-line { opacity: 0.55; }
+    .gallery-divider-caret { transform: rotate(-90deg); }
+  }
 }
+
+.gallery-divider-caret {
+  flex-shrink: 0;
+  margin-right: -4px;
+  font-size: 12px;
+  color: var(--bs-secondary);
+  transition: transform 0.18s, color 0.15s;
+}
+
+.gallery-divider-hidden { font-style: italic; }
 
 .gallery-divider-label {
   display: inline-flex;

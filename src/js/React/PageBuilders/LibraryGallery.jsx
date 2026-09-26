@@ -2,6 +2,7 @@ import React, {useEffect, useMemo, useRef, useState} from 'react';
 import Thumb from '../Thumb/Thumb';
 import {useItemReorder} from '@hooks/library/useItemReorder';
 import {FILE_TYPES} from '@/Constants';
+import {useViewPref} from '@services/viewPrefs';
 
 const isCollection = (f) => f.type === FILE_TYPES.COLLECTION;
 
@@ -13,15 +14,30 @@ const plural = (n) => {
 };
 
 // Full-row header between rating groups: label, rule and count on one line.
-const RatingDivider = ({ rating, count }) => (
-    <div className={`gallery-divider ${rating ? '' : 'unrated'}`} role="separator">
+// Clicking it folds / unfolds the group.
+const RatingDivider = ({ rating, count, collapsed, onToggle }) => (
+    <div
+        className={`gallery-divider ${rating ? '' : 'unrated'} ${collapsed ? 'collapsed' : ''}`}
+        role="button"
+        tabIndex={0}
+        aria-expanded={!collapsed}
+        title={collapsed ? 'Показать группу' : 'Скрыть группу'}
+        onClick={onToggle}
+        onKeyDown={e => {
+            if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); onToggle(); }
+        }}
+    >
+        <i className="bi bi-chevron-down gallery-divider-caret" />
         <span className="gallery-divider-label">
             {rating
                 ? <><i className="bi bi-star-fill" />{rating}<small>/ 10</small></>
                 : <><i className="bi bi-star" />Без оценки</>}
         </span>
         <span className="gallery-divider-line" />
-        <span className="gallery-divider-count">{count} {plural(count)}</span>
+        <span className="gallery-divider-count">
+            {collapsed && <span className="gallery-divider-hidden">скрыто · </span>}
+            {count} {plural(count)}
+        </span>
     </div>
 );
 
@@ -51,6 +67,34 @@ const LibraryGallery = ({ items, onReordered, isSelected, selectedIds, selection
     }, [items, groupByRating]);
     const sentinelRef = useRef(null);
 
+    // Folded rating groups, remembered across collections and restarts.
+    const [collapsedList, setCollapsedList] = useViewPref('collapsedRatings');
+    const collapsed = useMemo(() => new Set(collapsedList || []), [collapsedList]);
+    const toggleGroup = (r) => setCollapsedList(
+        collapsed.has(r) ? [...collapsed].filter(x => x !== r) : [...collapsed, r]
+    );
+
+    // What actually renders: dividers interleaved with items, folded groups keeping
+    // only their header. Sub-collections aren't rated — they neither get nor break a group.
+    const entries = useMemo(() => {
+        if (!ratingCounts) return items.map(file => ({ file }));
+        const out = [];
+        const runs = new Map();   // keys stay unique even if a rating repeats (one render
+        let prev = null;          // can still show the previous, unsorted order)
+        for (const file of items) {
+            if (isCollection(file)) { out.push({ file }); continue; }
+            const r = file.rating || 0;
+            if (r !== prev) {
+                const n = runs.get(r) || 0;
+                runs.set(r, n + 1);
+                out.push({ divider: r, key: n ? `rating-${r}-${n}` : `rating-${r}` });
+                prev = r;
+            }
+            if (!collapsed.has(r)) out.push({ file });
+        }
+        return out;
+    }, [items, ratingCounts, collapsed]);
+
     // Start over only when the dataset genuinely changes (collection / filter switch),
     // not on in-place reorders or patches that merely replace the array identity.
     useEffect(() => { setVisibleCount(INITIAL); }, [resetKey]);
@@ -58,36 +102,35 @@ const LibraryGallery = ({ items, onReordered, isSelected, selectedIds, selection
     // Grow the window when the sentinel nears the bottom of the scroll container.
     useEffect(() => {
         const el = sentinelRef.current;
-        if (!el || visibleCount >= items.length) return;
+        if (!el || visibleCount >= entries.length) return;
 
         const observer = new IntersectionObserver(
             entries => {
                 if (entries[0].isIntersecting) {
-                    setVisibleCount(c => Math.min(c + CHUNK, items.length));
+                    setVisibleCount(c => Math.min(c + CHUNK, entries.length));
                 }
             },
             { root: scrollRef?.current || null, rootMargin: '600px' }
         );
         observer.observe(el);
         return () => observer.disconnect();
-    }, [visibleCount, items.length, scrollRef]);
+    }, [visibleCount, entries.length, scrollRef]);
 
     return (
         <div className={`gallery-view-${typeView}`}>
-            {items.slice(0, visibleCount).map((file, i, shown) => {
-                // Sub-collections aren't rated: they neither get nor break a group.
-                let divider = null;
-                if (ratingCounts && !isCollection(file)) {
-                    const r = file.rating || 0;
-                    let prev = null;
-                    for (let j = i - 1; j >= 0; j--) {
-                        if (!isCollection(shown[j])) { prev = shown[j].rating || 0; break; }
-                    }
-                    if (prev !== r) divider = <RatingDivider key={`rating-${r}`} rating={r} count={ratingCounts.get(r) || 0} />;
-                }
-                return <React.Fragment key={file.uniqueId}>
-                {divider}
+            {entries.slice(0, visibleCount).map(({ file, divider, key }) => {
+                if (file === undefined) return (
+                    <RatingDivider
+                        key={key}
+                        rating={divider}
+                        count={ratingCounts.get(divider) || 0}
+                        collapsed={collapsed.has(divider)}
+                        onToggle={() => toggleGroup(divider)}
+                    />
+                );
+                return (
                 <div
+                    key={file.uniqueId}
                     className={`
                         thumb-drag-wrapper
                         ${isDragging(file.uniqueId) ? 'dragging' : ''}
@@ -120,7 +163,7 @@ const LibraryGallery = ({ items, onReordered, isSelected, selectedIds, selection
                         onOpen={onFileOpen}
                     />
                 </div>
-                </React.Fragment>;
+                );
             })}
             {/* Full-row sentinel: when it scrolls into view, render the next chunk. */}
             <div ref={sentinelRef} style={{ flexBasis: '100%', width: '100%', height: 1 }} aria-hidden="true" />
