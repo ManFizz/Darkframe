@@ -13,6 +13,7 @@ const { SOURCE_TYPES } = require('../../src/js/constants');
 const { getActive } = require('../libraryRegistry');
 const { generateImageThumb, generateVideoThumb, getVideoDuration } = require('./thumbService');
 const { resolveAlias } = require('./tagAdmin');
+const { beginImport } = require('./libraryEvents');
 
 const LIBRARY_REMOTE_TYPE = SOURCE_TYPES.LIBRARY;
 
@@ -74,7 +75,25 @@ function isVideo(mimeType) {
     return mimeType.startsWith('video/');
 }
 
-async function importFile({ filePath, collectionId = null, tags = [], sourceUrl = '', overrides = {}, allowDuplicate = false }) {
+// `job` — the batch this file belongs to (importFiles). Without one, a lone import
+// (API / extension, link, favourite) reports itself as a one-file job, unless `quiet`
+// (sources with their own progress UI, e.g. the Eagle / JSON importers).
+async function importFile({ job = null, quiet = false, ...args }) {
+    const own = !job && !quiet ? beginImport(1) : null;
+    const tracker = job || own;
+    tracker?.step(path.basename(args.filePath || ''));
+    let ok = false;
+    try {
+        const res = await importFileImpl(args);
+        ok = true;
+        return res;
+    } finally {
+        tracker?.fileDone(ok);
+        own?.end();
+    }
+}
+
+async function importFileImpl({ filePath, collectionId = null, tags = [], sourceUrl = '', overrides = {}, allowDuplicate = false }) {
     const safeCollectionId =
         collectionId === 'ALL' || collectionId === 'UNCATEGORIZED' ? null : collectionId || null;
 
@@ -191,21 +210,26 @@ async function importFiles({ filePaths, collectionId, tags, sourceUrl, allowDupl
 
     const base  = Math.floor(Date.now() / 1000);
     const count = ordered.length;
+    const job   = beginImport(count);
 
-    for (let i = 0; i < count; i++) {
-        const filePath   = ordered[i].fp;
-        const importedAt = base - (count - 1 - i);   // oldest gets the earliest stamp
-        try {
-            const result = await importFile({
-                filePath, collectionId, tags, sourceUrl, allowDuplicate,
-                overrides: { importedAt },
-            });
-            if (result.skipped) skipped.push(result);
-            else                results.push(result.item);
-        } catch (e) {
-            console.error(`Failed to import ${filePath}:`, e);
-            errors.push({ filePath, error: e.message });
+    try {
+        for (let i = 0; i < count; i++) {
+            const filePath   = ordered[i].fp;
+            const importedAt = base - (count - 1 - i);   // oldest gets the earliest stamp
+            try {
+                const result = await importFile({
+                    job, filePath, collectionId, tags, sourceUrl, allowDuplicate,
+                    overrides: { importedAt },
+                });
+                if (result.skipped) skipped.push(result);
+                else                results.push(result.item);
+            } catch (e) {
+                console.error(`Failed to import ${filePath}:`, e);
+                errors.push({ filePath, error: e.message });
+            }
         }
+    } finally {
+        job.end();
     }
 
     return { results, skipped, errors };

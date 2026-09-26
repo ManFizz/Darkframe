@@ -3,6 +3,18 @@ import {libraryApi} from '@/Infrastructure/Ipc';
 let collections = [];
 let listeners = new Set();
 
+// Main process push: items were added / moved / trashed somewhere (maybe not by us —
+// an API import, another view). Counts on the collection tree follow automatically;
+// views subscribe via onLibraryChanged to decide whether they need a reload.
+const changeListeners = new Set();
+{
+    const { ipcRenderer } = window.require('electron');
+    ipcRenderer.on('library:changed', (_, change) => {
+        LibraryService.loadCollections().catch(() => {});
+        changeListeners.forEach(fn => fn(change));
+    });
+}
+
 export const LibraryService = {
 
     async loadCollections() {
@@ -13,6 +25,11 @@ export const LibraryService = {
     },
 
     getCollections() { return collections; },
+
+    onLibraryChanged(fn) {
+        changeListeners.add(fn);
+        return () => changeListeners.delete(fn);
+    },
 
     getTree() {
         const map = {};

@@ -66,6 +66,30 @@ const LibraryView = () => {
 
     useEffect(() => { setLibraryItems(items); }, [items]);
 
+    // Items imported from elsewhere (API / browser extension, a batch still running)
+    // show up in the open view without switching collections. Throttled: a big batch
+    // refreshes the gallery every couple of seconds, not on every file.
+    const reloadRef = useRef(reload);
+    useEffect(() => { reloadRef.current = reload; });
+    useEffect(() => {
+        let timer = null, last = 0;
+        const shows = (addedTo) => {
+            if (selectedCollection === SPECIAL.ALL || smartFilterJson) return true;
+            if (selectedCollection === SPECIAL.UNCATEGORIZED) return addedTo.includes(null);
+            return addedTo.includes(selectedCollection);
+        };
+        const off = LibraryService.onLibraryChanged(({ added, addedTo = [] }) => {
+            if (!added || isTrash || isHistory || selectedCollection === SPECIAL.NONE) return;
+            if (!shows(addedTo) || timer) return;
+            timer = setTimeout(() => {
+                timer = null;
+                last = Date.now();
+                reloadRef.current();
+            }, Math.max(0, 2000 - (Date.now() - last)));
+        });
+        return () => { off(); clearTimeout(timer); };
+    }, [selectedCollection, smartFilterJson, isTrash, isHistory]);
+
     // `orderedItems` is what the gallery actually renders (reorders, in-place patches),
     // so selection ranges are computed against it — not the raw `filtered` list.
     // In the history view it's driven by loadHistory() instead of the item DB.

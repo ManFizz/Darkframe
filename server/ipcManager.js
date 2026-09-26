@@ -7,6 +7,7 @@ const libraryRegistryController = require('./controllers/libraryRegistryControll
 const settingsController = require('./controllers/settingsController');
 const apiTokenController = require('./controllers/apiTokenController');
 require('./models/associations');
+const { installItemHooks } = require('./services/libraryEvents');
 
 function setupIpcHandlers() {
 	registerAll();
@@ -17,6 +18,8 @@ function setupIpcHandlers() {
 	libraryRegistryController.register();
 	settingsController.register();
 	apiTokenController.register();
+	// Push item changes (counts, API imports) to the renderer.
+	installItemHooks();
 }
 
 module.exports = { setupIpcHandlers };

@@ -168,6 +168,7 @@ async function importFromJson({ jsonPath, collectionId = null, webContents }) {
             const sourceUrl = it.source || it.sourceUrl || '';
 
             const result = await importFile({
+                quiet: true,   // has its own progress UI
                 filePath,
                 collectionId: targetCollectionId ?? null,
                 tags: normalizeTags(it.tags),

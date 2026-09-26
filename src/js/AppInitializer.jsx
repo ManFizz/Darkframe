@@ -22,6 +22,8 @@ import HotkeysHelp from "./React/Helpers/HotkeysHelp";
 import {LibraryContext} from './LibraryContext';
 import {useLibraryFilter} from '@hooks/library/useLibraryFilter';
 import {initTheme} from '@services/theme';
+import LibraryService from '@services/LibraryService';
+import ImportActivity from './React/Library/Import/ImportActivity';
 
 // Colour mode + accent before the first paint.
 initTheme();
@@ -36,6 +38,9 @@ const Main = () => {
 
     const [statsVersion, setStatsVersion] = useState(0);
     const refreshStats = () => setStatsVersion(v => v + 1);
+
+    // Sidebar counters (all / uncategorized / trash) follow changes made anywhere.
+    useEffect(() => LibraryService.onLibraryChanged(() => setStatsVersion(v => v + 1)), []);
 
     const contextValue = useMemo(() => ({
         state,
@@ -127,6 +132,7 @@ const Main = () => {
             <div className={`main-root ${state.safeMode ? "safe-view" : ""}`}>
                 <Notifications />
                 <HotkeysHelp />
+                <ImportActivity />
                 <NavBar setLibraryItems={setLibraryItems} />
 
                 {!isLibrary && (

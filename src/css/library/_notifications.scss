@@ -192,3 +192,105 @@ body:has(.modal-view) .notifications-container {
   to   { transform: translateX(0);    opacity: 1; }
 }
 
+
+// ─── Import activity pill (bottom-left, any section) ─────────────────────────
+.import-activity {
+  position: fixed;
+  left: 16px;
+  bottom: 16px;
+  z-index: 9998;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 300px;
+  max-width: calc(100vw - 32px);
+  padding: 10px 14px 10px 12px;
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--bs-body-bg) 94%, transparent);
+  border: 1px solid var(--bs-border-color);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(14px);
+  color: var(--bs-body-color);
+  animation: import-activity-in 0.2s ease-out;
+  transition: border-color 0.2s;
+
+  &.finished { border-color: color-mix(in srgb, var(--bs-success) 55%, transparent); }
+  &.finished.has-errors { border-color: color-mix(in srgb, var(--bs-warning) 55%, transparent); }
+}
+
+// Keep clear of the viewer's bottom control bar.
+body:has(.modal-view) .import-activity { bottom: 96px; }
+
+@keyframes import-activity-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: none; }
+}
+
+.import-activity-icon {
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--df-accent-soft);
+  color: var(--df-accent);
+  font-size: 15px;
+
+  .finished & {
+    background: color-mix(in srgb, var(--bs-success) 18%, transparent);
+    color: var(--bs-success);
+  }
+  .finished.has-errors & {
+    background: color-mix(in srgb, var(--bs-warning) 18%, transparent);
+    color: var(--bs-warning);
+  }
+}
+
+.import-activity-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.import-activity-title {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  font-size: 13px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  b { font-weight: 700; }
+}
+
+.import-activity-pct {
+  margin-left: auto;
+  font-size: 11.5px;
+  color: var(--bs-secondary);
+}
+
+.import-activity-file {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 11px;
+  color: var(--bs-secondary);
+}
+
+.import-activity-bar {
+  height: 4px;
+  border-radius: 999px;
+  background: var(--bs-secondary-bg);
+  overflow: hidden;
+
+  > div {
+    height: 100%;
+    border-radius: inherit;
+    background: var(--df-accent);
+    transition: width 0.25s ease-out;
+    .finished & { background: var(--bs-success); }
+    .finished.has-errors & { background: var(--bs-warning); }
+  }
+}

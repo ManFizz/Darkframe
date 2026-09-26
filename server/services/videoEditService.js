@@ -156,6 +156,7 @@ async function captureVideoFrame({ itemId, url, time, title, tags = [], sourceUr
     try {
         await ops.captureFrame(src, tmp, Number(time) || 0, { referer });
         const res = await importFile({
+            quiet: true,   // a saved frame is not an import worth a progress pill
             filePath: tmp,
             collectionId,
             tags: Array.isArray(tags) ? tags : [],

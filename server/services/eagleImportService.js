@@ -61,6 +61,7 @@ async function importFromEagleCsv({ csvPath, collectionId = null, webContents })
 
         try {
             const result = await importFile({
+                quiet: true,   // has its own progress UI
                 filePath: row.filePath,
                 collectionId,
                 tags: row.tags,
