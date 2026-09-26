@@ -25,6 +25,11 @@ const isTlsBypassHost = (host) =>
 
 let openDevTools = process.argv.includes('devtools');
 
+// DARKFRAME_SMOKE=1 — start, verify the UI rendered cleanly, exit (tools/smoke.js).
+// Skips the side effects that don't belong in a check run: the DB backup (it copies
+// the project's data/data.db) and the local API server (its port may be taken).
+const SMOKE = process.env.DARKFRAME_SMOKE === '1';
+
 let win;
 async function createWindow() {
     win = new BrowserWindow({
@@ -38,11 +43,14 @@ async function createWindow() {
             allowRunningInsecureContent: true,
             webSecurity: false,
             webviewTag: false,   // no <webview> — one less way to load foreign content
+            // The hidden self-check window must not be throttled like a background tab.
+            backgroundThrottling: !SMOKE,
         },
         autoHideMenuBar: true,
+        show: !SMOKE,   // the self-check runs without flashing a window
     });
 
-    win.maximize();
+    if (!SMOKE) win.maximize();
 
     // Never spawn extra windows for foreign URLs (e.g. a link in remote content).
     win.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
@@ -199,7 +207,7 @@ app.whenReady().then(async () => {
 
     await initDatabase();
 
-    backupDatabase();
+    if (!SMOKE) backupDatabase();
 
     setupContentSecurityPolicy();
     setupRequestHeaders();
@@ -226,7 +234,8 @@ app.whenReady().then(async () => {
         win.webContents.send('file-dropped', [filePath]);
     });
 
-    startApiServer();
+    if (SMOKE) require('./server/smoke').runSmokeCheck(win);
+    else startApiServer();
 });
 
 app.on('window-all-closed', () => {
