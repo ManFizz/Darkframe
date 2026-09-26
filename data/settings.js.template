@@ -4,7 +4,8 @@ const Settings = {
     Resize: true,
     LongView: true,
     HttpProxy: false,
-    LibraryPath: 'D:\\MyLibrary',
+    // Folder of the default (legacy) library. Empty = <userData>/library.
+    LibraryPath: '',
     EnableR34: false,
     EnableGelbooru: false,
     EnableR34Favs: false,

@@ -3,8 +3,14 @@
   "version": "0.2.0",
   "main": "main.js",
   "scripts": {
-    "build": "webpack --config webpack.config.js --mode production && electron .",
-    "view": "electron ."
+    "postinstall": "node tools/prepare.js",
+    "prepare:env": "node tools/prepare.js",
+    "bundle": "node tools/prepare.js && webpack --config webpack.config.js --mode production",
+    "build": "npm run bundle && electron .",
+    "view": "electron .",
+    "test": "node tools/run-tests.js",
+    "smoke": "node tools/smoke.js",
+    "check:fresh": "node tools/fresh-check.js"
   },
   "license": "MIT",
   "dependencies": {

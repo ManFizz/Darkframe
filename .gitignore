@@ -7,7 +7,6 @@ node_modules\*
 /data/*.js
 /data/*.override.json
 *.db
-package-lock.json
 data/backup
 /downloads/
 /cache/
