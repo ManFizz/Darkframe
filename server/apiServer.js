@@ -230,6 +230,91 @@ async function handleAddBase64(req, res) {
     respond(res, 200, { ok: true, id: result.item.id });
 }
 
+// Accepts the raw media bytes as the request body (no base64 bloat) and the
+// metadata as a URL-encoded JSON `meta` query param (unicode-safe, unlike HTTP
+// headers). Used when the *browser* already downloaded the file in an authorized
+// context — e.g. TikTok, whose signed CDN URLs expire and need site cookies/Referer
+// the server can't reproduce. We just stream the bytes to disk and hand off to
+// the normal import pipeline.
+async function handleAddStream(req, res) {
+    const params = new URL('http://localhost' + req.url).searchParams;
+    let meta = {};
+    try { meta = JSON.parse(params.get('meta') || '{}'); } catch { /* keep {} */ }
+
+    const {
+        title = '', tags = [], notes = '',
+        sourceUrl = '', collectionId = null, mimeType = '',
+    } = meta;
+
+    // Extension: explicit mime from the client, then the request Content-Type,
+    // then a video default (this path is video-oriented).
+    const ext =
+        extFromContentType(mimeType) ||
+        extFromContentType(req.headers['content-type']) ||
+        '.mp4';
+
+    const tmpPath = path.join(os.tmpdir(), `jsgallery_stream_${Date.now()}${ext}`);
+
+    // Stream the body to disk with backpressure and a hard size cap.
+    try {
+        await new Promise((resolve, reject) => {
+            const file = fs.createWriteStream(tmpPath);
+            let size = 0;
+            let aborted = false;
+
+            const abort = (err) => {
+                if (aborted) return;
+                aborted = true;
+                file.destroy();
+                fs.unlink(tmpPath, () => {});
+                try { req.destroy(); } catch {}
+                reject(err);
+            };
+
+            req.on('data', (chunk) => {
+                if (aborted) return;
+                size += chunk.length;
+                if (size > MAX_DOWNLOAD_BYTES) { abort(new Error('File too large')); return; }
+                if (!file.write(chunk)) req.pause();
+            });
+            file.on('drain', () => { if (!aborted) req.resume(); });
+            req.on('end',   () => { if (!aborted) file.end(resolve); });
+            req.on('error', (e) => abort(e));
+            file.on('error', (e) => abort(e));
+        });
+    } catch (e) {
+        respond(res, 400, { error: e.message });
+        return;
+    }
+
+    if (!fs.existsSync(tmpPath) || fs.statSync(tmpPath).size === 0) {
+        try { fs.unlinkSync(tmpPath); } catch {}
+        respond(res, 400, { error: 'empty body' });
+        return;
+    }
+
+    const result = await importFile({
+        filePath:     tmpPath,
+        collectionId,
+        tags:         Array.isArray(tags) ? tags : [],
+        sourceUrl:    sourceUrl || '',
+        overrides:    { title: title || 'media', notes: notes || '' },
+    });
+
+    try { fs.unlinkSync(tmpPath); } catch {}
+
+    if (result.skipped) {
+        respond(res, 409, {
+            ok: false, skipped: true, reason: result.reason,
+            existingTitle: result.existingTitle,
+            collectionName: result.collectionName,
+        });
+        return;
+    }
+
+    respond(res, 200, { ok: true, id: result.item.id });
+}
+
 async function handleRim(req, res) {
     const params = new URL('http://localhost' + req.url).searchParams;
     const docid  = params.get('docid');
@@ -286,12 +371,13 @@ async function handleRequest(req, res) {
         // Open handshake endpoint: no token needed, and it advertises whether auth is on
         // so a userscript can tell the user to configure a token.
         if (req.method === 'GET'  && req.url === '/api/ping') {
-            respond(res, 200, { ok: true, version: '1.1', requireAuth: apiTokens.getConfig().requireAuth });
+            respond(res, 200, { ok: true, version: '1.2', requireAuth: apiTokens.getConfig().requireAuth });
             return;
         }
 
-        if (req.method === 'POST' && req.url === '/api/add')          { if (authorize(req, res, 'import'))      await handleAdd(req, res);        return; }
-        if (req.method === 'POST' && req.url === '/api/addBase64')    { if (authorize(req, res, 'import'))      await handleAddBase64(req, res);  return; }
+        if (req.method === 'POST' && req.url === '/api/add')                 { if (authorize(req, res, 'import'))      await handleAdd(req, res);        return; }
+        if (req.method === 'POST' && req.url === '/api/addBase64')           { if (authorize(req, res, 'import'))      await handleAddBase64(req, res);  return; }
+        if (req.method === 'POST' && req.url.startsWith('/api/addStream'))   { if (authorize(req, res, 'import'))      await handleAddStream(req, res);  return; }
         if (req.method === 'GET'  && req.url.startsWith('/api/rim?')) { if (authorize(req, res, 'rim'))         await handleRim(req, res);        return; }
         if (req.method === 'GET'  && req.url === '/api/collections')  { if (authorize(req, res, 'read'))        await handleCollections(res);     return; }
         if (req.method === 'GET'  && req.url === '/api/stats')        { if (authorize(req, res, 'read'))        await handleGetStats(res);        return; }
