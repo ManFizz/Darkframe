@@ -178,9 +178,28 @@ async function importFiles({ filePaths, collectionId, tags, sourceUrl, allowDupl
     const skipped = [];
     const errors  = [];
 
-    for (const filePath of filePaths) {
+    // Import oldest file first so the newest ends up last. We order the batch by each
+    // file's mtime and stamp importedAt in that order — newest = now, older ones a few
+    // seconds earlier — so "sort by date" reflects the real file age within one import
+    // (all imports still cluster at ~now, i.e. newer than everything imported before).
+    const ordered = filePaths.map(fp => {
+        let mtime = 0;
+        try { mtime = fs.statSync(fp).mtimeMs; } catch { /* unreadable — treat as oldest */ }
+        return { fp, mtime };
+    });
+    ordered.sort((a, b) => a.mtime - b.mtime);
+
+    const base  = Math.floor(Date.now() / 1000);
+    const count = ordered.length;
+
+    for (let i = 0; i < count; i++) {
+        const filePath   = ordered[i].fp;
+        const importedAt = base - (count - 1 - i);   // oldest gets the earliest stamp
         try {
-            const result = await importFile({ filePath, collectionId, tags, sourceUrl, allowDuplicate });
+            const result = await importFile({
+                filePath, collectionId, tags, sourceUrl, allowDuplicate,
+                overrides: { importedAt },
+            });
             if (result.skipped) skipped.push(result);
             else                results.push(result.item);
         } catch (e) {
