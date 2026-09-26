@@ -24,6 +24,7 @@ import {useLibraryFilter} from '@hooks/library/useLibraryFilter';
 import {initTheme} from '@services/theme';
 import LibraryService from '@services/LibraryService';
 import ImportActivity from './React/Library/Import/ImportActivity';
+import BootOverlay from './React/Helpers/BootOverlay';
 
 // Colour mode + accent before the first paint.
 initTheme();
@@ -133,6 +134,7 @@ const Main = () => {
                 <Notifications />
                 <HotkeysHelp />
                 <ImportActivity />
+                <BootOverlay />
                 <NavBar setLibraryItems={setLibraryItems} />
 
                 {!isLibrary && (

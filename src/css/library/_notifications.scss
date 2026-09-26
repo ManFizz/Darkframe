@@ -294,3 +294,52 @@ body:has(.modal-view) .import-activity { bottom: 96px; }
     .finished.has-errors & { background: var(--bs-warning); }
   }
 }
+
+// ─── Startup overlay ─────────────────────────────────────────────────────────
+.boot-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10050;
+  display: grid;
+  place-items: center;
+  background: color-mix(in srgb, var(--bs-body-bg) 72%, transparent);
+  backdrop-filter: blur(6px);
+  animation: boot-in 0.2s ease-out;
+  transition: opacity 0.25s;
+
+  &.leaving { opacity: 0; pointer-events: none; }
+}
+
+@keyframes boot-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.boot-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  min-width: 300px;
+  padding: 28px 36px 24px;
+  border-radius: 18px;
+  background: var(--bs-body-bg);
+  border: 1px solid var(--bs-border-color);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45);
+  text-align: center;
+}
+
+.boot-spinner {
+  width: 40px;
+  height: 40px;
+  margin-bottom: 6px;
+  border-radius: 50%;
+  border: 3px solid var(--df-accent-soft);
+  border-top-color: var(--df-accent);
+  animation: boot-spin 0.8s linear infinite;
+}
+
+@keyframes boot-spin { to { transform: rotate(360deg); } }
+
+.boot-title { font-size: 15px; font-weight: 600; }
+.boot-sub   { font-size: 12px; color: var(--bs-secondary); max-width: 280px; }

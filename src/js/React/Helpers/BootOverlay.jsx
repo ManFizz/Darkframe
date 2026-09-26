@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import React, {useEffect, useRef, useState} from 'react';
 import LibraryService from '@services/LibraryService';
 import {libraryApi} from '@/Infrastructure/Ipc';
 
@@ -9,22 +9,26 @@ const SHOW_AFTER = 250;   // don't flash the overlay when startup is quick
 const BootOverlay = () => {
     const [phase, setPhase] = useState('pending');   // pending → shown → leaving → done
     const [slow, setSlow]   = useState(false);
+    const shown = useRef(false);
 
     useEffect(() => {
         let cancelled = false;
-        const showTimer = setTimeout(() => !cancelled && setPhase(p => p === 'pending' ? 'shown' : p), SHOW_AFTER);
-        const slowTimer = setTimeout(() => !cancelled && setSlow(true), 6000);
+        let leaveTimer = null;
+        const showTimer = setTimeout(() => { shown.current = true; setPhase('shown'); }, SHOW_AFTER);
+        const slowTimer = setTimeout(() => setSlow(true), 6000);
 
         Promise.allSettled([LibraryService.loadCollections(), libraryApi.getStats()]).then(() => {
             if (cancelled) return;
             clearTimeout(showTimer);
-            setPhase(p => {
-                if (p === 'pending') return 'done';
-                setTimeout(() => !cancelled && setPhase('done'), 260);
-                return 'leaving';
-            });
+            clearTimeout(slowTimer);
+            if (!shown.current) { setPhase('done'); return; }
+            setPhase('leaving');                                   // fade out, then unmount
+            leaveTimer = setTimeout(() => setPhase('done'), 260);
         });
-        return () => { cancelled = true; clearTimeout(showTimer); clearTimeout(slowTimer); };
+        return () => {
+            cancelled = true;
+            clearTimeout(showTimer); clearTimeout(slowTimer); clearTimeout(leaveTimer);
+        };
     }, []);
 
     if (phase === 'pending' || phase === 'done') return null;
