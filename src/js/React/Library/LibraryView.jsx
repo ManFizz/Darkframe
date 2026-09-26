@@ -379,7 +379,6 @@ const LibraryView = () => {
             {!isHistory && (
                 <BulkActionBar
                     selectedItems={selectedItems}
-                    collections={LibraryService.getCollections()}
                     permanent={isTrash}
                     totalCount={orderedItems.length}
                     onSelectAll={selectAll}

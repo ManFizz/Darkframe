@@ -50,47 +50,251 @@
     }
   }
 
-  &-label {
-    padding: 6px 12px 2px;
-    font-size: 10px;
-    font-weight: 700;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: var(--bs-secondary);
+  &-trigger.open {
+    border-color: var(--df-accent-dim);
+    box-shadow: 0 0 0 3px var(--df-accent-soft);
   }
 
-  &-sep {
-    height: 1px;
-    margin: 4px 8px;
-    background: var(--bs-border-color);
+  &-trigger > span {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.25;
+  }
+
+  &-path {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 10.5px;
+    color: var(--bs-secondary);
   }
 
   &-dropdown {
     position: absolute;
-    top: calc(100% + 4px);
+    top: calc(100% + 6px);
     left: 0;
     right: 0;
-    background: var(--bs-body-bg);
-    border: 1px solid var(--bs-border-color);
-    border-radius: 8px;
-    box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+    min-width: 260px;
     z-index: 300;
-    max-height: 200px;
-    overflow-y: auto;
-  }
-
-  &-item {
-    display: flex;
-    align-items: center;
-    padding: 7px 12px;
-    font-size: 13px;
-    cursor: pointer;
-
-    &:hover { background: var(--bs-tertiary-bg); }
-    &.active {
-      background: var(--bs-primary-bg-subtle);
-      color: var(--bs-primary);
-    }
   }
 }
 
+
+// ─── Collection tree select (picker dropdown / bulk move popover) ─────────────
+
+.cts {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: 12px;
+  // Nearly opaque: the popover sits over busy thumbnails.
+  background: color-mix(in srgb, var(--bs-body-bg) 94%, transparent);
+  border: 1px solid var(--bs-border-color);
+  backdrop-filter: blur(16px);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45);
+  animation: cts-in 0.12s ease-out;
+}
+
+@keyframes cts-in {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: none; }
+}
+
+.cts-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 8px;
+  padding: 0 4px 0 10px;
+  border: 1px solid var(--bs-border-color);
+  border-radius: 8px;
+  background: var(--bs-body-bg);
+  transition: border-color 0.15s, box-shadow 0.15s;
+
+  &:focus-within {
+    border-color: var(--df-accent-dim);
+    box-shadow: 0 0 0 3px var(--df-accent-soft);
+  }
+
+  > .bi-search { font-size: 12px; color: var(--bs-secondary); }
+
+  input {
+    flex: 1;
+    min-width: 0;
+    padding: 6px 0;
+    border: none;
+    outline: none;
+    background: transparent;
+    color: var(--bs-body-color);
+    font-size: 13px;
+    &::placeholder { color: var(--bs-secondary); }
+  }
+}
+
+.cts-icon-btn {
+  width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--bs-secondary);
+  font-size: 12px;
+  cursor: pointer;
+  &:hover { background: var(--bs-secondary-bg); color: var(--bs-body-color); }
+}
+
+.cts-list {
+  max-height: 320px;
+  overflow-y: auto;
+  padding: 0 6px 6px;
+}
+
+.cts-label {
+  padding: 8px 8px 4px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--bs-secondary);
+}
+
+.cts-row {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 32px;
+  padding: 4px 8px 4px 6px;
+  border-radius: 7px;
+  font-size: 13px;
+  cursor: pointer;
+  color: var(--bs-body-color);
+
+  > .bi-folder, > .bi-folder2, > .bi-inbox { font-size: 14px; color: var(--bs-secondary); flex-shrink: 0; }
+
+  &.cursor { background: var(--bs-tertiary-bg); }
+  &.active {
+    color: var(--df-accent);
+    background: var(--df-accent-soft);
+    > .bi-folder, > .bi-folder2, > .bi-inbox { color: var(--df-accent); }
+  }
+  &.active.cursor { background: color-mix(in srgb, var(--df-accent) 22%, transparent); }
+}
+
+.cts-caret {
+  width: 18px;
+  height: 18px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  border-radius: 5px;
+  color: var(--bs-secondary);
+  font-size: 10px;
+
+  &.has:hover { background: var(--bs-secondary-bg); color: var(--bs-body-color); }
+  .bi-chevron-right { transition: transform 0.15s; }
+  .bi-chevron-right.open { transform: rotate(90deg); }
+}
+
+.cts-emoji { width: 14px; font-size: 13px; line-height: 1; text-align: center; flex-shrink: 0; }
+
+.cts-name {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  line-height: 1.25;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+
+  mark {
+    padding: 0;
+    border-radius: 2px;
+    background: var(--df-accent-soft);
+    color: var(--df-accent);
+    font-weight: 600;
+  }
+}
+
+.cts-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cts-path {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 10.5px;
+  color: var(--bs-secondary);
+}
+
+// Collapsed parent: how many sub-collections are tucked inside.
+.cts-sub {
+  flex-shrink: 0;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--bs-secondary-bg);
+  color: var(--bs-secondary);
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 16px;
+}
+
+.cts-count {
+  flex-shrink: 0;
+  min-width: 22px;
+  text-align: right;
+  font-size: 11px;
+  color: var(--bs-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.cts-check { flex-shrink: 0; color: var(--df-accent); }
+
+.cts-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 22px 8px;
+  font-size: 12px;
+  color: var(--bs-secondary);
+  .bi { font-size: 18px; opacity: 0.6; }
+}
+
+.cts-hint {
+  display: flex;
+  gap: 12px;
+  padding: 6px 10px;
+  border-top: 1px solid var(--bs-border-color);
+  font-size: 10.5px;
+  color: var(--bs-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+
+  kbd {
+    margin-right: 2px;
+    padding: 0 4px;
+    border: 1px solid var(--bs-border-color);
+    border-radius: 4px;
+    background: var(--bs-tertiary-bg);
+    color: var(--bs-body-color);
+    font-size: 9.5px;
+  }
+}
+
+// Bulk bar: "Move to…" popover.
+.bulk-move { position: relative; }
+.bulk-move-backdrop { position: fixed; inset: 0; z-index: 1199; }
+.bulk-move-panel {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 1200;
+  width: 320px;
+}

@@ -4,11 +4,12 @@ import {notify} from '@services/NotificationService';
 import {loadEditPreset} from '@services/imageEditPreset';
 import {FILE_TYPES} from '@/Constants';
 import {recordTagUse} from '@services/tagPrefs';
+import CollectionTreeSelect, {pushRecentCollection} from './Collection/CollectionTreeSelect';
 
 const fmtMB = (b) => `${(b / 1024 / 1024).toFixed(1)} МБ`;
 
-const BulkActionBar = ({ selectedItems, collections, onDone, permanent = false, totalCount = 0, onSelectAll, onInvert, onClear }) => {
-    const [targetCollection, setTargetCollection] = useState('');
+const BulkActionBar = ({ selectedItems, onDone, permanent = false, totalCount = 0, onSelectAll, onInvert, onClear }) => {
+    const [moveOpen, setMoveOpen] = useState(false);
     const [tagInput, setTagInput] = useState('');
     const [compressOpen, setCompressOpen] = useState(false);
     const [cFormat, setCFormat]   = useState('webp');
@@ -17,6 +18,10 @@ const BulkActionBar = ({ selectedItems, collections, onDone, permanent = false, 
     const [busy, setBusy] = useState(null);   // progress label while a batch runs
 
     if (selectedItems.length === 0) return null;
+
+    // Highlight the target only when every selected item already sits in it.
+    const firstCol = selectedItems[0].collectionId ?? null;
+    const commonCollection = selectedItems.every(f => (f.collectionId ?? null) === firstCol) ? firstCol : undefined;
 
     // Re-encode every selected still image (format / quality / max side). Each keeps
     // its own crop/colour edits, and the pristine original stays available for revert.
@@ -55,8 +60,9 @@ const BulkActionBar = ({ selectedItems, collections, onDone, permanent = false, 
 
     const allSelected = totalCount > 0 && selectedItems.length >= totalCount;
 
-    const moveToCollection = async () => {
-        const collectionId = targetCollection || null;
+    const moveToCollection = async (collectionId) => {
+        setMoveOpen(false);
+        pushRecentCollection(collectionId);
         await LibraryService.bulkUpdateItems(
             selectedItems.map(f => ({ id: f.id, data: { collectionId } }))
         );
@@ -151,24 +157,26 @@ const BulkActionBar = ({ selectedItems, collections, onDone, permanent = false, 
             {/* In the trash we only offer restore / permanent delete. */}
             {!permanent && (
                 <>
-                    <div className="bulk-action-group">
-                        <select
-                            className="form-select form-select-sm"
-                            value={targetCollection}
-                            onChange={e => setTargetCollection(e.target.value)}
-                        >
-                            <option value="">Без коллекции</option>
-                            {collections.map(c => (
-                                <option key={c.id} value={c.id}>{c.name}</option>
-                            ))}
-                        </select>
+                    <div className="bulk-action-group bulk-move">
                         <button
-                            className="btn btn-sm btn-outline-primary"
-                            onClick={moveToCollection}
+                            className={`btn btn-sm btn-outline-primary ${moveOpen ? 'active' : ''}`}
+                            onClick={() => setMoveOpen(v => !v)}
                         >
                             <i className="bi bi-folder-symlink me-1" />
-                            Переместить
+                            Переместить в…
                         </button>
+                        {moveOpen && (
+                            <>
+                                <div className="bulk-move-backdrop" onMouseDown={() => setMoveOpen(false)} />
+                                <div className="bulk-move-panel">
+                                    <CollectionTreeSelect
+                                        value={commonCollection}
+                                        onSelect={moveToCollection}
+                                        onClose={() => setMoveOpen(false)}
+                                    />
+                                </div>
+                            </>
+                        )}
                     </div>
 
                     <div className="bulk-action-group">
