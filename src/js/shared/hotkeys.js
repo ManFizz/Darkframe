@@ -64,6 +64,34 @@ export const HOTKEY_GROUPS = [
         ],
     },
     {
+        id: 'folders',
+        title: 'Папки (Folders)',
+        icon: 'bi-folder2-open',
+        items: [
+            { keys: ['Alt', '←', '/', '→'],     desc: 'Назад / вперёд по истории' },
+            { keys: ['Мышь: назад / вперёд'],   desc: 'Назад / вперёд по истории' },
+            { keys: ['Backspace', '/', 'Alt', '↑'], desc: 'На уровень выше' },
+            { keys: ['Ctrl', 'L'],              desc: 'Ввести путь' },
+            { keys: ['Ctrl', 'F'],              desc: 'Фильтр по имени' },
+            { keys: ['F5'],                     desc: 'Обновить папку' },
+        ],
+    },
+    {
+        id: 'booru',
+        title: 'Поиск r34 / Gelbooru',
+        icon: 'bi-search',
+        items: [
+            { keys: ['Пробел'],                 desc: 'Завершить тег (превратить в чип)' },
+            { keys: ['Tab'],                    desc: 'Взять подсказку' },
+            { keys: ['↑', '/', '↓'],            desc: 'Выбор подсказки' },
+            { keys: ['Enter'],                  desc: 'Искать' },
+            { keys: ['-тег'],                   desc: 'Исключить тег' },
+            { keys: ['Клик по чипу'],           desc: 'Включить / исключить' },
+            { keys: ['Backspace'],              desc: 'Убрать последний тег' },
+            { keys: ['Ctrl', '←', '/', '→'],    desc: 'Страница назад / вперёд' },
+        ],
+    },
+    {
         id: 'tags',
         title: 'Теги и фильтр',
         icon: 'bi-tags',
@@ -90,5 +118,7 @@ export function currentHotkeyContext() {
     if (document.querySelector('.img-editor')) return 'editor';
     const modal = document.querySelector('.modal-view');
     if (modal) return modal.querySelector('video') ? 'video' : 'viewer';
+    if (document.querySelector('.folder-layout')) return 'folders';
+    if (document.querySelector('.booru-search')) return 'booru';
     return 'gallery';
 }
