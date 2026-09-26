@@ -43,6 +43,8 @@ module.exports = {
     output: {
         path: path.resolve(__dirname, 'dist'),
         filename: 'bundle.js',
+        // Wipe stale chunks from previous builds (chunk ids change between builds).
+        clean: true,
     },
     plugins: [
         new HtmlWebpackPlugin({
