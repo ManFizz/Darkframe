@@ -27,6 +27,8 @@ export function useLibraryItems(collectionId, trash = false, smartFilterJson = n
                 order:  1000000,
                 _meta: {
                     itemCount: col.itemCount,
+                    childCount: col.childCount || 0,
+                    previews: col.previews || [],
                     isCollection: true,
                     collectionId: col.id,
                 },

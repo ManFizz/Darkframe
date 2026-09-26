@@ -509,43 +509,8 @@
 }
 
 .collection-thumb {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
   width: 100%;
-  height: 100%;
-  padding: 16px;
-  gap: 8px;
-
-  &-icon {
-    font-size: 48px;
-    color: var(--bs-warning);
-    line-height: 1;
-    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
-  }
-
-  &-info {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 2px;
-    text-align: center;
-  }
-
-  &-name {
-    font-size: 14px;
-    font-weight: 500;
-    color: var(--bs-body-color);
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    max-width: 100%;
-  }
-
-  &-count {
-    font-size: 12px;
-    color: var(--bs-secondary);
-  }
+  // The folder art lives in the shared FolderTile (_folders.scss).
+  .ftile { width: 100%; }
 }
 

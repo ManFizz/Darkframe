@@ -52,6 +52,21 @@ function nextDuplicateTitle(title, siblingTitles) {
     return base ? `${base} (${n})` : `(${n})`;
 }
 
+// Thumbnails for a collection tile: its own first items, topped up from its
+// sub-collections (one level down) when it has fewer than three.
+async function collectionPreviews(collectionId, childIds = [], limit = 3) {
+    const pick = (ids) => Item.findAll({
+        where: { collectionId: ids },
+        attributes: ['id', 'editedAt', 'thumbAt'],
+        order: [['order', 'ASC']],
+        limit,
+        raw: true,
+    });
+    let rows = await pick([collectionId]);
+    if (rows.length < limit && childIds.length) rows = rows.concat(await pick(childIds)).slice(0, limit);
+    return rows.map(r => itemUrls(r).thumbPath);
+}
+
 function register() {
     ipcMain.handle('library:importDialog', async (_, { collectionId }) => {
         const { canceled, filePaths } = await dialog.showOpenDialog({
@@ -97,16 +112,22 @@ function register() {
                 : Promise.resolve([]),
         ]);
 
-        const collectionItems = await Promise.all(
-            childCollections.map(async (col) => {
-                const count = await Item.count({ where: { collectionId: col.id } });
-                return {
-                    ...col.toJSON(),
-                    itemCount: count,
-                    isCollection: true, // маркер
-                };
-            })
-        );
+        // Sequential (single SQLite connection); each tile gets its count, how many
+        // sub-collections it holds and up to three thumbnails for the folder art.
+        const collectionItems = [];
+        for (const col of childCollections) {
+            const [count, childIds] = await Promise.all([
+                Item.count({ where: { collectionId: col.id } }),
+                Collection.findAll({ where: { parentId: col.id }, attributes: ['id'], order: [['order', 'ASC']], raw: true }),
+            ]);
+            collectionItems.push({
+                ...col.toJSON(),
+                itemCount: count,
+                childCount: childIds.length,
+                previews: await collectionPreviews(col.id, childIds.map(c => c.id)),
+                isCollection: true, // маркер
+            });
+        }
 
         // editedAt / thumbAt cache-bust the URLs after an in-app edit (see itemUrls).
         const plainItems = items.map(item => ({ ...item, ...itemUrls(item) }));
