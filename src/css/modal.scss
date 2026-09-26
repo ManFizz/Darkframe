@@ -1,11 +1,13 @@
 @use 'variables';
 
+:root { --df-modal-top: #{variables.$modal-top}; }
+
 .modal-view {
   position: fixed;
-  top: variables.$modal-top;
+  top: var(--df-modal-top);
   left: 0;
   width: 100vw;
-  height: calc(100vh - #{variables.$modal-top});
+  height: calc(100vh - var(--df-modal-top));
   border: none;
   padding: 0;
   margin: 0;
@@ -143,10 +145,10 @@
 
 .modal-nav-container {
   position: fixed;
-  top: variables.$modal-top;
+  top: var(--df-modal-top);
   left: 0;
   width: 100%;
-  height: calc(100vh - #{variables.$modal-top});
+  height: calc(100vh - var(--df-modal-top));
   z-index: 1100;
   pointer-events: none;
 
@@ -265,7 +267,7 @@
 // ─── Slideshow HUD ────────────────────────────────────────────────────────────
 .ss-hud {
   position: fixed;
-  top: calc(#{variables.$modal-top} + 12px);
+  top: calc(var(--df-modal-top) + 12px);
   left: 50%;
   transform: translateX(-50%);
   z-index: 1150;
@@ -352,7 +354,7 @@
 // Countdown to the next image slide.
 .ss-progress {
   position: fixed;
-  top: variables.$modal-top;
+  top: var(--df-modal-top);
   left: 0;
   right: 0;
   z-index: 1150;
@@ -435,12 +437,11 @@
   .modal-view.long::before { animation: none; }
 }
 
-// Fullscreen is requested on the whole dialog (not the bare <video>) so the
-// control bar stays visible. Drop the top offset and fill the screen.
-.modal-view:fullscreen {
-  top: 0;
-  width: 100vw;
-  height: 100vh;
+// Fullscreen is requested on the whole document (Chromium rejects it on <dialog>),
+// so drop the topbar offset and lift the viewer over the sticky topbar.
+html:fullscreen {
+  --df-modal-top: 0px;
+  .modal-view { z-index: 1050; }
 }
 
 .modal-panel-wrapper {

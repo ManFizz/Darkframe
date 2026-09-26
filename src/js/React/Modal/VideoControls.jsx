@@ -1,4 +1,5 @@
 import React, {useCallback, useEffect, useRef, useState} from 'react';
+import {toggleViewerFullscreen} from './fullscreen';
 
 const RATE_KEY      = 'jsg_video_rate';
 const VOL_KEY       = 'jsg_video_volume';
@@ -160,12 +161,8 @@ const VideoControls = ({
 
     const toggleMute = useCallback(() => { if (video) video.muted = !video.muted; }, [video]);
 
-    // Fullscreen the whole modal so this bar stays visible, not the bare <video>.
-    const toggleFullscreen = useCallback(() => {
-        if (!video) return;
-        const target = video.closest('.modal-view') || video;
-        document.fullscreenElement ? document.exitFullscreen() : target.requestFullscreen?.();
-    }, [video]);
+    // Fullscreen the whole viewer so this bar stays visible, not the bare <video>.
+    const toggleFullscreen = useCallback(() => toggleViewerFullscreen(), []);
 
     const togglePip = useCallback(async () => {
         if (!video) return;

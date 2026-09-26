@@ -4,6 +4,7 @@ import {FILE_TYPES, SOURCE_TYPES} from "@/Constants";
 import LibraryService from "@services/LibraryService";
 import {notify} from "@services/NotificationService";
 import {mediaKey} from "@services/mediaKey";
+import {toggleViewerFullscreen} from "./fullscreen";
 
 // Resume support: only long videos, saved every few seconds while playing.
 const RESUME_MIN_DURATION = 180;   // seconds
@@ -216,11 +217,8 @@ const Video = ({ file, mainArray = [], modalUpdater, canEdit = false, onEdited, 
 
     const handleDoubleClick = useCallback(() => {
         if (clickTimer.current) { clearTimeout(clickTimer.current); clickTimer.current = null; }
-        const v = videoRef.current;
-        if (!v) return;
-        // Fullscreen the whole modal so the control bar comes along, not just the video.
-        const target = v.closest('.modal-view') || v;
-        document.fullscreenElement ? document.exitFullscreen() : target.requestFullscreen?.();
+        // Fullscreen the whole viewer so the control bar comes along, not just the video.
+        toggleViewerFullscreen();
     }, []);
 
     useEffect(() => () => clearTimeout(clickTimer.current), []);

@@ -15,6 +15,7 @@ import {loadEditPreset} from "@services/imageEditPreset";
 import {mediaKey} from "@services/mediaKey";
 import {useSlideshow} from "./useSlideshow";
 import SlideshowHud from "./SlideshowHud";
+import {exitViewerFullscreen} from "./fullscreen";
 
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(v, hi));
 
@@ -36,6 +37,11 @@ const Modal = ({ fileId, mainArray, modalUpdater, displayFiles, onUpdated }) => 
     [fileId, mainArray]);
 
     const ss = useSlideshow({ file, mainArray, modalUpdater });
+
+    // Fullscreen belongs to the viewer: closing it drops back to the window.
+    const isOpen = !!file;
+    useEffect(() => { if (!isOpen) exitViewerFullscreen(); }, [isOpen]);
+    useEffect(() => exitViewerFullscreen, []);
 
     const isLibrary   = file?.remoteType === SOURCE_TYPES.LIBRARY;
     const hasMetaPanel = isLibrary && !!onUpdated;               // editable library metadata
