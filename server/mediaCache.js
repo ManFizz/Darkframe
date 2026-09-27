@@ -19,7 +19,12 @@ const crypto = require('crypto');
 const { pathToFileURL } = require('url');
 
 const SCHEME    = 'mediacache';
-const CACHE_DIR = path.join(app.getPath('temp'), 'darkframe-media-cache');
+// Per profile: every instance wipes its cache on start / quit, so two instances
+// (e.g. a test one next to the real one) must never share the folder.
+const CACHE_DIR = path.join(
+    app.getPath('temp'),
+    'darkframe-media-cache-' + require('crypto').createHash('sha1').update(app.getPath('userData')).digest('hex').slice(0, 8),
+);
 
 const USER_AGENT =
     'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 ' +

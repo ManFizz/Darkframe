@@ -29,6 +29,9 @@ let openDevTools = process.argv.includes('devtools');
 // Skips the side effects that don't belong in a check run: the DB backup (it copies
 // the project's data/data.db) and the local API server (its port may be taken).
 const SMOKE = process.env.DARKFRAME_SMOKE === '1';
+// DARKFRAME_SANDBOX=1 — a throw-away second instance (tests, previews next to the one
+// in use): no API server (its port belongs to the real instance), no DB backup.
+const SANDBOX = SMOKE || process.env.DARKFRAME_SANDBOX === '1';
 
 let win;
 async function createWindow() {
@@ -213,7 +216,7 @@ app.whenReady().then(async () => {
 
     await initDatabase();
 
-    if (!SMOKE) backupDatabase();
+    if (!SANDBOX) backupDatabase();
 
     setupContentSecurityPolicy();
     setupRequestHeaders();
@@ -241,7 +244,7 @@ app.whenReady().then(async () => {
     });
 
     if (SMOKE) require('./server/smoke').runSmokeCheck(win);
-    else startApiServer();
+    else if (!SANDBOX) startApiServer();
 });
 
 app.on('window-all-closed', () => {
