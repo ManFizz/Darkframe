@@ -46,8 +46,8 @@ async function createWindow() {
             allowRunningInsecureContent: true,
             webSecurity: false,
             webviewTag: false,   // no <webview> — one less way to load foreign content
-            // The hidden self-check window must not be throttled like a background tab.
-            backgroundThrottling: !SMOKE,
+            // Sandbox / self-check windows are often hidden or covered: keep them rendering.
+            backgroundThrottling: !SANDBOX,
         },
         autoHideMenuBar: true,
         show: !SMOKE,   // the self-check runs without flashing a window

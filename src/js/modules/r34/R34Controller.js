@@ -130,7 +130,7 @@ async function processResponse(responseXML, isNewSearch) {
 
     if (isNewSearch) setGallery(array);
     else addToGallery(array);
-    return array.length;
+    return array;
 }
 
 export async function SearchMedia(tagsString) {
@@ -143,8 +143,9 @@ export async function SearchMedia(tagsString) {
 
     try {
         const xml = await fetchPosts(currentR34Source, currentQueryTags, currentPage, controller.signal);
-        await processResponse(xml, true);
+        const posts = await processResponse(xml, true);
         setStatus({ loading: false, total: maxPosts });
+        return posts;
     } catch (err) {
         if (err.name === 'AbortError') return;
         console.error("Search error:", err);
@@ -175,7 +176,19 @@ function getPostAttr(post, attr) {
     return post.getAttribute(attr);
 }
 
-export async function fetchPosts(source, tags, page, signal) {
+// First `limit` posts of a query + its total count, without touching the gallery
+// (the preview strips on the saved-searches page).
+export async function fetchPreview(tagsString, limit = 12, signal) {
+    const xml = await fetchPosts(currentR34Source, tagsString, 0, signal, limit);
+    const root = xml.querySelector('posts');
+    const total = root ? parseInt(root.getAttribute('count')) || 0 : 0;
+    const items = Array.from(xml.querySelectorAll('post'))
+        .map(post => GetThumbByData(postToData(post)))
+        .filter(Boolean);
+    return { total, items };
+}
+
+export async function fetchPosts(source, tags, page, signal, limit = postPerPage) {
     const tagsParam = Array.isArray(tags)
         ? tags.join('+')
         : tags.trim().replace(/\s+/g, '+');
@@ -186,7 +199,7 @@ export async function fetchPosts(source, tags, page, signal) {
     const apiKey = (isGel && PrivateData.GelbooruApiKey) || PrivateData.R34ApiKey;
     const userId = (isGel && PrivateData.GelbooruUserId) || PrivateData.R34UserId;
 
-    const url = `${mainUrl}&limit=${postPerPage}&pid=${page}&tags=${tagsParam}&api_key=${apiKey}&user_id=${userId}`;
+    const url = `${mainUrl}&limit=${limit}&pid=${page}&tags=${tagsParam}&api_key=${apiKey}&user_id=${userId}`;
     const response = await fetch(url, { signal });
     if (response.status === 401 || response.status === 403) {
         throw new Error(`Доступ запрещён (HTTP ${response.status}) — проверь API-ключ ${source.name} в настройках`);

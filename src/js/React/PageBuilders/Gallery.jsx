@@ -4,6 +4,7 @@ import ScrollSensor from "../Helpers/ScrollSensor";
 import {getHistory, runSearch, setQuery, useBooruQuery, useSearchStatus} from "@modules/r34/booruQuery";
 import {currentR34Source} from "@modules/r34/R34Controller";
 import useFavoriteTags from "@hooks/useFavoriteTags";
+import SavedSearchesPage from "@modules/r34/SavedSearchesPage";
 
 // What the booru gallery shows while it has nothing to show: a skeleton while the
 // first page loads, "nothing found" after an empty search, or a start screen with
@@ -91,7 +92,9 @@ const EmptyState = () => {
 
 const Gallery = ({ modalFileId, modalUpdater, displayArray, typeView, loadNextPage, isSelected }) => {
     const isLoadingRef = useRef(false);
+    const { view } = useBooruQuery();
 
+    if (view === 'saved') return <SavedSearchesPage source={currentR34Source?.remoteType} />;
     if (!displayArray.length) return <EmptyState />;
 
     return (

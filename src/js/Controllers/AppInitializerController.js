@@ -116,6 +116,7 @@ export const AppController = {
     getCurrentSource: () => {},
     setTypeView: () => {},
     updateGalleryFile: () => {},
+    openModal: () => {},
 };
 
 export const setGallery = (...args) =>

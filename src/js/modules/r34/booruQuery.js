@@ -1,5 +1,6 @@
 import {useEffect, useState} from 'react';
 import {SearchMedia, getSearchStatus, subscribeSearchStatus, currentR34Source} from './R34Controller';
+import {AppController} from '@controllers/AppInitializerController';
 
 // Structured booru query shared by the top search bar and the sidebar:
 //   tags     — ['cat', '-dog'] ("-" = exclude)
@@ -10,7 +11,8 @@ import {SearchMedia, getSearchStatus, subscribeSearchStatus, currentR34Source} f
 const HISTORY_KEY = 'jsg_booru_history';
 const HISTORY_LIMIT = 12;
 
-const state = { tags: [], minScore: 0, sort: 'new', rating: 'any' };
+// view: 'search' (results grid) | 'saved' (saved searches page)
+const state = { tags: [], minScore: 0, sort: 'new', rating: 'any', view: 'search' };
 const listeners = new Set();
 const emit = () => listeners.forEach(fn => fn({ ...state, tags: [...state.tags] }));
 
@@ -95,12 +97,31 @@ export function clearHistory(source) {
     emit();
 }
 
-export function runSearch(patch) {
+// Same canonical form the main process uses for saved searches (see savedSearches.js).
+export function queryKey(q = state) {
+    const tags = [...new Set(q.tags.map(t => t.toLowerCase()))].sort().join(' ');
+    return [tags, Math.max(0, Math.round(q.minScore || 0)), q.sort, q.rating].join('|');
+}
+
+export function setView(view) {
+    state.view = view;
+    emit();
+}
+
+// Runs the current (optionally patched) query and shows the results grid. With
+// `openRemoteId`, the viewer opens on that post once the first page is in.
+export async function runSearch(patch, { openRemoteId } = {}) {
     if (patch) Object.assign(state, patch);
+    state.view = 'search';
     emit();
     if (!currentR34Source) return;
     pushHistory(currentR34Source.remoteType, state.tags);
-    return SearchMedia(buildQueryString());
+    const posts = await SearchMedia(buildQueryString());
+    if (openRemoteId && posts) {
+        const hit = posts.find(p => String(p.remoteId) === String(openRemoteId));
+        if (hit) AppController.openModal?.(hit);
+    }
+    return posts;
 }
 
 export function useBooruQuery() {

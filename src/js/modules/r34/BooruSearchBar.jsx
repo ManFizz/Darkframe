@@ -3,6 +3,9 @@ import {fetchTagSuggestions, getAllTags} from '@controllers/TagsController';
 import {addTag, normTag, removeTag, runSearch, toggleExclude, useBooruQuery, useSearchStatus} from './booruQuery';
 import {tagKind, fmtCount, useTagKinds} from './tagKinds';
 import TagsService from '@services/TagsService';
+import {queryKey, setView} from './booruQuery';
+import {saveSearch, useSavedSearches} from './savedSearches';
+import {notify} from '@services/NotificationService';
 
 // Autocomplete payloads differ per booru: r34 → { label: "cat (123)", value, type:
 // "general" }, gelbooru → { name, count, type: 0 }. Normalise to { name, count, kind }.
@@ -16,6 +19,33 @@ function normalizeSuggestion(s) {
     const known = getAllTags().find(t => t.name === name);
     return { name, count, kind: tagKind(s.type ?? known?.type) };
 }
+
+// Bookmark: remembers the whole query (tags + modifiers). Once saved it no longer
+// removes anything — removal lives on the saved-searches page, behind a confirm.
+const SaveButton = ({ sourceType, q }) => {
+    const saved = useSavedSearches(sourceType);
+    const key = queryKey(q);
+    const isSaved = saved.some(s => s.key === key);
+    const empty = !q.tags.length && !q.minScore && q.sort === 'new' && q.rating === 'any';
+
+    const onClick = async (e) => {
+        e.stopPropagation();
+        if (isSaved) { setView('saved'); return; }
+        await saveSearch(sourceType, { tags: q.tags, minScore: q.minScore, sort: q.sort, rating: q.rating });
+        notify({
+            message: 'Поиск сохранён',
+            type: 'success',
+            action: { label: 'Все сохранённые', onClick: () => setView('saved') },
+        });
+    };
+
+    return (
+        <button className={`bs-save ${isSaved ? 'on' : ''}`} disabled={empty && !isSaved} onClick={onClick}
+                title={isSaved ? 'Поиск сохранён — открыть сохранённые' : 'Запомнить этот поиск'}>
+            <i className={`bi ${isSaved ? 'bi-bookmark-check-fill' : 'bi-bookmark-plus'}`} />
+        </button>
+    );
+};
 
 const BooruSearchBar = ({ sourceType }) => {
     const q = useBooruQuery();
@@ -123,6 +153,7 @@ const BooruSearchBar = ({ sourceType }) => {
                     onFocus={() => items.length && setOpen(true)}
                     onKeyDown={onKeyDown}
                 />
+                <SaveButton sourceType={sourceType} q={q} />
                 <button className="bs-go" onClick={e => { e.stopPropagation(); runSearch(); }} title="Искать (Enter)">
                     Искать
                 </button>

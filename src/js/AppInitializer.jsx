@@ -26,6 +26,7 @@ import LibraryService from '@services/LibraryService';
 import ImportActivity from './React/Library/Import/ImportActivity';
 import BootOverlay from './React/Helpers/BootOverlay';
 import FolderView from './modules/folder/FolderView';
+import {useBooruQuery} from './modules/r34/booruQuery';
 
 // Colour mode + accent before the first paint.
 initTheme();
@@ -110,6 +111,7 @@ const Main = () => {
 
         AppController.setTypeView = contextValue.setTypeView;
         AppController.updateGalleryFile = contextValue.updateFile;
+        AppController.openModal = contextValue.setModalFile;
 
         InitDatabaseData();
 
@@ -125,6 +127,7 @@ const Main = () => {
     // Library and Folders are self-contained views (own sidebar, grid and viewer);
     // the booru sources share the generic gallery + pagination below.
     const isGeneric = !isLibrary && !isFolder;
+    const booruView = useBooruQuery().view;   // 'saved' page has no pagination
 
     return (
         <GalleryContext.Provider value={contextValue}>
@@ -170,7 +173,7 @@ const Main = () => {
                         )}
                     </div>
 
-                    {isGeneric && (
+                    {isGeneric && booruView !== 'saved' && (
                         <CustomPagination
                             anchorPage={currentPage}
                             lastLoadedPage={maxPage}

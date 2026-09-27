@@ -111,6 +111,9 @@ async function migrations() {
     // Resume positions for long videos. New table — create if missing.
     await require('./models/VideoPosition').sync();
 
+    // Remembered booru searches. New table — create if missing.
+    await require('./models/SavedSearch').sync();
+
     // Lookup indexes. Tags also holds the remote (r34 / gelbooru) tag cache — well over
     // a million rows — so "pinned" / per-tag lookups without an index were full scans
     // that stalled every other query at startup (one SQLite connection).

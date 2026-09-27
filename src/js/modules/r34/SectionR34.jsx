@@ -7,6 +7,8 @@ import useFavoriteTags from '@hooks/useFavoriteTags';
 import {useTagKinds} from './tagKinds';
 import {SOURCE_TYPES} from '@/Constants';
 import {notify} from '@services/NotificationService';
+import {queryOf, useSavedSearches} from './savedSearches';
+import {setView} from './booruQuery';
 
 const SORTS = [
     { id: 'new',    label: 'Новые',     icon: 'bi-clock' },
@@ -127,6 +129,7 @@ const SectionR34 = ({ currentSource }) => {
     // Dropped outside the list (or Esc): nothing is saved.
     const onDragEnd = () => setDrag(null);
     const history = getHistory(currentSource);
+    const saved = useSavedSearches(currentSource);
     const searched = status.query != null && status.source === currentSource;
 
     // Modifiers re-run an existing search right away; before the first search they just preset it.
@@ -242,6 +245,25 @@ const SectionR34 = ({ currentSource }) => {
                         </button>
                     )}
                 </div>
+                )}
+            </Block>
+
+            <Block title="Сохранённые поиски"
+                   extra={<button className="bsb-link" onClick={() => setView('saved')}>все <i className="bi bi-arrow-right" /></button>}>
+                {saved.length === 0 ? (
+                    <div className="bsb-empty">Нажми <i className="bi bi-bookmark-plus" /> в строке поиска, чтобы запомнить поиск</div>
+                ) : (
+                    <div className="bsb-saved">
+                        {saved.slice(0, 5).map(s => (
+                            <button key={s.id} className="bsb-saved-item" onClick={() => runSearch(queryOf(s))} title={s.tags || 'все посты'}>
+                                <i className="bi bi-bookmark-fill" />
+                                <span>{s.title || s.tags || 'все посты'}</span>
+                            </button>
+                        ))}
+                        <button className={`bsb-saved-open ${q.view === 'saved' ? 'active' : ''}`} onClick={() => setView('saved')}>
+                            <i className="bi bi-grid-3x2-gap" /> Открыть страницу ({saved.length})
+                        </button>
+                    </div>
                 )}
             </Block>
 

@@ -1,6 +1,7 @@
 const {ipcMain} = require("electron");
 const sequelize = require("../database");
 const FavoriteTag = require("../models/FavoriteTag");
+const savedSearches = require("../services/savedSearches");
 
 // `display` is the user-defined position of a saved tag within its source.
 async function getFavoriteTags() {
@@ -53,6 +54,14 @@ function registerHandlers() {
 	ipcMain.handle("AddFavTags", addFavoriteTag);
 	ipcMain.handle("RemoveFavTags", removeFavoriteTag);
 	ipcMain.handle("ReorderFavTags", reorderFavoriteTags);
+
+	// Saved (remembered) booru searches.
+	ipcMain.handle("savedSearches:list",    () => savedSearches.list());
+	ipcMain.handle("savedSearches:add",     (_, { source, query, title }) => savedSearches.add(source, query, title));
+	ipcMain.handle("savedSearches:remove",  (_, { id }) => savedSearches.remove(id));
+	ipcMain.handle("savedSearches:restore", (_, { row }) => savedSearches.restore(row));
+	ipcMain.handle("savedSearches:update",  (_, { id, patch }) => savedSearches.update(id, patch));
+	ipcMain.handle("savedSearches:reorder", (_, { source, ids }) => savedSearches.reorder(source, ids));
 }
 
 module.exports = { registerHandlers };

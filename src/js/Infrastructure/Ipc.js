@@ -37,6 +37,15 @@ export const fsApi = {
 
 export const openExternalUrl = (url) => invoke('shell:openUrl', { url });
 
+export const savedSearchesApi = {
+    list:    ()                       => invoke('savedSearches:list'),
+    add:     (source, query, title)   => invoke('savedSearches:add', { source, query, title }),
+    remove:  (id)                     => invoke('savedSearches:remove', { id }),
+    restore: (row)                    => invoke('savedSearches:restore', { row }),
+    update:  (id, patch)              => invoke('savedSearches:update', { id, patch }),
+    reorder: (source, ids)            => invoke('savedSearches:reorder', { source, ids }),
+};
+
 // fsthumb:// URL of a cached thumbnail for a file on disk.
 export const fsThumbUrl = (file, width = 360) =>
     `fsthumb://t/?p=${encodeURIComponent(file)}&w=${width}`;

@@ -856,3 +856,227 @@
     border-color: var(--df-accent);
   }
 }
+
+// ─── Saved searches ───────────────────────────────────────────────────────────
+.bs-save {
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--bs-secondary);
+  font-size: 15px;
+  cursor: pointer;
+  &:hover:not(:disabled) { color: var(--df-accent); background: rgba(255, 255, 255, 0.06); }
+  &:disabled { opacity: 0.35; cursor: default; }
+  &.on { color: var(--df-accent); }
+}
+
+.bsb-saved { display: flex; flex-direction: column; gap: 3px; }
+.bsb-saved-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--bs-body-color);
+  font-size: 12.5px;
+  text-align: left;
+  cursor: pointer;
+  .bi { color: var(--df-accent); font-size: 11px; }
+  span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  &:hover { background: var(--bs-tertiary-bg); }
+}
+.bsb-saved-open {
+  margin-top: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 6px;
+  border: 1px dashed var(--bs-border-color);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--bs-secondary);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  &:hover, &.active { border-color: var(--df-accent-dim); color: var(--df-accent); border-style: solid; }
+}
+
+.svs-page { padding: 16px 20px 40px; }
+
+.svs-page-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.svs-page-title { font-size: 18px; font-weight: 700; .bi { color: var(--df-accent); margin-right: 6px; } }
+.svs-page-sub { font-size: 12px; color: var(--bs-secondary); }
+.svs-spacer { flex: 1; }
+
+.svs-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 30px;
+  padding: 0 10px;
+  border: 1px solid var(--bs-border-color);
+  border-radius: 8px;
+  background: var(--bs-body-bg);
+  color: var(--bs-body-color);
+  font-size: 12.5px;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  &:hover { border-color: var(--df-accent-dim); color: var(--df-accent); }
+  &.primary { background: var(--df-accent); border-color: var(--df-accent); color: #fff; &:hover { filter: brightness(1.1); color: #fff; } }
+  &.danger { background: var(--bs-danger); border-color: var(--bs-danger); color: #fff; &:hover { color: #fff; filter: brightness(1.1); } }
+}
+
+.svs-list { display: flex; flex-direction: column; gap: 12px; }
+
+.svs-card {
+  padding: 12px 14px 14px;
+  border: 1px solid var(--bs-border-color);
+  border-radius: 14px;
+  background: var(--df-glass, transparent);
+  transition: opacity 0.15s, border-color 0.15s;
+  &:hover { border-color: color-mix(in srgb, var(--df-accent) 35%, var(--bs-border-color)); }
+  &.drag-src { opacity: 0.35; border-style: dashed; border-color: var(--df-accent); }
+}
+
+.svs-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.svs-grip { color: var(--bs-secondary); cursor: grab; opacity: 0.5; &:hover { opacity: 1; } }
+
+.svs-query { flex: 1; min-width: 0; cursor: pointer; }
+.svs-title { margin-bottom: 4px; font-size: 14.5px; font-weight: 700; }
+.svs-title-input {
+  width: 100%;
+  max-width: 360px;
+  margin-bottom: 6px;
+  padding: 4px 8px;
+  border: 1px solid var(--df-accent-dim);
+  border-radius: 7px;
+  background: var(--bs-body-bg);
+  color: var(--bs-body-color);
+  font-size: 13.5px;
+  outline: none;
+}
+
+.svs-tags { display: flex; flex-wrap: wrap; gap: 5px; }
+.svs-tag {
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--k, #9aa3b2) 16%, transparent);
+  border: 1px solid color-mix(in srgb, var(--k, #9aa3b2) 40%, transparent);
+  color: color-mix(in srgb, var(--k, #9aa3b2) 70%, var(--bs-body-color));
+  font-size: 12px;
+  font-weight: 600;
+  &.ex { color: #ff8a8a; border-color: color-mix(in srgb, var(--bs-danger) 45%, transparent); background: color-mix(in srgb, var(--bs-danger) 12%, transparent); text-decoration: line-through; }
+  &.muted { color: var(--bs-secondary); font-style: italic; }
+}
+.svs-mod {
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--bs-tertiary-bg);
+  color: var(--bs-secondary);
+  font-size: 11.5px;
+  .bi-star-fill { color: #ffd66b; }
+}
+
+.svs-stats { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; flex-shrink: 0; }
+.svs-total { font-size: 15px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.svs-new {
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--df-accent);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  box-shadow: 0 4px 12px -4px var(--df-accent-glow);
+}
+
+.svs-actions { display: flex; align-items: center; gap: 5px; flex-shrink: 0; }
+.svs-confirm { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; color: var(--bs-danger); font-weight: 600; }
+
+.svs-strip {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  scrollbar-width: thin;
+}
+
+.svs-thumb {
+  position: relative;
+  flex: 0 0 132px;
+  height: 132px;
+  padding: 0;
+  border: none;
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--bs-tertiary-bg);
+  cursor: pointer;
+
+  img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.25s; }
+  &:hover img { transform: scale(1.06); }
+
+  &.skel {
+    background: linear-gradient(110deg, var(--bs-tertiary-bg) 30%, var(--bs-secondary-bg) 50%, var(--bs-tertiary-bg) 70%);
+    background-size: 250% 100%;
+    animation: ft-shimmer 1.4s linear infinite;
+  }
+
+  &.more {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    border: 1px dashed var(--bs-border-color);
+    background: transparent;
+    color: var(--bs-secondary);
+    font-size: 12px;
+    b { font-size: 16px; color: var(--bs-body-color); font-variant-numeric: tabular-nums; }
+    &:hover { border-color: var(--df-accent-dim); color: var(--df-accent); }
+  }
+}
+
+.svs-play {
+  position: absolute;
+  left: 6px;
+  bottom: 6px;
+  width: 22px;
+  height: 22px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.6);
+  color: #fff;
+  font-size: 13px;
+}
+
+.svs-strip-msg {
+  padding: 18px 4px;
+  font-size: 12.5px;
+  color: var(--bs-secondary);
+  &.err { color: var(--bs-danger); }
+}
+
+// The grid area takes the space left of the docked sidebar and never grows to its
+// content's min width (a long preview strip would push the page off screen).
+.main-split > .container-fluid { flex: 1 1 0; min-width: 0; }
+.svs-page, .svs-card, .svs-strip { min-width: 0; }
