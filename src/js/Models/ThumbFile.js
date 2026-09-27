@@ -65,9 +65,11 @@ export class ThumbFile {
         if (this.width > 0 && this.height > 0)
             return { width: this.width, height: this.height };
 
-        if (this.type === FILE_TYPES.IMAGE && this.thumbUrl) {
+        // Measure the real file: thumbUrl may be a downscaled preview (Folders, boorus).
+        const src = this.getUrl();
+        if (this.type === FILE_TYPES.IMAGE && src) {
             try {
-                const img = await this._loadMeta(this.thumbUrl);
+                const img = await this._loadMeta(src);
                 this.width = img.naturalWidth;
                 this.height = img.naturalHeight;
                 return { width: this.width, height: this.height };

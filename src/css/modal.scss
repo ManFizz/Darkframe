@@ -65,6 +65,21 @@
       overflow: visible;
     }
 
+    // Without the side panel the modal is a column too: the media area must grow to
+    // the image's full height (not be squeezed into the viewport and clipped to its
+    // middle) and start at the top, so the whole modal scrolls through it.
+    &:not(.with-panel) {
+      justify-content: flex-start;
+
+      .modal-media-area {
+        flex: 0 0 auto;
+        min-height: auto;
+        justify-content: flex-start;
+        overflow: visible;
+        padding: 16px 0 110px;
+      }
+    }
+
     // Fade at the very bottom of the window.
     &::after {
       content: "";
