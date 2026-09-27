@@ -123,3 +123,20 @@ test('collection counts come from one grouped query', async () => {
     });
     assert.equal(Number(rows[0].n), 2);
 });
+
+test('duplicate saved booru tags are merged on startup and can no longer appear', async () => {
+    const FavoriteTag = require(S('models', 'FavoriteTag'));
+    await sequelize.query('DROP INDEX IF EXISTS favtags_tag_source_uq');
+    await FavoriteTag.bulkCreate([
+        { tag: 'dup_tag', remote_type: 2, display: 1 },
+        { tag: 'dup_tag', remote_type: 2, display: 5 },
+        { tag: 'dup_tag', remote_type: 4, display: 1 },   // other source: kept
+    ]);
+    await require(S('migrations')).migrations();
+
+    const rows = await FavoriteTag.findAll({ where: { tag: 'dup_tag' }, raw: true });
+    assert.equal(rows.filter(r => r.remote_type === 2).length, 1);
+    assert.equal(rows.filter(r => r.remote_type === 4).length, 1);
+    assert.equal(rows.find(r => r.remote_type === 2).display, 1, 'the first copy survives');
+    await assert.rejects(FavoriteTag.create({ tag: 'dup_tag', remote_type: 2 }));
+});

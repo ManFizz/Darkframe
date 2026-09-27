@@ -90,11 +90,13 @@ const SectionR34 = ({ currentSource }) => {
         });
     };
 
-    const savedFavs = favoriteTags.filter(t => t.remote_type === currentSource);
+    // Unique by name: a duplicated tag would give two chips the same React key.
+    const savedFavs = favoriteTags.filter((t, i, all) =>
+        t.remote_type === currentSource && all.findIndex(x => x.remote_type === t.remote_type && x.tag === t.tag) === i);
     // While dragging, the list is shown in the live (not yet saved) order.
     const [drag, setDrag] = useState(null);   // { tag, order: [names], dropped }
     const favs = drag
-        ? drag.order.map(name => savedFavs.find(f => f.tag === name)).filter(Boolean)
+        ? [...new Set(drag.order)].map(name => savedFavs.find(f => f.tag === name)).filter(Boolean)
         : savedFavs;
 
     const onDragStart = (e, tag) => {
@@ -107,9 +109,10 @@ const SectionR34 = ({ currentSource }) => {
         if (!drag) return;
         e.preventDefault();
         e.dataTransfer.dropEffect = 'move';
-        if (overTag === drag.tag) return;
+        if (overTag === drag.tag || !drag.order.includes(overTag)) return;
         setDrag(d => {
             const order = d.order.filter(t => t !== d.tag);
+            if (!order.includes(overTag)) return d;
             order.splice(order.indexOf(overTag) + (d.order.indexOf(overTag) > d.order.indexOf(d.tag) ? 1 : 0), 0, d.tag);
             return { ...d, order };
         });

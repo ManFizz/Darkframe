@@ -118,6 +118,13 @@ async function migrations() {
     await sequelize.query('CREATE INDEX IF NOT EXISTS itemtags_tagId_idx ON ItemTags (tagId)');
     await sequelize.query('CREATE INDEX IF NOT EXISTS items_collectionId_idx ON Items (collectionId)');
     await sequelize.query('CREATE INDEX IF NOT EXISTS items_deletedAt_idx ON Items (deletedAt)');
+
+    // Saved booru tags: older versions could store the same tag twice, which broke
+    // the drag-to-reorder list (duplicate keys). Keep the first copy, then forbid dupes.
+    await require('./models/FavoriteTag').sync();
+    await sequelize.query(`DELETE FROM FavoriteTags WHERE id NOT IN
+        (SELECT MIN(id) FROM FavoriteTags GROUP BY tag, remote_type)`);
+    await sequelize.query('CREATE UNIQUE INDEX IF NOT EXISTS favtags_tag_source_uq ON FavoriteTags (tag, remote_type)');
 }
 
 module.exports = { migrations};
