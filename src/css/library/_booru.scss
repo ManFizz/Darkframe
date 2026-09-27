@@ -350,21 +350,58 @@
     text-decoration: line-through;
   }
 
-  button {
-    width: 18px;
-    height: 18px;
-    display: grid;
-    place-items: center;
-    padding: 0;
-    border: none;
-    border-radius: 5px;
-    background: transparent;
-    color: var(--bs-secondary);
-    opacity: 0;
-    cursor: pointer;
-    &:hover { background: var(--bs-secondary-bg); color: var(--bs-danger); }
+  padding-right: 9px;
+
+  // Edit mode: checkbox chips, marked ones turn red.
+  &.edit {
+    border-style: dashed;
+    &::before { display: none; }
+    .bi { margin-right: 3px; color: var(--bs-secondary); }
   }
-  &:hover button { opacity: 1; }
+  &.edit.marked {
+    border-style: solid;
+    border-color: color-mix(in srgb, var(--bs-danger) 60%, transparent);
+    background: color-mix(in srgb, var(--bs-danger) 14%, transparent);
+    color: #ff8a8a;
+    text-decoration: line-through;
+    .bi { color: var(--bs-danger); }
+  }
+}
+
+.bsb-chips.editing {
+  padding: 8px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--bs-danger) 5%, transparent);
+  border: 1px dashed color-mix(in srgb, var(--bs-danger) 35%, transparent);
+}
+
+.bsb-edit-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.bsb-edit-spacer { flex: 1; }
+.bsb-edit-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 28px;
+  padding: 0 12px;
+  border: 1px solid var(--bs-border-color);
+  border-radius: 8px;
+  background: var(--bs-body-bg);
+  color: var(--bs-body-color);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  &:hover:not(:disabled) { border-color: var(--df-accent-dim); }
+  &.danger {
+    border-color: var(--bs-danger);
+    background: var(--bs-danger);
+    color: #fff;
+    &:hover:not(:disabled) { filter: brightness(1.1); }
+    &:disabled { opacity: 0.4; cursor: default; }
+  }
 }
 
 .bsb-empty { font-size: 11.5px; color: var(--bs-secondary); line-height: 1.4; }

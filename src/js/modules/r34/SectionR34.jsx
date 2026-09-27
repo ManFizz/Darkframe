@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, {useEffect, useState} from 'react';
 import {currentR34Source} from './R34Controller';
 import {
     clearHistory, cycleTag, getHistory, runSearch, setQuery, tagState, useBooruQuery, useSearchStatus,
@@ -6,6 +6,7 @@ import {
 import useFavoriteTags from '@hooks/useFavoriteTags';
 import {useTagKinds} from './tagKinds';
 import {SOURCE_TYPES} from '@/Constants';
+import {notify} from '@services/NotificationService';
 
 const SORTS = [
     { id: 'new',    label: 'Новые',     icon: 'bi-clock' },
@@ -57,6 +58,37 @@ const SectionR34 = ({ currentSource }) => {
     const { favoriteTags, addFavTag, removeFavTag } = useFavoriteTags();
     const [newTag, setNewTag] = useState('');
     const [customScore, setCustomScore] = useState('');
+    // Saved tags are removed only in an explicit edit mode: mark → "Удалить (N)",
+    // with an undo toast. In normal mode a click just drives the search.
+    const [editing, setEditing] = useState(false);
+    const [marked, setMarked] = useState(() => new Set());
+
+    useEffect(() => { setEditing(false); setMarked(new Set()); }, [currentSource]);
+    useEffect(() => {
+        if (!editing) return;
+        const onKey = (e) => { if (e.key === 'Escape') { setEditing(false); setMarked(new Set()); } };
+        document.addEventListener('keydown', onKey);
+        return () => document.removeEventListener('keydown', onKey);
+    }, [editing]);
+
+    const toggleMark = (tag) => setMarked(prev => {
+        const next = new Set(prev);
+        next.has(tag) ? next.delete(tag) : next.add(tag);
+        return next;
+    });
+
+    const deleteMarked = () => {
+        const removed = [...marked];
+        removed.forEach(t => removeFavTag(t, currentSource));
+        setMarked(new Set());
+        setEditing(false);
+        notify({
+            message: removed.length === 1 ? `Тег «${removed[0]}» удалён из избранного` : `Удалено избранных тегов: ${removed.length}`,
+            type: 'info',
+            duration: 8000,
+            action: { label: 'Вернуть', onClick: () => removed.forEach(t => addFavTag(t, currentSource)) },
+        });
+    };
 
     const favs = favoriteTags.filter(t => t.remote_type === currentSource);
     const history = getHistory(currentSource);
@@ -105,10 +137,26 @@ const SectionR34 = ({ currentSource }) => {
             </Block>
 
             <Block title="Избранные теги"
-                   extra={favs.length > 0 && <span className="bsb-hint">клик: + / − / ×</span>}>
-                <div className="bsb-chips">
+                   extra={favs.length > 0 && (editing
+                       ? <span className="bsb-hint">выбери теги для удаления</span>
+                       : <button className="bsb-link" onClick={() => setEditing(true)} title="Удалить избранные теги">
+                             <i className="bi bi-pencil" /> изменить
+                         </button>)}>
+                <div className={`bsb-chips ${editing ? 'editing' : ''}`}>
                     {favs.map(f => {
                         const st = tagState(f.tag);
+                        const isMarked = marked.has(f.tag);
+                        if (editing) {
+                            return (
+                                <span key={f.tag}
+                                      className={`bsb-tag kind-${kindOf(f.tag)} edit ${isMarked ? 'marked' : ''}`}
+                                      onClick={() => toggleMark(f.tag)}
+                                      title={isMarked ? 'Не удалять' : 'Отметить для удаления'}>
+                                    <i className={`bi ${isMarked ? 'bi-check-square-fill' : 'bi-square'}`} />
+                                    {f.tag}
+                                </span>
+                            );
+                        }
                         return (
                             <span key={f.tag}
                                   className={`bsb-tag kind-${kindOf(f.tag)} ${st || ''}`}
@@ -117,14 +165,23 @@ const SectionR34 = ({ currentSource }) => {
                                 {st === 'include' && <i className="bi bi-plus" />}
                                 {st === 'exclude' && <i className="bi bi-dash" />}
                                 {f.tag}
-                                <button onClick={e => { e.stopPropagation(); removeFavTag(f.tag, currentSource); }} title="Удалить из избранного">
-                                    <i className="bi bi-x" />
-                                </button>
                             </span>
                         );
                     })}
                     {!favs.length && <div className="bsb-empty">Сохраняй частые теги, чтобы добавлять их в поиск одним кликом</div>}
                 </div>
+                {editing ? (
+                    <div className="bsb-edit-bar">
+                        <button className="bsb-link" onClick={() => setMarked(marked.size === favs.length ? new Set() : new Set(favs.map(f => f.tag)))}>
+                            {marked.size === favs.length ? 'снять все' : 'выбрать все'}
+                        </button>
+                        <span className="bsb-edit-spacer" />
+                        <button className="bsb-edit-btn" onClick={() => { setEditing(false); setMarked(new Set()); }}>Отмена</button>
+                        <button className="bsb-edit-btn danger" disabled={!marked.size} onClick={deleteMarked}>
+                            <i className="bi bi-trash3" /> Удалить{marked.size ? ` (${marked.size})` : ''}
+                        </button>
+                    </div>
+                ) : (
                 <div className="bsb-add">
                     <input placeholder="Новый избранный тег" value={newTag}
                            onChange={e => setNewTag(e.target.value)}
@@ -139,6 +196,7 @@ const SectionR34 = ({ currentSource }) => {
                         </button>
                     )}
                 </div>
+                )}
             </Block>
 
             {history.length > 0 && (
