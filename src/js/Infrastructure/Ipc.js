@@ -18,6 +18,7 @@ export const favoriteTagsApi = {
     getAll: ()                => invoke("getFavTags"),
     add:    (tag, remoteType) => invoke("AddFavTags", tag, remoteType),
     remove: (tag, remoteType) => invoke("RemoveFavTags", tag, remoteType),
+    reorder: (remoteType, tags) => invoke("ReorderFavTags", remoteType, tags),
 };
 
 export const tagsApi = {

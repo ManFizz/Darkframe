@@ -11,6 +11,7 @@ export function useFavoriteTags() {
         addFavTag:    (tag, remoteType) => FavoriteTagsService.add(tag, remoteType),
         removeFavTag: (tag, remoteType) => FavoriteTagsService.remove(tag, remoteType),
         isFavTag:     (tag, remoteType) => FavoriteTagsService.has(tag, remoteType),
+        reorderFavTags: (remoteType, ordered) => FavoriteTagsService.reorder(remoteType, ordered),
     };
 }
 

@@ -55,7 +55,7 @@ const Block = ({ title, extra, children }) => (
 const SectionR34 = ({ currentSource }) => {
     const q = useBooruQuery();
     const status = useSearchStatus();
-    const { favoriteTags, addFavTag, removeFavTag } = useFavoriteTags();
+    const { favoriteTags, addFavTag, removeFavTag, reorderFavTags } = useFavoriteTags();
     const [newTag, setNewTag] = useState('');
     const [customScore, setCustomScore] = useState('');
     // Saved tags are removed only in an explicit edit mode: mark → "Удалить (N)",
@@ -90,7 +90,39 @@ const SectionR34 = ({ currentSource }) => {
         });
     };
 
-    const favs = favoriteTags.filter(t => t.remote_type === currentSource);
+    const savedFavs = favoriteTags.filter(t => t.remote_type === currentSource);
+    // While dragging, the list is shown in the live (not yet saved) order.
+    const [drag, setDrag] = useState(null);   // { tag, order: [names], dropped }
+    const favs = drag
+        ? drag.order.map(name => savedFavs.find(f => f.tag === name)).filter(Boolean)
+        : savedFavs;
+
+    const onDragStart = (e, tag) => {
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/plain', tag);
+        setDrag({ tag, order: savedFavs.map(f => f.tag), dropped: false });
+    };
+    // Hovering another chip moves the dragged one into its slot (live preview).
+    const onDragOverTag = (e, overTag) => {
+        if (!drag) return;
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+        if (overTag === drag.tag) return;
+        setDrag(d => {
+            const order = d.order.filter(t => t !== d.tag);
+            order.splice(order.indexOf(overTag) + (d.order.indexOf(overTag) > d.order.indexOf(d.tag) ? 1 : 0), 0, d.tag);
+            return { ...d, order };
+        });
+    };
+    const onDrop = (e) => {
+        if (!drag) return;
+        e.preventDefault();
+        const changed = drag.order.join('\n') !== savedFavs.map(f => f.tag).join('\n');
+        if (changed) reorderFavTags(currentSource, drag.order);
+        setDrag(null);
+    };
+    // Dropped outside the list (or Esc): nothing is saved.
+    const onDragEnd = () => setDrag(null);
     const history = getHistory(currentSource);
     const searched = status.query != null && status.source === currentSource;
 
@@ -142,29 +174,40 @@ const SectionR34 = ({ currentSource }) => {
                        : <button className="bsb-link" onClick={() => setEditing(true)} title="Удалить избранные теги">
                              <i className="bi bi-pencil" /> изменить
                          </button>)}>
-                <div className={`bsb-chips ${editing ? 'editing' : ''}`}>
+                <div className={`bsb-chips bsb-favs ${editing ? 'editing' : ''} ${drag ? 'dragging' : ''}`}
+                     onDragOver={e => { if (drag) e.preventDefault(); }}
+                     onDrop={onDrop}>
                     {favs.map(f => {
                         const st = tagState(f.tag);
                         const isMarked = marked.has(f.tag);
                         if (editing) {
                             return (
                                 <span key={f.tag}
-                                      className={`bsb-tag kind-${kindOf(f.tag)} edit ${isMarked ? 'marked' : ''}`}
+                                      className={`bsb-tag kind-${kindOf(f.tag)} edit ${isMarked ? 'marked' : ''} ${drag?.tag === f.tag ? 'drag-src' : ''}`}
+                                      draggable
+                                      onDragStart={e => onDragStart(e, f.tag)}
+                                      onDragOver={e => onDragOverTag(e, f.tag)}
+                                      onDragEnd={onDragEnd}
                                       onClick={() => toggleMark(f.tag)}
-                                      title={isMarked ? 'Не удалять' : 'Отметить для удаления'}>
+                                      title={`${f.tag}\n${isMarked ? 'Не удалять' : 'Отметить для удаления'} · перетащи, чтобы переставить`}>
                                     <i className={`bi ${isMarked ? 'bi-check-square-fill' : 'bi-square'}`} />
-                                    {f.tag}
+                                    <span className="bsb-tag-name">{f.tag}</span>
                                 </span>
                             );
                         }
                         return (
                             <span key={f.tag}
-                                  className={`bsb-tag kind-${kindOf(f.tag)} ${st || ''}`}
+                                  className={`bsb-tag kind-${kindOf(f.tag)} ${st || ''} ${drag?.tag === f.tag ? 'drag-src' : ''}`}
+                                  draggable
+                                  onDragStart={e => onDragStart(e, f.tag)}
+                                  onDragOver={e => onDragOverTag(e, f.tag)}
+                                  onDragEnd={onDragEnd}
                                   onClick={() => cycleTag(f.tag)}
-                                  title={st === 'include' ? 'В запросе — нажми, чтобы исключить' : st === 'exclude' ? 'Исключён — нажми, чтобы убрать' : 'Добавить в запрос'}>
-                                {st === 'include' && <i className="bi bi-plus" />}
-                                {st === 'exclude' && <i className="bi bi-dash" />}
-                                {f.tag}
+                                  title={`${f.tag}\n${st === 'include' ? 'В запросе — нажми, чтобы исключить' : st === 'exclude' ? 'Исключён — нажми, чтобы убрать' : 'Нажми, чтобы добавить в запрос'} · перетащи, чтобы переставить`}>
+                                <i className="bi bi-grip-vertical bsb-grip" />
+                                {st === 'include' && <i className="bi bi-plus-circle-fill bsb-state" />}
+                                {st === 'exclude' && <i className="bi bi-dash-circle-fill bsb-state" />}
+                                <span className="bsb-tag-name">{f.tag}</span>
                             </span>
                         );
                     })}

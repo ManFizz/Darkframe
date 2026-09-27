@@ -47,6 +47,23 @@ export const FavoriteTagsService = {
         this._notify();
     },
 
+    // `ordered` — the source's tag names in their new order.
+    async reorder(remoteType, ordered) {
+        const before = favoriteTags;
+        const pos = new Map(ordered.map((t, i) => [t, i]));
+        const mine = favoriteTags.filter(f => f.remote_type === remoteType)
+            .sort((a, b) => (pos.get(a.tag) ?? 1e9) - (pos.get(b.tag) ?? 1e9));
+        favoriteTags = [...favoriteTags.filter(f => f.remote_type !== remoteType), ...mine];   // optimistic
+        this._notify();
+        try {
+            favoriteTags = await favoriteTagsApi.reorder(remoteType, ordered) || favoriteTags;
+        } catch (e) {
+            favoriteTags = before;
+            console.error('Could not reorder favourite tags:', e);
+        }
+        this._notify();
+    },
+
     subscribe(cb) {
         listeners.add(cb);
         return () => listeners.delete(cb);
