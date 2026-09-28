@@ -91,6 +91,7 @@ export const libraryApi = {
     phashStatus:       ()     => invoke('library:phashStatus'),
     computePhashes:    ()     => invoke('library:computePhashes'),
     findSimilar:       (data) => invoke('library:findSimilar', data),
+    itemRelations:     (id)   => invoke('library:itemRelations', { id }),
     checkIntegrity:    ()     => invoke('library:checkIntegrity'),
     cleanupIntegrity:  (data) => invoke('library:cleanupIntegrity', data),
     generateMissingMedia: ()  => invoke('library:generateMissingMedia'),

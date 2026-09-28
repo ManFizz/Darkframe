@@ -5,7 +5,7 @@ const sequelize = require('../database');
 const { Item } = require('../models/associations');
 const Collection = require('../models/Collection');
 const { getActive } = require('../libraryRegistry');
-const { phashOf, groupSimilar } = require('./phash');
+const { phashOf, groupSimilar, popcount32 } = require('./phash');
 const { itemUrls } = require('./itemUrls');
 
 // Near-duplicate finder (perceptual hash). Still images only — GIFs by their first
@@ -137,4 +137,66 @@ async function findSimilar(maxDistance = 8, onProgress) {
     return { groups, totalGroups: groups.length, totalItems, reclaimable };
 }
 
-module.exports = { phashStatus, computeMissing, findSimilar };
+const toRow = (it, extra = {}) => ({
+    id: it.id,
+    title: it.title || it.fileName,
+    size: it.size,
+    mimeType: it.mimeType,
+    width: it.width,
+    height: it.height,
+    importedAt: it.importedAt,
+    collectionName: it.collection?.name || 'Без коллекции',
+    thumbPath: itemUrls(it).thumbPath,
+    ...extra,
+});
+
+/**
+ * Copies and look-alikes of one item (the viewer's side panel): exact copies by file
+ * hash, near-duplicates by perceptual hash (computed on the spot when missing).
+ * Other items are only compared if their hash already exists — "Найти похожие" in
+ * the control panel fills the rest.
+ */
+async function relationsOf(id, maxDistance = 12) {
+    const item = await Item.findByPk(id);
+    if (!item) return { exact: [], similar: [], unhashed: 0 };
+    const include = [{ model: Collection, as: 'collection', attributes: ['id', 'name'] }];
+
+    const exact = item.fileHash
+        ? (await Item.findAll({ where: { fileHash: item.fileHash, id: { [Op.ne]: id } }, include })).map(it => toRow(it))
+        : [];
+
+    let similar = [];
+    let unhashed = 0;
+    if (String(item.mimeType).startsWith('image/')) {
+        let ph = item.phash;
+        if (ph == null) {
+            try {
+                const file = imageFileFor(id);
+                ph = file ? await phashOf(fs.readFileSync(file)) : '';
+            } catch { ph = ''; }
+            await Item.unscoped().update({ phash: ph }, { where: { id } });
+        }
+        if (ph) {
+            const hi = parseInt(ph.slice(0, 8), 16) >>> 0, lo = parseInt(ph.slice(8), 16) >>> 0;
+            const rows = await Item.findAll({
+                where: { ...IMAGES, id: { [Op.ne]: id }, phash: { [Op.and]: [{ [Op.ne]: null }, { [Op.ne]: '' }] } },
+                attributes: ['id', 'phash'], raw: true,
+            });
+            const exactIds = new Set(exact.map(e => e.id));
+            const near = rows
+                .map(r => ({ id: r.id, d: popcount32(hi ^ (parseInt(r.phash.slice(0, 8), 16) >>> 0)) + popcount32(lo ^ (parseInt(r.phash.slice(8), 16) >>> 0)) }))
+                .filter(r => r.d <= maxDistance && !exactIds.has(r.id))
+                .sort((a, b) => a.d - b.d)
+                .slice(0, 12);
+            if (near.length) {
+                const byId = new Map((await Item.findAll({ where: { id: near.map(n => n.id) }, include })).map(it => [it.id, it]));
+                similar = near.filter(n => byId.has(n.id))
+                    .map(n => toRow(byId.get(n.id), { distance: n.d, similarity: Math.round(((64 - n.d) / 64) * 100) }));
+            }
+            unhashed = await Item.count({ where: { ...IMAGES, phash: null } });
+        }
+    }
+    return { exact, similar, unhashed };
+}
+
+module.exports = { phashStatus, computeMissing, findSimilar, relationsOf };

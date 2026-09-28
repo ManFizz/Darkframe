@@ -467,6 +467,7 @@ function register() {
     ipcMain.handle('library:computePhashes', async (event) => similarity.computeMissing((p) => {
         if (!event.sender.isDestroyed()) event.sender.send('library:phashProgress', p);
     }));
+    ipcMain.handle('library:itemRelations', async (_, { id }) => similarity.relationsOf(id));
     ipcMain.handle('library:findSimilar', async (event, { maxDistance }) => similarity.findSimilar(maxDistance, (pct) => {
         if (!event.sender.isDestroyed()) event.sender.send('library:similarProgress', pct);
     }));

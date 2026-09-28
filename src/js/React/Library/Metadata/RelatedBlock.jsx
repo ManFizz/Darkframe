@@ -1,0 +1,71 @@
+import React, {useEffect, useState} from 'react';
+import {libraryApi} from '@/Infrastructure/Ipc';
+import {compareItemFromThumb, openCompare} from '../../Compare/CompareView';
+
+const fmtSize = (b) => (b == null ? '' : b < 1024 ** 2 ? `${Math.round(b / 1024)} КБ` : `${(b / 1024 ** 2).toFixed(1)} МБ`);
+
+// Exact copies and look-alikes of the open library item, each one click away from
+// a side-by-side comparison. Fetched with a short delay so arrow-key browsing
+// doesn't fire a request per skipped file.
+const RelatedBlock = ({ file, onChanged }) => {
+    const [data, setData] = useState(null);
+    const [version, setVersion] = useState(0);
+
+    useEffect(() => {
+        setData(null);
+        if (!file?.id) return;
+        let cancelled = false;
+        const timer = setTimeout(() => {
+            libraryApi.itemRelations(file.id)
+                .then(res => { if (!cancelled) setData(res); })
+                .catch(() => { if (!cancelled) setData({ exact: [], similar: [], unhashed: 0 }); });
+        }, 350);
+        return () => { cancelled = true; clearTimeout(timer); };
+    }, [file?.id, version]);
+
+    if (!data || (!data.exact.length && !data.similar.length)) {
+        return data && data.unhashed > 0 && String(file.mimeType || '').startsWith('image/') ? (
+            <div className="rel-hint" title="Панель управления → Дубликаты → Похожие → «Посчитать отпечатки»">
+                <i className="bi bi-info-circle" /> Похожих не найдено среди файлов с отпечатком ({data.unhashed} без отпечатка)
+            </div>
+        ) : null;
+    }
+
+    const compare = (row) => openCompare(
+        [compareItemFromThumb(file), { ...row, url: `library://item/${row.id}` }],
+        { onDone: () => { setVersion(v => v + 1); onChanged?.(); } },
+    );
+
+    const Thumbs = ({ rows }) => (
+        <div className="rel-thumbs">
+            {rows.map(r => (
+                <button key={r.id} className="rel-thumb" onClick={() => compare(r)}
+                        title={`${r.title}\n${r.width}×${r.height} · ${fmtSize(r.size)} · ${r.collectionName}${r.similarity ? `\nсходство ${r.similarity}%` : ''}\nНажми, чтобы сравнить`}>
+                    <img src={r.thumbPath} alt="" loading="lazy" />
+                    {r.similarity != null && <span className="rel-sim">{r.similarity}%</span>}
+                </button>
+            ))}
+        </div>
+    );
+
+    return (
+        <div className="rel-block">
+            {data.exact.length > 0 && (
+                <div className="rel-group exact">
+                    <div className="rel-title">
+                        <i className="bi bi-exclamation-triangle-fill" /> Точная копия в библиотеке: {data.exact.length}
+                    </div>
+                    <Thumbs rows={data.exact} />
+                </div>
+            )}
+            {data.similar.length > 0 && (
+                <div className="rel-group">
+                    <div className="rel-title"><i className="bi bi-images" /> Похожие: {data.similar.length}</div>
+                    <Thumbs rows={data.similar} />
+                </div>
+            )}
+        </div>
+    );
+};
+
+export default RelatedBlock;

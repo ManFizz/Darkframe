@@ -136,3 +136,51 @@
   }
 }
 
+
+// ─── Copies / look-alikes of the open item ───────────────────────────────────
+.rel-block { display: flex; flex-direction: column; gap: 10px; margin-bottom: 12px; }
+.rel-group {
+  padding: 8px 10px 10px;
+  border-radius: 10px;
+  background: var(--df-glass, transparent);
+  border: 1px solid var(--bs-border-color);
+  &.exact {
+    background: color-mix(in srgb, var(--bs-warning) 10%, transparent);
+    border-color: color-mix(in srgb, var(--bs-warning) 45%, transparent);
+    .rel-title { color: var(--bs-warning); }
+  }
+}
+.rel-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 7px;
+  font-size: 11.5px;
+  font-weight: 700;
+}
+.rel-thumbs { display: flex; flex-wrap: wrap; gap: 5px; }
+.rel-thumb {
+  position: relative;
+  width: 52px;
+  height: 52px;
+  padding: 0;
+  border: 2px solid transparent;
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--bs-tertiary-bg);
+  cursor: pointer;
+  img { width: 100%; height: 100%; object-fit: cover; }
+  &:hover { border-color: var(--df-accent); }
+}
+.rel-sim {
+  position: absolute;
+  right: 2px;
+  bottom: 2px;
+  padding: 0 4px;
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.65);
+  color: #fff;
+  font-size: 9.5px;
+  font-weight: 700;
+}
+.rel-hint { margin-bottom: 10px; font-size: 11px; color: var(--bs-secondary); }
