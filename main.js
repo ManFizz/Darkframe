@@ -93,16 +93,24 @@ function setupContentSecurityPolicy() {
     });
 }
 
-function setupRequestHeaders() {
-    session.defaultSession.webRequest.onBeforeSendHeaders({ urls: ['*://*.rule34.xxx/*', '*://*.realbooru.com/*'] } , (details, callback) => {
-        details.requestHeaders['User-Agent'] = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36 Edg/126.0.0.0'
-        callback({ requestHeaders: details.requestHeaders })
-    });
+// One listener for all hosts: Electron keeps only the last onBeforeSendHeaders
+// registered on a session, so separate ones would silently replace each other.
+const BROWSER_UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36 Edg/126.0.0.0';
 
-    session.defaultSession.webRequest.onBeforeSendHeaders({ urls: ['*://*.gelbooru.com/*'] } , (details, callback) => {
-        details.requestHeaders['User-Agent'] = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36 Edg/126.0.0.0'
-        details.requestHeaders['Referer'] = 'https://gelbooru.com/index.php';
-        callback({ requestHeaders: details.requestHeaders })
+function setupRequestHeaders() {
+    const urls = ['*://*.rule34.xxx/*', '*://*.realbooru.com/*', '*://*.gelbooru.com/*', '*://*.donmai.us/*'];
+    session.defaultSession.webRequest.onBeforeSendHeaders({ urls }, (details, callback) => {
+        const host = new URL(details.url).hostname;
+        const h = details.requestHeaders;
+        if (host.endsWith('donmai.us')) {
+            // Danbooru's Cloudflare challenges browser-looking clients; API clients
+            // are expected to name themselves.
+            h['User-Agent'] = `Darkframe/${app.getVersion()}`;
+        } else {
+            h['User-Agent'] = BROWSER_UA;
+            if (host.endsWith('gelbooru.com')) h['Referer'] = 'https://gelbooru.com/index.php';
+        }
+        callback({ requestHeaders: h });
     });
 }
 
