@@ -10,7 +10,7 @@ import QuickFilters from "./Filters/QuickFilters";
 import useSelection from "@hooks/gallery/useSelection";
 import LibraryService from "@services/LibraryService"
 import LibraryGallery from "../PageBuilders/LibraryGallery";
-import {useViewPref} from '@services/viewPrefs';
+import {getViewPrefs, setViewPref, useViewPref} from '@services/viewPrefs';
 import {FILE_TYPES, SOURCE_TYPES} from "@/Constants";
 import {ThumbFile} from "@/Models/ThumbFile";
 import useCollections from "@hooks/library/useCollections"
@@ -31,10 +31,27 @@ const SECTION_LABELS = {
 const sectionLabel = (s) => SECTION_LABELS[s] || `Секция ${s}`;
 
 const LibraryView = () => {
-    const [selectedCollection, setSelectedCollection] = useState(SPECIAL.NONE);
+    const [selectedCollection, setSelectedCollection] = useState(() => {
+        const { restoreSession, lastCollection } = getViewPrefs();
+        return (restoreSession && lastCollection) || SPECIAL.NONE;
+    });
     const { filtered, filters, setLibraryItems, refreshStats, statsVersion } = useLibraryContext();
     const [ratingDividers] = useViewPref('ratingDividers');
     const { favoritesId } = useLibraryStats(statsVersion);
+
+    // A restored selection may point at a collection deleted since: fall back.
+    useEffect(() => {
+        const check = () => {
+            const special = Object.values(SPECIAL).includes(selectedCollection);
+            const cols = LibraryService.getCollections();
+            if (special || !favoritesId || !cols.length) return;
+            if (selectedCollection !== favoritesId && !cols.some(c => c.id === selectedCollection)) {
+                setSelectedCollection(SPECIAL.NONE);
+            }
+        };
+        check();
+        return LibraryService.subscribe(check);
+    }, [selectedCollection, favoritesId]);
     const [modalFileId, setModalFileId] = useState(null);
     const galleryScrollRef = useRef(null);
     useDragAutoScroll(galleryScrollRef);
@@ -137,6 +154,7 @@ const LibraryView = () => {
 
     const handleCollectionSelect = useCallback((id) => {
         setSelectedCollection(id);
+        setViewPref('lastCollection', id);
     }, []);
 
     // Clicking a thumb body selects it (Explorer-style: plain = single, ctrl = toggle,

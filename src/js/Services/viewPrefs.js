@@ -7,6 +7,9 @@ const KEY = 'jsg_view_prefs';
 const DEFAULTS = {
     ratingDividers: true,   // group the gallery under "★ N" headers when sorted by rating
     collapsedRatings: [],   // rating groups folded by clicking their header
+    restoreSession: true,   // reopen the tab / collection / folder that was open last
+    lastNav: 0,             // index of the top-bar tab
+    lastCollection: null,   // library tree selection
 };
 
 let current = load();

@@ -10,6 +10,7 @@ import FolderSidebar from './FolderSidebar';
 import PathBar from './PathBar';
 import {useFolderBrowser} from './useFolderBrowser';
 import {isPinned, setFolderPrefs, togglePin, useFolderPrefs} from './folderPrefs';
+import {getViewPrefs} from '@services/viewPrefs';
 
 const os = window.require('os');
 const nodePath = window.require('path');
@@ -79,7 +80,8 @@ const FileTile = React.memo(({ file, onOpen, selected, selecting, onToggle }) =>
 });
 
 function initialPath(prefs) {
-    return prefs.lastPath || PrivateData.startPath || nodePath.join(os.homedir(), 'Pictures');
+    const last = getViewPrefs().restoreSession ? prefs.lastPath : null;
+    return last || PrivateData.startPath || nodePath.join(os.homedir(), 'Pictures');
 }
 
 const FolderView = () => {

@@ -1,4 +1,5 @@
-import React, {useContext, useState} from 'react';
+import React, {useContext, useEffect, useState} from 'react';
+import {getViewPrefs, setViewPref} from '@services/viewPrefs';
 import {createPortal} from 'react-dom';
 import {BsSliders} from "react-icons/bs";
 import ModuleRegistry from '@/ModuleRegistry';
@@ -27,17 +28,29 @@ const NavBar = () => {
 
     const openPanel = (tab = 'manage') => { setPanelTab(tab); setShowPanel(true); };
 
-    const handleNavigation = (sourceType, action = null) => {
-        setCurrentSource(sourceType);
-        if (action) action();
-    };
-
     // Favourites now live in the library sidebar (next to "Все файлы"), so the
     // top-level button is gone.
     const navButtons = [
         { label: 'Library',  type: SOURCE_TYPES.LIBRARY },
         ...ModuleRegistry.getNavItems(),
     ];
+
+    const [activeNav, setActiveNav] = useState(0);
+
+    const handleNavigation = (idx) => {
+        const btn = navButtons[idx];
+        if (!btn) return;
+        setActiveNav(idx);
+        setViewPref('lastNav', idx);
+        setCurrentSource(btn.type);
+        if (btn.action) btn.action();
+    };
+
+    // Reopen the tab that was open last time (setting "Открывать там, где закрыл").
+    useEffect(() => {
+        const { restoreSession, lastNav } = getViewPrefs();
+        if (restoreSession && lastNav > 0 && lastNav < navButtons.length) handleNavigation(lastNav);
+    }, []);   // eslint-disable-line react-hooks/exhaustive-deps
 
     return (
         // Glass top bar, themed like the rest of the app.
@@ -52,12 +65,13 @@ const NavBar = () => {
                                     className="btn-check"
                                     name="nav-radio"
                                     id={`nav-${idx}`}
-                                    defaultChecked={idx === 0}
+                                    checked={activeNav === idx}
+                                    readOnly
                                 />
                                 <label
                                     className="btn nav-source-tab"
                                     htmlFor={`nav-${idx}`}
-                                    onClick={() => handleNavigation(btn.type, btn.action)}
+                                    onClick={() => handleNavigation(idx)}
                                 >
                                     {btn.label}
                                 </label>
