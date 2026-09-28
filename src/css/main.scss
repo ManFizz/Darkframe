@@ -4,9 +4,9 @@
 // The accent is a single source colour: --df-accent (+ its "r, g, b" triple). The
 // runtime theme service overrides both on :root when the user picks another colour;
 // every shade below is derived from them with color-mix, so nothing else needs
-// touching. Light/dark switches with Bootstrap's data-bs-theme; parts that should
-// stay dark in a light theme (the media viewer, the top bar) carry their own
-// data-bs-theme="dark" and get the dark tokens locally.
+// touching. Light/dark switches with Bootstrap's data-bs-theme; only the media stage
+// of the viewer (and the image editor) stays dark in the light theme — it carries its
+// own data-bs-theme="dark" and gets the dark tokens locally.
 :root {
   --df-accent: #b06bff;
   --df-accent-rgb: 176, 107, 255;
@@ -39,6 +39,13 @@
   --df-glass-border: #322a44;
   --df-text-dim: #b9b3c6;
   --df-code-bg: rgba(0, 0, 0, 0.35);
+
+  // Top bar / inputs on glass.
+  --df-nav-bg: linear-gradient(160deg, rgba(23, 19, 31, 0.9), rgba(16, 14, 21, 0.82));
+  --df-field: rgba(0, 0, 0, 0.3);          // search fields on the top bar
+  --df-island: rgba(0, 0, 0, 0.28);        // grouped action buttons
+  --df-hover: rgba(255, 255, 255, 0.06);   // hover wash on glass
+  --df-shadow: rgba(0, 0, 0, 0.45);
 }
 
 [data-bs-theme="light"] {
@@ -51,6 +58,12 @@
   --df-glass-border: #ddd6ea;
   --df-text-dim: #5d566b;
   --df-code-bg: rgba(0, 0, 0, 0.06);
+
+  --df-nav-bg: linear-gradient(160deg, rgba(255, 255, 255, 0.94), rgba(246, 242, 252, 0.92));
+  --df-field: rgba(0, 0, 0, 0.04);
+  --df-island: rgba(0, 0, 0, 0.035);
+  --df-hover: rgba(0, 0, 0, 0.05);
+  --df-shadow: rgba(40, 20, 70, 0.14);
 }
 
 // Stock Bootstrap components compile their own blue — re-skin them with the accent.

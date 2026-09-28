@@ -490,7 +490,7 @@ html:fullscreen {
 
   // Inputs sit on the darker glass, not the flat body colour.
   .metadata-content .form-control {
-    background: rgba(0, 0, 0, 0.3);
+    background: var(--df-field);
     border-color: var(--df-glass-border);
     border-radius: 10px;
   }
@@ -502,7 +502,7 @@ html:fullscreen {
     font-size: 14px;
     font-weight: 600;
     line-height: 1.3;
-    color: #fff;
+    color: var(--bs-body-color);
     word-break: break-word;
   }
 
@@ -599,3 +599,25 @@ $delete-delay: 1500ms;
   border-radius: 999px;
   box-shadow: 0 6px 22px rgba(0, 0, 0, 0.4);
 }
+// Light theme: the toolbar pill turns light too (the stage behind stays dark).
+.modal-nav-container .modal-nav-row[data-bs-theme="light"] {
+  background: rgba(255, 255, 255, 0.92);
+  border-color: rgba(0, 0, 0, 0.08);
+  box-shadow: 0 6px 22px rgba(0, 0, 0, 0.35);
+
+  .bi {
+    color: #3b3447;
+    filter: none;
+    &:hover { background: rgba(0, 0, 0, 0.06); }
+  }
+}
+
+// In the light theme the page behind is bright: make the (still dark) stage opaque
+// enough that it doesn't turn into a washed-out lilac.
+html[data-bs-theme="light"] .modal-view {
+  background: linear-gradient(45deg, rgba(30, 10, 34, 0.985), rgba(8, 8, 12, 0.99));
+  &.favorite { background: linear-gradient(45deg, rgba(64, 10, 60, 0.985), rgba(8, 8, 12, 0.99)); }
+}
+.modal-panel-wrapper[data-bs-theme="light"] { background: rgba(252, 251, 254, 0.97); }
+// The dialog sets white text for the stage; the panel follows its own theme.
+.modal-panel-wrapper { color: var(--bs-body-color); }

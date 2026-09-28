@@ -17,6 +17,7 @@ import {mediaKey} from "@services/mediaKey";
 import {useSlideshow} from "./useSlideshow";
 import SlideshowHud from "./SlideshowHud";
 import {exitViewerFullscreen} from "./fullscreen";
+import {useResolvedTheme} from "@services/theme";
 
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(v, hi));
 
@@ -38,6 +39,8 @@ const Modal = ({ fileId, mainArray, modalUpdater, displayFiles, onUpdated }) => 
     [fileId, mainArray]);
 
     const ss = useSlideshow({ file, mainArray, modalUpdater });
+    // The media stage stays dark; the side panel and the toolbar follow the app theme.
+    const uiTheme = useResolvedTheme();
 
     // Fullscreen belongs to the viewer: closing it drops back to the window.
     const isOpen = !!file;
@@ -356,6 +359,7 @@ const Modal = ({ fileId, mainArray, modalUpdater, displayFiles, onUpdated }) => 
             >
                 {!editing && (
                     <Navigation
+                        uiTheme={uiTheme}
                         file={file}
                         modalUpdater={modalUpdater}
                         mainArray={mainArray}
@@ -383,7 +387,7 @@ const Modal = ({ fileId, mainArray, modalUpdater, displayFiles, onUpdated }) => 
                     </div>
                 </div>
                 {showPanel && (
-                    <div className="modal-panel-wrapper">
+                    <div className="modal-panel-wrapper" data-bs-theme={uiTheme}>
                         {hasMetaPanel
                             ? <MetadataPanel file={file} onUpdated={handlePanelUpdated} />
                             : hasFolderPanel

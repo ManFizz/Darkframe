@@ -2,7 +2,7 @@
 .navbar-glass {
   position: relative;
   padding: 8px 16px;
-  background: linear-gradient(160deg, rgba(23, 19, 31, 0.9), rgba(16, 14, 21, 0.82));
+  background: var(--df-nav-bg);
   backdrop-filter: blur(14px);
   border-bottom: 1px solid var(--df-glass-border);
   // Soft violet bloom in the top-left, echoing the modal.
@@ -33,7 +33,7 @@
     background: transparent;
     transition: color .15s, background .15s, box-shadow .2s;
 
-    &:hover { color: var(--bs-body-color); background: rgba(255, 255, 255, 0.05); }
+    &:hover { color: var(--bs-body-color); background: var(--df-hover); }
   }
 
   .btn-check:checked + .nav-source-tab {
@@ -50,7 +50,7 @@
     margin-left: auto;
     padding: 4px;
     border-radius: 999px;
-    background: rgba(0, 0, 0, 0.28);
+    background: var(--df-island);
     border: 1px solid var(--df-glass-border);
 
     .btn {
@@ -59,7 +59,7 @@
       color: var(--bs-secondary);
       border-radius: 999px;
 
-      &:hover { color: var(--bs-body-color); background: rgba(255, 255, 255, 0.06); }
+      &:hover { color: var(--bs-body-color); background: var(--df-hover); }
     }
 
     // Keep the dropdowns' rounded grouping from clashing with the pill container.
@@ -95,7 +95,7 @@
   max-width: 320px;
   padding: 0 6px 0 12px;
   border-radius: 999px;
-  background: rgba(0, 0, 0, 0.3);
+  background: var(--df-field);
   border: 1px solid var(--df-glass-border);
   transition: border-color .15s, box-shadow .15s;
 
@@ -129,7 +129,7 @@
     color: var(--bs-secondary);
     cursor: pointer;
     transition: background .15s, color .15s;
-    &:hover { background: rgba(255, 255, 255, 0.08); color: var(--bs-body-color); }
+    &:hover { background: var(--df-hover); color: var(--bs-body-color); }
   }
 }
 
@@ -148,7 +148,7 @@
     min-height: 36px;
     padding: 3px 8px;
     border-radius: 12px;
-    background: rgba(0, 0, 0, 0.3);
+    background: var(--df-field);
     border: 1px solid var(--df-glass-border);
     cursor: text;
     transition: border-color .15s, box-shadow .15s;
@@ -348,7 +348,7 @@
   height: 30px;
   padding: 0 12px;
   border-radius: 999px;
-  background: rgba(0, 0, 0, 0.3);
+  background: var(--df-field);
   border: 1px solid var(--df-accent-dim);
   color: var(--bs-body-color);
   font-size: 13px;

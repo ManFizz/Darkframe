@@ -17,7 +17,7 @@ const isCanDisplayedByIdx = (mainArray, nextIdx) => {
 };
 
 // hidden — visually hidden (slideshow running) but still mounted, so Escape / arrows work
-const Navigation = ({ file, modalUpdater, mainArray, setDegree, panelOpen, onPanelToggle, onEdit, onApplyLast, onDuplicate, onSlideshow, showFav, hidden = false }) => {
+const Navigation = ({ uiTheme = 'dark', file, modalUpdater, mainArray, setDegree, panelOpen, onPanelToggle, onEdit, onApplyLast, onDuplicate, onSlideshow, showFav, hidden = false }) => {
     const { isFav, isPending, toggleFav } = useFavorites();
     const [editingCounter, setEditingCounter] = useState(false);
     const [counterInput, setCounterInput] = useState('');
@@ -116,7 +116,7 @@ const Navigation = ({ file, modalUpdater, mainArray, setDegree, panelOpen, onPan
 
     return (
         <div className={`modal-nav-container ${hidden ? 'nav-hidden' : ''}`}>
-            <div className="modal-nav-row">
+            <div className="modal-nav-row" data-bs-theme={uiTheme}>
                 <i
                     className="bi bi-arrow-left-square btn-cancel"
                     title="Закрыть"

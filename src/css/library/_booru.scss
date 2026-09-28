@@ -24,7 +24,7 @@
   min-height: 38px;
   padding: 4px 4px 4px 12px;
   border-radius: 20px;
-  background: rgba(0, 0, 0, 0.3);
+  background: var(--df-field);
   border: 1px solid var(--df-glass-border);
   cursor: text;
   transition: border-color 0.15s, box-shadow 0.15s;
@@ -54,7 +54,7 @@
   border-radius: 999px;
   background: color-mix(in srgb, var(--k) 18%, transparent);
   border: 1px solid color-mix(in srgb, var(--k) 45%, transparent);
-  color: color-mix(in srgb, var(--k) 70%, #fff);
+  color: color-mix(in srgb, var(--k) 70%, var(--bs-body-color));
   font-size: 12.5px;
   font-weight: 600;
   cursor: pointer;
@@ -80,7 +80,7 @@
     color: inherit;
     opacity: 0.7;
     cursor: pointer;
-    &:hover { opacity: 1; background: rgba(255, 255, 255, 0.12); }
+    &:hover { opacity: 1; background: var(--df-hover); }
   }
 }
 
@@ -870,7 +870,7 @@
   color: var(--bs-secondary);
   font-size: 15px;
   cursor: pointer;
-  &:hover:not(:disabled) { color: var(--df-accent); background: rgba(255, 255, 255, 0.06); }
+  &:hover:not(:disabled) { color: var(--df-accent); background: var(--df-hover); }
   &:disabled { opacity: 0.35; cursor: default; }
   &.on { color: var(--df-accent); }
 }
