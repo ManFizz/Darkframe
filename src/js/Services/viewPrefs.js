@@ -8,6 +8,7 @@ const DEFAULTS = {
     ratingDividers: true,   // group the gallery under "★ N" headers when sorted by rating
     collapsedRatings: [],   // rating groups folded by clicking their header
     dateDividers: true,     // month headers when sorted by date
+    filmstrip: true,        // thumbnail strip at the bottom of the viewer
     collapsedMonths: [],    // folded months ("2026-09")
     restoreSession: true,   // reopen the tab / collection / folder that was open last
     lastNav: 0,             // index of the top-bar tab

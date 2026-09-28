@@ -14,6 +14,7 @@ const AppearanceSection = () => {
     const [ratingDividers, setRatingDividers] = useViewPref('ratingDividers');
     const [restoreSession, setRestoreSession] = useViewPref('restoreSession');
     const [dateDividers, setDateDividers] = useViewPref('dateDividers');
+    const [filmstrip, setFilmstrip] = useViewPref('filmstrip');
     const isPreset = ACCENT_PRESETS.some(p => p.value.toLowerCase() === String(theme.accent).toLowerCase());
 
     return (
@@ -94,6 +95,17 @@ const AppearanceSection = () => {
                     <div className="form-check form-switch settings-switch">
                         <input className="form-check-input" type="checkbox" checked={dateDividers}
                                onChange={e => setDateDividers(e.target.checked)} />
+                    </div>
+                </div>
+
+                <div className="settings-item settings-item--inline">
+                    <div className="settings-item-info">
+                        <div className="settings-item-label">Полоса миниатюр в просмотре</div>
+                        <div className="settings-item-desc">Соседние файлы внизу просмотрщика; клавиша T — показать / скрыть</div>
+                    </div>
+                    <div className="form-check form-switch settings-switch">
+                        <input className="form-check-input" type="checkbox" checked={filmstrip}
+                               onChange={e => setFilmstrip(e.target.checked)} />
                     </div>
                 </div>
 

@@ -16,6 +16,8 @@ import {loadEditPreset} from "@services/imageEditPreset";
 import {mediaKey} from "@services/mediaKey";
 import {useSlideshow} from "./useSlideshow";
 import SlideshowHud from "./SlideshowHud";
+import Filmstrip from "./Filmstrip";
+import {useViewPref} from "@services/viewPrefs";
 import {exitViewerFullscreen} from "./fullscreen";
 import {useResolvedTheme} from "@services/theme";
 
@@ -54,6 +56,23 @@ const Modal = ({ fileId, mainArray, modalUpdater, displayFiles, onUpdated }) => 
     const hasSidePanel = hasMetaPanel || hasRemotePanel || hasFolderPanel;
     // The side panel steps aside for the whole slideshow (no layout jumps on pause).
     const showPanel   = panelOpen && hasSidePanel && !ss.active;
+    // Thumbnail strip along the bottom (setting + T to toggle).
+    const [stripPref, setStripPref] = useViewPref('filmstrip');
+    const showStrip = stripPref && !ss.active && !editing;
+
+    useEffect(() => {
+        if (!file) return;
+        const onKey = (e) => {
+            if (e.code !== 'KeyT' || e.ctrlKey || e.altKey || e.metaKey) return;
+            const el = document.activeElement;
+            if (el?.tagName === 'INPUT' || el?.tagName === 'TEXTAREA' || el?.isContentEditable) return;
+            if (document.querySelector('.img-editor')) return;
+            e.preventDefault();
+            setStripPref(!stripPref);
+        };
+        document.addEventListener('keydown', onKey);
+        return () => document.removeEventListener('keydown', onKey);
+    }, [file, stripPref, setStripPref]);
 
     // S starts the slideshow / toggles pause. While it runs, any other key, a click
     // on the media or the wheel pauses it (arrows still navigate).
@@ -346,7 +365,7 @@ const Modal = ({ fileId, mainArray, modalUpdater, displayFiles, onUpdated }) => 
         <>
             {/* The media viewer stays dark in the light theme too (data-bs-theme island). */}
             <dialog
-                className={`modal-view ${isFav(file) ? "favorite" : ""} ${showPanel ? 'with-panel' : ''} ${Settings.LongView && isLong ? "long" : ""}`}
+                className={`modal-view ${isFav(file) ? "favorite" : ""} ${showPanel ? 'with-panel' : ''} ${showStrip ? 'with-strip' : ''} ${Settings.LongView && isLong ? "long" : ""}`}
                 data-bs-theme="dark"
                 open
                 ref={modalRef}
@@ -377,6 +396,7 @@ const Modal = ({ fileId, mainArray, modalUpdater, displayFiles, onUpdated }) => 
                 )}
 
                 {ss.active && !editing && <SlideshowHud ss={ss} file={file} />}
+                {showStrip && <Filmstrip items={mainArray} current={file} onPick={modalUpdater} />}
 
                 {/* The media area is always rendered in the same spot so toggling the
                     panel never remounts <Video> (which would restart playback). Only
