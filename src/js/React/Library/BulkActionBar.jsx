@@ -3,14 +3,13 @@ import LibraryService from '@services/LibraryService';
 import {notify} from '@services/NotificationService';
 import {loadEditPreset} from '@services/imageEditPreset';
 import {FILE_TYPES} from '@/Constants';
-import {recordTagUse} from '@services/tagPrefs';
+import BulkTags from './BulkTags';
 import CollectionTreeSelect, {pushRecentCollection} from './Collection/CollectionTreeSelect';
 
 const fmtMB = (b) => `${(b / 1024 / 1024).toFixed(1)} МБ`;
 
-const BulkActionBar = ({ selectedItems, onDone, permanent = false, totalCount = 0, onSelectAll, onInvert, onClear }) => {
+const BulkActionBar = ({ selectedItems, onDone, onChanged, permanent = false, totalCount = 0, onSelectAll, onInvert, onClear }) => {
     const [moveOpen, setMoveOpen] = useState(false);
-    const [tagInput, setTagInput] = useState('');
     const [compressOpen, setCompressOpen] = useState(false);
     const [cFormat, setCFormat]   = useState('webp');
     const [cQuality, setCQuality] = useState(85);
@@ -66,21 +65,6 @@ const BulkActionBar = ({ selectedItems, onDone, permanent = false, totalCount = 
         await LibraryService.bulkUpdateItems(
             selectedItems.map(f => ({ id: f.id, data: { collectionId } }))
         );
-        onDone();
-    };
-
-    const addTagToAll = async () => {
-        const tag = tagInput.trim().toLowerCase();
-        if (!tag) return;
-        recordTagUse(tag);
-
-        await LibraryService.bulkUpdateItems(
-            selectedItems.map(f => ({
-                id: f.id,
-                data: { tags: [...new Set([...(f.tags || []), tag])] },
-            }))
-        );
-        setTagInput('');
         onDone();
     };
 
@@ -179,22 +163,7 @@ const BulkActionBar = ({ selectedItems, onDone, permanent = false, totalCount = 
                         )}
                     </div>
 
-                    <div className="bulk-action-group">
-                        <input
-                            className="form-control form-control-sm"
-                            placeholder="Тег..."
-                            value={tagInput}
-                            onChange={e => setTagInput(e.target.value)}
-                            onKeyDown={e => e.key === 'Enter' && addTagToAll()}
-                        />
-                        <button
-                            className="btn btn-sm btn-outline-secondary"
-                            onClick={addTagToAll}
-                        >
-                            <i className="bi bi-tag me-1" />
-                            Добавить тег
-                        </button>
-                    </div>
+                    <BulkTags selectedItems={selectedItems} onChanged={onChanged} />
 
                     {hasPreset && (
                         <button

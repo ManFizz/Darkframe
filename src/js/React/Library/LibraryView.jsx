@@ -429,6 +429,7 @@ const LibraryView = () => {
                     onInvert={invert}
                     onClear={clear}
                     onDone={bulkOnDone}
+                    onChanged={async () => { refreshStats(); await reload(); }}
                 />
             )}
                 <div
