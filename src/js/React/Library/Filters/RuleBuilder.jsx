@@ -37,7 +37,7 @@ const Condition = ({ c, onChange, onRemove, collections }) => {
             <select className="form-select form-select-sm rb-cmp" value={c.cmp} onChange={e => set({ cmp: e.target.value })}>
                 {def.cmps.map(([k, l]) => <option key={k} value={k}>{l}</option>)}
             </select>
-            {!NO_VALUE.has(c.cmp) && (
+            {NO_VALUE.has(c.cmp) ? <span /> : (
                 def.input === 'select' ? (
                     <select className="form-select form-select-sm rb-value" value={c.value} onChange={e => set({ value: e.target.value })}>
                         <option value="">—</option>

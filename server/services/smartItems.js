@@ -4,7 +4,9 @@ const Tag = require('../models/Tag');
 const ItemTag = require('../models/ItemTag');
 const { itemUrls } = require('./itemUrls');
 const { withTagNames } = require('./itemTags');
-const { normalizeFilter, matchItem } = require('../../src/js/shared/filterPredicate');
+const { normalizeFilter, matchItem, rulesNeedHistory } = require('../../src/js/shared/filterPredicate');
+const ViewHistory = require('../models/ViewHistory');
+const { SOURCE_TYPES } = require('../../src/js/Constants');
 
 // Items matching a saved smart-collection filter (see shared/filterPredicate for the
 // model). SQL narrows by rating and required tags cheaply; the shared predicate then
@@ -33,10 +35,19 @@ async function getSmartItems(filter = {}) {
 
     const items = await withTagNames(await Item.findAll({ where, order: [['order', 'ASC']], raw: true }));
 
+    // "Viewed" conditions need the last view per library item.
+    let ctx = null;
+    if (rulesNeedHistory(f.rules)) {
+        const rows = await ViewHistory.findAll({
+            where: { section: SOURCE_TYPES.LIBRARY }, attributes: ['key', 'lastViewedAt'], raw: true,
+        });
+        ctx = { lastViewed: new Map(rows.filter(r => r.key.startsWith('lib:')).map(r => [r.key.slice(4), r.lastViewedAt || 0])) };
+    }
+
     const now = Math.floor(Date.now() / 1000);
     const plain = items
         .map(item => ({ ...item, ...itemUrls(item) }))
-        .filter(p => matchItem(p, f, now));
+        .filter(p => matchItem(p, f, now, ctx));
 
     return { collections: [], items: plain };
 }

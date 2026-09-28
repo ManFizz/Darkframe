@@ -3,6 +3,7 @@ import LibraryService from '@services/LibraryService';
 import {notify} from '@services/NotificationService';
 import {normalizeFilter, toSmartFilter} from '@/shared/filterPredicate';
 import AdvancedFilterFields from './AdvancedFilterFields';
+import RuleBuilder from './RuleBuilder';
 import {TagFilterInput} from '../LibraryNavControls';
 
 const parseFilter = (json) => {
@@ -137,6 +138,16 @@ const SmartFilterEditor = ({ collection, onClose }) => {
 
                     <div className="smart-editor-divider" />
                     <AdvancedFilterFields value={filter} onChange={patch} />
+
+                    <div className="smart-editor-divider" />
+                    <div className="rb-title">
+                        <i className="bi bi-diagram-3" /> Условия с группами
+                        <span>«все / любое», вложенные группы, источник, просмотры</span>
+                    </div>
+                    <RuleBuilder
+                        value={filter.rules}
+                        onChange={rules => setFilter(prev => ({ ...prev, rules }))}
+                    />
                 </div>
 
                 <div className="settings-footer">

@@ -105,3 +105,58 @@ test('advancedCount / toSmartFilter keep only filter fields', () => {
     assert.equal('sortBy' in smart, false);
     assert.deepEqual(smart.types, ['image']);
 });
+
+// ─── Smart collections 2.0: rule trees ────────────────────────────────────────
+const { matchRules, normalizeRules, rulesNeedHistory } = require('../src/js/shared/filterPredicate');
+
+test('rules: all / any groups and nesting', () => {
+    const it = item({ sourceUrl: 'https://www.pixiv.net/artworks/1', duration: 30 });
+    const r = (x) => matchRules(it, normalizeRules(x), NOW);
+    assert.ok(r({ op: 'all', items: [{ field: 'tag', cmp: 'has', value: 'sea' }, { field: 'rating', cmp: 'gte', value: 7 }] }));
+    assert.equal(r({ op: 'all', items: [{ field: 'tag', cmp: 'has', value: 'sea' }, { field: 'rating', cmp: 'gte', value: 8 }] }), false);
+    assert.ok(r({ op: 'any', items: [{ field: 'tag', cmp: 'has', value: 'moon' }, { field: 'rating', cmp: 'lte', value: 7 }] }));
+    // sea AND (moon OR landscape)
+    assert.ok(r({ op: 'all', items: [
+        { field: 'tag', cmp: 'has', value: 'sea' },
+        { op: 'any', items: [{ field: 'tag', cmp: 'has', value: 'moon' }, { field: 'orientation', cmp: 'is', value: 'landscape' }] },
+    ] }));
+    assert.equal(r({ op: 'all', items: [
+        { field: 'tag', cmp: 'has', value: 'sea' },
+        { op: 'any', items: [{ field: 'tag', cmp: 'has', value: 'moon' }, { field: 'type', cmp: 'is', value: 'video' }] },
+    ] }), false);
+});
+
+test('rules: source domain, title, size, imported, unfinished conditions', () => {
+    const it = item({ sourceUrl: 'https://www.pixiv.net/artworks/1' });
+    const r = (c) => matchRules(it, normalizeRules({ op: 'all', items: [c] }), NOW);
+    assert.ok(r({ field: 'source', cmp: 'is', value: 'pixiv.net' }));
+    assert.ok(r({ field: 'source', cmp: 'is', value: 'www.pixiv.net' }));
+    assert.equal(r({ field: 'source', cmp: 'is', value: 'x.com' }), false);
+    assert.ok(r({ field: 'source', cmp: 'not', value: 'x.com' }));
+    assert.ok(r({ field: 'source', cmp: 'present' }));
+    assert.ok(r({ field: 'title', cmp: 'has', value: 'sunset' }));
+    assert.ok(r({ field: 'size', cmp: 'gte', value: 1.5 }));   // 2 MB
+    assert.ok(r({ field: 'imported', cmp: 'within', value: 3 }));
+    assert.equal(r({ field: 'imported', cmp: 'older', value: 3 }), false);
+    assert.ok(r({ field: 'rating', cmp: 'gte', value: '' }), 'empty value = no constraint yet');
+});
+
+test('rules: viewed conditions use the history context', () => {
+    const it = item({ id: 'a' });
+    const tree = (c) => normalizeRules({ op: 'all', items: [c] });
+    const ctx = (t) => ({ lastViewed: new Map(t ? [['a', t]] : []) });
+    assert.ok(rulesNeedHistory(tree({ field: 'viewed', cmp: 'never' })));
+    assert.ok(matchRules(it, tree({ field: 'viewed', cmp: 'never' }), NOW, ctx(0)));
+    assert.equal(matchRules(it, tree({ field: 'viewed', cmp: 'never' }), NOW, ctx(NOW - 10)), false);
+    assert.ok(matchRules(it, tree({ field: 'viewed', cmp: 'not_within', value: 30 }), NOW, ctx(NOW - 40 * DAY)));
+    assert.equal(matchRules(it, tree({ field: 'viewed', cmp: 'not_within', value: 30 }), NOW, ctx(NOW - DAY)), false);
+    assert.ok(matchRules(it, tree({ field: 'viewed', cmp: 'never' }), NOW, null), 'no history → no filtering');
+});
+
+test('legacy flat filters still work next to rules', () => {
+    const f = normalizeFilter({ tags: [{ name: 'sea' }], rules: { op: 'all', items: [{ field: 'rating', cmp: 'gte', value: 7 }] } });
+    assert.ok(matchItem(item(), f, NOW));
+    assert.equal(matchItem(item({ rating: 3 }), f, NOW), false);
+    assert.equal(normalizeFilter({}).rules, null);
+    assert.equal(normalizeRules({ op: 'all', items: [{ field: 'bogus' }] }).items.length, 0);
+});
