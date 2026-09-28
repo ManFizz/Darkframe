@@ -253,10 +253,14 @@ app.whenReady().then(async () => {
 
     if (SMOKE) require('./server/smoke').runSmokeCheck(win);
     else if (!SANDBOX) startApiServer();
+
+    if (!SMOKE) require('./server/services/watchFolders').start()
+        .catch(e => console.warn('[watch] start failed:', e.message));
 });
 
 app.on('window-all-closed', () => {
     stopApiServer();
+    require('./server/services/watchFolders').stop();
     // Best-effort; the renderer may still hold file handles, so leftovers are
     // wiped on next launch (mediaCache.clearCache runs at whenReady).
     mediaCache.clearCache();

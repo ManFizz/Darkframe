@@ -473,3 +473,47 @@
 .ar-clear { border: none; background: transparent; color: var(--bs-secondary); cursor: pointer; &:hover { color: var(--bs-danger); } }
 .ar-footer { display: flex; align-items: center; gap: 8px; padding-top: 6px; border-top: 1px solid var(--bs-border-color); }
 .ar-preview { flex: 1; font-size: 12.5px; color: var(--bs-secondary); b { color: var(--bs-body-color); } }
+
+// ─── Watched folders ─────────────────────────────────────────────────────────
+.wf-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px 14px;
+  border: 1px solid var(--bs-border-color);
+  border-radius: 12px;
+  &.off { .wf-grid, .wf-path { opacity: 0.55; } }
+}
+.wf-head { display: flex; align-items: center; gap: 10px; }
+.wf-path {
+  flex: 1;
+  min-width: 0;
+  font-size: 13.5px;
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  direction: rtl;          // keep the tail of long paths visible
+  text-align: left;
+}
+.wf-icon { color: var(--df-accent); font-size: 15px; }
+.wf-state {
+  flex-shrink: 0;
+  font-size: 12px;
+  color: var(--bs-secondary);
+  &.on { color: var(--bs-success); }
+  &.err { color: var(--bs-danger); }
+}
+.wf-dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  margin-right: 3px;
+  border-radius: 50%;
+  background: currentColor;
+  animation: wfPulse 1.8s ease-in-out infinite;
+}
+@keyframes wfPulse { 50% { opacity: 0.3; } }
+.wf-grid { display: grid; grid-template-columns: 1fr 1.4fr; gap: 12px; align-items: start; }
+.wf-foot { display: flex; align-items: center; gap: 8px; }
+.wf-spacer { flex: 1; }

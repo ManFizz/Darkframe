@@ -40,6 +40,19 @@ export const openExternalUrl = (url) => invoke('shell:openUrl', { url });
 // Seek-bar preview sprite for a library ({ itemId }) or folder ({ path }) video.
 export const getStoryboard = (req) => invoke('media:storyboard', req);
 
+export const watchFoldersApi = {
+    list:           ()       => invoke('watch:list'),
+    save:           (folder) => invoke('watch:save', { folder }),
+    remove:         (id)     => invoke('watch:remove', { id }),
+    importExisting: (id)     => invoke('watch:importExisting', { id }),
+    pickDir:        ()       => invoke('watch:pickDir'),
+    onChanged:      (fn)     => {
+        const handler = (_, p) => fn(p);
+        ipcRenderer.on('watch:changed', handler);
+        return () => ipcRenderer.removeListener('watch:changed', handler);
+    },
+};
+
 export const autoRulesApi = {
     list:    ()     => invoke('autoRules:list'),
     save:    (rule) => invoke('autoRules:save', { rule }),

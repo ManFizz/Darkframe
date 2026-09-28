@@ -292,4 +292,4 @@ async function importDirectory({ dirPath, collectionId, tags = [], sourceUrl = '
     return importFiles({ filePaths, collectionId, tags, sourceUrl });
 }
 
-module.exports = { importFiles, importFile, LIBRARY_PATH, ITEMS_PATH, ensureTag, hashExistingItems, importDirectory };
+module.exports = { importFiles, importFile, LIBRARY_PATH, ITEMS_PATH, ensureTag, hashExistingItems, importDirectory, SUPPORTED_EXTENSIONS };

@@ -467,6 +467,17 @@ function register() {
     ipcMain.handle('library:computePhashes', async (event) => similarity.computeMissing((p) => {
         if (!event.sender.isDestroyed()) event.sender.send('library:phashProgress', p);
     }));
+    // Watched folders (auto import of new files)
+    const watchFolders = require('../services/watchFolders');
+    ipcMain.handle('watch:list',   () => watchFolders.list());
+    ipcMain.handle('watch:save',   (_, { folder }) => watchFolders.save(folder));
+    ipcMain.handle('watch:remove', (_, { id }) => watchFolders.remove(id));
+    ipcMain.handle('watch:importExisting', (_, { id }) => watchFolders.importExisting(id));
+    ipcMain.handle('watch:pickDir', async () => {
+        const { canceled, filePaths } = await dialog.showOpenDialog({ properties: ['openDirectory'] });
+        return canceled || !filePaths.length ? null : filePaths[0];
+    });
+
     // Import rules (auto tags / collection / rating)
     const autoRules = require('../services/autoRules');
     ipcMain.handle('autoRules:list',   () => autoRules.list());
