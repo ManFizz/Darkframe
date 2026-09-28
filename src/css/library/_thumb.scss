@@ -66,3 +66,18 @@
   }
 }
 
+
+// ─── Hover video preview (library + folders) ─────────────────────────────────
+.hover-video-host { position: relative; }
+.hover-video {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  transition: opacity 0.2s;
+  pointer-events: none;
+  &.ready { opacity: 1; }
+}

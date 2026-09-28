@@ -2,11 +2,13 @@ import React, {useMemo, useState} from "react";
 import Settings from "@data/settings";
 import Image from "./Image";
 import {cachedMediaUrl} from "@/Infrastructure/MediaCache";
+import {useHoverVideo} from "./useHoverVideo";
 
 const loadingUrl = "./images/loading.gif";
 
 const Video = ({ file }) => {
     const [isLoading, setIsLoading] = useState(Settings.Resize);
+    const hover = useHoverVideo(file.contentUrl);
 
     const hasThumb = useMemo(() =>
             file.thumbUrl?.trim() && file.thumbUrl !== file.contentUrl,
@@ -15,10 +17,11 @@ const Video = ({ file }) => {
 
     if (hasThumb) {
         return (
-            <>
+            <div className="hover-video-host" onMouseEnter={hover.onMouseEnter} onMouseLeave={hover.onMouseLeave}>
                 <Image file={file} />
+                {hover.overlay}
                 <span className="video-mark"><i className="bi bi-play-fill" /></span>
-            </>
+            </div>
         );
     }
 

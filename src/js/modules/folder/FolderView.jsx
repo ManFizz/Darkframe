@@ -11,6 +11,7 @@ import PathBar from './PathBar';
 import {useFolderBrowser} from './useFolderBrowser';
 import {isPinned, setFolderPrefs, togglePin, useFolderPrefs} from './folderPrefs';
 import {getViewPrefs} from '@services/viewPrefs';
+import {useHoverVideo} from '@react/Thumb/useHoverVideo';
 
 const os = window.require('os');
 const nodePath = window.require('path');
@@ -53,6 +54,7 @@ const FileTile = React.memo(({ file, onOpen, selected, selecting, onToggle }) =>
     const [loaded, setLoaded] = useState(false);
     const [broken, setBroken] = useState(false);
     const t = file.thumb;
+    const hover = useHoverVideo(file.kind === 'video' ? t.contentUrl : null);
     // Plain click opens; Ctrl / Shift click (or the checkbox) select — like Explorer.
     const onClick = (e) => {
         if (e.ctrlKey || e.metaKey || e.shiftKey) { e.preventDefault(); onToggle(file, e); }
@@ -65,7 +67,8 @@ const FileTile = React.memo(({ file, onOpen, selected, selecting, onToggle }) =>
                     onClick={e => { e.stopPropagation(); onToggle(file, e); }}>
                 <i className={`bi ${selected ? 'bi-check-circle-fill' : 'bi-circle'}`} />
             </button>
-            <div className={`ftfile-img ${loaded ? 'ready' : ''}`}>
+            <div className={`ftfile-img ${loaded ? 'ready' : ''}`} onMouseEnter={hover.onMouseEnter} onMouseLeave={hover.onMouseLeave}>
+                {hover.overlay}
                 {broken
                     ? <i className="bi bi-file-earmark-image ftfile-broken" />
                     : <img src={t.thumbUrl} alt="" loading="lazy" decoding="async" draggable={false}
