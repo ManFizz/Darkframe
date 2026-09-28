@@ -114,6 +114,9 @@ async function migrations() {
     // Remembered booru searches. New table — create if missing.
     await require('./models/SavedSearch').sync();
 
+    // Import rules (auto tags / collection / rating). New table — create if missing.
+    await require('./models/AutoRule').sync();
+
     // Lookup indexes. Tags also holds the remote (r34 / gelbooru) tag cache — well over
     // a million rows — so "pinned" / per-tag lookups without an index were full scans
     // that stalled every other query at startup (one SQLite connection).

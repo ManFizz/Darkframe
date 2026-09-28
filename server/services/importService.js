@@ -78,13 +78,23 @@ function isVideo(mimeType) {
 // `job` — the batch this file belongs to (importFiles). Without one, a lone import
 // (API / extension, link, favourite) reports itself as a one-file job, unless `quiet`
 // (sources with their own progress UI, e.g. the Eagle / JSON importers).
-async function importFile({ job = null, quiet = false, ...args }) {
+// `origin` — 'api' for the local API / browser extension, 'app' otherwise (import
+// rules can be limited to API imports).
+async function importFile({ job = null, quiet = false, origin = 'app', ...args }) {
     const own = !job && !quiet ? beginImport(1) : null;
     const tracker = job || own;
     tracker?.step(path.basename(args.filePath || ''));
     let ok = false;
     try {
         const res = await importFileImpl(args);
+        if (!res.skipped) {
+            try {
+                // lazy: autoRules itself uses this module's ensureTag
+                res.rulesApplied = await require('./autoRules').applyOnImport(res.item.id, { origin });
+            } catch (e) {
+                console.warn('[autoRules] failed for', res.item.id, e.message);
+            }
+        }
         ok = true;
         return res;
     } finally {

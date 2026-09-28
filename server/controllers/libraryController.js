@@ -467,6 +467,14 @@ function register() {
     ipcMain.handle('library:computePhashes', async (event) => similarity.computeMissing((p) => {
         if (!event.sender.isDestroyed()) event.sender.send('library:phashProgress', p);
     }));
+    // Import rules (auto tags / collection / rating)
+    const autoRules = require('../services/autoRules');
+    ipcMain.handle('autoRules:list',   () => autoRules.list());
+    ipcMain.handle('autoRules:save',   (_, { rule }) => autoRules.save(rule));
+    ipcMain.handle('autoRules:remove', (_, { id }) => autoRules.remove(id));
+    ipcMain.handle('autoRules:preview', (_, { rule }) => autoRules.preview(rule));
+    ipcMain.handle('autoRules:apply',  (_, { id }) => autoRules.applyToExisting(id));
+
     ipcMain.handle('library:itemRelations', async (_, { id }) => similarity.relationsOf(id));
     ipcMain.handle('library:findSimilar', async (event, { maxDistance }) => similarity.findSimilar(maxDistance, (pct) => {
         if (!event.sender.isDestroyed()) event.sender.send('library:similarProgress', pct);

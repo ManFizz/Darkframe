@@ -2,11 +2,13 @@ import React, {useState} from 'react';
 import DuplicatesTab from './DuplicatesTab';
 import IntegrityTool from './IntegrityTool';
 import MediaGenTool from './MediaGenTool';
+import AutoRulesTool from './AutoRulesTool';
 
 const TOOLS = [
     { id: 'dupes',     label: 'Дубликаты',       icon: 'bi-images' },
     { id: 'integrity', label: 'Целостность',      icon: 'bi-clipboard-check' },
     { id: 'media',     label: 'Превью и размеры', icon: 'bi-image' },
+    { id: 'rules',     label: 'Правила импорта',  icon: 'bi-magic' },
 ];
 
 // The management tab groups the maintenance tools behind a sub-tab bar; each tool
@@ -32,6 +34,7 @@ const ManagementTab = () => {
             {tool === 'dupes'     && <DuplicatesTab />}
             {tool === 'integrity' && <IntegrityTool />}
             {tool === 'media'     && <MediaGenTool />}
+            {tool === 'rules'     && <AutoRulesTool />}
         </>
     );
 };

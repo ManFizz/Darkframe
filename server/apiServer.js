@@ -176,6 +176,7 @@ async function handleAdd(req, res) {
     fs.renameSync(tmpDownload, tmpPath);
 
     const result = await importFile({
+        origin:       'api',
         filePath:     tmpPath,
         collectionId,
         tags,
@@ -213,6 +214,7 @@ async function handleAddBase64(req, res) {
     fs.writeFileSync(tmpPath, Buffer.from(base64, 'base64'));
 
     const result = await importFile({
+        origin:       'api',
         filePath:     tmpPath,
         collectionId: null,
         tags:         [],
@@ -294,6 +296,7 @@ async function handleAddStream(req, res) {
     }
 
     const result = await importFile({
+        origin:       'api',
         filePath:     tmpPath,
         collectionId,
         tags:         Array.isArray(tags) ? tags : [],

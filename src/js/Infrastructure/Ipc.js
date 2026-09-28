@@ -40,6 +40,14 @@ export const openExternalUrl = (url) => invoke('shell:openUrl', { url });
 // Seek-bar preview sprite for a library ({ itemId }) or folder ({ path }) video.
 export const getStoryboard = (req) => invoke('media:storyboard', req);
 
+export const autoRulesApi = {
+    list:    ()     => invoke('autoRules:list'),
+    save:    (rule) => invoke('autoRules:save', { rule }),
+    remove:  (id)   => invoke('autoRules:remove', { id }),
+    preview: (rule) => invoke('autoRules:preview', { rule }),
+    apply:   (id)   => invoke('autoRules:apply', { id }),
+};
+
 export const savedSearchesApi = {
     list:    ()                       => invoke('savedSearches:list'),
     add:     (source, query, title)   => invoke('savedSearches:add', { source, query, title }),
