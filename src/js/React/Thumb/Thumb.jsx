@@ -6,7 +6,7 @@ import {FILE_TYPES, SOURCE_TYPES} from "@/Constants";
 import {useFavorites} from "@hooks/useFavorites";
 import Collection from "./Collection";
 
-const Thumb = (({ file, isModal, modalUpdater, isSelected, onOpen, onToggleSelect, selectionActive }) => {
+const Thumb = (({ file, isModal, modalUpdater, isSelected, onOpen, onToggleSelect, selectionActive, inLibrary, blockedTag }) => {
     const handleClick = useCallback((e) => {
         if (file.type === FILE_TYPES.IMAGE ||
             file.type === FILE_TYPES.VIDEO ||
@@ -61,7 +61,7 @@ const Thumb = (({ file, isModal, modalUpdater, isSelected, onOpen, onToggleSelec
 
     return (
         <div
-            className={`card thumb bg-dark ${isModal ? 'modal-active' : ''} ${isRemovedInFavs ? 'opacity-50' : ''} ${isSelected ? 'thumb-selected' : ''} ${selectionActive ? 'selection-active' : ''}`}
+            className={`card thumb bg-dark ${isModal ? 'modal-active' : ''} ${isRemovedInFavs ? 'opacity-50' : ''} ${isSelected ? 'thumb-selected' : ''} ${selectionActive ? 'selection-active' : ''} ${blockedTag ? 'thumb-blocked' : ''}`}
             onClick={handleClick}
             onContextMenu={handleContextMenu}
         >
@@ -96,6 +96,12 @@ const Thumb = (({ file, isModal, modalUpdater, isSelected, onOpen, onToggleSelec
             )}
             {file.score != null && hasOverlay && (
                 <span className="thumb-score" title="Score"><i className="bi bi-star-fill" /> {file.score}</span>
+            )}
+            {inLibrary && (
+                <span className="thumb-inlib" title="Уже в библиотеке"><i className="bi bi-bookmark-check-fill" /></span>
+            )}
+            {blockedTag && (
+                <span className="thumb-blocked-tag" title="Скрыт чёрным списком"><i className="bi bi-eye-slash" /> {blockedTag}</span>
             )}
             {renderContent()}
         </div>

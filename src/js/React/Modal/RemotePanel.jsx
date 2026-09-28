@@ -7,6 +7,7 @@ import useFavoriteTags from "@hooks/useFavoriteTags";
 import {addTag, runSearch, tagState} from "@modules/r34/booruQuery";
 import {TAG_KINDS, fmtCount, rememberKinds, tagKind, useTagKinds} from "@modules/r34/tagKinds";
 import CollectionTreeSelect, {pushRecentCollection} from "../Library/Collection/CollectionTreeSelect";
+import {markInLibrary} from "@modules/r34/libraryLinks";
 
 const RATING_LABEL = { safe: 'Safe', general: 'General', sensitive: 'Sensitive', questionable: 'Questionable', explicit: 'Explicit' };
 
@@ -81,6 +82,7 @@ const RemotePanel = ({ file }) => {
                 tags: withTags ? tagNames : [],
                 sourceUrl: file.sourceUrl,
             });
+            if (res?.results?.length || res?.skipped?.length) markInLibrary(file.sourceUrl);
             if (res?.results?.length) setSaving({ ok: true, message: 'Сохранено в библиотеку' });
             else if (res?.skipped?.length) setSaving({ ok: false, message: res.skipped[0].reason === 'trashed' ? 'Такой файл лежит в корзине' : 'Уже есть в библиотеке' });
             else setSaving({ ok: false, message: String(res?.errors?.[0]?.error || 'Не удалось сохранить').split('\n').pop() });

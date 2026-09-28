@@ -103,6 +103,7 @@ export const libraryApi = {
     computePhashes:    ()     => invoke('library:computePhashes'),
     findSimilar:       (data) => invoke('library:findSimilar', data),
     itemRelations:     (id)   => invoke('library:itemRelations', { id }),
+    sourceUrls:        ()     => invoke('library:sourceUrls'),
     checkIntegrity:    ()     => invoke('library:checkIntegrity'),
     cleanupIntegrity:  (data) => invoke('library:cleanupIntegrity', data),
     generateMissingMedia: ()  => invoke('library:generateMissingMedia'),

@@ -1080,3 +1080,140 @@
 // content's min width (a long preview strip would push the page off screen).
 .main-split > .container-fluid { flex: 1 1 0; min-width: 0; }
 .svs-page, .svs-card, .svs-strip { min-width: 0; }
+
+// ─── Blacklist ────────────────────────────────────────────────────────────────
+.bsb-tag.bsb-black {
+  --k: var(--bs-danger);
+  cursor: default;
+  padding-right: 3px;
+  .bsb-x {
+    width: 18px;
+    height: 18px;
+    display: grid;
+    place-items: center;
+    border-radius: 5px;
+    font-size: 10px;
+    color: var(--bs-secondary);
+    cursor: pointer;
+    &:hover { background: var(--bs-tertiary-bg); color: var(--bs-danger); }
+  }
+}
+.booru-sidebar .bsb-chips + .bsb-add,
+.booru-sidebar .bsb-empty + .bsb-add { margin-top: 8px; }
+
+.thumb.thumb-blocked > img,
+.thumb.thumb-blocked > canvas,
+.thumb.thumb-blocked > video { opacity: 0.35; filter: grayscale(0.7); }
+.thumb-blocked-tag {
+  position: absolute;
+  left: 8px;
+  bottom: 8px;
+  z-index: 2;
+  max-width: calc(100% - 16px);
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(150, 20, 40, 0.8);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  pointer-events: none;
+}
+
+// ─── Already in the library ──────────────────────────────────────────────────
+.thumb-inlib {
+  position: absolute;
+  right: 8px;
+  bottom: 8px;
+  z-index: 2;
+  width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--df-accent) 85%, #000);
+  color: #fff;
+  font-size: 13px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+  pointer-events: none;
+}
+
+// ─── Infinite scroll footer ──────────────────────────────────────────────────
+.gallery-footer {
+  flex: 0 0 100%;
+  padding: 18px 0 40px;
+  text-align: center;
+  font-size: 13px;
+  color: var(--bs-secondary);
+  .bi { margin-right: 6px; }
+  &.end .bi { color: var(--df-accent); }
+}
+
+// ─── Bulk bar ────────────────────────────────────────────────────────────────
+.booru-bulk-bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 64px;
+  z-index: 1030;
+  width: max-content;
+  margin-inline: auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 6px 6px 14px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--bs-body-bg) 88%, transparent);
+  border: 1px solid var(--df-accent-dim);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(12px);
+  font-size: 13px;
+  animation: slideUp 0.15s ease;
+
+  .btn { border-radius: 999px; }
+}
+@keyframes slideUp { from { opacity: 0; transform: translateY(10px); } }
+.bbb-count { font-weight: 700; .bi { color: var(--df-accent); margin-right: 2px; } }
+.bbb-link {
+  border: none;
+  background: none;
+  padding: 0;
+  color: var(--df-accent);
+  font-size: 12.5px;
+  cursor: pointer;
+  &:hover { text-decoration: underline; }
+}
+.bbb-sep { width: 1px; height: 20px; background: var(--bs-border-color); }
+.bbb-check { display: flex; align-items: center; gap: 5px; margin: 0; color: var(--bs-secondary); cursor: pointer; white-space: nowrap; input { accent-color: var(--df-accent); } }
+.bbb-save { position: relative; }
+.bbb-picker {
+  position: absolute;
+  bottom: calc(100% + 10px);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1200;
+  width: 300px;
+}
+.bbb-progress { display: flex; align-items: center; gap: 8px; white-space: nowrap; }
+.bbb-bar {
+  width: 120px;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--bs-tertiary-bg);
+  overflow: hidden;
+  span { display: block; height: 100%; background: var(--df-accent); transition: width 0.2s; }
+}
+.bbb-close {
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--bs-secondary);
+  cursor: pointer;
+  &:hover { background: var(--bs-tertiary-bg); color: var(--bs-body-color); }
+}

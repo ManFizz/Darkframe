@@ -1,4 +1,4 @@
-import React, {createContext, useEffect, useMemo, useReducer, useState} from 'react';
+import React, {createContext, useCallback, useEffect, useMemo, useReducer, useState} from 'react';
 import ReactDOM from 'react-dom/client';
 
 import NavBar from "./React/PageBuilders/NavBar.jsx";
@@ -28,6 +28,12 @@ import BootOverlay from './React/Helpers/BootOverlay';
 import CompareView from './React/Compare/CompareView';
 import FolderView from './modules/folder/FolderView';
 import {useBooruQuery} from './modules/r34/booruQuery';
+import {blockedBy, setHiddenCount, useBlacklist} from './modules/r34/blacklist';
+import {useLibraryLinks} from './modules/r34/libraryLinks';
+import BooruBulkBar from './modules/r34/BooruBulkBar';
+import useSelection from './Hooks/gallery/useSelection';
+import {CanMoreMedia} from './modules/r34/R34Controller';
+import {useViewPref} from '@services/viewPrefs';
 
 // Colour mode + accent before the first paint.
 initTheme();
@@ -129,6 +135,47 @@ const Main = () => {
     // the booru sources share the generic gallery + pagination below.
     const isGeneric = !isLibrary && !isFolder;
     const booruView = useBooruQuery().view;   // 'saved' page has no pagination
+    const isBooru = [SOURCE_TYPES.R34, SOURCE_TYPES.GELBOORU, SOURCE_TYPES.REALBOORU].includes(state.currentSource);
+    const [infinite] = useViewPref('booruInfinite');
+
+    // Blacklisted posts are dropped from what the grid and the viewer see (unless
+    // "show hidden" is on — then they stay, marked).
+    const { list: blacklist, showHidden } = useBlacklist(state.currentSource);
+    const hiding = isBooru && blacklist.length > 0;
+    const visibleMain = useMemo(
+        () => (hiding && !showHidden ? state.mainArray.filter(f => !blockedBy(f, blacklist)) : state.mainArray),
+        [state.mainArray, hiding, showHidden, blacklist]);
+    const visibleDisplay = useMemo(
+        () => (hiding && !showHidden ? state.displayArray.filter(f => !blockedBy(f, blacklist)) : state.displayArray),
+        [state.displayArray, hiding, showHidden, blacklist]);
+    const hiddenCount = useMemo(
+        () => (hiding ? state.mainArray.filter(f => blockedBy(f, blacklist)).length : 0),
+        [state.mainArray, hiding, blacklist]);
+    useEffect(() => setHiddenCount(hiddenCount), [hiddenCount]);
+
+    const inLibrary = useLibraryLinks();
+
+    // Booru selection: ctrl / shift click or the checkbox; a plain click opens the viewer.
+    const selection = useSelection(visibleDisplay);
+    const { clear: clearSelection } = selection;
+    useEffect(() => { clearSelection(); }, [state.currentSource, state.mainArray[0]?.uniqueId, clearSelection]);
+    const hasSelection = isBooru && selection.selected.size > 0;
+
+    const openOrSelect = useCallback((file, e) => {
+        if (isBooru && (e?.ctrlKey || e?.metaKey || e?.shiftKey)) selection.handleSelect(file.uniqueId, e);
+        else contextValue.setModalFile(file);
+    }, [isBooru, selection.handleSelect, contextValue]);
+
+    useEffect(() => {
+        if (!isBooru) return;
+        const onKey = (e) => {
+            if (state.modalFileId !== null || e.target.closest?.('input, textarea, [contenteditable="true"]')) return;
+            if (e.key === 'Escape' && selection.selected.size) selection.clear();
+            if ((e.ctrlKey || e.metaKey) && e.code === 'KeyA') { e.preventDefault(); selection.selectAll(); }
+        };
+        document.addEventListener('keydown', onKey);
+        return () => document.removeEventListener('keydown', onKey);
+    }, [isBooru, state.modalFileId, selection]);
 
     return (
         <GalleryContext.Provider value={contextValue}>
@@ -151,8 +198,8 @@ const Main = () => {
                     <Modal
                         fileId={state.modalFileId}
                         modalUpdater={contextValue.setModalFile}
-                        mainArray={state.mainArray}
-                        displayFiles={state.displayArray}
+                        mainArray={visibleMain}
+                        displayFiles={visibleDisplay}
                     />
                 )}
 
@@ -167,15 +214,33 @@ const Main = () => {
                         ) : (
                             <Gallery
                                 modalFileId={state.modalFileId}
-                                modalUpdater={contextValue.setModalFile}
-                                displayArray={state.displayArray}
+                                modalUpdater={openOrSelect}
+                                displayArray={visibleDisplay}
                                 typeView={state.typeView}
                                 loadNextPage={loadNextPage}
+                                infinite={infinite}
+                                hasMore={maxPage < pages || CanMoreMedia()}
+                                loadedCount={state.mainArray.length}
+                                isSelected={isBooru ? selection.isSelected : undefined}
+                                onToggleSelect={isBooru ? (f, e) => (e.shiftKey ? selection.range(f.uniqueId) : selection.toggle(f.uniqueId)) : undefined}
+                                selectionActive={hasSelection}
+                                inLibrary={isBooru ? inLibrary : null}
+                                blacklist={hiding && showHidden ? blacklist : null}
                             />
                         )}
                     </div>
 
-                    {isGeneric && booruView !== 'saved' && (
+                    {hasSelection && (
+                        <BooruBulkBar
+                            selectedItems={selection.selectedItems}
+                            inLibrary={inLibrary}
+                            totalCount={visibleDisplay.length}
+                            onSelectAll={selection.selectAll}
+                            onClear={selection.clear}
+                        />
+                    )}
+
+                    {isGeneric && booruView !== 'saved' && !(isBooru && infinite) && (
                         <CustomPagination
                             anchorPage={currentPage}
                             lastLoadedPage={maxPage}

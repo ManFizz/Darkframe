@@ -11,6 +11,7 @@ const DEFAULTS = {
     filmstrip: true,        // thumbnail strip at the bottom of the viewer
     collapsedMonths: [],    // folded months ("2026-09")
     restoreSession: true,   // reopen the tab / collection / folder that was open last
+    booruInfinite: true,    // booru results: endless scroll (off = page buttons)
     lastNav: 0,             // index of the top-bar tab
     lastCollection: null,   // library tree selection
 };

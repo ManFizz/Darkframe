@@ -9,6 +9,47 @@ import {SOURCE_TYPES} from '@/Constants';
 import {notify} from '@services/NotificationService';
 import {queryOf, useSavedSearches} from './savedSearches';
 import {setView} from './booruQuery';
+import {addToBlacklist, removeFromBlacklist, setShowHidden, useBlacklist} from './blacklist';
+
+// Tags whose posts are hidden from results on this source (client-side).
+const BlacklistBlock = ({ source }) => {
+    const { list, showHidden, hiddenCount } = useBlacklist(source);
+    const [value, setValue] = useState('');
+    const add = () => {
+        const tags = value.split(/[\s,]+/).filter(Boolean);
+        if (!tags.length) return;
+        addToBlacklist(source, tags);
+        setValue('');
+    };
+    return (
+        <Block title="Чёрный список"
+               extra={hiddenCount > 0 && (
+                   <button className="bsb-link" onClick={() => setShowHidden(!showHidden)}
+                           title={showHidden ? 'Снова прятать' : 'Показать скрытые посты'}>
+                       <i className={`bi ${showHidden ? 'bi-eye-slash' : 'bi-eye'}`} /> {showHidden ? 'прятать' : `скрыто ${hiddenCount}`}
+                   </button>
+               )}>
+            {list.length > 0 ? (
+                <div className="bsb-chips">
+                    {list.map(t => (
+                        <span key={t} className="bsb-tag bsb-black" title="Посты с этим тегом скрыты">
+                            <span className="bsb-tag-name">{t}</span>
+                            <i className="bi bi-x-lg bsb-x" title="Убрать из чёрного списка" onClick={() => removeFromBlacklist(source, t)} />
+                        </span>
+                    ))}
+                </div>
+            ) : (
+                <div className="bsb-empty">Посты с этими тегами не будут показываться в результатах</div>
+            )}
+            <div className="bsb-add">
+                <input placeholder="Тег для скрытия" value={value}
+                       onChange={e => setValue(e.target.value)}
+                       onKeyDown={e => { if (e.key === 'Enter') add(); }} />
+                <button disabled={!value.trim()} onClick={add}><i className="bi bi-plus-lg" /></button>
+            </div>
+        </Block>
+    );
+};
 
 const SORTS = [
     { id: 'new',    label: 'Новые',     icon: 'bi-clock' },
@@ -266,6 +307,8 @@ const SectionR34 = ({ currentSource }) => {
                     </div>
                 )}
             </Block>
+
+            <BlacklistBlock source={currentSource} />
 
             {history.length > 0 && (
                 <Block title="Недавние поиски"

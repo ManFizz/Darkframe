@@ -475,6 +475,12 @@ function register() {
     ipcMain.handle('autoRules:preview', (_, { rule }) => autoRules.preview(rule));
     ipcMain.handle('autoRules:apply',  (_, { id }) => autoRules.applyToExisting(id));
 
+    // Post links of everything in the library (booru "already saved" marks).
+    ipcMain.handle('library:sourceUrls', async () => {
+        const rows = await Item.findAll({ attributes: ['sourceUrl'], where: { sourceUrl: { [Op.ne]: '' } }, raw: true });
+        return rows.map(r => r.sourceUrl).filter(Boolean);
+    });
+
     ipcMain.handle('library:itemRelations', async (_, { id }) => similarity.relationsOf(id));
     ipcMain.handle('library:findSimilar', async (event, { maxDistance }) => similarity.findSimilar(maxDistance, (pct) => {
         if (!event.sender.isDestroyed()) event.sender.send('library:similarProgress', pct);

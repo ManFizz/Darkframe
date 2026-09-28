@@ -15,6 +15,7 @@ const AppearanceSection = () => {
     const [restoreSession, setRestoreSession] = useViewPref('restoreSession');
     const [dateDividers, setDateDividers] = useViewPref('dateDividers');
     const [filmstrip, setFilmstrip] = useViewPref('filmstrip');
+    const [booruInfinite, setBooruInfinite] = useViewPref('booruInfinite');
     const isPreset = ACCENT_PRESETS.some(p => p.value.toLowerCase() === String(theme.accent).toLowerCase());
 
     return (
@@ -106,6 +107,17 @@ const AppearanceSection = () => {
                     <div className="form-check form-switch settings-switch">
                         <input className="form-check-input" type="checkbox" checked={filmstrip}
                                onChange={e => setFilmstrip(e.target.checked)} />
+                    </div>
+                </div>
+
+                <div className="settings-item settings-item--inline">
+                    <div className="settings-item-info">
+                        <div className="settings-item-label">Бесконечная прокрутка на booru</div>
+                        <div className="settings-item-desc">Новые посты подгружаются при прокрутке; выключи, чтобы листать страницами</div>
+                    </div>
+                    <div className="form-check form-switch settings-switch">
+                        <input className="form-check-input" type="checkbox" checked={booruInfinite}
+                               onChange={e => setBooruInfinite(e.target.checked)} />
                     </div>
                 </div>
 

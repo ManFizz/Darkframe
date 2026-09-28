@@ -5,6 +5,8 @@ import {getHistory, runSearch, setQuery, useBooruQuery, useSearchStatus} from "@
 import {currentR34Source} from "@modules/r34/R34Controller";
 import useFavoriteTags from "@hooks/useFavoriteTags";
 import SavedSearchesPage from "@modules/r34/SavedSearchesPage";
+import {postKey} from "@modules/r34/libraryLinks";
+import {blockedBy} from "@modules/r34/blacklist";
 
 // What the booru gallery shows while it has nothing to show: a skeleton while the
 // first page loads, "nothing found" after an empty search, or a start screen with
@@ -90,7 +92,17 @@ const EmptyState = () => {
     );
 };
 
-const Gallery = ({ modalFileId, modalUpdater, displayArray, typeView, loadNextPage, isSelected }) => {
+// Bottom of the booru grid in infinite-scroll mode: spinner while the next API page
+// loads, "that's all" once there is nothing more.
+const GalleryFooter = ({ hasMore, loadedCount }) => {
+    const status = useSearchStatus();
+    if (status.loading) return <div className="gallery-footer"><i className="bi bi-arrow-repeat spin" /> Загружаю ещё…</div>;
+    if (!hasMore) return <div className="gallery-footer end"><i className="bi bi-check2-circle" /> Это всё — {loadedCount.toLocaleString('ru-RU')} постов</div>;
+    return <div className="gallery-footer" />;
+};
+
+const Gallery = ({ modalFileId, modalUpdater, displayArray, typeView, loadNextPage, isSelected,
+                   onToggleSelect, selectionActive, inLibrary, blacklist, infinite = true, hasMore, loadedCount }) => {
     const isLoadingRef = useRef(false);
     const { view } = useBooruQuery();
 
@@ -106,11 +118,15 @@ const Gallery = ({ modalFileId, modalUpdater, displayArray, typeView, loadNextPa
                     modalUpdater={modalUpdater}
                     isModal={modalFileId === file.uniqueId}
                     isSelected={isSelected?.(file.uniqueId) ?? false}
+                    onToggleSelect={onToggleSelect}
+                    selectionActive={selectionActive}
+                    inLibrary={inLibrary ? inLibrary.has(postKey(file.sourceUrl)) : false}
+                    blockedTag={blacklist ? blockedBy(file, blacklist) : null}
                 />
             ))}
 
             <ScrollSensor
-                enabled={modalFileId === null}
+                enabled={modalFileId === null && infinite}
                 onVisible={() => {
                     if (isLoadingRef.current) return;
                     isLoadingRef.current = true;
@@ -119,6 +135,7 @@ const Gallery = ({ modalFileId, modalUpdater, displayArray, typeView, loadNextPa
                     });
                 }}
             />
+            {infinite && <GalleryFooter hasMore={hasMore} loadedCount={loadedCount} />}
         </div>
     );
 };
