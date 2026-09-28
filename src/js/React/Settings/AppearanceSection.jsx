@@ -13,6 +13,7 @@ const AppearanceSection = () => {
     const [theme, setTheme] = useTheme();
     const [ratingDividers, setRatingDividers] = useViewPref('ratingDividers');
     const [restoreSession, setRestoreSession] = useViewPref('restoreSession');
+    const [dateDividers, setDateDividers] = useViewPref('dateDividers');
     const isPreset = ACCENT_PRESETS.some(p => p.value.toLowerCase() === String(theme.accent).toLowerCase());
 
     return (
@@ -82,6 +83,17 @@ const AppearanceSection = () => {
                             checked={ratingDividers}
                             onChange={e => setRatingDividers(e.target.checked)}
                         />
+                    </div>
+                </div>
+
+                <div className="settings-item settings-item--inline">
+                    <div className="settings-item-info">
+                        <div className="settings-item-label">Разделители по месяцам</div>
+                        <div className="settings-item-desc">При сортировке по дате делить галерею на месяцы</div>
+                    </div>
+                    <div className="form-check form-switch settings-switch">
+                        <input className="form-check-input" type="checkbox" checked={dateDividers}
+                               onChange={e => setDateDividers(e.target.checked)} />
                     </div>
                 </div>
 

@@ -37,6 +37,7 @@ const LibraryView = () => {
     });
     const { filtered, filters, setLibraryItems, refreshStats, statsVersion } = useLibraryContext();
     const [ratingDividers] = useViewPref('ratingDividers');
+    const [dateDividers] = useViewPref('dateDividers');
     const { favoritesId } = useLibraryStats(statsVersion);
 
     // A restored selection may point at a collection deleted since: fall back.
@@ -451,7 +452,10 @@ const LibraryView = () => {
                         typeView={2}
                         scrollRef={galleryScrollRef}
                         reorderable={!isHistory}
-                        groupByRating={ratingDividers && filters.sortBy === 'rating' && !isHistory}
+                        groupBy={isHistory ? null
+                            : ratingDividers && filters.sortBy === 'rating' ? 'rating'
+                            : dateDividers && filters.sortBy === 'importedAt' ? 'month'
+                            : null}
                         resetKey={isHistory ? `history:${historySection ?? 'all'}` : selectedCollection}
                     />
                 </div>
