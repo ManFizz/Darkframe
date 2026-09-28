@@ -5,6 +5,47 @@ const fsBrowser = require('../services/fsBrowser');
 const fsThumbs = require('../services/fsThumbs');
 
 const SCHEME = 'fsthumb';
+const fs = require('fs');
+const crypto = require('crypto');
+const ops = require('../services/ffmpegOps');
+const { getActive } = require('../libraryRegistry');
+
+// ─── Seek-bar storyboards (library + folder videos), cached on disk ───────────
+const sbDir = () => path.join(app.getPath('userData'), 'cache', 'storyboards');
+const sbJobs = new Map();
+
+function librarySource(id) {
+    if (!/^[A-Za-z0-9._-]+$/.test(String(id))) return null;
+    const dir = path.join(getActive().itemsPath, id);
+    try {
+        const f = fs.readdirSync(dir).find(x => /^original\./i.test(x));
+        return f ? path.join(dir, f) : null;
+    } catch { return null; }
+}
+
+async function getStoryboard({ itemId, path: filePath }) {
+    const src = itemId ? librarySource(itemId) : filePath;
+    if (!src || !fs.existsSync(src)) return null;
+    const st = fs.statSync(src);
+    const key = crypto.createHash('sha1').update(`${path.resolve(src).toLowerCase()}|${st.size}|${Math.floor(st.mtimeMs)}|v1`).digest('hex');
+    const jpg = path.join(sbDir(), `${key}.jpg`);
+    const meta = `${jpg}.json`;
+    if (fs.existsSync(jpg) && fs.existsSync(meta)) {
+        return { ...JSON.parse(fs.readFileSync(meta, 'utf8')), url: pathToFileURL(jpg).href };
+    }
+    if (!sbJobs.has(key)) {
+        sbJobs.set(key, (async () => {
+            fs.mkdirSync(sbDir(), { recursive: true });
+            const tmp = `${jpg}.tmp.jpg`;
+            const info = await ops.storyboard(src, tmp);
+            fs.renameSync(tmp, jpg);
+            fs.writeFileSync(meta, JSON.stringify(info));
+            return info;
+        })().finally(() => sbJobs.delete(key)));
+    }
+    const info = await sbJobs.get(key);
+    return { ...info, url: pathToFileURL(jpg).href };
+}
 const cacheDir = () => path.join(app.getPath('userData'), 'cache', 'fsthumbs');
 
 // fsthumb://t/?p=<encoded absolute path>&w=<width> → cached JPEG thumbnail.
@@ -35,6 +76,10 @@ function register() {
         catch (e) { return { ok: false, error: e.code === 'ENOENT' ? 'Папка не найдена' : e.code === 'EPERM' || e.code === 'EACCES' ? 'Нет доступа' : e.message }; }
     });
     ipcMain.handle('fs:drives', () => fsBrowser.listDrives());
+    ipcMain.handle('media:storyboard', async (_, req) => {
+        try { return await getStoryboard(req || {}); }
+        catch (e) { console.warn('[storyboard]', e.message); return null; }
+    });
     ipcMain.handle('fs:info', async (_, { file }) => {
         try { return { ok: true, ...fsBrowser.statFile(file), ...(await fsThumbs.mediaInfo(file)) }; }
         catch (e) { return { ok: false, error: e.message }; }

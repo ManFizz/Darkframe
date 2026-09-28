@@ -125,6 +125,31 @@ function thumbAt(src, dst, time) {
     return run(cmd);
 }
 
+/**
+ * Storyboard: `count` evenly spaced frames tiled into one JPEG (seek-bar previews).
+ * Decodes key frames only (-skip_frame nokey), so even long videos take a second or
+ * two; falls back to a full decode when that yields nothing (odd codecs).
+ */
+async function storyboard(src, dst, { count = 80, width = 160 } = {}) {
+    const { duration, width: vw, height: vh } = await probe(src);
+    if (!duration) throw new Error('no duration');
+    const cols = 10;
+    const rows = Math.ceil(count / cols);
+    const h = vw && vh ? Math.max(2, Math.round((width * vh) / vw / 2) * 2) : Math.round(width * 9 / 16 / 2) * 2;
+    const vf = `fps=${count}/${duration.toFixed(3)},scale=${width}:${h},tile=${cols}x${rows}`;
+    const attempt = (keyOnly) => run(ffmpeg(src)
+        .inputOptions(keyOnly ? ['-skip_frame', 'nokey'] : [])
+        .outputOptions(['-vf', vf, '-frames:v', '1', '-fps_mode', 'vfr', '-q:v', '5', '-y'])
+        .output(dst));
+    try {
+        await attempt(true);
+        if (!fs.existsSync(dst) || fs.statSync(dst).size < 1000) throw new Error('empty');
+    } catch {
+        await attempt(false);
+    }
+    return { cols, rows, count, width, height: h, interval: duration / count, duration };
+}
+
 function hashFile(filePath) {
     return new Promise((resolve, reject) => {
         const h = crypto.createHash('sha256');
@@ -155,5 +180,5 @@ async function replaceFile(from, target, attempts = 20) {
 
 module.exports = {
     THUMB_SIZE, isUrl, timemarkToSec, probe,
-    trimFile, captureFrame, thumbAt, hashFile, replaceFile,
+    trimFile, captureFrame, thumbAt, storyboard, hashFile, replaceFile,
 };

@@ -441,3 +441,18 @@
     &.active { background: var(--df-accent); }
   }
 }
+
+// Frame preview above the seek bar (storyboard sprite).
+.vc-track > .vc-preview {
+  position: absolute;
+  top: auto;           // the track's generic child rule pins top:0
+  bottom: 40px;
+  transform: translateX(-50%);
+  border-radius: 8px;
+  border: 2px solid rgba(255, 255, 255, 0.85);
+  background-color: #000;
+  background-repeat: no-repeat;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.6);
+  pointer-events: none;
+  z-index: 3;
+}

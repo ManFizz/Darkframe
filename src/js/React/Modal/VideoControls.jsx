@@ -1,4 +1,5 @@
 import React, {useCallback, useEffect, useRef, useState} from 'react';
+import {getStoryboard} from '@/Infrastructure/Ipc';
 import {toggleViewerFullscreen} from './fullscreen';
 
 const RATE_KEY      = 'jsg_video_rate';
@@ -47,7 +48,7 @@ const BusyIndicator = ({ busy }) => (
 // resume — { position } when a saved spot can be continued (onResume / onDismissResume)
 const VideoControls = ({
     video, isPaused, currentTime, videoDuration, playMode, cyclePlayMode,
-    tools, busy, resume, onResume, onDismissResume,
+    tools, busy, resume, onResume, onDismissResume, storyboardSrc,
 }) => {
     const [volume, setVolume]     = useState(1);
     const [muted, setMuted]       = useState(false);
@@ -57,6 +58,15 @@ const VideoControls = ({
     const [endRec, setEndRec]     = useState(null);   // B of the A–B loop
     const [speedOpen, setSpeedOpen] = useState(false);
     const [hoverPct, setHoverPct] = useState(null);   // seek-bar hover position
+    // Frame previews over the seek bar: the storyboard sprite is fetched on first hover.
+    const [board, setBoard] = useState(null);         // null | 'loading' | 'none' | { url, cols, … }
+    const sbKey = storyboardSrc ? JSON.stringify(storyboardSrc) : null;
+    useEffect(() => { setBoard(null); }, [sbKey]);
+    useEffect(() => {
+        if (hoverPct === null || board !== null || !storyboardSrc) return;
+        setBoard('loading');
+        getStoryboard(storyboardSrc).then(sb => setBoard(sb || 'none')).catch(() => setBoard('none'));
+    }, [hoverPct, board, sbKey]);   // eslint-disable-line react-hooks/exhaustive-deps
     const [hidden, setHidden]     = useState(false);   // auto-hide while playing
     const [collapsed, setCollapsed] = useState(() => localStorage.getItem(COLLAPSED_KEY) === '1');
     const [toolsOpen, setToolsOpen] = useState(false);
@@ -392,6 +402,20 @@ const VideoControls = ({
                 {startRec !== null && <div className="vc-mark" style={{ left: `${pct(startRec)}%` }} />}
                 {endRec   !== null && <div className="vc-mark" style={{ left: `${pct(endRec)}%` }} />}
                 <div className="vc-thumb" ref={thumbRef} style={{ left: `${pct(currentTime)}%` }} />
+                {hoverPct !== null && board && typeof board === 'object' && (() => {
+                    const i = Math.min(board.count - 1, Math.floor(hoverPct * board.count));
+                    const scale = 1.25;   // sprite frames are 160px wide
+                    return (
+                        <div className="vc-preview" style={{
+                            left: `${hoverPct * 100}%`,
+                            width: board.width * scale,
+                            height: board.height * scale,
+                            backgroundImage: `url("${board.url}")`,
+                            backgroundSize: `${board.cols * board.width * scale}px ${board.rows * board.height * scale}px`,
+                            backgroundPosition: `-${(i % board.cols) * board.width * scale}px -${Math.floor(i / board.cols) * board.height * scale}px`,
+                        }} />
+                    );
+                })()}
                 {hoverPct !== null && (
                     <div className="vc-tooltip" style={{ left: `${hoverPct * 100}%` }}>
                         {formatTime(hoverPct * dur)}

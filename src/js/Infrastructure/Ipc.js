@@ -37,6 +37,9 @@ export const fsApi = {
 
 export const openExternalUrl = (url) => invoke('shell:openUrl', { url });
 
+// Seek-bar preview sprite for a library ({ itemId }) or folder ({ path }) video.
+export const getStoryboard = (req) => invoke('media:storyboard', req);
+
 export const savedSearchesApi = {
     list:    ()                       => invoke('savedSearches:list'),
     add:     (source, query, title)   => invoke('savedSearches:add', { source, query, title }),

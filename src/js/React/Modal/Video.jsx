@@ -258,6 +258,8 @@ const Video = ({ file, mainArray = [], modalUpdater, canEdit = false, onEdited, 
                 resume={resume}
                 onResume={acceptResume}
                 onDismissResume={() => setResume(null)}
+                storyboardSrc={file.remoteType === SOURCE_TYPES.LIBRARY && file.id ? { itemId: file.id }
+                    : file.filePath ? { path: file.filePath } : null}
             />
         </>
     );
