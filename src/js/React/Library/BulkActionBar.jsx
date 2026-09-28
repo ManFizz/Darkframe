@@ -4,6 +4,7 @@ import {notify} from '@services/NotificationService';
 import {loadEditPreset} from '@services/imageEditPreset';
 import {FILE_TYPES} from '@/Constants';
 import BulkTags from './BulkTags';
+import {compareItemFromThumb, openCompare} from '../Compare/CompareView';
 import CollectionTreeSelect, {pushRecentCollection} from './Collection/CollectionTreeSelect';
 
 const fmtMB = (b) => `${(b / 1024 / 1024).toFixed(1)} МБ`;
@@ -164,6 +165,14 @@ const BulkActionBar = ({ selectedItems, onDone, onChanged, permanent = false, to
                     </div>
 
                     <BulkTags selectedItems={selectedItems} onChanged={onChanged} />
+
+                    {selectedItems.length === 2 && (
+                        <button className="btn btn-sm btn-outline-secondary"
+                                onClick={() => openCompare(selectedItems.map(compareItemFromThumb), { onDone: onDone })}
+                                title="Сравнить два файла бок о бок">
+                            <i className="bi bi-layout-split me-1" /> Сравнить
+                        </button>
+                    )}
 
                     {hasPreset && (
                         <button

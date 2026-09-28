@@ -25,6 +25,7 @@ import {initTheme} from '@services/theme';
 import LibraryService from '@services/LibraryService';
 import ImportActivity from './React/Library/Import/ImportActivity';
 import BootOverlay from './React/Helpers/BootOverlay';
+import CompareView from './React/Compare/CompareView';
 import FolderView from './modules/folder/FolderView';
 import {useBooruQuery} from './modules/r34/booruQuery';
 
@@ -143,6 +144,7 @@ const Main = () => {
                 <HotkeysHelp />
                 <ImportActivity />
                 <BootOverlay />
+                <CompareView />
                 <NavBar setLibraryItems={setLibraryItems} />
 
                 {isGeneric && (

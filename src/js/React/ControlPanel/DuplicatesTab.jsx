@@ -1,4 +1,5 @@
 import React, {useCallback, useEffect, useState} from 'react';
+import {openCompare} from '../Compare/CompareView';
 import LibraryService from '@services/LibraryService';
 import {notify} from '@services/NotificationService';
 
@@ -224,6 +225,12 @@ const DuplicatesTab = () => {
                                         {group.items.length} {similar ? 'похожих' : 'копии'}
                                         {!similar && <> · {fmtSize(group.items[0].size)}</>}
                                     </span>
+                                    <button className="cp-linkbtn" title="Сравнить первые два бок о бок"
+                                            onClick={() => openCompare(group.items.slice(0, 2).map(it => ({
+                                                ...it, url: `library://item/${it.id}`,
+                                            })), { onDone: scan })}>
+                                        <i className="bi bi-layout-split" /> Сравнить
+                                    </button>
                                     <button className="cp-linkbtn" onClick={() => keepFirst(group)}>
                                         {similar ? 'Оставить только лучшую' : 'Оставить только старую'}
                                     </button>
