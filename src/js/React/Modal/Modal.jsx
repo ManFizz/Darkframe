@@ -17,6 +17,7 @@ import {mediaKey} from "@services/mediaKey";
 import {useSlideshow} from "./useSlideshow";
 import SlideshowHud from "./SlideshowHud";
 import Filmstrip from "./Filmstrip";
+import AnimatedImage, {isMaybeAnimated} from "./AnimatedImage";
 import {useViewPref} from "@services/viewPrefs";
 import {exitViewerFullscreen} from "./fullscreen";
 import {useResolvedTheme} from "@services/theme";
@@ -338,17 +339,22 @@ const Modal = ({ fileId, mainArray, modalUpdater, displayFiles, onUpdated }) => 
 
     if (!file) return null;
 
+    const imageStyle = {
+        transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom}) rotate(${degree}deg)`,
+        cursor: zoom > 1 ? 'grab' : 'default',
+    };
+    const imageSrc = cachedMediaUrl(file.getUrl());
     const mediaContent = file.type === FILE_TYPES.IMAGE ? (
-        <img
-            alt={file.title}
-            draggable={false}
-            onDragStart={(e) => e.preventDefault()}
-            style={{
-                transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom}) rotate(${degree}deg)`,
-                cursor: zoom > 1 ? 'grab' : 'default',
-            }}
-            src={cachedMediaUrl(file.getUrl())}
-        />
+        isMaybeAnimated(file, file.getUrl())
+            // GIF / WebP: turns into a player (pause, frames, speed) when animated.
+            ? <AnimatedImage key={file.uniqueId} file={file} src={imageSrc} alt={file.title} style={imageStyle} />
+            : <img
+                alt={file.title}
+                draggable={false}
+                onDragStart={(e) => e.preventDefault()}
+                style={imageStyle}
+                src={imageSrc}
+            />
     ) : (
         <Video
             file={file}
