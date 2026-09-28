@@ -6,13 +6,14 @@ const SECRET_RE = /key|password|token/i;
 
 // Human labels + descriptions. Unknown keys fall back to the raw key, no desc.
 // Remote-section toggles, split out of the generic "settings" into their own card.
-const MODULE_KEYS = ['EnableR34', 'EnableGelbooru', 'EnableR34Favs'];
+const MODULE_KEYS = ['EnableR34', 'EnableGelbooru', 'EnableR34Favs', 'EnableDanbooru'];
 
 const META = {
     modules: {
         EnableR34:      { label: 'Rule34',   desc: 'Показывать раздел rule34.xxx' },
         EnableGelbooru: { label: 'Gelbooru', desc: 'Показывать раздел gelbooru.com' },
         EnableR34Favs:  { label: 'R34 Favs', desc: 'Показывать раздел избранного rule34.xxx' },
+        EnableDanbooru: { label: 'Danbooru', desc: 'Показывать раздел danbooru.donmai.us' },
     },
     settings: {
         SafeView:         { label: 'Безопасный просмотр',     desc: 'Скрывать чувствительный контент по умолчанию' },
@@ -29,6 +30,8 @@ const META = {
         R34UserId:   { label: 'Rule34 User ID',   desc: 'Идентификатор пользователя rule34.xxx' },
         GelbooruApiKey: { label: 'Gelbooru API Key', desc: 'Ключ API для gelbooru.com (Настройки аккаунта → API Access)' },
         GelbooruUserId: { label: 'Gelbooru User ID', desc: 'Идентификатор пользователя gelbooru.com' },
+        DanbooruLogin:  { label: 'Danbooru логин',   desc: 'Необязательно: без аккаунта поиск ограничен двумя тегами' },
+        DanbooruApiKey: { label: 'Danbooru API Key', desc: 'Профиль → API Key на danbooru.donmai.us' },
         HttpProxy:   {
             label: 'HTTP-прокси', desc: 'Параметры прокси-сервера',
             children: {
@@ -153,9 +156,10 @@ const SettingsPanel = ({ onClose }) => {
     useEffect(() => {
         configApi.get()
             .then(({ settings, private: p }) => {
-                setSettings(settings);
+                // Sections added later still get a switch in older settings files.
+                setSettings({ EnableDanbooru: false, ...settings });
                 // Keys added after a user's data/private.js was created still get a field.
-                setPriv({ GelbooruApiKey: '', GelbooruUserId: '', ...p });
+                setPriv({ GelbooruApiKey: '', GelbooruUserId: '', DanbooruLogin: '', DanbooruApiKey: '', ...p });
             })
             .catch(e => setError(e.message));
     }, []);
@@ -178,10 +182,12 @@ const SettingsPanel = ({ onClose }) => {
     // back both the R34 and R34 Favs sections, so either one keeps them visible.
     const r34On = !!(settings?.EnableR34 || settings?.EnableR34Favs);
     const gelOn = !!settings?.EnableGelbooru;
+    const danOn = !!settings?.EnableDanbooru;
     const privateKeys = priv
         ? Object.keys(priv).filter(k =>
             !((k === 'R34ApiKey' || k === 'R34UserId') && !r34On) &&
-            !((k === 'GelbooruApiKey' || k === 'GelbooruUserId') && !gelOn))
+            !((k === 'GelbooruApiKey' || k === 'GelbooruUserId') && !gelOn) &&
+            !((k === 'DanbooruLogin' || k === 'DanbooruApiKey') && !danOn))
         : [];
 
     // Rendered as a tab inside the Control Panel: no overlay/header of its own,

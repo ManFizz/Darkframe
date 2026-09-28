@@ -25,6 +25,7 @@ const SECTION_LABELS = {
     [SOURCE_TYPES.R34]:       'R34',
     [SOURCE_TYPES.GELBOORU]:  'Gelbooru',
     [SOURCE_TYPES.REALBOORU]: 'Realbooru',
+    [SOURCE_TYPES.DANBOORU]:  'Danbooru',
     [SOURCE_TYPES.FOLDER]:    'Папки',
     [SOURCE_TYPES.FAVORITE]:  'Избранное',
 };

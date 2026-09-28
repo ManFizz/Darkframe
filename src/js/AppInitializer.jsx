@@ -32,7 +32,7 @@ import {blockedBy, setHiddenCount, useBlacklist} from './modules/r34/blacklist';
 import {useLibraryLinks} from './modules/r34/libraryLinks';
 import BooruBulkBar from './modules/r34/BooruBulkBar';
 import useSelection from './Hooks/gallery/useSelection';
-import {CanMoreMedia} from './modules/r34/R34Controller';
+import {BOORU_TYPES, CanMoreMedia} from './modules/r34/R34Controller';
 import {useViewPref} from '@services/viewPrefs';
 
 // Colour mode + accent before the first paint.
@@ -135,7 +135,7 @@ const Main = () => {
     // the booru sources share the generic gallery + pagination below.
     const isGeneric = !isLibrary && !isFolder;
     const booruView = useBooruQuery().view;   // 'saved' page has no pagination
-    const isBooru = [SOURCE_TYPES.R34, SOURCE_TYPES.GELBOORU, SOURCE_TYPES.REALBOORU].includes(state.currentSource);
+    const isBooru = BOORU_TYPES.includes(state.currentSource);
     const [infinite] = useViewPref('booruInfinite');
 
     // Blacklisted posts are dropped from what the grid and the viewer see (unless

@@ -5,6 +5,8 @@ const PrivateData = {
     R34UserId: "REPLACE",
     GelbooruApiKey: "",
     GelbooruUserId: "",
+    DanbooruLogin: "",
+    DanbooruApiKey: "",
     HttpProxy: {
         ip: "",
         port: "",

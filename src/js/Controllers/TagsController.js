@@ -248,23 +248,37 @@ export async function fetchTagSuggestions(query, sourceId) {
 
 	const lastWord = match[0].toLowerCase();
 
-	if (suggestionsCache.has(lastWord)) {
-		return suggestionsCache.get(lastWord);
+	const cacheKey = `${sourceId}:${lastWord}`;
+	if (suggestionsCache.has(cacheKey)) {
+		return suggestionsCache.get(cacheKey);
 	}
 
 	const sourceData = GetSourceDataById(sourceId);
+	const isDanbooru = sourceData.api === 'danbooru';
 
 	try {
 		const url =
 			sourceData.tagUrl +
-			lastWord +
-			(sourceData.remoteType === SOURCE_TYPES.R34 ? "" : "%");
+			encodeURIComponent(lastWord) +
+			(sourceData.remoteType === SOURCE_TYPES.R34 || isDanbooru ? "" : "%");
 
 		const res = await fetch(url);
 		let data = await res.json();
 
 		if (sourceData.remoteType === SOURCE_TYPES.GELBOORU) {
 			data = data.tag || [];
+		}
+
+		if (isDanbooru) {
+			const normalized = (Array.isArray(data) ? data : []).map(t => ({
+				name: t.value,
+				count: t.post_count || 0,
+				type: t.category ?? null,
+				label: `${t.value} (${t.post_count || 0})`,
+				value: t.value,
+			}));
+			suggestionsCache.set(cacheKey, normalized);
+			return normalized;
 		}
 
 		const normalized = data.map(t => ({
@@ -278,7 +292,7 @@ export async function fetchTagSuggestions(query, sourceId) {
 			value: t.name || t.value
 		}));
 
-		suggestionsCache.set(lastWord, normalized);
+		suggestionsCache.set(cacheKey, normalized);
 
 		return normalized;
 	} catch (e) {

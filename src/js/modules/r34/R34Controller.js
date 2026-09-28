@@ -2,6 +2,7 @@ import {GetThumbByData} from "@controllers/GalleryController.js";
 import {addToGallery, setGallery} from "@controllers/AppInitializerController";
 import PrivateData from "@data/private";
 import {FILE_TYPES, SOURCE_TYPES} from "@/Constants";
+import {rememberKinds} from "./tagKinds";
 
 export const sources = {
     r34: {
@@ -30,8 +31,22 @@ export const sources = {
         sourceUrl: "https://realbooru.com/index.php?page=dapi&s=post&q=index&id=",
         remoteType: SOURCE_TYPES.REALBOORU,
         tagsLimit: 100,
-    }
+    },
+    // JSON API (not the gelbooru-style dapi): see fetchDanbooru.
+    danbooru: {
+        name: "Danbooru",
+        api: 'danbooru',
+        mainUrl: "https://danbooru.donmai.us/posts.json",
+        tagUrl: "https://danbooru.donmai.us/autocomplete.json?search[type]=tag_query&limit=8&search[query]=",
+        sourceUrl: "https://danbooru.donmai.us/posts/",
+        remoteType: SOURCE_TYPES.DANBOORU,
+        tagsLimit: 2,
+        maxPages: 1000,
+    },
 };
+
+// Every booru source type the search UI handles.
+export const BOORU_TYPES = [SOURCE_TYPES.R34, SOURCE_TYPES.GELBOORU, SOURCE_TYPES.REALBOORU, SOURCE_TYPES.DANBOORU];
 
 export function GetSourceDataById(sourceId) {
     switch(sourceId) {
@@ -41,6 +56,8 @@ export function GetSourceDataById(sourceId) {
             return sources.gelbooru;
         case SOURCE_TYPES.REALBOORU:
             return sources.realbooru;
+        case SOURCE_TYPES.DANBOORU:
+            return sources.danbooru;
         case SOURCE_TYPES.FOLDER:
         case SOURCE_TYPES.FAVORITE:
         case SOURCE_TYPES.COLLECTION:
@@ -57,6 +74,8 @@ export function updateR34Source(sourceId) {
         currentR34Source = sources.gelbooru;
     else if(sourceId === SOURCE_TYPES.REALBOORU)
         currentR34Source = sources.realbooru;
+    else if(sourceId === SOURCE_TYPES.DANBOORU)
+        currentR34Source = sources.danbooru;
     else currentR34Source = null;
 }
 const postPerPage = 100; //Maximum in API
@@ -65,8 +84,9 @@ let currentPage;
 let currentQueryTags = "";
 
 export function CanMoreMedia() {
-    const maxPages = Math.ceil(maxPosts/postPerPage);
-    return maxPages > currentPage;
+    // Danbooru refuses pages past its limit however many posts match.
+    const maxPages = Math.min(Math.ceil(maxPosts/postPerPage), currentR34Source?.maxPages ?? Infinity);
+    return maxPages > currentPage + 1;
 }
 
 // Search status for the UI (search bar spinner, sidebar result count, empty states).
@@ -95,7 +115,10 @@ const RATING = { s: 'safe', q: 'questionable', e: 'explicit', g: 'general', gene
 
 // One API post → ThumbFile data. The grid gets the light preview/sample image; the
 // viewer (and favourites / imports) the original file.
-function postToData(post) {
+function postToData(post, source = currentR34Source) {
+    const getPostAttr = (p, attr) => (source.remoteType === SOURCE_TYPES.GELBOORU
+        ? p.querySelector(attr)?.textContent
+        : p.getAttribute(attr));
     const fileUrl = getPostAttr(post, 'file_url') || '';
     const isVideo = VIDEO_RE.test(fileUrl);
     const preview = getPostAttr(post, 'preview_url');
@@ -107,9 +130,9 @@ function postToData(post) {
         thumbUrl:   (isVideo ? preview : (sample || preview)) || fileUrl,
         contentUrl: fileUrl,
         type:       isVideo ? FILE_TYPES.VIDEO : FILE_TYPES.IMAGE,
-        remoteType: currentR34Source.remoteType,
+        remoteType: source.remoteType,
         tags:       (getPostAttr(post, 'tags') || '').split(' ').filter(Boolean),
-        sourceUrl:  currentR34Source.sourceUrl + getPostAttr(post, 'id'),
+        sourceUrl:  source.sourceUrl + getPostAttr(post, 'id'),
         remoteId:   getPostAttr(post, 'id'),
         width:      Number(getPostAttr(post, 'width')) || 0,
         height:     Number(getPostAttr(post, 'height')) || 0,
@@ -119,18 +142,63 @@ function postToData(post) {
     };
 }
 
-async function processResponse(responseXML, isNewSearch) {
-    const postsRoot = responseXML.querySelector("posts");
-    if (postsRoot) {
-        maxPosts = parseInt(postsRoot.getAttribute("count")) || 0;
+// Danbooru post JSON → ThumbFile data. Its tag categories come with the post, so
+// they are remembered for the tag panel without extra lookups.
+const DAN_RATING = { g: 'general', s: 'sensitive', q: 'questionable', e: 'explicit' };
+const DAN_VIDEO = new Set(['mp4', 'webm', 'zip']);   // zip = ugoira, played as its webm sample
+
+function danbooruToData(p, source = sources.danbooru) {
+    const isVideo = DAN_VIDEO.has(p.file_ext);
+    const fileUrl = p.file_ext === 'zip' ? p.large_file_url : p.file_url;
+    const variants = p.media_asset?.variants || [];
+    const tile = variants.find(v => v.type === '720x720') || variants.find(v => v.type === '360x360');
+    const created = Date.parse(p.created_at || '');
+    return {
+        previewUrl: p.preview_file_url,
+        thumbUrl:   tile?.url || p.large_file_url || p.preview_file_url || fileUrl,
+        contentUrl: fileUrl,
+        type:       isVideo ? FILE_TYPES.VIDEO : FILE_TYPES.IMAGE,
+        remoteType: source.remoteType,
+        tags:       (p.tag_string || '').split(' ').filter(Boolean),
+        sourceUrl:  source.sourceUrl + p.id,
+        remoteId:   String(p.id),
+        width:      p.image_width || 0,
+        height:     p.image_height || 0,
+        score:      p.score ?? 0,
+        remoteRating: DAN_RATING[p.rating] || null,
+        time:       isFinite(created) ? Math.floor(created / 1000) : null,
+    };
+}
+
+function rememberDanbooruKinds(posts) {
+    const tags = [];
+    const kinds = { artist: 'tag_string_artist', character: 'tag_string_character', copyright: 'tag_string_copyright', general: 'tag_string_general', meta: 'tag_string_meta' };
+    posts.forEach(p => Object.entries(kinds).forEach(([type, field]) =>
+        (p[field] || '').split(' ').filter(Boolean).forEach(name => tags.push({ name, type }))));
+    if (tags.length) rememberKinds(tags);
+}
+
+// One page of results from any source: { total, items: ThumbFile[] }.
+async function fetchPage(source, tags, page, signal, limit = postPerPage) {
+    if (source.api === 'danbooru') {
+        const { total, posts } = await fetchDanbooru(source, tags, page, signal, limit);
+        rememberDanbooruKinds(posts);
+        return { total, items: posts.filter(p => p.file_url || p.large_file_url).map(p => GetThumbByData(danbooruToData(p, source))).filter(Boolean) };
     }
+    const xml = await fetchPosts(source, tags, page, signal, limit);
+    const root = xml.querySelector('posts');
+    const total = root ? parseInt(root.getAttribute('count')) || 0 : 0;
+    const items = Array.from(xml.querySelectorAll('post'))
+        .map(post => GetThumbByData(postToData(post, source)))
+        .filter(Boolean);
+    return { total, items };
+}
 
-    const posts = Array.from(responseXML.querySelectorAll("post"));
-    const array = posts.map(post => GetThumbByData(postToData(post))).filter(item => item !== null);
-
-    if (isNewSearch) setGallery(array);
-    else addToGallery(array);
-    return array;
+function showPage({ total, items }, isNewSearch) {
+    if (total != null) maxPosts = total;
+    if (isNewSearch) setGallery(items);
+    else addToGallery(items);
+    return items;
 }
 
 export async function SearchMedia(tagsString) {
@@ -142,8 +210,7 @@ export async function SearchMedia(tagsString) {
     setStatus({ loading: true, error: null, query: tagsString, source: currentR34Source?.remoteType });
 
     try {
-        const xml = await fetchPosts(currentR34Source, currentQueryTags, currentPage, controller.signal);
-        const posts = await processResponse(xml, true);
+        const posts = showPage(await fetchPage(currentR34Source, currentQueryTags, currentPage, controller.signal), true);
         setStatus({ loading: false, total: maxPosts });
         return posts;
     } catch (err) {
@@ -160,8 +227,8 @@ export async function LoadMoreMedia() {
     setStatus({ loading: true });
 
     try {
-        const xml = await fetchPosts(currentR34Source, currentQueryTags, currentPage, controller.signal);
-        await processResponse(xml, false);
+        const res = await fetchPage(currentR34Source, currentQueryTags, currentPage, controller.signal);
+        showPage({ ...res, total: currentR34Source.api === 'danbooru' ? null : res.total }, false);
         setStatus({ loading: false });
     } catch (err) {
         if (err.name === 'AbortError') return;
@@ -170,22 +237,53 @@ export async function LoadMoreMedia() {
     }
 }
 
-function getPostAttr(post, attr) {
-    if (currentR34Source.remoteType === SOURCE_TYPES.GELBOORU)
-        return post.querySelector(attr)?.textContent;
-    return post.getAttribute(attr);
-}
-
 // First `limit` posts of a query + its total count, without touching the gallery
 // (the preview strips on the saved-searches page).
 export async function fetchPreview(tagsString, limit = 12, signal) {
-    const xml = await fetchPosts(currentR34Source, tagsString, 0, signal, limit);
-    const root = xml.querySelector('posts');
-    const total = root ? parseInt(root.getAttribute('count')) || 0 : 0;
-    const items = Array.from(xml.querySelectorAll('post'))
-        .map(post => GetThumbByData(postToData(post)))
-        .filter(Boolean);
-    return { total, items };
+    return fetchPage(currentR34Source, tagsString, 0, signal, limit);
+}
+
+// Danbooru speaks order:/rating: words of its own and counts results separately.
+// Anonymous searches are capped at 2 tags; login + API key raise that.
+export function toDanbooruQuery(tags) {
+    return (Array.isArray(tags) ? tags : tags.trim().split(/\s+/))
+        .filter(Boolean)
+        .map(t => t === 'sort:score:desc' ? 'order:score'
+            : t === 'sort:random' ? 'order:random'
+            : t === 'rating:safe' ? 'rating:general'
+            : t)
+        .join(' ');
+}
+
+async function danbooruJson(url, signal) {
+    const response = await fetch(url, { signal });
+    let body = null;
+    try { body = await response.json(); } catch { /* not JSON */ }
+    if (!response.ok) {
+        if (response.status === 401 || response.status === 403) {
+            throw new Error(`Доступ запрещён (HTTP ${response.status}) — проверь логин и API-ключ Danbooru в настройках`);
+        }
+        const msg = body?.message || `HTTP ${response.status}`;
+        throw new Error(/more than 2 tags/i.test(msg)
+            ? 'Danbooru без аккаунта ищет максимум по 2 тегам — убери лишние или добавь логин и API-ключ в настройках'
+            : msg);
+    }
+    return body;
+}
+
+async function fetchDanbooru(source, tags, page, signal, limit) {
+    const q = encodeURIComponent(toDanbooruQuery(tags));
+    const auth = PrivateData.DanbooruLogin && PrivateData.DanbooruApiKey
+        ? `&login=${encodeURIComponent(PrivateData.DanbooruLogin)}&api_key=${encodeURIComponent(PrivateData.DanbooruApiKey)}`
+        : '';
+    const postsUrl = `${source.mainUrl}?limit=${limit}&page=${page + 1}&tags=${q}${auth}`;
+    const countUrl = `https://danbooru.donmai.us/counts/posts.json?tags=${q}${auth}`;
+    const [posts, counts] = await Promise.all([
+        danbooruJson(postsUrl, signal),
+        page === 0 ? danbooruJson(countUrl, signal).catch(() => null) : null,
+    ]);
+    const total = counts ? counts.counts?.posts ?? posts.length : null;
+    return { total, posts: Array.isArray(posts) ? posts : [] };
 }
 
 export async function fetchPosts(source, tags, page, signal, limit = postPerPage) {

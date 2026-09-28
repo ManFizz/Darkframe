@@ -64,7 +64,7 @@ const RATINGS = [
     { id: 'explicit',     label: 'Explicit' },
 ];
 
-const LOGO = { [SOURCE_TYPES.R34]: 'R34', [SOURCE_TYPES.GELBOORU]: 'GB', [SOURCE_TYPES.REALBOORU]: 'RB' };
+const LOGO = { [SOURCE_TYPES.R34]: 'R34', [SOURCE_TYPES.GELBOORU]: 'GB', [SOURCE_TYPES.REALBOORU]: 'RB', [SOURCE_TYPES.DANBOORU]: 'DB' };
 
 const fmtTotal = (n) => n.toLocaleString('ru-RU');
 const ago = (ms) => {

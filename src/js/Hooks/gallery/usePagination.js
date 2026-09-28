@@ -2,7 +2,7 @@ import {useCallback, useEffect, useState} from "react";
 import {SOURCE_TYPES} from "@/Constants";
 import Settings from "@data/settings";
 import {setGallery} from "@controllers/AppInitializerController";
-import {CanMoreMedia, LoadMoreMedia} from "@modules/r34/R34Controller";
+import {BOORU_TYPES, CanMoreMedia, LoadMoreMedia} from "@modules/r34/R34Controller";
 
 export function usePagination({ mainArray, currentSource, updateDisplayArray, modalFile }) {
     const [currentPage, setCurrentPage] = useState(1);
@@ -22,7 +22,7 @@ export function usePagination({ mainArray, currentSource, updateDisplayArray, mo
     }, [mainArray, currentSource, pages, updateDisplayArray]);
 
     const tryLoadR34MoreMedia = () => {
-        const isR34 = currentSource === SOURCE_TYPES.R34 || currentSource === SOURCE_TYPES.GELBOORU;
+        const isR34 = BOORU_TYPES.includes(currentSource);
         if (isR34 &&  CanMoreMedia()) LoadMoreMedia();
     }
 

@@ -9,6 +9,7 @@ const Settings = {
     EnableR34: false,
     EnableGelbooru: false,
     EnableR34Favs: false,
+    EnableDanbooru: false,
 };
 
 module.exports = Settings;

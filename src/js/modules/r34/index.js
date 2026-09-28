@@ -9,9 +9,10 @@ const navItems = [];
 if (Settings.EnableR34)      navItems.push({label: 'R34',      type: SOURCE_TYPES.R34});
 if (Settings.EnableGelbooru) navItems.push({label: 'Gelbooru', type: SOURCE_TYPES.GELBOORU});
 if (Settings.EnableR34Favs)  navItems.push({label: 'R34 Favs', type: SOURCE_TYPES.R34, action: DisplayRemoteFavoriteR34});
+if (Settings.EnableDanbooru) navItems.push({label: 'Danbooru', type: SOURCE_TYPES.DANBOORU});
 
 ModuleRegistry.register({
-    sourceTypes: [SOURCE_TYPES.R34, SOURCE_TYPES.GELBOORU, SOURCE_TYPES.REALBOORU],
+    sourceTypes: [SOURCE_TYPES.R34, SOURCE_TYPES.GELBOORU, SOURCE_TYPES.REALBOORU, SOURCE_TYPES.DANBOORU],
 
     navItems,
 
