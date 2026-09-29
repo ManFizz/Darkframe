@@ -104,6 +104,10 @@ function register() {
         return res;
     };
 
+    // Ctrl+V: files / an image / links from the clipboard into the open collection.
+    ipcMain.handle('library:paste', async (_, { collectionId }) =>
+        recordImport(await require('../services/pasteImport').pasteImport({ collectionId })));
+
     ipcMain.handle('library:importDialog', async (_, { collectionId }) => {
         const { canceled, filePaths } = await dialog.showOpenDialog({
             properties: ['openFile', 'multiSelections'],

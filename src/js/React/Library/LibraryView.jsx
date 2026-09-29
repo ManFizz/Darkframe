@@ -20,6 +20,7 @@ import {useLibraryStats} from "@hooks/library/useLibraryStats";
 import {useLibraryContext} from '@/LibraryContext';
 import Modal from "@react/Modal/Modal";
 import {notify} from '@services/NotificationService';
+import {libraryApi} from '@/Infrastructure/Ipc';
 import {undoLast, redoLast} from '@services/undo';
 import {useCommands} from '@services/commands';
 import {matches} from '@services/keymap';
@@ -138,6 +139,7 @@ const LibraryView = () => {
             if (t?.closest?.('input, textarea, [contenteditable="true"]') || document.querySelector('.img-editor')) return;
             if (matches(e, 'lib.undo')) { e.preventDefault(); undoLast(); }
             else if (matches(e, 'lib.redo')) { e.preventDefault(); redoLast(); }
+            else if (matches(e, 'lib.paste')) { e.preventDefault(); pasteRef.current(); }
         };
         document.addEventListener('keydown', onKey);
         return () => document.removeEventListener('keydown', onKey);
@@ -146,7 +148,29 @@ const LibraryView = () => {
         { id: 'vs:clip', group: 'Поиск по картинке', icon: 'bi-clipboard-image', title: 'Найти по картинке из буфера обмена', run: () => runVisualSearch({ clipboard: true }) },
         { id: 'vs:file', group: 'Поиск по картинке', icon: 'bi-image', title: 'Найти по картинке из файла…', run: () => runVisualSearch({ pick: true }) },
     ]);
+    // Ctrl+V: what's on the clipboard goes into the open collection (or "no
+    // collection" when a special / smart view is open).
+    const pasteRef = useRef(null);
+    pasteRef.current = async () => {
+        const special = Object.values(SPECIAL).includes(selectedCollection) || !!smartFilterJson;
+        const target = special ? null : selectedCollection;
+        const where = target ? `«${LibraryService.getCollections().find(c => c.id === target)?.name || 'коллекция'}»` : '«Без коллекции»';
+        const res = await libraryApi.paste(target).catch(e => ({ errors: [{ error: e.message }] }));
+        const added = res?.results?.length || 0, dup = res?.skipped?.length || 0, err = res?.errors?.length || 0;
+        if (!res?.kind && !added && !err) {
+            notify({ message: 'В буфере нет картинки, ссылки или файлов', type: 'info' });
+            return;
+        }
+        notify({
+            message: added ? `Вставлено в ${where}: ${added}${dup ? ` · уже было: ${dup}` : ''}${err ? ` · ошибок: ${err}` : ''}`
+                : dup ? 'Уже есть в библиотеке' : String(res.errors?.[0]?.error || 'Не удалось вставить').split(/\n/).pop(),
+            type: added ? 'success' : err ? 'warning' : 'info',
+        });
+        if (added) { refreshStats(); await reloadRef.current(); }
+    };
+
     useCommands('library-slideshow', () => [
+        { id: 'paste', group: 'Библиотека', icon: 'bi-clipboard-plus', title: 'Вставить из буфера обмена в эту коллекцию', hint: 'Ctrl+V', run: () => pasteRef.current() },
         { id: 'ss:view', group: 'Библиотека', icon: 'bi-play-circle', title: 'Слайд-шоу: всё, что показано', hint: 'S в просмотрщике', run: () => startSlideshow(orderedItems) },
         ...(selectedItems.length > 1 ? [{ id: 'ss:sel', group: 'Библиотека', icon: 'bi-play-circle', title: `Слайд-шоу: выделенные (${selectedItems.length})`, run: () => startSlideshow(selectedItems) }] : []),
     ]);

@@ -125,6 +125,7 @@ export const libraryApi = {
     findSimilar:       (data) => invoke('library:findSimilar', data),
     itemRelations:     (id)   => invoke('library:itemRelations', { id }),
     visualSearch:      (q)    => invoke('library:visualSearch', q),
+    paste:             (collectionId) => invoke('library:paste', { collectionId }),
     undo:              ()     => invoke('library:undo'),
     redo:              ()     => invoke('library:redo'),
     undoState:         ()     => invoke('library:undoState'),
