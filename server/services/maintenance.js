@@ -5,7 +5,7 @@ const { getActive } = require('../libraryRegistry');
 const { generateImageThumb, generateVideoThumb, getVideoDuration } = require('./thumbService');
 const { thumbAt } = require('./ffmpegOps');
 
-const ITEMS_PATH = getActive().itemsPath;
+const itemsPath = () => getActive().itemsPath;   // active library, may change at runtime
 
 function findOriginal(itemDir) {
     try {
@@ -40,7 +40,7 @@ async function checkIntegrity() {
 
     const missing = [];
     for (const it of items) {
-        if (!findOriginal(path.join(ITEMS_PATH, it.id))) {
+        if (!findOriginal(path.join(itemsPath(), it.id))) {
             missing.push({
                 id: it.id,
                 title: it.title || it.fileName,
@@ -52,10 +52,10 @@ async function checkIntegrity() {
 
     const orphans = [];
     let entries = [];
-    try { entries = fs.readdirSync(ITEMS_PATH, { withFileTypes: true }); } catch { /* ignore */ }
+    try { entries = fs.readdirSync(itemsPath(), { withFileTypes: true }); } catch { /* ignore */ }
     for (const e of entries) {
         if (!e.isDirectory() || idSet.has(e.name)) continue;
-        orphans.push({ name: e.name, size: dirSize(path.join(ITEMS_PATH, e.name)) });
+        orphans.push({ name: e.name, size: dirSize(path.join(itemsPath(), e.name)) });
     }
 
     const orphanBytes = orphans.reduce((s, o) => s + o.size, 0);
@@ -68,13 +68,13 @@ async function removeMissingRecords(ids = []) {
     for (const id of ids) {
         await ItemTag.destroy({ where: { itemId: id } });
         await Item.unscoped().destroy({ where: { id } });
-        try { fs.rmSync(path.join(ITEMS_PATH, id), { recursive: true, force: true }); } catch { /* ignore */ }
+        try { fs.rmSync(path.join(itemsPath(), id), { recursive: true, force: true }); } catch { /* ignore */ }
     }
     return { ok: true, count: ids.length };
 }
 
 // Delete on-disk folders that don't back any DB row. Re-checks against the DB and
-// rejects anything that isn't a plain name under ITEMS_PATH, so a real item is never
+// rejects anything that isn't a plain name under the items folder, so a real item is never
 // wiped by a stale/forged name.
 async function removeOrphanFolders(names = []) {
     if (!names.length) return { ok: true, count: 0 };
@@ -85,7 +85,7 @@ async function removeOrphanFolders(names = []) {
     for (const name of names) {
         if (idSet.has(name)) continue;
         if (typeof name !== 'string' || name.includes('/') || name.includes('\\') || name.includes('..')) continue;
-        try { fs.rmSync(path.join(ITEMS_PATH, name), { recursive: true, force: true }); count++; }
+        try { fs.rmSync(path.join(itemsPath(), name), { recursive: true, force: true }); count++; }
         catch { /* ignore */ }
     }
     return { ok: true, count };
@@ -100,7 +100,7 @@ async function generateMissingMedia(onProgress) {
     // Only touch what's actually missing: no thumb.jpg, or zero width/height.
     const todo = [];
     for (const it of items) {
-        const dir = path.join(ITEMS_PATH, it.id);
+        const dir = path.join(itemsPath(), it.id);
         const original = findOriginal(dir);
         if (!original) continue;   // that's integrity's job, not ours
         const thumbMissing = !fs.existsSync(path.join(dir, 'thumb.jpg'));

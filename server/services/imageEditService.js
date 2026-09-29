@@ -14,7 +14,7 @@ const hashBuffer = (buf) => crypto.createHash('sha256').update(buf).digest('hex'
 // original stays locked and the *next* edit's write-back fails (Windows sharing violation).
 sharp.cache(false);
 
-const ITEMS_PATH = getActive().itemsPath;
+const itemsPath = () => getActive().itemsPath;   // active library, may change at runtime
 const THUMB_SIZE = 400;
 
 // Files inside an item folder:
@@ -109,7 +109,7 @@ async function editImage(id, rawParams = {}) {
     const item = await Item.unscoped().findByPk(id);
     if (!item) throw new Error('Элемент не найден');
 
-    const itemDir = path.join(ITEMS_PATH, id);
+    const itemDir = path.join(itemsPath(), id);
     const originalPath = findOriginal(itemDir);
     if (!originalPath) throw new Error('original file not found');
 
@@ -207,7 +207,7 @@ async function revertImage(id) {
     const item = await Item.unscoped().findByPk(id);
     if (!item) throw new Error('Элемент не найден');
 
-    const itemDir = path.join(ITEMS_PATH, id);
+    const itemDir = path.join(itemsPath(), id);
     const originalPath = findOriginal(itemDir);
     const source = findSource(itemDir);
     if (!source) throw new Error('no backup to revert to');

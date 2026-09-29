@@ -1,15 +1,13 @@
 const { app, BrowserWindow, session } = require('electron');
 const { backupDatabase } = require('./server/backup');
 const { setupIpcHandlers } = require('./server/ipcManager');
-const sequelize = require("./server/database");
 const { protocol } = require('electron');
 const { fileResponse } = require('./server/fileResponse');
 const path = require('path');
 const fs = require('fs');
-const { ITEMS_PATH, hashExistingItems } = require('./server/services/importService');
+const { itemsPath } = require('./server/services/importService');
 const { generateHeifDisplay } = require('./server/services/thumbService');
 const mediaCache = require('./server/mediaCache');
-const { migrations } = require("./server/migrations");
 const { startApiServer, stopApiServer } = require('./server/apiServer');
 
 app.commandLine.appendSwitch('disable-quic');
@@ -117,15 +115,8 @@ function setupRequestHeaders() {
 
 async function initDatabase() {
     try {
-        await sequelize.authenticate();
-        await sequelize.query('PRAGMA journal_mode = WAL;');
-        await sequelize.query('PRAGMA busy_timeout = 5000;');
-
-        await sequelize.sync();
-        await migrations();
-        await require('./server/favoritesCollection').ensureFavoritesCollection();
+        await require('./server/services/librarySwitch').prepareDatabase();
         console.log('Database synchronized');
-        hashExistingItems();
     } catch (err) {
         console.error('DB sync error:', err);
     }
@@ -137,13 +128,13 @@ function libraryFilePath(url) {
     const type = url.hostname;                          // 'thumb' | 'item' | 'source'
     const id = url.pathname.replace(/^\//, '');         // uuid
 
-    // The id names a folder under ITEMS_PATH — reject anything that isn't a
+    // The id names a folder under the items folder — reject anything that isn't a
     // plain id segment so a crafted URL can't escape the items directory.
     if (!/^[A-Za-z0-9._-]+$/.test(id)) return null;
 
-    if (type === 'thumb') return path.join(ITEMS_PATH, id, 'thumb.jpg');
+    if (type === 'thumb') return path.join(itemsPath(), id, 'thumb.jpg');
 
-    const itemDir = path.join(ITEMS_PATH, id);
+    const itemDir = path.join(itemsPath(), id);
     if (!fs.existsSync(itemDir)) return null;
     const files = fs.readdirSync(itemDir);
 

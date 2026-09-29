@@ -1,5 +1,5 @@
 const { ipcMain, dialog, shell } = require('electron');
-const { importFiles, ITEMS_PATH, importDirectory, ensureTag } = require('../services/importService');
+const { importFiles, itemsPath, importDirectory, ensureTag } = require('../services/importService');
 const { Item, Tag, ItemTag } = require('../models/associations');
 const Collection = require('../models/Collection');
 const { Op } = require('sequelize');
@@ -199,7 +199,7 @@ function register() {
 
     // Remove an item's files from disk (best-effort on Windows locks).
     async function purgeItemFiles(id) {
-        const itemDir = path.join(ITEMS_PATH, id);
+        const itemDir = path.join(itemsPath(), id);
         if (!fs.existsSync(itemDir)) return;
 
         for (const file of fs.readdirSync(itemDir)) {
@@ -240,12 +240,12 @@ function register() {
         });
         if (!src) throw new Error('Элемент не найден');
 
-        const srcDir = path.join(ITEMS_PATH, src.id);
+        const srcDir = path.join(itemsPath(), src.id);
         const files = fs.existsSync(srcDir) ? fs.readdirSync(srcDir) : [];
         if (!files.length) throw new Error('Файлы элемента не найдены');
 
         const newId  = crypto.randomUUID();
-        const dstDir = path.join(ITEMS_PATH, newId);
+        const dstDir = path.join(itemsPath(), newId);
         fs.mkdirSync(dstDir, { recursive: true });
 
         try {
@@ -450,7 +450,7 @@ function register() {
     // library:// URL, not the on-disk path).
     ipcMain.handle('library:revealItem', async (_, { id }) => {
         if (!/^[A-Za-z0-9._-]+$/.test(String(id || ''))) return { ok: false };
-        const dir = path.join(ITEMS_PATH, id);
+        const dir = path.join(itemsPath(), id);
         let target = dir;
         try {
             const f = fs.readdirSync(dir).find(x => /^original\./i.test(x));
@@ -695,11 +695,11 @@ function register() {
     // Generate display.jpg for items that have HEIC originals but no display copy
     ipcMain.handle('library:generateMissingDisplays', async (event) => {
         const { generateHeifDisplay } = require('../services/thumbService');
-        const dirs = fs.readdirSync(ITEMS_PATH);
+        const dirs = fs.readdirSync(itemsPath());
         let fixed = 0, skipped = 0, failed = 0;
 
         for (const id of dirs) {
-            const itemDir = path.join(ITEMS_PATH, id);
+            const itemDir = path.join(itemsPath(), id);
             const displayPath = path.join(itemDir, 'display.jpg');
             if (fs.existsSync(displayPath)) { skipped++; continue; }
 

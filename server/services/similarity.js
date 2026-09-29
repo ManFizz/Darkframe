@@ -12,7 +12,7 @@ const { itemUrls } = require('./itemUrls');
 // frame; videos are not compared. Hashes are computed lazily (NULL = not yet,
 // '' = couldn't be hashed) and reset whenever an image is edited.
 
-const ITEMS_PATH = getActive().itemsPath;
+const itemsPath = () => getActive().itemsPath;   // active library, may change at runtime
 const IMAGES = { mimeType: { [Op.like]: 'image/%' } };
 
 async function phashStatus() {
@@ -25,7 +25,7 @@ async function phashStatus() {
 
 // What the library actually displays: display.jpg for HEIC originals, else original.*
 function imageFileFor(id) {
-    const dir = path.join(ITEMS_PATH, id);
+    const dir = path.join(itemsPath(), id);
     const display = path.join(dir, 'display.jpg');
     if (fs.existsSync(display)) return display;
     try {

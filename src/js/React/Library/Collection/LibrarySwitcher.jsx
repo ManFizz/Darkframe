@@ -1,5 +1,6 @@
 import React, {useCallback, useEffect, useRef, useState} from 'react';
 import {libraryRegistryApi} from '@/Infrastructure/Ipc';
+import {notify} from '@services/NotificationService';
 
 const LibrarySwitcher = () => {
     const [libraries, setLibraries] = useState([]);
@@ -29,10 +30,18 @@ const LibrarySwitcher = () => {
 
     const active = libraries.find(l => l.id === activeId);
 
-    const handleSwitch = (id) => {
-        if (id === activeId) { setOpen(false); return; }
-        libraryRegistryApi.switch(id);
-        // App relaunches — no need to update state.
+    // In place: the main process re-opens the database, then reloads this window.
+    const [switching, setSwitching] = useState(null);   // name of the library being opened
+    const handleSwitch = async (id) => {
+        setOpen(false);
+        if (id === activeId) return;
+        setSwitching(libraries.find(l => l.id === id)?.name || '');
+        try {
+            await libraryRegistryApi.switch(id);
+        } catch (e) {
+            setSwitching(null);
+            notify({ message: String(e.message).replace(/^Error invoking remote method '[^']+': (Error: )?/, ''), type: 'warning', duration: 6000 });
+        }
     };
 
     const handleAdd = async () => {
@@ -81,6 +90,11 @@ const LibrarySwitcher = () => {
 
     return (
         <div className="library-switcher" ref={wrapperRef}>
+            {switching != null && (
+                <div className="library-switching">
+                    <i className="bi bi-arrow-repeat spin" /> Открываю библиотеку{switching ? ` «${switching}»` : ''}…
+                </div>
+            )}
             <button
                 className="library-switcher-button"
                 onClick={() => setOpen(v => !v)}

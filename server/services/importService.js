@@ -17,8 +17,8 @@ const { beginImport } = require('./libraryEvents');
 
 const LIBRARY_REMOTE_TYPE = SOURCE_TYPES.LIBRARY;
 
-const ITEMS_PATH   = getActive().itemsPath;
-const LIBRARY_PATH = path.dirname(ITEMS_PATH);
+// The active library can change at runtime (library switcher) — always ask.
+const itemsPath = () => getActive().itemsPath;
 
 const MIME_TYPES = {
     '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg',
@@ -134,7 +134,7 @@ async function importFileImpl({ filePath, collectionId = null, tags = [], source
     }
 
     const id = uuidv4();
-    const itemDir = path.join(ITEMS_PATH, id);
+    const itemDir = path.join(itemsPath(), id);
     ensureDir(itemDir);
 
     const ext = path.extname(filePath).toLowerCase();
@@ -254,7 +254,7 @@ async function hashExistingItems() {
 
     for (const item of items) {
         try {
-            const itemDir = path.join(ITEMS_PATH, item.id);
+            const itemDir = path.join(itemsPath(), item.id);
             const files = fs.readdirSync(itemDir);
             const original = files.find(f => f.startsWith('original'));
             if (!original) continue;
@@ -292,4 +292,4 @@ async function importDirectory({ dirPath, collectionId, tags = [], sourceUrl = '
     return importFiles({ filePaths, collectionId, tags, sourceUrl });
 }
 
-module.exports = { importFiles, importFile, LIBRARY_PATH, ITEMS_PATH, ensureTag, hashExistingItems, importDirectory, SUPPORTED_EXTENSIONS };
+module.exports = { importFiles, importFile, itemsPath, ensureTag, hashExistingItems, importDirectory, SUPPORTED_EXTENSIONS };

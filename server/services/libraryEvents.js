@@ -147,4 +147,7 @@ function beginImport(count) {
     };
 }
 
-module.exports = { installItemHooks, itemsChanged, beginImport, broadcast };
+// True while any import job is running (the library can't be switched then).
+const importActive = () => activity.jobs > 0;
+
+module.exports = { installItemHooks, itemsChanged, beginImport, broadcast, importActive };

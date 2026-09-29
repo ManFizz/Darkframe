@@ -514,3 +514,17 @@
   .ftile { width: 100%; }
 }
 
+
+// Full-window veil while another library is being opened (no restart).
+.library-switching {
+  position: fixed;
+  inset: 0;
+  z-index: 5000;
+  display: grid;
+  place-items: center;
+  background: color-mix(in srgb, var(--bs-body-bg) 80%, transparent);
+  backdrop-filter: blur(6px);
+  font-size: 15px;
+  font-weight: 600;
+  .bi { color: var(--df-accent); margin-right: 8px; }
+}

@@ -1,4 +1,4 @@
-const { ipcMain, dialog, app } = require('electron');
+const { ipcMain, dialog } = require('electron');
 const registry = require('../libraryRegistry');
 
 function register() {
@@ -28,13 +28,13 @@ function register() {
         return registry.removeLibrary(id, { deleteFiles });
     });
 
-    // Switching: relaunch the app pointing at the new active library.
-    // The Electron process restart is short (~1-2s) and guarantees clean
-    // re-initialization of the SQLite connection and all in-memory caches.
-    ipcMain.handle('library:registry:switch', (_, { id }) => {
-        registry.setActive(id);
-        app.relaunch();
-        app.exit(0);
+    // Switching happens in place: the main process re-opens the database (see
+    // librarySwitch), then the window reloads its UI so no view keeps data of the
+    // previous library. No process restart.
+    ipcMain.handle('library:registry:switch', async (event, { id }) => {
+        const res = await require('../services/librarySwitch').switchLibrary(id);
+        if (res.changed) setTimeout(() => { if (!event.sender.isDestroyed()) event.sender.reload(); }, 50);
+        return res;
     });
 }
 

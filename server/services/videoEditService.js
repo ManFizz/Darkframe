@@ -5,7 +5,7 @@ const { getActive } = require('../libraryRegistry');
 const { Item, Tag } = require('../models/associations');
 const ops = require('./ffmpegOps');
 
-const ITEMS_PATH = getActive().itemsPath;
+const itemsPath = () => getActive().itemsPath;   // active library, may change at runtime
 const now = () => Math.floor(Date.now() / 1000);
 
 function findIn(dir, re) {
@@ -21,7 +21,7 @@ async function loadVideo(id) {
     const item = await Item.unscoped().findByPk(id);
     if (!item) throw new Error('Элемент не найден');
     if (!(item.mimeType || '').startsWith('video/')) throw new Error('Это не видео');
-    const dir = path.join(ITEMS_PATH, item.id);
+    const dir = path.join(itemsPath(), item.id);
     const original = findOriginal(dir);
     if (!original) throw new Error('Файл видео не найден');
     return { item, dir, original };
@@ -130,7 +130,7 @@ async function captureVideoFrame({ itemId, url, time, title, tags = [], sourceUr
             include: [{ model: Tag, as: 'tags', through: { attributes: [] } }],
         });
         if (!item) throw new Error('Элемент не найден');
-        src = findOriginal(path.join(ITEMS_PATH, item.id));
+        src = findOriginal(path.join(itemsPath(), item.id));
         if (!src) throw new Error('Файл видео не найден');
         collectionId = item.collectionId;
         baseTitle = item.title || item.fileName;
