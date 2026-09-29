@@ -13,8 +13,6 @@ import '/src/css/sidebar.css';
 import '/src/css/video-controls.css';
 import '/src/css/library.css';
 
-import ('/node_modules/react/cjs/react.production.min');
-import ('/node_modules/react-dom/cjs/react-dom.production.min');
 
 import ('/node_modules/bootstrap/dist/js/bootstrap.bundle.min.js');
 
