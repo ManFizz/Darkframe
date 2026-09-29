@@ -1,6 +1,20 @@
 import React, {useEffect, useState} from 'react';
 import {createPortal} from 'react-dom';
 import {HOTKEY_GROUPS, currentHotkeyContext} from '@/shared/hotkeys';
+import {bindingsOf, keyCaps} from '@services/keymap';
+
+// Caps for a sheet row: the user's current bindings when it's a remappable action
+// (alternatives separated by "/"), the static list otherwise.
+function capsOf(it) {
+    if (!it.action) return it.keys;
+    const lists = Array.isArray(it.action)
+        ? it.action.map(a => bindingsOf(a).slice(0, 1))        // pair: first binding of each
+        : [bindingsOf(it.action)];
+    const bindings = lists.flat();
+    if (!bindings.length) return ['—'];
+    return bindings.flatMap((b, i) => (i ? ['/', ...keyCaps(b)] : keyCaps(b)));
+}
+import {matches} from '@services/keymap';
 
 export const OPEN_HOTKEYS_EVENT = 'df:hotkeys';
 export const openHotkeysHelp = () => window.dispatchEvent(new CustomEvent(OPEN_HOTKEYS_EVENT));
@@ -19,7 +33,7 @@ const HotkeysHelp = () => {
     useEffect(() => {
         const open = () => setContext(currentHotkeyContext());
         const onKey = (e) => {
-            if (e.key === '?' && !typing() && !e.ctrlKey && !e.metaKey && !e.altKey) {
+            if (matches(e, 'app.help') && !typing()) {
                 e.preventDefault();
                 e.stopPropagation();
                 setContext(c => (c ? null : currentHotkeyContext()));
@@ -69,7 +83,7 @@ const HotkeysHelp = () => {
                             {g.items.map((it, i) => (
                                 <div key={i} className="hotkeys-row">
                                     <span className="hotkeys-keys">
-                                        {it.keys.map((k, j) => (k === '/'
+                                        {capsOf(it).map((k, j) => (k === '/'
                                             ? <span key={j} className="hotkeys-or">/</span>
                                             : <kbd key={j}>{k}</kbd>))}
                                     </span>

@@ -1,5 +1,6 @@
 import React, {useCallback, useEffect, useRef, useState} from 'react';
 import {httpFetch} from '@/Infrastructure/http';
+import {matches} from '@services/keymap';
 
 const SPEEDS = [0.25, 0.5, 1, 1.5, 2];
 
@@ -111,8 +112,8 @@ const AnimatedImage = ({ file, src, alt, style, onImgRef }) => {
             const el = document.activeElement;
             if (el?.tagName === 'INPUT' || el?.tagName === 'TEXTAREA' || document.querySelector('.img-editor')) return;
             if (e.code === 'Space') { e.preventDefault(); setPlaying(p => !p); }
-            if (e.key === ',') { e.preventDefault(); step(-1); }
-            if (e.key === '.') { e.preventDefault(); step(1); }
+            if (matches(e, 'media.frameBack')) { e.preventDefault(); step(-1); }
+            if (matches(e, 'media.frameFwd'))  { e.preventDefault(); step(1); }
         };
         document.addEventListener('keydown', onKey);
         return () => document.removeEventListener('keydown', onKey);

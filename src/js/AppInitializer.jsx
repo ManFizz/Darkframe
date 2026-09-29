@@ -37,6 +37,7 @@ import DropToCollection, {startPostDrag} from './React/Library/Collection/DropTo
 import useSelection from './Hooks/gallery/useSelection';
 import {BOORU_TYPES, CanMoreMedia} from './modules/r34/R34Controller';
 import {useViewPref} from '@services/viewPrefs';
+import {matches} from '@services/keymap';
 
 // Colour mode + accent before the first paint.
 initTheme();
@@ -176,7 +177,7 @@ const Main = () => {
         const onKey = (e) => {
             if (state.modalFileId !== null || e.target.closest?.('input, textarea, [contenteditable="true"]')) return;
             if (e.key === 'Escape' && selection.selected.size) selection.clear();
-            if ((e.ctrlKey || e.metaKey) && e.code === 'KeyA') { e.preventDefault(); selection.selectAll(); }
+            if (matches(e, 'common.selectAll')) { e.preventDefault(); selection.selectAll(); }
         };
         document.addEventListener('keydown', onKey);
         return () => document.removeEventListener('keydown', onKey);

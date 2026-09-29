@@ -22,6 +22,7 @@ import Modal from "@react/Modal/Modal";
 import {notify} from '@services/NotificationService';
 import {undoLast, redoLast} from '@services/undo';
 import {useCommands} from '@services/commands';
+import {matches} from '@services/keymap';
 
 // Human labels for the history section selector (keys are SOURCE_TYPES / remoteType).
 const SECTION_LABELS = {
@@ -133,11 +134,10 @@ const LibraryView = () => {
     // library view; text fields and the image editor keep their own undo.
     useEffect(() => {
         const onKey = (e) => {
-            if (!(e.ctrlKey || e.metaKey) || e.altKey) return;
             const t = e.target;
             if (t?.closest?.('input, textarea, [contenteditable="true"]') || document.querySelector('.img-editor')) return;
-            if (e.code === 'KeyZ' && !e.shiftKey) { e.preventDefault(); undoLast(); }
-            else if (e.code === 'KeyY' || (e.code === 'KeyZ' && e.shiftKey)) { e.preventDefault(); redoLast(); }
+            if (matches(e, 'lib.undo')) { e.preventDefault(); undoLast(); }
+            else if (matches(e, 'lib.redo')) { e.preventDefault(); redoLast(); }
         };
         document.addEventListener('keydown', onKey);
         return () => document.removeEventListener('keydown', onKey);
@@ -374,9 +374,8 @@ const LibraryView = () => {
     }, [deleteItem, restoreItem, reload, refreshStats, isTrash, selectedCollection]);
 
     const onGalleryKeyDown = useCallback((e) => {
-        const k = e.key.toLowerCase();
-        if ((e.ctrlKey || e.metaKey) && k === 'a')      { e.preventDefault(); selectAll(); }
-        else if ((e.ctrlKey || e.metaKey) && k === 'i') { e.preventDefault(); invert(); }
+        if (matches(e, 'common.selectAll'))  { e.preventDefault(); selectAll(); }
+        else if (matches(e, 'lib.invert'))   { e.preventDefault(); invert(); }
         else if (e.key === 'Escape' && selected.size)   { clear(); }
         else if (e.key === 'Delete' && selectedItems.length && !isTrash) { e.preventDefault(); bulkTrash(); }
     }, [selectAll, invert, clear, selected.size, selectedItems.length, isTrash, bulkTrash]);

@@ -16,6 +16,7 @@ import {isPinned, setFolderPrefs, togglePin, useFolderPrefs} from './folderPrefs
 import {getViewPrefs} from '@services/viewPrefs';
 import {useHoverVideo} from '@react/Thumb/useHoverVideo';
 import {nodePath, sys} from '@/Infrastructure/electron';
+import {matches} from '@services/keymap';
 
 
 const CHUNK = 240;
@@ -312,18 +313,18 @@ const FolderView = () => {
             if (modalId || dialog) return;
             const el = document.activeElement;
             const typing = el?.tagName === 'INPUT' || el?.tagName === 'TEXTAREA';
-            if (e.ctrlKey && e.code === 'KeyL') { e.preventDefault(); setEditPath(n => n + 1); return; }
-            if (e.ctrlKey && e.code === 'KeyF') { e.preventDefault(); searchRef.current?.focus(); return; }
+            if (matches(e, 'fs.path'))   { e.preventDefault(); setEditPath(n => n + 1); return; }
+            if (matches(e, 'fs.filter')) { e.preventDefault(); searchRef.current?.focus(); return; }
             if (typing) return;
-            if (e.ctrlKey && e.code === 'KeyA') { e.preventDefault(); setSelected(new Set(files.map(f => f.path))); return; }
+            if (matches(e, 'common.selectAll')) { e.preventDefault(); setSelected(new Set(files.map(f => f.path))); return; }
             if (e.key === 'Escape') { setSelected(new Set()); setCtxMenu(null); return; }
             if (e.altKey && e.key === 'ArrowLeft')  { e.preventDefault(); goBack(); }
             if (e.altKey && e.key === 'ArrowRight') { e.preventDefault(); goForward(); }
             if ((e.altKey && e.key === 'ArrowUp') || e.key === 'Backspace') { e.preventDefault(); goUp(); }
-            if (e.key === 'F5') { e.preventDefault(); fb.refresh(); }
-            if (e.key === 'F2' && selected.size === 1) { e.preventDefault(); renameEntry([...selected][0], false); }
+            if (matches(e, 'fs.refresh')) { e.preventDefault(); fb.refresh(); }
+            if (matches(e, 'fs.rename') && selected.size === 1) { e.preventDefault(); renameEntry([...selected][0], false); }
             if (e.key === 'Delete' && selected.size) { e.preventDefault(); trashEntries([...selected], filesWord(selected.size)); }
-            if (e.ctrlKey && e.shiftKey && e.code === 'KeyN') { e.preventDefault(); newFolder(); }
+            if (matches(e, 'fs.newFolder')) { e.preventDefault(); newFolder(); }
         };
         const onMouse = (e) => {           // mouse side buttons
             if (modalId) return;

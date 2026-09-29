@@ -21,6 +21,7 @@ import AnimatedImage, {isMaybeAnimated} from "./AnimatedImage";
 import {useViewPref} from "@services/viewPrefs";
 import {exitViewerFullscreen} from "./fullscreen";
 import {useResolvedTheme} from "@services/theme";
+import {matches} from '@services/keymap';
 
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(v, hi));
 
@@ -66,7 +67,7 @@ const Modal = ({ fileId, mainArray, modalUpdater, displayFiles, onUpdated, autoS
     useEffect(() => {
         if (!file) return;
         const onKey = (e) => {
-            if (e.code !== 'KeyT' || e.ctrlKey || e.altKey || e.metaKey) return;
+            if (!matches(e, 'viewer.filmstrip')) return;
             const el = document.activeElement;
             if (el?.tagName === 'INPUT' || el?.tagName === 'TEXTAREA' || el?.isContentEditable) return;
             if (document.querySelector('.img-editor')) return;
@@ -96,7 +97,7 @@ const Modal = ({ fileId, mainArray, modalUpdater, displayFiles, onUpdated, autoS
         };
         const onKey = (e) => {
             if (typing() || document.querySelector('.img-editor')) return;
-            if (e.code === 'KeyS' && !e.ctrlKey && !e.metaKey && !e.altKey) {
+            if (matches(e, 'viewer.slideshow')) {
                 e.preventDefault();
                 ss.active ? ss.togglePause() : ss.start();
                 return;

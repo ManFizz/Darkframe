@@ -3,6 +3,7 @@ import {configApi} from '@/Infrastructure/Ipc';
 import {applyConfig} from '@services/liveConfig';
 import {notify} from '@services/NotificationService';
 import AppearanceSection from './AppearanceSection';
+import KeymapSection from './KeymapSection';
 
 const SECRET_RE = /key|password|token/i;
 
@@ -200,6 +201,7 @@ const SettingsPanel = ({ onClose }) => {
         <>
             <div className="settings-body">
                 <AppearanceSection />
+                <KeymapSection />
                 {loading ? (
                     <div className="settings-loading">
                         <i className="bi bi-arrow-repeat spin me-2" />Загрузка…

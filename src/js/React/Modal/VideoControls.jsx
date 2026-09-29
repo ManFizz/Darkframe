@@ -1,6 +1,7 @@
 import React, {useCallback, useEffect, useRef, useState} from 'react';
 import {getStoryboard} from '@/Infrastructure/Ipc';
 import {toggleViewerFullscreen} from './fullscreen';
+import {matches} from '@services/keymap';
 
 const RATE_KEY      = 'jsg_video_rate';
 const VOL_KEY       = 'jsg_video_volume';
@@ -281,6 +282,15 @@ const VideoControls = ({
                 return;
             }
 
+            // Remappable ones first (Settings → «Горячие клавиши»).
+            if (matches(e, 'video.mute'))       { toggleMute(); return; }
+            if (matches(e, 'video.fullscreen')) { e.preventDefault(); toggleFullscreen(); return; }
+            if (matches(e, 'video.pip'))        { togglePip(); return; }
+            if (matches(e, 'video.slower'))     { bumpRate(-1); return; }
+            if (matches(e, 'video.faster'))     { bumpRate(1); return; }
+            if (matches(e, 'media.frameBack'))  { stepFrame(-1); return; }
+            if (matches(e, 'media.frameFwd'))   { stepFrame(1); return; }
+
             switch (e.code) {
                 case 'Space':
                     e.preventDefault();
@@ -288,13 +298,8 @@ const VideoControls = ({
                     isSpaceDown.current = true;
                     togglePlay();
                     break;
-                case 'KeyM': toggleMute(); break;
-                case 'KeyF': e.preventDefault(); toggleFullscreen(); break;
-                case 'KeyP': togglePip(); break;
                 case 'ArrowUp':   e.preventDefault(); setVol((video?.volume ?? 1) + 0.05); break;
                 case 'ArrowDown': e.preventDefault(); setVol((video?.volume ?? 1) - 0.05); break;
-                case 'Comma':  e.shiftKey ? bumpRate(-1) : stepFrame(-1); break;   // "<" slower, "," frame back
-                case 'Period': e.shiftKey ? bumpRate(1)  : stepFrame(1);  break;   // ">" faster, "." frame fwd
                 // Digits are reserved for rating in the modal (0 = 10); use Ctrl+←/→ to seek.
             }
         };

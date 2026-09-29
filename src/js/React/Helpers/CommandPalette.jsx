@@ -1,5 +1,6 @@
 import React, {useEffect, useMemo, useRef, useState} from 'react';
 import {getCommands, matchCommands} from '@services/commands';
+import {matches} from '@services/keymap';
 
 const RECENT_KEY = 'jsg_palette_recent';
 const loadRecent = () => { try { return JSON.parse(localStorage.getItem(RECENT_KEY) || '[]'); } catch { return []; } };
@@ -19,7 +20,7 @@ const CommandPalette = () => {
 
     useEffect(() => {
         const onKey = (e) => {
-            if ((e.ctrlKey || e.metaKey) && !e.shiftKey && !e.altKey && e.code === 'KeyK') {
+            if (matches(e, 'app.palette')) {
                 e.preventDefault();
                 e.stopPropagation();
                 setOpen(v => !v);
