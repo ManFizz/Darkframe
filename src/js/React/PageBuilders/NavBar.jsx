@@ -67,6 +67,12 @@ const NavBar = () => {
 
     const navIndex = (type) => navButtons.findIndex(b => b.type === type && !b.action);
 
+    useEffect(() => {
+        const onOpen = (e) => openPanel(e.detail?.tab || 'manage', e.detail?.tool || null);
+        window.addEventListener('df:openPanel', onOpen);
+        return () => window.removeEventListener('df:openPanel', onOpen);
+    }, []);
+
     useCommands('app', () => {
         const nav = navButtons.map((b, i) => ({
             id: `nav:${b.label}`, group: 'Разделы', icon: 'bi-window', title: `Перейти: ${b.label}`,
@@ -82,6 +88,7 @@ const NavBar = () => {
             tool('media', 'Превью и размеры', 'bi-image'),
             tool('rules', 'Правила импорта', 'bi-magic'),
             tool('watch', 'Папки-источники', 'bi-folder-check'),
+            tool('autotag', 'Автотеги (нейросеть)', 'bi-stars'),
             { id: 'panel:tags', group: 'Инструменты', icon: 'bi-tags', title: 'Управление тегами', run: () => setShowTags(true) },
             { id: 'panel:hotkeys', group: 'Инструменты', icon: 'bi-keyboard', title: 'Горячие клавиши', run: openHotkeysHelp },
         ];

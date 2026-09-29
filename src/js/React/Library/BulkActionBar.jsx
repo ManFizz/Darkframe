@@ -4,12 +4,14 @@ import {notify} from '@services/NotificationService';
 import {loadEditPreset} from '@services/imageEditPreset';
 import {FILE_TYPES} from '@/Constants';
 import BulkTags from './BulkTags';
+import {autotagItems} from '@services/autotagRun';
 import {compareItemFromThumb, openCompare} from '../Compare/CompareView';
 import CollectionTreeSelect, {pushRecentCollection} from './Collection/CollectionTreeSelect';
 
 const fmtMB = (b) => `${(b / 1024 / 1024).toFixed(1)} МБ`;
 
 const BulkActionBar = ({ selectedItems, onDone, onChanged, onSlideshow, permanent = false, totalCount = 0, onSelectAll, onInvert, onClear }) => {
+    const [tagging, setTagging] = useState(null);   // autotag progress
     const [moveOpen, setMoveOpen] = useState(false);
     const [compressOpen, setCompressOpen] = useState(false);
     const [cFormat, setCFormat]   = useState('webp');
@@ -165,6 +167,17 @@ const BulkActionBar = ({ selectedItems, onDone, onChanged, onSlideshow, permanen
                     </div>
 
                     <BulkTags selectedItems={selectedItems} onChanged={onChanged} />
+
+                    <button className="btn btn-sm btn-outline-secondary" disabled={!!tagging}
+                            title="Локальная нейросеть добавит теги по картинкам (Ctrl+Z — отменить)"
+                            onClick={async () => {
+                                setTagging({ done: 0, total: selectedItems.length });
+                                try { await autotagItems(selectedItems.map(f => f.id), { onProgress: setTagging }); }
+                                finally { setTagging(null); onChanged?.(); }
+                            }}>
+                        {tagging ? <><i className="bi bi-arrow-repeat spin me-1" />{tagging.done}/{tagging.total}</>
+                            : <><i className="bi bi-stars me-1" /> Автотеги</>}
+                    </button>
 
                     {onSlideshow && selectedItems.length > 1 && (
                         <button className="btn btn-sm btn-outline-secondary" onClick={onSlideshow} title="Слайд-шоу из выделенных">

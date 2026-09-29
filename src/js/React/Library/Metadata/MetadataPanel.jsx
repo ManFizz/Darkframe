@@ -3,6 +3,7 @@ import LibraryService from '@services/LibraryService';
 import {libraryApi} from '@/Infrastructure/Ipc';
 import RatingStars from './RatingStars';
 import TagEditor from './TagEditor';
+import SuggestTags from './SuggestTags';
 import CollectionPicker from '../Collection/CollectionPicker';
 import RelatedBlock, {SearchByThisButton} from './RelatedBlock';
 
@@ -161,6 +162,7 @@ const MetadataPanel = ({ file, onUpdated }) => {
                     <div className="metadata-section">
                         <label>Теги</label>
                         <TagEditor tags={form.tags} onChange={v => update('tags', v)} />
+                        <SuggestTags file={file} onAdd={(names) => update('tags', [...new Set([...(form.tags || []), ...names])])} />
                     </div>
 
                     <div className="metadata-section">

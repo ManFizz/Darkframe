@@ -92,6 +92,34 @@ function register() {
         return searchByImage({ id, hash }, maxDistance);
     });
 
+    // Tag suggestions from the local tagger model (services/autotag).
+    const autotag = require('../services/autotag');
+    const sendTo = (event, ch) => (p) => { if (!event.sender.isDestroyed()) event.sender.send(ch, p); };
+    ipcMain.handle('autotag:status', () => autotag.status());
+    ipcMain.handle('autotag:download', (event) => autotag.downloadModel(sendTo(event, 'autotag:downloadProgress')));
+    ipcMain.handle('autotag:remove', () => autotag.removeModel());
+    ipcMain.handle('autotag:settings', (_, patch) => autotag.saveSettings(patch || {}));
+    ipcMain.handle('autotag:suggest', (event, { ids }) => autotag.suggest(ids || [], sendTo(event, 'autotag:progress')));
+    // Add suggested tags ({ [itemId]: [names] }) — one undo step.
+    ipcMain.handle('autotag:apply', async (_, { tagsById }) => {
+        const ids = Object.keys(tagsById || {}).filter(id => tagsById[id]?.length);
+        if (!ids.length) return { items: 0, tags: 0 };
+        let added = 0;
+        await journal.around(`автотеги · ${ids.length} файлов`, ids, [], true, async () => {
+            await sequelize.transaction(async (t) => {
+                for (const id of ids) {
+                    for (const name of [...new Set(tagsById[id])]) {
+                        const tag = await ensureTag(name, t);
+                        const [, created] = await ItemTag.findOrCreate({ where: { itemId: id, tagId: tag.id }, transaction: t });
+                        if (created) added++;
+                    }
+                }
+            });
+        });
+        require('../services/libraryEvents').broadcast('library:changed', { reload: true, counts: true });
+        return { items: ids.length, tags: added };
+    });
+
     // Undo / redo (Ctrl+Z / Ctrl+Y) — see services/undoJournal.
     ipcMain.handle('library:undo', () => journal.undo());
     ipcMain.handle('library:redo', () => journal.redo());

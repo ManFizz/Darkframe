@@ -48,6 +48,15 @@ export const openExternalUrl = (url) => invoke('shell:openUrl', { url });
 // Seek-bar preview sprite for a library ({ itemId }) or folder ({ path }) video.
 export const getStoryboard = (req) => invoke('media:storyboard', req);
 
+export const autotagApi = {
+    status:   ()          => invoke('autotag:status'),
+    download: ()          => invoke('autotag:download'),
+    remove:   ()          => invoke('autotag:remove'),
+    settings: (patch)     => invoke('autotag:settings', patch),
+    suggest:  (ids)       => invoke('autotag:suggest', { ids }),
+    apply:    (tagsById)  => invoke('autotag:apply', { tagsById }),
+};
+
 export const watchFoldersApi = {
     list:           ()       => invoke('watch:list'),
     save:           (folder) => invoke('watch:save', { folder }),

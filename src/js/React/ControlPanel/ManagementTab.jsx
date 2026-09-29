@@ -4,6 +4,7 @@ import IntegrityTool from './IntegrityTool';
 import MediaGenTool from './MediaGenTool';
 import AutoRulesTool from './AutoRulesTool';
 import WatchFoldersTool from './WatchFoldersTool';
+import AutotagTool from './AutotagTool';
 
 const TOOLS = [
     { id: 'dupes',     label: 'Дубликаты',       icon: 'bi-images' },
@@ -11,6 +12,7 @@ const TOOLS = [
     { id: 'media',     label: 'Превью и размеры', icon: 'bi-image' },
     { id: 'rules',     label: 'Правила импорта',  icon: 'bi-magic' },
     { id: 'watch',     label: 'Папки-источники',  icon: 'bi-folder-check' },
+    { id: 'autotag',   label: 'Автотеги',         icon: 'bi-stars' },
 ];
 
 // The management tab groups the maintenance tools behind a sub-tab bar; each tool
@@ -38,6 +40,7 @@ const ManagementTab = ({ initialTool }) => {
             {tool === 'media'     && <MediaGenTool />}
             {tool === 'rules'     && <AutoRulesTool />}
             {tool === 'watch'     && <WatchFoldersTool />}
+            {tool === 'autotag'   && <AutotagTool />}
         </>
     );
 };
