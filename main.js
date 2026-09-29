@@ -3,6 +3,7 @@ const { backupDatabase } = require('./server/backup');
 const { setupIpcHandlers } = require('./server/ipcManager');
 const sequelize = require("./server/database");
 const { protocol } = require('electron');
+const { fileResponse } = require('./server/fileResponse');
 const path = require('path');
 const fs = require('fs');
 const { ITEMS_PATH, hashExistingItems } = require('./server/services/importService');
@@ -130,57 +131,51 @@ async function initDatabase() {
     }
 }
 
+// library://thumb|item|source/<id> → the file inside the item's folder. Served
+// with Range support (fileResponse), so videos can seek.
+function libraryFilePath(url) {
+    const type = url.hostname;                          // 'thumb' | 'item' | 'source'
+    const id = url.pathname.replace(/^\//, '');         // uuid
+
+    // The id names a folder under ITEMS_PATH — reject anything that isn't a
+    // plain id segment so a crafted URL can't escape the items directory.
+    if (!/^[A-Za-z0-9._-]+$/.test(id)) return null;
+
+    if (type === 'thumb') return path.join(ITEMS_PATH, id, 'thumb.jpg');
+
+    const itemDir = path.join(ITEMS_PATH, id);
+    if (!fs.existsSync(itemDir)) return null;
+    const files = fs.readdirSync(itemDir);
+
+    if (type === 'source') {
+        // The image editor's starting point: base.* (old cumulative edits kept
+        // as the baseline) → source.* (pristine backup) → the original itself.
+        const pick = files.find(f => /^base\./i.test(f))
+            || files.find(f => /^source\./i.test(f))
+            || files.find(f => f.startsWith('original'));
+        return pick ? path.join(itemDir, pick) : null;
+    }
+    if (type === 'item') {
+        // Prefer display.jpg (generated for HEIC/unsupported originals)
+        if (files.includes('display.jpg')) return path.join(itemDir, 'display.jpg');
+        const original = files.find(f => f.startsWith('original'));
+        return original ? path.join(itemDir, original) : null;
+    }
+    return null;
+}
+
 function registerLibraryProtocol() {
-    protocol.registerFileProtocol('library', (request, callback) => {
+    protocol.handle('library', async (request) => {
         try {
-            const url = new URL(request.url);
-            const type = url.hostname;                          // 'thumb' или 'item'
-            const id = url.pathname.replace(/^\//, '');        // uuid
-
-            // The id names a folder under ITEMS_PATH — reject anything that isn't a
-            // plain id segment so a crafted URL can't escape the items directory.
-            if (!/^[A-Za-z0-9._-]+$/.test(id)) {
-                return callback({ error: -6 });
-            }
-
-            let filePath;
-
-            if (type === 'thumb') {
-                filePath = path.join(ITEMS_PATH, id, 'thumb.jpg');
-            } else if (type === 'source') {
-                // The image editor's starting point: base.* (old cumulative edits kept
-                // as the baseline) → source.* (pristine backup) → the original itself.
-                const itemDir = path.join(ITEMS_PATH, id);
-                if (!fs.existsSync(itemDir)) return callback({ error: -6 });
-                const files = fs.readdirSync(itemDir);
-                const pick = files.find(f => /^base\./i.test(f))
-                    || files.find(f => /^source\./i.test(f))
-                    || files.find(f => f.startsWith('original'));
-                filePath = pick ? path.join(itemDir, pick) : null;
-            } else if (type === 'item') {
-                const itemDir = path.join(ITEMS_PATH, id);
-                if (!fs.existsSync(itemDir)) return callback({ error: -6 });
-
-                // Prefer display.jpg (generated for HEIC/unsupported originals)
-                const displayFile = path.join(itemDir, 'display.jpg');
-                if (fs.existsSync(displayFile)) {
-                    filePath = displayFile;
-                } else {
-                    const files = fs.readdirSync(itemDir);
-                    const original = files.find(f => f.startsWith('original'));
-                    filePath = original ? path.join(itemDir, original) : null;
-                }
-            }
-
+            const filePath = libraryFilePath(new URL(request.url));
             if (!filePath || !fs.existsSync(filePath)) {
                 console.error('[Protocol] File not found:', filePath);
-                return callback({ error: -6 });
+                return new Response('not found', { status: 404 });
             }
-
-            callback({ path: filePath });
+            return fileResponse(filePath, request.headers.get('range'));
         } catch (e) {
             console.error('[Protocol] Error:', e);
-            callback({ error: -2 });
+            return new Response('error', { status: 500 });
         }
     });
 }
@@ -193,6 +188,7 @@ protocol.registerSchemesAsPrivileged([
             standard: true,
             supportFetchAPI: true,
             corsEnabled: true,
+            stream: true,            // Range requests for library videos
         }
     },
     {

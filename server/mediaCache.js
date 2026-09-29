@@ -16,7 +16,7 @@ const { app, net, protocol } = require('electron');
 const fs   = require('fs');
 const path = require('path');
 const crypto = require('crypto');
-const { pathToFileURL } = require('url');
+const { fileResponse } = require('./fileResponse');
 
 const SCHEME    = 'mediacache';
 // Per profile: every instance wipes its cache on start / quit, so two instances
@@ -96,21 +96,8 @@ function registerProtocol() {
         try {
             const cachePath = await getCachedFile(realUrl);
 
-            // Serve from file:// so the <video> element gets proper Range support.
-            // Forward the Range header for seeking.
-            const range = request.headers.get('range');
-            const fileRes = await net.fetch(pathToFileURL(cachePath).toString(),
-                range ? { headers: { range } } : undefined);
-
-            // Copy headers and add CORS so canvas toDataURL() isn't tainted.
-            const headers = new Headers(fileRes.headers);
-            headers.set('Access-Control-Allow-Origin', '*');
-
-            return new Response(fileRes.body, {
-                status: fileRes.status,
-                statusText: fileRes.statusText,
-                headers,
-            });
+            // Range support for <video> seeking; CORS so canvas toDataURL() isn't tainted.
+            return fileResponse(cachePath, request.headers.get('range'), { 'Access-Control-Allow-Origin': '*' });
         } catch (e) {
             console.error('[mediaCache] failed for', realUrl, e.message);
             return new Response('cache error', { status: 502 });
