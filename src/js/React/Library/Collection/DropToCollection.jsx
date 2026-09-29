@@ -1,4 +1,4 @@
-import React, {useEffect, useMemo, useState} from 'react';
+import React, {useEffect, useMemo, useRef, useState} from 'react';
 import {useCollections} from '@hooks/library/useCollections';
 import LibraryService from '@services/LibraryService';
 import {notify} from '@services/NotificationService';
@@ -75,9 +75,43 @@ const Row = ({ node, onDrop }) => {
     );
 };
 
+// Hover strip above / below the list: holding a dragged item over it scrolls the
+// list that way (the wheel also works, see dragScroll.js).
+const ScrollZone = ({ dir, listRef, visible }) => {
+    const raf = useRef(null);
+    const until = useRef(0);
+    const step = () => {
+        const el = listRef.current;
+        if (el && performance.now() < until.current) {
+            el.scrollTop += dir * 14;
+            raf.current = requestAnimationFrame(step);
+        } else raf.current = null;
+    };
+    return (
+        <div className={`dtc-zone ${dir < 0 ? 'up' : 'down'} ${visible ? '' : 'hidden'}`}
+             onDragOver={e => {
+                 if (!carries(e)) return;
+                 e.preventDefault();
+                 e.dataTransfer.dropEffect = 'none';
+                 // dragover repeats every ~50 ms while hovering; keep scrolling a bit past it.
+                 until.current = performance.now() + 120;
+                 if (raf.current == null) raf.current = requestAnimationFrame(step);
+             }}>
+            <i className={`bi ${dir < 0 ? 'bi-chevron-up' : 'bi-chevron-down'}`} />
+        </div>
+    );
+};
+
 const DropToCollection = () => {
     const { tree } = useCollections();
     const [drag, setDrag] = useState(null);   // { count, kind }
+    const listRef = useRef(null);
+    const [edges, setEdges] = useState({ up: false, down: false });
+    const measure = () => {
+        const el = listRef.current;
+        if (el) setEdges({ up: el.scrollTop > 2, down: el.scrollTop + el.clientHeight < el.scrollHeight - 2 });
+    };
+    useEffect(() => { if (drag) requestAnimationFrame(measure); }, [drag]);
 
     useEffect(() => {
         const start = (e) => {
@@ -134,7 +168,8 @@ const DropToCollection = () => {
                     </div>
                 </div>
             </div>
-            <div className="dtc-list">
+            <ScrollZone dir={-1} listRef={listRef} visible={edges.up} />
+            <div className="dtc-list" ref={listRef} onScroll={measure}>
                 <Row node={{ id: null, name: 'Без коллекции', depth: 0 }} onDrop={onDrop} />
                 {rows.recent.length > 0 && (
                     <>
@@ -145,6 +180,7 @@ const DropToCollection = () => {
                 )}
                 {rows.all.map(n => <Row key={n.id} node={n} onDrop={onDrop} />)}
             </div>
+            <ScrollZone dir={1} listRef={listRef} visible={edges.down} />
         </aside>
     );
 };

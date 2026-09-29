@@ -22,6 +22,7 @@ import HotkeysHelp from "./React/Helpers/HotkeysHelp";
 import {LibraryContext} from './LibraryContext';
 import {useLibraryFilter} from '@hooks/library/useLibraryFilter';
 import {initTheme} from '@services/theme';
+import {installDragScroll} from './Infrastructure/dragScroll';
 import LibraryService from '@services/LibraryService';
 import ImportActivity from './React/Library/Import/ImportActivity';
 import BootOverlay from './React/Helpers/BootOverlay';
@@ -39,6 +40,8 @@ import {useViewPref} from '@services/viewPrefs';
 
 // Colour mode + accent before the first paint.
 initTheme();
+// Edge auto-scroll + mouse wheel while dragging anything.
+installDragScroll();
 
 export const GalleryContext = createContext(null);
 

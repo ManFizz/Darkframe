@@ -261,6 +261,7 @@ app.whenReady().then(async () => {
 app.on('window-all-closed', () => {
     stopApiServer();
     require('./server/services/watchFolders').stop();
+    require('./server/controllers/dragWheelController').stop();
     // Best-effort; the renderer may still hold file handles, so leftovers are
     // wiped on next launch (mediaCache.clearCache runs at whenReady).
     mediaCache.clearCache();

@@ -1,5 +1,4 @@
 import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
-import {useDragAutoScroll} from '@hooks/library/useDragAutoScroll';
 import CollectionTree, {SPECIAL} from './Collection/CollectionTree';
 import ImportButton from './Import/ImportButton';
 import MetadataPanel from './Metadata/MetadataPanel';
@@ -63,7 +62,6 @@ const LibraryView = () => {
     }, [selectedCollection, favoritesId]);
     const [modalFileId, setModalFileId] = useState(null);
     const galleryScrollRef = useRef(null);
-    useDragAutoScroll(galleryScrollRef);
 
     const isTrash = selectedCollection === SPECIAL.TRASH;
     const isHistory = selectedCollection === SPECIAL.HISTORY;
