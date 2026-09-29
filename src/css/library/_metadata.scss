@@ -184,3 +184,17 @@
   font-weight: 700;
 }
 .rel-hint { margin-bottom: 10px; font-size: 11px; color: var(--bs-secondary); }
+
+.rel-search {
+  width: 100%;
+  margin-top: 6px;
+  padding: 7px 10px;
+  border: 1px dashed var(--bs-border-color);
+  border-radius: 10px;
+  background: transparent;
+  color: var(--bs-secondary);
+  font-size: 12.5px;
+  cursor: pointer;
+  .bi { margin-right: 5px; }
+  &:hover { border-color: var(--df-accent-dim); color: var(--df-accent); background: var(--df-accent-soft); }
+}

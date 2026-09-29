@@ -7,6 +7,7 @@ import NotificationBell from "@react/Helpers/NotificationBell";
 import {normalizeFilter, advancedCount, isFilterActive, toSmartFilter} from '@/shared/filterPredicate';
 import AdvancedFilterFields, {ADVANCED_RESET} from './Filters/AdvancedFilterFields';
 import {useTagPrefs} from '@services/tagPrefs';
+import {runVisualSearch} from '@services/visualSearch';
 
 // ─── Tag filter input with live suggestions ───────────────────────────────────
 // Reuses the same libraryApi.searchTags source the metadata TagEditor uses, so
@@ -119,6 +120,29 @@ export const TagFilterInput = ({ filters, addTag, removeTag, toggleTagExclude })
     );
 };
 
+// Search by picture: from the clipboard or a file on disk.
+const VisualSearchButton = () => {
+    const [open, setOpen] = useState(false);
+    const go = (q) => { setOpen(false); runVisualSearch(q); };
+    return (
+        <div className="nav-vsearch">
+            <button className={`nav-vsearch-btn ${open ? 'on' : ''}`} onClick={() => setOpen(v => !v)} title="Поиск по картинке">
+                <i className="bi bi-image" />
+            </button>
+            {open && (
+                <>
+                    <div className="bulk-move-backdrop" onMouseDown={() => setOpen(false)} />
+                    <div className="nav-vsearch-menu">
+                        <button onClick={() => go({ clipboard: true })}><i className="bi bi-clipboard-image" /> Из буфера обмена</button>
+                        <button onClick={() => go({ pick: true })}><i className="bi bi-folder2-open" /> Из файла…</button>
+                        <div className="nav-vsearch-hint">Или в просмотрщике: «Искать похожие во всей библиотеке»</div>
+                    </div>
+                </>
+            )}
+        </div>
+    );
+};
+
 export const LibraryNavControls = ({ ctx }) => {
     const { filters, update, addTag, removeTag, toggleTagExclude, reset } = ctx;
     const [savingSmart, setSavingSmart] = useState(false);
@@ -159,6 +183,8 @@ export const LibraryNavControls = ({ ctx }) => {
                 removeTag={removeTag}
                 toggleTagExclude={toggleTagExclude}
             />
+
+            <VisualSearchButton />
 
             {/* Save the current filter as a smart collection */}
             {hasFilters && (savingSmart ? (

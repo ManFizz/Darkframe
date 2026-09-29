@@ -4,7 +4,7 @@ import {libraryApi} from '@/Infrastructure/Ipc';
 import RatingStars from './RatingStars';
 import TagEditor from './TagEditor';
 import CollectionPicker from '../Collection/CollectionPicker';
-import RelatedBlock from './RelatedBlock';
+import RelatedBlock, {SearchByThisButton} from './RelatedBlock';
 
 function formatSize(bytes) {
     if (!bytes) return '—';
@@ -143,6 +143,7 @@ const MetadataPanel = ({ file, onUpdated }) => {
             {activeTab === 'info' && (
                 <div className="metadata-content">
                     <RelatedBlock file={file} onChanged={() => onUpdated?.('refresh')} />
+                    <SearchByThisButton file={file} />
                     <div className="metadata-section">
                         <label>Рейтинг</label>
                         <RatingStars value={form.rating} onChange={v => update('rating', v)} />

@@ -12,6 +12,13 @@ const { SOURCE_TYPES } = require('../../src/js/Constants');
 // model). SQL narrows by rating and required tags cheaply; the shared predicate then
 // applies every condition exactly like the renderer's live filter does.
 async function getSmartItems(filter = {}) {
+    // A fixed, ordered list (search by picture results): no filtering.
+    if (Array.isArray(filter.ids)) {
+        const rows = await withTagNames(await Item.findAll({ where: { id: filter.ids }, raw: true }));
+        const byId = new Map(rows.map(r => [r.id, r]));
+        const items = filter.ids.map(id => byId.get(id)).filter(Boolean).map(item => ({ ...item, ...itemUrls(item) }));
+        return { collections: [], items };
+    }
     const f = normalizeFilter(filter);
     const includeNames = f.tags.filter(t => !t.exclude).map(t => t.name);
 

@@ -35,7 +35,8 @@ export function useLibraryItems(collectionId, trash = false, smartFilterJson = n
             })
         );
 
-        const thumbFiles = (raw.items || []).map(item => new ThumbFile({
+        const ranked = smartFilterJson && smartFilterJson.startsWith('{"ids"');
+        const thumbFiles = (raw.items || []).map((item, rank) => new ThumbFile({
             id:         item.id,
             title:      item.title || item.fileName,
             thumbUrl:   item.thumbPath,
@@ -45,7 +46,7 @@ export function useLibraryItems(collectionId, trash = false, smartFilterJson = n
             width:      item.width,
             height:     item.height,
             time:       item.importedAt,
-            order:      item.order,
+            order:      ranked ? rank : item.order,   // search results: closest first
             rating:     item.rating,
             notes:      item.notes,
             type:       item.mimeType.startsWith('video/') ? FILE_TYPES.VIDEO : FILE_TYPES.IMAGE,

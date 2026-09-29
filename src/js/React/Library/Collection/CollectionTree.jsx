@@ -13,6 +13,7 @@ export const SPECIAL = {
     UNCATEGORIZED: 'UNCATEGORIZED',
     TRASH: 'TRASH',
     HISTORY: 'HISTORY',
+    VISUAL: 'VISUAL',       // search by picture results (not in the tree)
 };
 
 // Which tree branches the user has collapsed — persisted so the tree looks the

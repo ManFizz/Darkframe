@@ -11,6 +11,8 @@ import LibraryService from "@services/LibraryService"
 import LibraryGallery from "../PageBuilders/LibraryGallery";
 import {getViewPrefs, setViewPref, useViewPref} from '@services/viewPrefs';
 import {collectionRequests} from '@services/commands';
+import {runVisualSearch, useVisualSearch} from '@services/visualSearch';
+import VisualSearchHeader from './VisualSearchHeader';
 import {FILE_TYPES, SOURCE_TYPES} from "@/Constants";
 import {ThumbFile} from "@/Models/ThumbFile";
 import useCollections from "@hooks/library/useCollections"
@@ -36,15 +38,19 @@ const sectionLabel = (s) => SECTION_LABELS[s] || `Секция ${s}`;
 const LibraryView = () => {
     const [selectedCollection, setSelectedCollection] = useState(() => {
         const requested = collectionRequests.take();   // Ctrl+K from another tab
-        if (requested) { setViewPref('lastCollection', requested); return requested; }
+        if (requested) {
+            if (requested !== SPECIAL.VISUAL) setViewPref('lastCollection', requested);
+            return requested;
+        }
         const { restoreSession, lastCollection } = getViewPrefs();
         return (restoreSession && lastCollection) || SPECIAL.NONE;
     });
     useEffect(() => collectionRequests.subscribe((id) => {
+        if (id === SPECIAL.VISUAL) setModalFileId(null);   // results replace the viewer
         setSelectedCollection(id);
-        setViewPref('lastCollection', id);
+        if (id !== SPECIAL.VISUAL) setViewPref('lastCollection', id);   // results aren't a place to return to
     }), []);
-    const { filtered, filters, setLibraryItems, refreshStats, statsVersion } = useLibraryContext();
+    const { filtered, filters, update, setLibraryItems, refreshStats, statsVersion } = useLibraryContext();
     const [ratingDividers] = useViewPref('ratingDividers');
     const [dateDividers] = useViewPref('dateDividers');
     const { favoritesId } = useLibraryStats(statsVersion);
@@ -72,9 +78,17 @@ const LibraryView = () => {
     const [historySection, setHistorySection] = useState(null);
     const [historySections, setHistorySections] = useState([]);
 
-    // A smart collection loads by its saved filter instead of by id.
+    // A smart collection loads by its saved filter instead of by id; search by
+    // picture loads its fixed, ordered list of results the same way.
+    const isVisual = selectedCollection === SPECIAL.VISUAL;
+    const visual = useVisualSearch();
     const smartCol = LibraryService.getCollections().find(c => c.id === selectedCollection && c.isSmart);
-    const smartFilterJson = smartCol ? (smartCol.filter || '{}') : null;
+    const smartFilterJson = isVisual
+        ? JSON.stringify({ ids: visual.results.map(r => r.id) })
+        : smartCol ? (smartCol.filter || '{}') : null;
+    // Where "close" on the results goes back to.
+    const beforeVisual = useRef(SPECIAL.ALL);
+    useEffect(() => { if (!isVisual) beforeVisual.current = selectedCollection; }, [selectedCollection, isVisual]);
 
     const { items, reload, deleteItem, restoreItem } = useLibraryItems(
         isHistory
@@ -113,6 +127,10 @@ const LibraryView = () => {
         document.addEventListener('keydown', onKey);
         return () => document.removeEventListener('keydown', onKey);
     }, []);
+    useCommands('library-visual', () => [
+        { id: 'vs:clip', group: 'Поиск по картинке', icon: 'bi-clipboard-image', title: 'Найти по картинке из буфера обмена', run: () => runVisualSearch({ clipboard: true }) },
+        { id: 'vs:file', group: 'Поиск по картинке', icon: 'bi-image', title: 'Найти по картинке из файла…', run: () => runVisualSearch({ pick: true }) },
+    ]);
     useCommands('library-undo', () => [
         { id: 'undo', group: 'Библиотека', icon: 'bi-arrow-counterclockwise', title: 'Отменить последнее действие', hint: 'Ctrl+Z', run: undoLast },
         { id: 'redo', group: 'Библиотека', icon: 'bi-arrow-clockwise', title: 'Повторить отменённое', hint: 'Ctrl+Y', run: redoLast },
@@ -447,6 +465,13 @@ const LibraryView = () => {
                         </button>
                     </div>
                 </div>
+            )}
+            {isVisual && (
+                <VisualSearchHeader
+                    onClose={() => handleCollectionSelect(beforeVisual.current)}
+                    sortedBySimilarity={filters.sortBy === 'order'}
+                    onSortBySimilarity={() => update('sortBy', 'order')}
+                />
             )}
             {!isHistory && <QuickFilters />}
             {!isHistory && (

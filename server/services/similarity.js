@@ -199,4 +199,45 @@ async function relationsOf(id, maxDistance = 12) {
     return { exact, similar, unhashed };
 }
 
-module.exports = { phashStatus, computeMissing, findSimilar, relationsOf };
+const distanceOf = (hi, lo, phash) =>
+    popcount32(hi ^ (parseInt(phash.slice(0, 8), 16) >>> 0)) + popcount32(lo ^ (parseInt(phash.slice(8), 16) >>> 0));
+
+/**
+ * Search by picture: library images whose perceptual hash is within maxDistance of
+ * the query — an item of the library ({ id }) or any image bytes ({ buffer }, e.g.
+ * the clipboard). Finds the same picture resized / recompressed / cropped a little /
+ * recoloured, not "similar content". Closest first.
+ */
+async function searchByImage({ id, buffer, hash }, maxDistance = 14, limit = 300) {
+    const d = Math.max(0, Math.min(28, Math.round(Number(maxDistance) || 14)));
+    let ph = /^[0-9a-f]{16}$/i.test(hash || '') ? hash : null;   // re-run of an earlier query
+    if (ph) { /* ready */ } else if (id) {
+        const item = await Item.findByPk(id, { attributes: ['id', 'phash', 'mimeType'], raw: true });
+        if (!item || !String(item.mimeType).startsWith('image/')) return { error: 'Искать можно только по картинке' };
+        ph = item.phash;
+        if (ph == null) {
+            const file = imageFileFor(id);
+            ph = file ? await phashOf(fs.readFileSync(file)).catch(() => '') : '';
+            await Item.unscoped().update({ phash: ph }, { where: { id } });
+        }
+    } else if (buffer) {
+        ph = await phashOf(Buffer.from(buffer)).catch(() => '');
+    }
+    if (!ph) return { error: 'Не удалось разобрать картинку' };
+
+    const hi = parseInt(ph.slice(0, 8), 16) >>> 0, lo = parseInt(ph.slice(8), 16) >>> 0;
+    const rows = await Item.findAll({
+        where: { ...IMAGES, phash: { [Op.and]: [{ [Op.ne]: null }, { [Op.ne]: '' }] } },
+        attributes: ['id', 'phash'], raw: true,
+    });
+    const results = rows
+        .map(r => ({ id: r.id, distance: distanceOf(hi, lo, r.phash) }))
+        .filter(r => r.distance <= d)
+        .sort((a, b) => a.distance - b.distance)
+        .slice(0, limit)
+        .map(r => ({ ...r, similarity: Math.round(((64 - r.distance) / 64) * 100) }));
+    const unhashed = await Item.count({ where: { ...IMAGES, phash: null } });
+    return { hash: ph, results, unhashed, maxDistance: d };
+}
+
+module.exports = { phashStatus, computeMissing, findSimilar, relationsOf, searchByImage };

@@ -1,6 +1,18 @@
 import React, {useEffect, useState} from 'react';
 import {libraryApi} from '@/Infrastructure/Ipc';
 import {compareItemFromThumb, openCompare} from '../../Compare/CompareView';
+import {runVisualSearch} from '@services/visualSearch';
+
+// "Search the library by this picture" — opens the results view (closes the viewer).
+export const SearchByThisButton = ({ file, onOpened }) => (
+    String(file?.mimeType || '').startsWith('image/') ? (
+        <button className="rel-search" onClick={async () => {
+            if (await runVisualSearch({ id: file.id, label: file.title || file.fileName, preview: file.thumbUrl })) onOpened?.();
+        }}>
+            <i className="bi bi-images" /> Искать похожие во всей библиотеке
+        </button>
+    ) : null
+);
 
 const fmtSize = (b) => (b == null ? '' : b < 1024 ** 2 ? `${Math.round(b / 1024)} КБ` : `${(b / 1024 ** 2).toFixed(1)} МБ`);
 

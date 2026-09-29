@@ -1,4 +1,4 @@
-const { ipcMain, dialog, shell } = require('electron');
+const { ipcMain, dialog, shell, clipboard, nativeImage } = require('electron');
 const { importFiles, itemsPath, importDirectory, ensureTag } = require('../services/importService');
 const journal = require('../services/undoJournal');
 const { Item, Tag, ItemTag } = require('../models/associations');
@@ -69,6 +69,29 @@ async function collectionPreviews(collectionId, childIds = [], limit = 3) {
 }
 
 function register() {
+    // Search by picture: a library item, or whatever image is on the clipboard.
+    ipcMain.handle('library:visualSearch', async (event, { id, hash, clipboard: fromClipboard, pick, maxDistance } = {}) => {
+        const { searchByImage } = require('../services/similarity');
+        if (fromClipboard) {
+            const img = clipboard.readImage();
+            if (img.isEmpty()) return { error: 'В буфере обмена нет картинки' };
+            const res = await searchByImage({ buffer: img.toPNG() }, maxDistance);
+            return { ...res, preview: img.resize({ width: 160 }).toDataURL() };
+        }
+        if (pick) {
+            const { canceled, filePaths } = await dialog.showOpenDialog({
+                title: 'Картинка для поиска',
+                properties: ['openFile'],
+                filters: [{ name: 'Images', extensions: ['jpg', 'jpeg', 'png', 'webp', 'gif', 'jfif', 'bmp'] }],
+            });
+            if (canceled || !filePaths.length) return { canceled: true };
+            const res = await searchByImage({ buffer: fs.readFileSync(filePaths[0]) }, maxDistance);
+            const img = nativeImage.createFromPath(filePaths[0]);
+            return { ...res, fileName: path.basename(filePaths[0]), preview: img.isEmpty() ? null : img.resize({ width: 160 }).toDataURL() };
+        }
+        return searchByImage({ id, hash }, maxDistance);
+    });
+
     // Undo / redo (Ctrl+Z / Ctrl+Y) — see services/undoJournal.
     ipcMain.handle('library:undo', () => journal.undo());
     ipcMain.handle('library:redo', () => journal.redo());

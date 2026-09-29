@@ -123,6 +123,7 @@ export const libraryApi = {
     computePhashes:    ()     => invoke('library:computePhashes'),
     findSimilar:       (data) => invoke('library:findSimilar', data),
     itemRelations:     (id)   => invoke('library:itemRelations', { id }),
+    visualSearch:      (q)    => invoke('library:visualSearch', q),
     undo:              ()     => invoke('library:undo'),
     redo:              ()     => invoke('library:redo'),
     undoState:         ()     => invoke('library:undoState'),
