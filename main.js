@@ -39,11 +39,15 @@ async function createWindow() {
         height: 500,
         icon: __dirname + "/img/icon.svg",
         webPreferences: {
-            nodeIntegration: true,
-            contextIsolation: false,
-            allowDisplayingInsecureContent: true,
-            allowRunningInsecureContent: true,
-            webSecurity: false,
+            // The page has no Node / Electron access of its own: everything goes
+            // through the preload bridge (window.darkframe) and IPC. Remote content
+            // (booru posts, tag names, file names) therefore can't touch the system.
+            preload: path.join(__dirname, 'preload.js'),
+            contextIsolation: true,
+            nodeIntegration: false,
+            sandbox: false,      // the preload reads the config files with fs
+            webSecurity: true,
+            allowRunningInsecureContent: false,
             webviewTag: false,   // no <webview> — one less way to load foreign content
             // Sandbox / self-check windows are often hidden or covered: keep them rendering.
             backgroundThrottling: !SANDBOX,
@@ -65,19 +69,16 @@ async function createWindow() {
 }
 
 function setupContentSecurityPolicy() {
-    // The bundle relies on eval() (dependencies), so 'unsafe-eval' has to stay; there's
-    // no HTML-injection sink in the app, so 'unsafe-inline' is harmless. The value of
-    // this policy is what it forbids: remote scripts, plugins and framed documents —
-    // i.e. it stops injected/foreign <script src>, <object> and <iframe> from running,
-    // which is the actual RCE path in a nodeIntegration renderer.
+    // Scripts: only the app's own bundle — no eval, no inline, no remote code.
+    // Styles stay 'unsafe-inline' (React style props, style-loader tags).
     const csp =
         "default-src 'self' library: mediacache:; " +
-        "script-src 'self' 'unsafe-eval' 'unsafe-inline'; " +
+        "script-src 'self'; " +
         "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
-        "img-src 'self' data: blob: library: mediacache: fsthumb: https: http:; " +
-        "media-src 'self' data: blob: library: mediacache: https: http:; " +
+        "img-src 'self' data: blob: file: library: mediacache: fsthumb: https: http:; " +
+        "media-src 'self' data: blob: file: library: mediacache: https: http:; " +
         "font-src 'self' data: https://fonts.gstatic.com; " +
-        "connect-src 'self' data: blob: library: mediacache: https: http: ws:; " +
+        "connect-src 'self' data: blob: library: mediacache: fsthumb:; " +
         "worker-src 'self' blob:; " +
         "object-src 'none'; " +
         "frame-src 'none';";

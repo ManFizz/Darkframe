@@ -2,6 +2,7 @@ import {GetSourceDataById, sources} from "@modules/r34/R34Controller";
 import {SOURCE_TYPES} from "@/Constants";
 import PrivateData from "@data/private";
 import TagsService from "@services/TagsService";
+import {httpFetch} from '@/Infrastructure/http';
 
 class Tag {
 	constructor({ id, name, type, count, remoteType }) {
@@ -147,7 +148,7 @@ async function fetchTagInfo({ name, sourceType }) {
 			`${sources.r34.tagsUrl}${encodeTag(name)}` +
 			`&api_key=${PrivateData.R34ApiKey}&user_id=${PrivateData.R34UserId}`;
 
-		const res = await fetch(url);
+		const res = await httpFetch(url);
 		const text = await res.text();
 
 		const parser = new DOMParser();
@@ -261,7 +262,7 @@ export async function fetchTagSuggestions(query, sourceId) {
 			encodeURIComponent(lastWord) +
 			(sourceData.remoteType === SOURCE_TYPES.R34 || isDanbooru ? "" : "%");
 
-		const res = await fetch(url);
+		const res = await httpFetch(url);
 		let data = await res.json();
 
 		if (sourceData.remoteType === SOURCE_TYPES.GELBOORU) {

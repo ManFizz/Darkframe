@@ -14,9 +14,8 @@ import {useFolderBrowser} from './useFolderBrowser';
 import {isPinned, setFolderPrefs, togglePin, useFolderPrefs} from './folderPrefs';
 import {getViewPrefs} from '@services/viewPrefs';
 import {useHoverVideo} from '@react/Thumb/useHoverVideo';
+import {nodePath, sys} from '@/Infrastructure/electron';
 
-const os = window.require('os');
-const nodePath = window.require('path');
 
 const CHUNK = 240;
 
@@ -89,7 +88,7 @@ function initialPath(prefs) {
     const requested = folderRequests.take();   // Ctrl+K from another tab
     if (requested) return requested;
     const last = getViewPrefs().restoreSession ? prefs.lastPath : null;
-    return last || PrivateData.startPath || nodePath.join(os.homedir(), 'Pictures');
+    return last || PrivateData.startPath || nodePath.join(sys.homedir, 'Pictures');
 }
 
 const FolderView = () => {

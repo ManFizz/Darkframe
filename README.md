@@ -38,6 +38,7 @@ npm run build
 |---|---|
 | `npm run build` | подготовка + сборка webpack + запуск приложения |
 | `npm run bundle` | подготовка + сборка webpack, без запуска |
+| `npm run bundle:dev` | то же, но без минификации и с картами исходников — для отладки |
 | `npm run view` | запуск уже собранного приложения |
 | `npm run prepare:env` | только настройки из шаблонов + SCSS |
 | `npm test` | тесты |

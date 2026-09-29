@@ -6,7 +6,7 @@ import MetadataPanel from "../Library/Metadata/MetadataPanel";
 import RemotePanel from "./RemotePanel";
 import FolderPanel from "./FolderPanel";
 import ImageEditor from "./ImageEditor";
-import Settings from "../../../../data/settings";
+import Settings from "@data/settings";
 import {FILE_TYPES, SOURCE_TYPES} from "@/Constants";
 import {useFavorites} from "@hooks/useFavorites";
 import {cachedMediaUrl} from "@/Infrastructure/MediaCache";

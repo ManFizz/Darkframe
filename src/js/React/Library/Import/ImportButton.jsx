@@ -2,6 +2,7 @@ import React, {useEffect, useState} from 'react';
 import LibraryService from '@services/LibraryService';
 import EagleImportProgress from './EagleImportProgress';
 import {notify} from '@services/NotificationService';
+import {ipcRenderer, webUtils} from '@/Infrastructure/electron';
 
 const ImportButton = ({ collectionId, collectionName, onImported }) => {
     const [importing, setImporting] = useState(false);
@@ -13,7 +14,6 @@ const ImportButton = ({ collectionId, collectionName, onImported }) => {
     const [expanded, setExpanded] = useState(false);
 
     useEffect(() => {
-        const { ipcRenderer } = window.require('electron');
         const handler = (_, p) => setUrlProgress(p);
         ipcRenderer.on('library:urlImportProgress', handler);
         return () => ipcRenderer.removeListener('library:urlImportProgress', handler);
@@ -164,7 +164,7 @@ const ImportButton = ({ collectionId, collectionName, onImported }) => {
         e.preventDefault();
         e.stopPropagation();
 
-        const { webUtils } = window.require('electron');
+        
         const filePaths = [];
         const dirPaths = [];
 

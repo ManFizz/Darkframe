@@ -2,16 +2,14 @@ import React, {useEffect, useMemo, useState} from 'react';
 import {DRAG_PATHS, fsApi} from '@/Infrastructure/Ipc';
 import PrivateData from '@data/private';
 import {baseName, forgetRecent, togglePin, useFolderPrefs} from './folderPrefs';
+import {isDir, nodePath, sys} from '@/Infrastructure/electron';
 
-const os = window.require('os');
-const fs = window.require('fs');
-const nodePath = window.require('path');
 
 const fmtGB = (b) => (b >= 1024 ** 4 ? `${(b / 1024 ** 4).toFixed(1)} ТБ` : `${Math.round(b / 1024 ** 3)} ГБ`);
 
 // Well-known folders that actually exist on this machine (+ the configured start path).
 function quickAccess() {
-    const home = os.homedir();
+    const home = sys.homedir;
     const list = [
         PrivateData.startPath && { path: PrivateData.startPath, name: 'Стартовая папка', icon: 'bi-house-door' },
         { path: nodePath.join(home, 'Desktop'),   name: 'Рабочий стол', icon: 'bi-display' },
@@ -19,7 +17,7 @@ function quickAccess() {
         { path: nodePath.join(home, 'Videos'),    name: 'Видео',        icon: 'bi-film' },
         { path: nodePath.join(home, 'Downloads'), name: 'Загрузки',     icon: 'bi-download' },
     ].filter(Boolean);
-    return list.filter(q => { try { return fs.statSync(q.path).isDirectory(); } catch { return false; } });
+    return list.filter(q => isDir(q.path));
 }
 
 const same = (a, b) => !!a && !!b && a.replace(/[\\/]+$/, '').toLowerCase() === b.replace(/[\\/]+$/, '').toLowerCase();

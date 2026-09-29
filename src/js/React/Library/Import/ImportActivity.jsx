@@ -1,4 +1,5 @@
 import React, {useEffect, useRef, useState} from 'react';
+import {ipcRenderer} from '@/Infrastructure/electron';
 
 // Global "import in progress" pill. Fed by the main process for every import source
 // (dialog, drag & drop, folder, link, API / browser extension), so a long batch is
@@ -8,7 +9,6 @@ const ImportActivity = () => {
     const hideTimer = useRef(null);
 
     useEffect(() => {
-        const { ipcRenderer } = window.require('electron');
         const onActivity = (_, a) => {
             clearTimeout(hideTimer.current);
             setState(a);

@@ -5,6 +5,7 @@ import LibraryService from "@services/LibraryService";
 import {notify} from "@services/NotificationService";
 import {mediaKey} from "@services/mediaKey";
 import {toggleViewerFullscreen} from "./fullscreen";
+import {ipcRenderer} from '@/Infrastructure/electron';
 
 // Resume support: only long videos, saved every few seconds while playing.
 const RESUME_MIN_DURATION = 180;   // seconds
@@ -94,7 +95,6 @@ const Video = ({ file, mainArray = [], modalUpdater, canEdit = false, onEdited, 
     // on success onEdited() reloads the list and the new URL remounts the player.
     const runFileEdit = useCallback(async (label, action, doneMessage) => {
         const v = videoRef.current;
-        const { ipcRenderer } = window.require('electron');
         const onProgress = (_, p) => {
             if (p?.id === file.id) setBusy({ label, percent: p.percent });
         };

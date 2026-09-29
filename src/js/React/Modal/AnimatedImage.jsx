@@ -1,4 +1,5 @@
 import React, {useCallback, useEffect, useRef, useState} from 'react';
+import {httpFetch} from '@/Infrastructure/http';
 
 const SPEEDS = [0.25, 0.5, 1, 1.5, 2];
 
@@ -65,7 +66,9 @@ const AnimatedImage = ({ file, src, alt, style, onImgRef }) => {
         (async () => {
             try {
                 if (!(await window.ImageDecoder.isTypeSupported(type))) return;
-                const buf = await (await fetch(src)).arrayBuffer();
+                const buf = await (/^(https?|file):/i.test(src)
+                    ? await httpFetch(src, { binary: true })
+                    : await fetch(src)).arrayBuffer();
                 if (cancelled) return;
                 const dec = new window.ImageDecoder({ data: buf, type });
                 await dec.tracks.ready;

@@ -1,4 +1,4 @@
-const { ipcRenderer } = window.require("electron");
+import {ipcRenderer} from './electron';
 
 export async function invoke(channel, ...args) {
     try {

@@ -3,6 +3,7 @@ import {addToGallery, setGallery} from "@controllers/AppInitializerController";
 import PrivateData from "@data/private";
 import {FILE_TYPES, SOURCE_TYPES} from "@/Constants";
 import {rememberKinds} from "./tagKinds";
+import {httpFetch} from '@/Infrastructure/http';
 
 export const sources = {
     r34: {
@@ -256,7 +257,7 @@ export function toDanbooruQuery(tags) {
 }
 
 async function danbooruJson(url, signal) {
-    const response = await fetch(url, { signal });
+    const response = await httpFetch(url, { signal });
     let body = null;
     try { body = await response.json(); } catch { /* not JSON */ }
     if (!response.ok) {
@@ -298,7 +299,7 @@ export async function fetchPosts(source, tags, page, signal, limit = postPerPage
     const userId = (isGel && PrivateData.GelbooruUserId) || PrivateData.R34UserId;
 
     const url = `${mainUrl}&limit=${limit}&pid=${page}&tags=${tagsParam}&api_key=${apiKey}&user_id=${userId}`;
-    const response = await fetch(url, { signal });
+    const response = await httpFetch(url, { signal });
     if (response.status === 401 || response.status === 403) {
         throw new Error(`Доступ запрещён (HTTP ${response.status}) — проверь API-ключ ${source.name} в настройках`);
     }
@@ -310,6 +311,6 @@ export async function fetchPosts(source, tags, page, signal, limit = postPerPage
 export async function fetchAutocomplete(source, lastWord) {
     const suffix = source.remoteType === SOURCE_TYPES.R34 ? "" : "%";
     const url = `${source.tagUrl}${lastWord}${suffix}`;
-    const response = await fetch(url);
+    const response = await httpFetch(url);
     return await response.json();
 }

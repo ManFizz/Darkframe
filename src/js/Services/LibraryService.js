@@ -1,4 +1,5 @@
 import {libraryApi} from '@/Infrastructure/Ipc';
+import {ipcRenderer} from '@/Infrastructure/electron';
 
 let collections = [];
 let listeners = new Set();
@@ -8,7 +9,6 @@ let listeners = new Set();
 // views subscribe via onLibraryChanged to decide whether they need a reload.
 const changeListeners = new Set();
 {
-    const { ipcRenderer } = window.require('electron');
     ipcRenderer.on('library:changed', (_, change) => {
         LibraryService.loadCollections().catch(() => {});
         changeListeners.forEach(fn => fn(change));

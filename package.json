@@ -9,6 +9,7 @@
     "postinstall": "node tools/prepare.js",
     "prepare:env": "node tools/prepare.js",
     "bundle": "node tools/prepare.js && webpack --config webpack.config.js --mode production",
+    "bundle:dev": "node tools/prepare.js && webpack --config webpack.config.js --mode development",
     "build": "npm run bundle && electron .",
     "view": "electron .",
     "test": "node tools/run-tests.js",

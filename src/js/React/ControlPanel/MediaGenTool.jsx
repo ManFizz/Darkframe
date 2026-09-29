@@ -1,6 +1,7 @@
 import React, {useCallback, useEffect, useRef, useState} from 'react';
 import LibraryService from '@services/LibraryService';
 import {notify} from '@services/NotificationService';
+import {ipcRenderer} from '@/Infrastructure/electron';
 
 // Background regeneration of missing thumbnails / dimensions (old imports that never
 // got a thumb.jpg or whose width/height stayed 0). The main process does the work,
@@ -12,7 +13,6 @@ const MediaGenTool = () => {
     const runningRef = useRef(false);
 
     useEffect(() => {
-        const { ipcRenderer } = window.require('electron');
         const handler = (_, p) => setProgress(p);
         ipcRenderer.on('library:maintenanceProgress', handler);
         return () => ipcRenderer.removeListener('library:maintenanceProgress', handler);

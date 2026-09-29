@@ -1,10 +1,10 @@
 import React, {useEffect, useState} from 'react';
+import {ipcRenderer} from '@/Infrastructure/electron';
 
 const EagleImportProgress = ({ onDone }) => {
     const [progress, setProgress] = useState(null);
 
     useEffect(() => {
-        const { ipcRenderer } = window.require('electron');
 
         const handler = (_, data) => {
             setProgress(data);

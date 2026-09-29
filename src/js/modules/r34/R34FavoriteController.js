@@ -3,6 +3,7 @@ import {setGallery} from "@controllers/AppInitializerController";
 import {GetThumbByData} from "@controllers/GalleryController";
 import {FILE_TYPES, SOURCE_TYPES} from "@/Constants";
 import {setSearchStatus} from "./R34Controller";
+import {httpFetch} from '@/Infrastructure/http';
 
 // Built on use: the keys can change in the settings while the app runs.
 const favUrl = () => `https://rule34.xxx/index.php?page=favorites&s=view&id=${PrivateData.R34UserId}`;
@@ -31,7 +32,7 @@ export async function DisplayRemoteFavoriteR34() {
 
             const currentFavUrl = `${favUrl()}&pid=${pid}`;
 
-            const response = await fetch(currentFavUrl, { signal });
+            const response = await httpFetch(currentFavUrl, { signal });
             const html = await response.text();
 
             const parser = new DOMParser();
@@ -102,7 +103,7 @@ const sleep = (ms, signal) => new Promise((resolve, reject) => {
 async function fetchJsonWithRetry(url, signal, attempt = 0) {
     if (signal.aborted) throw new DOMException('Aborted', 'AbortError');
 
-    const res = await fetch(url, { signal });
+    const res = await httpFetch(url, { signal });
 
     if (res.status === 429 || res.status === 503) {
         if (attempt >= MAX_RETRIES) return null;

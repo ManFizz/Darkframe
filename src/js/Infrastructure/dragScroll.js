@@ -7,7 +7,7 @@
  *    scrollable box under the cursor.
  * Install once (AppInitializer).
  */
-const { ipcRenderer } = window.require('electron');
+import {ipcRenderer} from './electron';
 
 const EDGE = 70;        // px from the edge where auto-scroll starts
 const MAX_SPEED = 22;   // px per frame at the very edge

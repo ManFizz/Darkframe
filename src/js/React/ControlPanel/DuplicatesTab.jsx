@@ -2,6 +2,7 @@ import React, {useCallback, useEffect, useState} from 'react';
 import {openCompare} from '../Compare/CompareView';
 import LibraryService from '@services/LibraryService';
 import {notify} from '@services/NotificationService';
+import {ipcRenderer} from '@/Infrastructure/electron';
 
 const fmtSize = (bytes) => {
     if (!bytes) return '0 B';
@@ -19,7 +20,6 @@ const DEFAULT_DISTANCE = 8;   // bits of 64 → ~88% similar
 // Listen to a main-process progress channel while mounted.
 function useIpcProgress(channel, onValue) {
     useEffect(() => {
-        const { ipcRenderer } = window.require('electron');
         const h = (_, v) => onValue(v);
         ipcRenderer.on(channel, h);
         return () => ipcRenderer.removeListener(channel, h);

@@ -1,14 +1,15 @@
 import {GetThumbByData} from "./GalleryController";
 import {setGallery} from "./AppInitializerController";
-import PrivateData from "../../../data/private";
+import PrivateData from "@data/private";
 import {SOURCE_TYPES} from "@/Constants";
+import {httpFetch} from '@/Infrastructure/http';
 
 const urlFavs = () => 'https://realbooru.com/index.php?page=favorites&s=view&id=' + PrivateData.RealBooruId;
 const urlThumb = 'https://realbooru.com/index.php?page=post&s=view&id=';
 
 async function parseThumb(id) {
     try {
-        let response = await fetch(urlThumb + id);
+        let response = await httpFetch(urlThumb + id);
         let htmlText = await response.text();
         let parser = new DOMParser();
         let html = parser.parseFromString(htmlText, 'text/html');
@@ -22,7 +23,7 @@ async function parseThumb(id) {
 
 async function loadUrl(url) {
     try {
-        let response = await fetch(url);
+        let response = await httpFetch(url);
         let htmlText = await response.text();
         let parser = new DOMParser();
         let html = parser.parseFromString(htmlText, 'text/html');

@@ -3,8 +3,8 @@ import {fsApi, fsThumbUrl} from '@/Infrastructure/Ipc';
 import {ThumbFile} from '@/Models/ThumbFile';
 import {FILE_TYPES, SOURCE_TYPES} from '@/Constants';
 import {rememberVisit} from './folderPrefs';
+import {fileUrl} from '@/Infrastructure/electron';
 
-const { pathToFileURL } = window.require('url');
 
 // Listing entry → ThumbFile the gallery and the viewer understand. The grid shows a
 // cached fsthumb:// thumbnail; the viewer loads the real file.
@@ -15,7 +15,7 @@ export function toThumbFile(f) {
         title:      f.name,
         fileName:   f.name,
         thumbUrl:   fsThumbUrl(f.path),
-        contentUrl: pathToFileURL(f.path).href,
+        contentUrl: fileUrl(f.path),
         type:       f.kind === 'video' ? FILE_TYPES.VIDEO : FILE_TYPES.IMAGE,
         mimeType:   f.kind === 'gif' ? 'image/gif' : f.kind === 'video' ? `video/${f.ext}` : `image/${f.ext}`,
         remoteType: SOURCE_TYPES.FOLDER,
