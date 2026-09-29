@@ -3,6 +3,7 @@ import PrivateData from '@data/private';
 import {DRAG_PATHS, fsApi, fsThumbUrl} from '@/Infrastructure/Ipc';
 import FsDialog from './FsDialog';
 import {folderRequests, useCommands} from '@services/commands';
+import {ipcRenderer} from '@/Infrastructure/electron';
 import LibraryService from '@services/LibraryService';
 import {notify} from '@services/NotificationService';
 import Modal from '@react/Modal/Modal';
@@ -51,7 +52,7 @@ export const filesWord = (n) => `${n} ${plural(n, 'файл', 'файла', 'ф�
 
 const cmpName = (a, b) => a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' });
 
-const FileTile = React.memo(({ file, onOpen, selected, selecting, onToggle, onDragStart }) => {
+const FileTile = React.memo(({ file, onOpen, selected, selecting, onToggle, onDragStart, lib }) => {
     const [loaded, setLoaded] = useState(false);
     const [broken, setBroken] = useState(false);
     const t = file.thumb;
@@ -77,6 +78,17 @@ const FileTile = React.memo(({ file, onOpen, selected, selecting, onToggle, onDr
                            onLoad={() => setLoaded(true)} onError={() => setBroken(true)} />}
                 {file.kind === 'video' && <span className="ftfile-kind"><i className="bi bi-play-fill" /></span>}
                 {file.kind === 'gif' && <span className="ftfile-kind gif">GIF</span>}
+                {lib?.inLibrary && (
+                    <span className={`ftfile-lib ${lib.inLibrary.trashed ? 'trashed' : ''}`}
+                          title={lib.inLibrary.trashed ? 'Такой файл лежит в корзине библиотеки' : `Уже в библиотеке · «${lib.inLibrary.collectionName}»`}>
+                        <i className={`bi ${lib.inLibrary.trashed ? 'bi-trash3' : 'bi-bookmark-check-fill'}`} />
+                    </span>
+                )}
+                {lib?.copies?.length > 0 && (
+                    <span className="ftfile-dup" title={`Такой же файл в этой папке:\n${lib.copies.map(p => p.split(/[\\/]/).pop()).join('\n')}`}>
+                        <i className="bi bi-files" /> {lib.copies.length + 1}
+                    </span>
+                )}
             </div>
             <div className="ftfile-name">{file.name}</div>
             <div className="ftfile-meta">{fmtSize(file.size)}</div>
@@ -104,6 +116,8 @@ const FolderView = () => {
     const [ctxMenu, setCtxMenu] = useState(null);                // { x, y, folder }
     const [ctxImport, setCtxImport] = useState(null);            // folder path awaiting a collection
     const [dialog, setDialog] = useState(null);                  // FsDialog props
+    const [libInfo, setLibInfo] = useState({});                  // path → { inLibrary, copies }
+    const [libCheck, setLibCheck] = useState(null);              // { done, total } while checking
     const anchorRef = useRef(null);
     const scrollMemo = useRef(new Map());                        // path → { top, visible }
     const scrollRef = useRef(null);
@@ -146,8 +160,10 @@ const FolderView = () => {
 
     const files = useMemo(() => {
         if (!listing) return [];
+        const inLib = (f) => !!libInfo[f.path]?.inLibrary;
         const list = listing.files.filter(f =>
-            (prefs.kind === 'all' || f.kind === prefs.kind) && (!q || f.name.toLowerCase().includes(q)));
+            (prefs.kind === 'all' || f.kind === prefs.kind) && (!q || f.name.toLowerCase().includes(q))
+            && (prefs.lib === 'all' || (prefs.lib === 'in' ? inLib(f) : !inLib(f))));
         const by = {
             name:  cmpName,
             mtime: (a, b) => a.mtime - b.mtime,
@@ -155,9 +171,29 @@ const FolderView = () => {
             type:  (a, b) => a.ext.localeCompare(b.ext) || cmpName(a, b),
         }[prefs.sortBy] || cmpName;
         return list.sort((a, b) => by(a, b) * prefs.sortDir);
-    }, [listing, q, prefs.kind, prefs.sortBy, prefs.sortDir]);
+    }, [listing, q, prefs.kind, prefs.sortBy, prefs.sortDir, prefs.lib, libInfo]);
 
     const thumbs = useMemo(() => files.map(f => f.thumb), [files]);
+
+    // Which files are already in the library / duplicated in this folder (by content).
+    // Re-checked when the folder or the library changes; hashes are cached in main.
+    const [libVersion, setLibVersion] = useState(0);
+    useEffect(() => LibraryService.onLibraryChanged(() => setLibVersion(v => v + 1)), []);
+    useEffect(() => {
+        if (!listing?.files?.length) { setLibInfo({}); return; }
+        let cancelled = false;
+        const onProgress = (_, p) => { if (!cancelled) setLibCheck(p.total ? p : null); };
+        ipcRenderer.on('fs:libraryCheckProgress', onProgress);
+        fsApi.libraryCheck(listing.files.map(f => ({ path: f.path, size: f.size, mtime: f.mtime })))
+            .then(res => { if (!cancelled && res) setLibInfo(res); })
+            .catch(() => {})
+            .finally(() => { if (!cancelled) setLibCheck(null); ipcRenderer.removeListener('fs:libraryCheckProgress', onProgress); });
+        return () => { cancelled = true; ipcRenderer.send('fs:libraryCheckCancel'); ipcRenderer.removeListener('fs:libraryCheckProgress', onProgress); };
+    }, [listing, libVersion]);
+    const libCounts = useMemo(() => {
+        const inLib = (listing?.files || []).filter(f => libInfo[f.path]?.inLibrary).length;
+        return { in: inLib, new: (listing?.files?.length || 0) - inLib };
+    }, [listing, libInfo]);
     const total = folders.length + files.length;
 
     // Grow the rendered window as the sentinel scrolls into view.
@@ -408,6 +444,25 @@ const FolderView = () => {
                         ))}
                     </div>
 
+                    <div className="ff-kinds ff-lib" title="По наличию в библиотеке (сравнение по содержимому)">
+                        {[
+                            { id: 'all', label: 'Все' },
+                            { id: 'new', label: 'Новые', count: libCounts.new, icon: 'bi-plus-circle' },
+                            { id: 'in',  label: 'В библиотеке', count: libCounts.in, icon: 'bi-bookmark-check' },
+                        ].map(o => (
+                            <button key={o.id} className={`ff-kind ${prefs.lib === o.id ? 'active' : ''}`}
+                                    onClick={() => setFolderPrefs({ lib: o.id })}>
+                                {o.icon && <i className={`bi ${o.icon}`} />} {o.label}
+                                {o.count != null && <span className="ff-count">{libCheck ? '…' : o.count}</span>}
+                            </button>
+                        ))}
+                        {libCheck && (
+                            <span className="ff-libcheck" title="Сверяю файлы с библиотекой">
+                                <i className="bi bi-arrow-repeat spin" /> {libCheck.done}/{libCheck.total}
+                            </span>
+                        )}
+                    </div>
+
                     <div className="ff-search">
                         <i className="bi bi-search" />
                         <input ref={searchRef} placeholder="Фильтр по имени (Ctrl+F)" value={query}
@@ -492,10 +547,10 @@ const FolderView = () => {
                         </div>
                     ) : total === 0 ? (
                         <div className="folder-empty">
-                            <i className={`bi ${q || prefs.kind !== 'all' ? 'bi-funnel' : 'bi-folder2-open'}`} />
-                            <div className="fe-title">{q || prefs.kind !== 'all' ? 'Ничего не подходит под фильтр' : 'Здесь нет медиафайлов'}</div>
-                            {(q || prefs.kind !== 'all') && (
-                                <button className="btn btn-sm btn-outline-secondary" onClick={() => { setQuery(''); setFolderPrefs({ kind: 'all' }); }}>
+                            <i className={`bi ${q || prefs.kind !== 'all' || prefs.lib !== 'all' ? 'bi-funnel' : 'bi-folder2-open'}`} />
+                            <div className="fe-title">{q || prefs.kind !== 'all' || prefs.lib !== 'all' ? 'Ничего не подходит под фильтр' : 'Здесь нет медиафайлов'}</div>
+                            {(q || prefs.kind !== 'all' || prefs.lib !== 'all') && (
+                                <button className="btn btn-sm btn-outline-secondary" onClick={() => { setQuery(''); setFolderPrefs({ kind: 'all', lib: 'all' }); }}>
                                     Сбросить фильтр
                                 </button>
                             )}
@@ -518,7 +573,7 @@ const FolderView = () => {
                                 />
                             ))}
                             {files.slice(0, Math.max(0, visible - folders.length)).map(f => (
-                                <FileTile key={f.path} file={f} onOpen={openFile}
+                                <FileTile key={f.path} file={f} onOpen={openFile} lib={libInfo[f.path]}
                                           selected={selected.has(f.path)} selecting={selected.size > 0}
                                           onToggle={toggleSelect} onDragStart={onDragFile} />
                             ))}

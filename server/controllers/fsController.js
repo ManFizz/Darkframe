@@ -91,6 +91,13 @@ function register() {
         await shell.openExternal(url);
         return { ok: true };
     });
+    // Which files of the open folder are already in the library / copies of each other.
+    const folderCheck = require('../services/folderCheck');
+    ipcMain.handle('fs:libraryCheck', (event, { files }) => folderCheck.checkFiles(files || [], (p) => {
+        if (!event.sender.isDestroyed()) event.sender.send('fs:libraryCheckProgress', p);
+    }));
+    ipcMain.on('fs:libraryCheckCancel', () => folderCheck.cancel());
+
     // File operations. Delete = recycle bin only (shell.trashItem).
     const fsOps = require('../services/fsOps');
     ipcMain.handle('fs:rename', (_, { from, name }) => fsOps.rename(from, name));
