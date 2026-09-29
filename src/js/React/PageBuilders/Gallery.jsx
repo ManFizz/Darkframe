@@ -7,6 +7,7 @@ import useFavoriteTags from "@hooks/useFavoriteTags";
 import SavedSearchesPage from "@modules/r34/SavedSearchesPage";
 import {postKey} from "@modules/r34/libraryLinks";
 import {blockedBy} from "@modules/r34/blacklist";
+import {ipcRenderer} from "@/Infrastructure/electron";
 
 // What the booru gallery shows while it has nothing to show: a skeleton while the
 // first page loads, "nothing found" after an empty search, or a start screen with
@@ -31,7 +32,18 @@ const EmptyState = () => {
                 <i className="bi bi-wifi-off" />
                 <div className="be-title">Не удалось загрузить</div>
                 <div className="be-sub">{status.error}</div>
-                <button className="be-btn" onClick={() => runSearch()}>Повторить</button>
+                {status.errorCode === 'CF_CHALLENGE' ? (
+                    <div className="be-actions">
+                        <button className="be-btn primary" onClick={async () => {
+                            if (await ipcRenderer.invoke('danbooru:verify')) runSearch();
+                        }}>
+                            <i className="bi bi-shield-check" /> Пройти проверку
+                        </button>
+                        <button className="be-btn" onClick={() => runSearch()}>Повторить</button>
+                    </div>
+                ) : (
+                    <button className="be-btn" onClick={() => runSearch()}>Повторить</button>
+                )}
             </div>
         );
     }

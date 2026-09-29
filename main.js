@@ -83,7 +83,10 @@ function setupContentSecurityPolicy() {
         "object-src 'none'; " +
         "frame-src 'none';";
 
+    // Only the app's own pages (file://): other windows — e.g. the Danbooru check —
+    // show real websites that need their own scripts.
     session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
+        if (!details.url.startsWith('file:')) return callback({});
         callback({
             responseHeaders: {
                 ...details.responseHeaders,
@@ -103,9 +106,9 @@ function setupRequestHeaders() {
         const host = new URL(details.url).hostname;
         const h = details.requestHeaders;
         if (host.endsWith('donmai.us')) {
-            // Danbooru's Cloudflare challenges browser-looking clients; API clients
-            // are expected to name themselves.
-            h['User-Agent'] = `Darkframe/${app.getVersion()}`;
+            // Cloudflare: see danbooruAccess (API-client UA, or the browser UA once
+            // a clearance cookie exists — it is bound to that UA).
+            h['User-Agent'] = require('./server/services/danbooruAccess').userAgentFor(details);
         } else {
             h['User-Agent'] = BROWSER_UA;
             if (host.endsWith('gelbooru.com')) h['Referer'] = 'https://gelbooru.com/index.php';
@@ -216,6 +219,7 @@ app.whenReady().then(async () => {
 
     setupContentSecurityPolicy();
     setupRequestHeaders();
+    await require('./server/services/danbooruAccess').init().catch(() => {});
 
     app.on('certificate-error', (event, webContents, url, error, certificate, callback) => {
         let host = '';

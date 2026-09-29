@@ -208,7 +208,7 @@ export async function SearchMedia(tagsString) {
 
     currentQueryTags = tagsString;
     currentPage = 0;
-    setStatus({ loading: true, error: null, query: tagsString, source: currentR34Source?.remoteType });
+    setStatus({ loading: true, error: null, errorCode: null, query: tagsString, source: currentR34Source?.remoteType });
 
     try {
         const posts = showPage(await fetchPage(currentR34Source, currentQueryTags, currentPage, controller.signal), true);
@@ -217,7 +217,7 @@ export async function SearchMedia(tagsString) {
     } catch (err) {
         if (err.name === 'AbortError') return;
         console.error("Search error:", err);
-        setStatus({ loading: false, error: err.message || 'Ошибка поиска' });
+        setStatus({ loading: false, error: err.message || 'Ошибка поиска', errorCode: err.code || null });
     }
 }
 
@@ -234,7 +234,7 @@ export async function LoadMoreMedia() {
     } catch (err) {
         if (err.name === 'AbortError') return;
         console.error("Load more error:", err);
-        setStatus({ loading: false, error: err.message || 'Ошибка загрузки' });
+        setStatus({ loading: false, error: err.message || 'Ошибка загрузки', errorCode: err.code || null });
     }
 }
 
@@ -261,6 +261,13 @@ async function danbooruJson(url, signal) {
     let body = null;
     try { body = await response.json(); } catch { /* not JSON */ }
     if (!response.ok) {
+        // Cloudflare's "Just a moment…" page: not a login problem, the network
+        // needs the browser check (see danbooruAccess in the main process).
+        if (response.headers.get('cf-mitigated') === 'challenge') {
+            const err = new Error('Danbooru закрыт проверкой Cloudflare для твоей сети (VPN / IP). Логин и ключ тут не помогут — пройди проверку один раз.');
+            err.code = 'CF_CHALLENGE';
+            throw err;
+        }
         if (response.status === 401 || response.status === 403) {
             throw new Error(`Доступ запрещён (HTTP ${response.status}) — проверь логин и API-ключ Danbooru в настройках`);
         }

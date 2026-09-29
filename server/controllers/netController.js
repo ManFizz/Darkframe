@@ -1,4 +1,4 @@
-const { ipcMain, net } = require('electron');
+const { BrowserWindow, ipcMain, net } = require('electron');
 
 /**
  * Network requests of the page, made from the main process. The window runs with
@@ -26,7 +26,9 @@ function register() {
         const ctl = new AbortController();
         if (id) inFlight.set(id, ctl);
         try {
-            const res = await net.fetch(url, { method, headers, signal: ctl.signal });
+            // Danbooru: send the session's cookies (Cloudflare clearance, see danbooruAccess).
+            const credentials = /(^|\.)donmai\.us$/.test(new URL(url).hostname) ? 'include' : 'omit';
+            const res = await net.fetch(url, { method, headers, signal: ctl.signal, credentials });
             const body = as === 'binary'
                 ? new Uint8Array(await res.arrayBuffer())
                 : await res.text();
@@ -45,6 +47,10 @@ function register() {
     });
 
     ipcMain.on('net:abort', (_, id) => inFlight.get(id)?.abort());
+
+    // Danbooru behind a Cloudflare check: let the person pass it in a window.
+    ipcMain.handle('danbooru:verify', (event) =>
+        require('../services/danbooruAccess').verify(BrowserWindow.fromWebContents(event.sender)));
 }
 
 module.exports = { register, allowed };
