@@ -10,6 +10,7 @@ import {notify} from '@services/NotificationService';
 import {queryOf, useSavedSearches} from './savedSearches';
 import {setView} from './booruQuery';
 import {addToBlacklist, removeFromBlacklist, setShowHidden, useBlacklist} from './blacklist';
+import {useCommandProvider, useCommands} from '@services/commands';
 
 // Tags whose posts are hidden from results on this source (client-side).
 const BlacklistBlock = ({ source }) => {
@@ -176,6 +177,25 @@ const SectionR34 = ({ currentSource }) => {
     // Modifiers re-run an existing search right away; before the first search they just preset it.
     const change = (patch) => (searched ? runSearch(patch) : setQuery(patch));
     const kindOf = useTagKinds(favs.map(f => f.tag));
+
+    useCommands('booru', () => [
+        ...saved.map(s => ({
+            id: `saved:${s.id}`, group: 'Сохранённые поиски', icon: 'bi-bookmark', title: s.title || s.tags || 'все посты',
+            keywords: s.tags, run: () => runSearch(queryOf(s)),
+        })),
+        ...savedFavs.map(f => ({
+            id: `favtag:${f.tag}`, group: 'Избранные теги', icon: 'bi-star', title: `Искать: ${f.tag}`,
+            run: () => runSearch({ tags: [f.tag] }),
+        })),
+        { id: 'booru:saved-page', group: 'Сохранённые поиски', icon: 'bi-grid-3x2-gap', title: 'Страница сохранённых поисков', run: () => setView('saved') },
+    ]);
+    useCommandProvider('booru-search', (query) => {
+        const tags = query.trim().toLowerCase().split(/\s+/).filter(Boolean);
+        return tags.length ? [{
+            id: 'booru:search', always: true, group: currentR34Source?.name || 'Поиск', icon: 'bi-search',
+            title: `Искать «${tags.join(' ')}»`, run: () => runSearch({ tags }),
+        }] : [];
+    });
 
     return (
         <section className="booru-sidebar">

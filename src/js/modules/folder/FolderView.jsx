@@ -2,6 +2,7 @@ import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import PrivateData from '@data/private';
 import {DRAG_PATHS, fsApi, fsThumbUrl} from '@/Infrastructure/Ipc';
 import FsDialog from './FsDialog';
+import {folderRequests, useCommands} from '@services/commands';
 import LibraryService from '@services/LibraryService';
 import {notify} from '@services/NotificationService';
 import Modal from '@react/Modal/Modal';
@@ -85,6 +86,8 @@ const FileTile = React.memo(({ file, onOpen, selected, selecting, onToggle, onDr
 });
 
 function initialPath(prefs) {
+    const requested = folderRequests.take();   // Ctrl+K from another tab
+    if (requested) return requested;
     const last = getViewPrefs().restoreSession ? prefs.lastPath : null;
     return last || PrivateData.startPath || nodePath.join(os.homedir(), 'Pictures');
 }
@@ -195,6 +198,17 @@ const FolderView = () => {
 
     const selectedFiles = useMemo(() => files.filter(f => selected.has(f.path)), [files, selected]);
     const selectedSize = selectedFiles.reduce((n, f) => n + f.size, 0);
+
+    useEffect(() => folderRequests.subscribe((p) => openFolder(p)));
+
+    useCommands('folders', () => [
+        { id: 'fs:newfolder', group: 'Папка', icon: 'bi-folder-plus', title: 'Новая папка', hint: 'Ctrl+Shift+N', run: newFolder },
+        { id: 'fs:refresh', group: 'Папка', icon: 'bi-arrow-clockwise', title: 'Обновить папку', hint: 'F5', run: fb.refresh },
+        { id: 'fs:explorer', group: 'Папка', icon: 'bi-box-arrow-up-right', title: 'Открыть в проводнике', run: () => fb.path && fsApi.open(fb.path) },
+        { id: 'fs:pin', group: 'Папка', icon: 'bi-pin-angle', title: isPinned(fb.path) ? 'Открепить эту папку' : 'Закрепить эту папку', run: () => fb.path && togglePin(fb.path) },
+        { id: 'fs:up', group: 'Папка', icon: 'bi-arrow-up', title: 'Наверх', hint: 'Backspace', run: goUp },
+        ...folders.slice(0, 40).map(f => ({ id: `fs:sub:${f.path}`, group: 'Подпапки', icon: 'bi-folder2', title: f.name, run: () => openFolder(f.path) })),
+    ]);
 
     // ─── File operations ────────────────────────────────────────────────────
     const afterOp = useCallback(() => { setSelected(new Set()); fb.refresh(); }, [fb.refresh]);

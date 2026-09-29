@@ -12,6 +12,11 @@ import TagManager from '../Settings/TagManager';
 import ControlPanel from '../ControlPanel/ControlPanel';
 import {openHotkeysHelp} from '../Helpers/HotkeysHelp';
 import BooruSearchBar from '@modules/r34/BooruSearchBar';
+import {collectionRequests, folderRequests, useCommands} from '@services/commands';
+import {setTheme} from '@services/theme';
+import LibraryService from '@services/LibraryService';
+import {getFolderPrefs} from '@modules/folder/folderPrefs';
+import {SPECIAL} from '../Library/Collection/CollectionTree';
 
 const VIEW_ICONS = { 1: 'bi-grid-3x3-gap-fill', 2: 'bi-grid-1x2', 3: 'bi-columns-gap' };
 const VIEW_NAMES = { 1: 'квадраты', 2: 'плитка', 3: 'колонки' };
@@ -24,9 +29,10 @@ const NavBar = () => {
     const isFolder  = state.currentSource === SOURCE_TYPES.FOLDER;
     const [showPanel, setShowPanel] = useState(false);
     const [panelTab, setPanelTab] = useState('manage');
+    const [panelTool, setPanelTool] = useState(null);
     const [showTags, setShowTags] = useState(false);
 
-    const openPanel = (tab = 'manage') => { setPanelTab(tab); setShowPanel(true); };
+    const openPanel = (tab = 'manage', tool = null) => { setPanelTab(tab); setPanelTool(tool); setShowPanel(true); };
 
     // Favourites now live in the library sidebar (next to "Все файлы"), so the
     // top-level button is gone.
@@ -45,6 +51,61 @@ const NavBar = () => {
         setCurrentSource(btn.type);
         if (btn.action) btn.action();
     };
+
+    const navIndex = (type) => navButtons.findIndex(b => b.type === type && !b.action);
+
+    useCommands('app', () => {
+        const nav = navButtons.map((b, i) => ({
+            id: `nav:${b.label}`, group: 'Разделы', icon: 'bi-window', title: `Перейти: ${b.label}`,
+            keywords: 'раздел вкладка', run: () => handleNavigation(i),
+        }));
+        const tool = (id, title, icon) => ({ id: `tool:${id}`, group: 'Инструменты', icon, title, run: () => openPanel('manage', id) });
+        const panel = [
+            { id: 'panel:settings', group: 'Инструменты', icon: 'bi-gear', title: 'Настройки', run: () => openPanel('settings') },
+            { id: 'panel:stats', group: 'Инструменты', icon: 'bi-bar-chart-line', title: 'Статистика', run: () => openPanel('stats') },
+            { id: 'panel:access', group: 'Инструменты', icon: 'bi-key', title: 'Доступ: API-токены', keywords: 'расширение', run: () => openPanel('access') },
+            tool('dupes', 'Поиск дубликатов', 'bi-images'),
+            tool('integrity', 'Проверка целостности', 'bi-clipboard-check'),
+            tool('media', 'Превью и размеры', 'bi-image'),
+            tool('rules', 'Правила импорта', 'bi-magic'),
+            tool('watch', 'Папки-источники', 'bi-folder-check'),
+            { id: 'panel:tags', group: 'Инструменты', icon: 'bi-tags', title: 'Управление тегами', run: () => setShowTags(true) },
+            { id: 'panel:hotkeys', group: 'Инструменты', icon: 'bi-keyboard', title: 'Горячие клавиши', run: openHotkeysHelp },
+        ];
+        const look = [
+            { id: 'theme:dark', group: 'Оформление', icon: 'bi-moon', title: 'Тема: тёмная', run: () => setTheme({ mode: 'dark' }) },
+            { id: 'theme:light', group: 'Оформление', icon: 'bi-sun', title: 'Тема: светлая', run: () => setTheme({ mode: 'light' }) },
+            { id: 'theme:system', group: 'Оформление', icon: 'bi-circle-half', title: 'Тема: как в системе', run: () => setTheme({ mode: 'system' }) },
+            { id: 'safe', group: 'Оформление', icon: 'bi-eye-slash', title: state.safeMode ? 'Выключить безопасный режим' : 'Включить безопасный режим',
+              keywords: 'размытие blur', run: () => setSafeMode(!state.safeMode) },
+        ];
+        // Library collections and pinned folders are reachable from any tab.
+        const libIdx = navIndex(SOURCE_TYPES.LIBRARY);
+        const openCollection = (id) => () => { if (libIdx >= 0) handleNavigation(libIdx); collectionRequests.request(id); };
+        const special = [
+            { id: SPECIAL.ALL, title: 'Все файлы', icon: 'bi-collection' },
+            { id: SPECIAL.UNCATEGORIZED, title: 'Без коллекции', icon: 'bi-inbox' },
+            { id: SPECIAL.HISTORY, title: 'История просмотров', icon: 'bi-clock-history' },
+            { id: SPECIAL.TRASH, title: 'Корзина', icon: 'bi-trash3' },
+        ].map(s => ({ id: `col:${s.id}`, group: 'Библиотека', icon: s.icon, title: s.title, run: openCollection(s.id) }));
+        const cols = [];
+        const walk = (nodes, trail) => nodes.forEach(n => {
+            const path = [...trail, n.name];
+            cols.push({
+                id: `col:${n.id}`, group: 'Коллекции', icon: n.isSmart ? 'bi-funnel' : 'bi-folder',
+                title: path.join(' / '), keywords: 'коллекция', run: openCollection(n.id),
+            });
+            walk(n.children || [], path);
+        });
+        walk(LibraryService.getTree(), []);
+        const folderIdx = navIndex(SOURCE_TYPES.FOLDER);
+        const pins = folderIdx < 0 ? [] : (getFolderPrefs().pinned || []).map(p => ({
+            id: `pin:${p.path}`, group: 'Папки', icon: 'bi-pin-angle', title: p.name || p.path.split(/[\\/]/).filter(Boolean).pop(),
+            hint: p.path, keywords: `папка ${p.path}`,
+            run: () => { handleNavigation(folderIdx); folderRequests.request(p.path); },
+        }));
+        return [...nav, ...special, ...cols, ...pins, ...panel, ...look];
+    });
 
     // Reopen the tab that was open last time (setting "Открывать там, где закрыл").
     useEffect(() => {
@@ -140,7 +201,7 @@ const NavBar = () => {
             {/* Portalled to body: the glass navbar's backdrop-filter would otherwise
                 make these fixed overlays position against the navbar box, not the viewport. */}
             {showPanel && createPortal(
-                <ControlPanel initialTab={panelTab} onClose={() => setShowPanel(false)} />,
+                <ControlPanel initialTab={panelTab} initialTool={panelTool} onClose={() => setShowPanel(false)} />,
                 document.body,
             )}
             {showTags && createPortal(

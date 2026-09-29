@@ -355,3 +355,82 @@
   outline: none;
   &::placeholder { color: var(--bs-secondary); }
 }
+
+// ─── Command palette (Ctrl+K) ────────────────────────────────────────────────
+.cmdp-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 3000;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding-top: 12vh;
+  background: rgba(0, 0, 0, 0.4);
+  animation: cmdpIn 0.1s ease-out;
+}
+@keyframes cmdpIn { from { opacity: 0; } }
+.cmdp {
+  width: min(620px, calc(100vw - 32px));
+  max-height: 70vh;
+  display: flex;
+  flex-direction: column;
+  border-radius: 16px;
+  background: var(--bs-body-bg);
+  border: 1px solid var(--bs-border-color);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.55);
+  overflow: hidden;
+}
+.cmdp-input {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--bs-border-color);
+  > .bi { color: var(--df-accent); font-size: 16px; }
+  input {
+    flex: 1;
+    min-width: 0;
+    border: none;
+    outline: none;
+    background: transparent;
+    color: var(--bs-body-color);
+    font-size: 15px;
+  }
+}
+.cmdp kbd {
+  padding: 1px 6px;
+  border-radius: 5px;
+  background: var(--bs-tertiary-bg);
+  color: var(--bs-secondary);
+  font-size: 11px;
+}
+.cmdp-list { flex: 1; overflow-y: auto; padding: 6px; }
+.cmdp-group {
+  padding: 10px 10px 4px;
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--bs-secondary);
+}
+.cmdp-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 36px;
+  padding: 0 10px;
+  border-radius: 9px;
+  font-size: 13.5px;
+  cursor: pointer;
+  > .bi { width: 16px; color: var(--bs-secondary); }
+  &.active { background: var(--df-accent-soft); > .bi { color: var(--df-accent); } }
+}
+.cmdp-title { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cmdp-hint { max-width: 45%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 11.5px; color: var(--bs-secondary); }
+.cmdp-empty { padding: 24px; text-align: center; color: var(--bs-secondary); font-size: 13px; }
+.cmdp-foot {
+  padding: 8px 14px;
+  border-top: 1px solid var(--bs-border-color);
+  font-size: 11.5px;
+  color: var(--bs-secondary);
+}

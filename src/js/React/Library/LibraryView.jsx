@@ -11,6 +11,7 @@ import useSelection from "@hooks/gallery/useSelection";
 import LibraryService from "@services/LibraryService"
 import LibraryGallery from "../PageBuilders/LibraryGallery";
 import {getViewPrefs, setViewPref, useViewPref} from '@services/viewPrefs';
+import {collectionRequests} from '@services/commands';
 import {FILE_TYPES, SOURCE_TYPES} from "@/Constants";
 import {ThumbFile} from "@/Models/ThumbFile";
 import useCollections from "@hooks/library/useCollections"
@@ -33,9 +34,15 @@ const sectionLabel = (s) => SECTION_LABELS[s] || `Секция ${s}`;
 
 const LibraryView = () => {
     const [selectedCollection, setSelectedCollection] = useState(() => {
+        const requested = collectionRequests.take();   // Ctrl+K from another tab
+        if (requested) { setViewPref('lastCollection', requested); return requested; }
         const { restoreSession, lastCollection } = getViewPrefs();
         return (restoreSession && lastCollection) || SPECIAL.NONE;
     });
+    useEffect(() => collectionRequests.subscribe((id) => {
+        setSelectedCollection(id);
+        setViewPref('lastCollection', id);
+    }), []);
     const { filtered, filters, setLibraryItems, refreshStats, statsVersion } = useLibraryContext();
     const [ratingDividers] = useViewPref('ratingDividers');
     const [dateDividers] = useViewPref('dateDividers');

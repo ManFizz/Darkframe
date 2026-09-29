@@ -13,7 +13,7 @@ const TABS = [
 
 // Unified "Панель управления": Управление (maintenance — duplicate finder),
 // Статистика (dashboard) and Настройки, each an in-place tab of one modal.
-const ControlPanel = ({ onClose, initialTab = 'manage' }) => {
+const ControlPanel = ({ onClose, initialTab = 'manage', initialTool = null }) => {
     const [tab, setTab] = useState(initialTab);
 
     return (
@@ -41,7 +41,7 @@ const ControlPanel = ({ onClose, initialTab = 'manage' }) => {
                 </div>
 
                 {/* Each tab owns its own scrolling body (and, for settings, a footer). */}
-                {tab === 'manage'   && <ManagementTab />}
+                {tab === 'manage'   && <ManagementTab initialTool={initialTool} />}
                 {tab === 'stats'    && <Dashboard />}
                 {tab === 'access'   && <ApiTokensTab />}
                 {tab === 'settings' && <SettingsPanel onClose={onClose} />}

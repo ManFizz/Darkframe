@@ -26,6 +26,7 @@ import LibraryService from '@services/LibraryService';
 import ImportActivity from './React/Library/Import/ImportActivity';
 import BootOverlay from './React/Helpers/BootOverlay';
 import CompareView from './React/Compare/CompareView';
+import CommandPalette from './React/Helpers/CommandPalette';
 import FolderView from './modules/folder/FolderView';
 import {useBooruQuery} from './modules/r34/booruQuery';
 import {blockedBy, setHiddenCount, useBlacklist} from './modules/r34/blacklist';
@@ -194,6 +195,7 @@ const Main = () => {
                 <BootOverlay />
                 <CompareView />
                 <DropToCollection />
+                <CommandPalette />
                 <NavBar setLibraryItems={setLibraryItems} />
 
                 {isGeneric && (

@@ -15,8 +15,8 @@ const TOOLS = [
 
 // The management tab groups the maintenance tools behind a sub-tab bar; each tool
 // owns its own scrolling body.
-const ManagementTab = () => {
-    const [tool, setTool] = useState('dupes');
+const ManagementTab = ({ initialTool }) => {
+    const [tool, setTool] = useState(initialTool || 'dupes');
 
     return (
         <>
