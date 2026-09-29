@@ -91,6 +91,13 @@ function register() {
         await shell.openExternal(url);
         return { ok: true };
     });
+    // File operations. Delete = recycle bin only (shell.trashItem).
+    const fsOps = require('../services/fsOps');
+    ipcMain.handle('fs:rename', (_, { from, name }) => fsOps.rename(from, name));
+    ipcMain.handle('fs:mkdir', (_, { dir, name }) => fsOps.mkdir(dir, name));
+    ipcMain.handle('fs:move', (_, { paths, dest }) => fsOps.move(paths, dest));
+    ipcMain.handle('fs:trash', (_, { paths }) => fsOps.trash(paths, (p) => shell.trashItem(p)));
+
     ipcMain.handle('fs:open', async (_, { file }) => {
         const err = await shell.openPath(file);
         return err ? { ok: false, error: err } : { ok: true };

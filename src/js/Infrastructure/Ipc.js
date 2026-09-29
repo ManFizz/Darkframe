@@ -33,7 +33,14 @@ export const fsApi = {
     info:   (file) => invoke('fs:info', { file }),
     reveal: (file) => invoke('fs:reveal', { file }),
     open:   (file) => invoke('fs:open', { file }),
+    rename: (from, name)  => invoke('fs:rename', { from, name }),
+    mkdir:  (dir, name)   => invoke('fs:mkdir', { dir, name }),
+    move:   (paths, dest) => invoke('fs:move', { paths, dest }),
+    trash:  (paths)       => invoke('fs:trash', { paths }),
 };
+
+// Drag payload for files dragged out of the Folders grid.
+export const DRAG_PATHS = 'application/x-darkframe-paths';
 
 export const openExternalUrl = (url) => invoke('shell:openUrl', { url });
 

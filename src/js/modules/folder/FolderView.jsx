@@ -1,6 +1,7 @@
 import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import PrivateData from '@data/private';
-import {fsApi, fsThumbUrl} from '@/Infrastructure/Ipc';
+import {DRAG_PATHS, fsApi, fsThumbUrl} from '@/Infrastructure/Ipc';
+import FsDialog from './FsDialog';
 import LibraryService from '@services/LibraryService';
 import {notify} from '@services/NotificationService';
 import Modal from '@react/Modal/Modal';
@@ -50,7 +51,7 @@ export const filesWord = (n) => `${n} ${plural(n, 'файл', 'файла', 'ф�
 
 const cmpName = (a, b) => a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' });
 
-const FileTile = React.memo(({ file, onOpen, selected, selecting, onToggle }) => {
+const FileTile = React.memo(({ file, onOpen, selected, selecting, onToggle, onDragStart }) => {
     const [loaded, setLoaded] = useState(false);
     const [broken, setBroken] = useState(false);
     const t = file.thumb;
@@ -62,7 +63,8 @@ const FileTile = React.memo(({ file, onOpen, selected, selecting, onToggle }) =>
     };
     return (
         <div className={`ftfile ${selected ? 'selected' : ''} ${selecting ? 'selecting' : ''}`}
-             onClick={onClick} onContextMenu={e => { e.preventDefault(); onOpen(t); }} title={file.name}>
+             onClick={onClick} onContextMenu={e => { e.preventDefault(); onOpen(t); }} title={file.name}
+             draggable onDragStart={e => onDragStart(file, e)}>
             <button className="ftfile-check" title="Выделить (Shift — диапазон)"
                     onClick={e => { e.stopPropagation(); onToggle(file, e); }}>
                 <i className={`bi ${selected ? 'bi-check-circle-fill' : 'bi-circle'}`} />
@@ -99,6 +101,7 @@ const FolderView = () => {
     const [bulkOpen, setBulkOpen] = useState(false);
     const [ctxMenu, setCtxMenu] = useState(null);                // { x, y, folder }
     const [ctxImport, setCtxImport] = useState(null);            // folder path awaiting a collection
+    const [dialog, setDialog] = useState(null);                  // FsDialog props
     const anchorRef = useRef(null);
     const scrollMemo = useRef(new Map());                        // path → { top, visible }
     const scrollRef = useRef(null);
@@ -193,10 +196,71 @@ const FolderView = () => {
     const selectedFiles = useMemo(() => files.filter(f => selected.has(f.path)), [files, selected]);
     const selectedSize = selectedFiles.reduce((n, f) => n + f.size, 0);
 
+    // ─── File operations ────────────────────────────────────────────────────
+    const afterOp = useCallback(() => { setSelected(new Set()); fb.refresh(); }, [fb.refresh]);
+
+    const renameEntry = useCallback((entryPath, isDir) => {
+        const name = nodePath.basename(entryPath);
+        const ext = isDir ? '' : nodePath.extname(name);
+        setDialog({
+            title: isDir ? 'Переименовать папку' : 'Переименовать файл',
+            initial: name,
+            selectTo: name.length - ext.length,
+            submitLabel: 'Переименовать',
+            onSubmit: async (v) => { await fsApi.rename(entryPath, v); afterOp(); },
+        });
+    }, [afterOp]);
+
+    const newFolder = useCallback(() => {
+        if (!fb.path) return;
+        setDialog({
+            title: 'Новая папка', icon: 'bi-folder-plus', initial: 'Новая папка', submitLabel: 'Создать',
+            onSubmit: async (v) => { await fsApi.mkdir(fb.path, v); fb.refresh(); },
+        });
+    }, [fb.path, fb.refresh]);
+
+    const trashEntries = useCallback((paths, label) => {
+        if (!paths.length) return;
+        setDialog({
+            title: 'Удалить в корзину', icon: 'bi-trash3', danger: true, submitLabel: 'В корзину',
+            text: `В корзину Windows: ${label}. Оттуда можно восстановить.`,
+            onSubmit: async () => {
+                const res = await fsApi.trash(paths);
+                afterOp();
+                notify({
+                    message: res.failed.length ? `В корзине: ${res.done.length}, не удалось: ${res.failed.length}` : `Перемещено в корзину: ${res.done.length}`,
+                    type: res.failed.length ? 'warning' : 'success',
+                });
+            },
+        });
+    }, [afterOp]);
+
+    const moveTo = useCallback(async (paths, dest) => {
+        if (!paths.length) return;
+        const res = await fsApi.move(paths, dest);
+        afterOp();
+        const clash = res.skipped.filter(s => s.reason === 'exists').length;
+        notify({
+            message: [
+                res.moved.length ? `Перемещено в «${nodePath.basename(dest) || dest}»: ${res.moved.length}` : 'Ничего не перемещено',
+                clash ? `уже есть с таким именем: ${clash}` : null,
+                res.failed.length ? `ошибок: ${res.failed.length}` : null,
+            ].filter(Boolean).join(' · '),
+            type: res.moved.length && !clash && !res.failed.length ? 'success' : 'warning',
+        });
+    }, [afterOp]);
+
+    // Dragging a selected file drags the whole selection.
+    const onDragFile = useCallback((file, e) => {
+        const paths = selected.has(file.path) ? [...selected] : [file.path];
+        e.dataTransfer.setData(DRAG_PATHS, JSON.stringify(paths));
+        e.dataTransfer.effectAllowed = 'copyMove';
+    }, [selected]);
+
     // Browser-style keys (ignored while typing or when the viewer is open).
     useEffect(() => {
         const onKey = (e) => {
-            if (modalId) return;
+            if (modalId || dialog) return;
             const el = document.activeElement;
             const typing = el?.tagName === 'INPUT' || el?.tagName === 'TEXTAREA';
             if (e.ctrlKey && e.code === 'KeyL') { e.preventDefault(); setEditPath(n => n + 1); return; }
@@ -208,6 +272,9 @@ const FolderView = () => {
             if (e.altKey && e.key === 'ArrowRight') { e.preventDefault(); goForward(); }
             if ((e.altKey && e.key === 'ArrowUp') || e.key === 'Backspace') { e.preventDefault(); goUp(); }
             if (e.key === 'F5') { e.preventDefault(); fb.refresh(); }
+            if (e.key === 'F2' && selected.size === 1) { e.preventDefault(); renameEntry([...selected][0], false); }
+            if (e.key === 'Delete' && selected.size) { e.preventDefault(); trashEntries([...selected], filesWord(selected.size)); }
+            if (e.ctrlKey && e.shiftKey && e.code === 'KeyN') { e.preventDefault(); newFolder(); }
         };
         const onMouse = (e) => {           // mouse side buttons
             if (modalId) return;
@@ -217,7 +284,7 @@ const FolderView = () => {
         document.addEventListener('keydown', onKey);
         document.addEventListener('mouseup', onMouse);
         return () => { document.removeEventListener('keydown', onKey); document.removeEventListener('mouseup', onMouse); };
-    }, [fb, modalId, files, goBack, goForward, goUp]);
+    }, [fb, modalId, dialog, files, goBack, goForward, goUp, selected, renameEntry, trashEntries, newFolder]);
 
     // Context menu closes on any outside click / scroll.
     useEffect(() => {
@@ -273,7 +340,7 @@ const FolderView = () => {
 
     return (
         <div className="folder-layout" style={{ '--tile': `${prefs.tile}px` }}>
-            <FolderSidebar current={fb.path} onOpen={openFolder} />
+            <FolderSidebar current={fb.path} onOpen={openFolder} onDropPaths={moveTo} />
 
             <div className="folder-main">
                 <div className="folder-toolbar">
@@ -284,6 +351,9 @@ const FolderView = () => {
                     </div>
                     <PathBar path={fb.path} onOpen={openFolder} editSignal={editPath} />
                     <div className="ftb-nav">
+                        <button className="ftb-btn" disabled={!fb.path} onClick={newFolder} title="Новая папка (Ctrl+Shift+N)">
+                            <i className="bi bi-folder-plus" />
+                        </button>
                         <button className="ftb-btn" onClick={fb.refresh} title="Обновить (F5)">
                             <i className={`bi bi-arrow-clockwise ${fb.loading ? 'spin' : ''}`} />
                         </button>
@@ -367,6 +437,16 @@ const FolderView = () => {
                         <span className="fsel-count"><i className="bi bi-check2-square" /> Выбрано: <b>{selected.size}</b> · {fmtSize(selectedSize)}</span>
                         <button className="ftb-btn" onClick={() => setSelected(new Set(files.map(f => f.path)))} title="Выделить всё (Ctrl+A)">Все</button>
                         <button className="ftb-btn" onClick={() => setSelected(new Set())} title="Снять выделение (Esc)">Снять</button>
+                        <span className="fsel-sep" />
+                        {selected.size === 1 && (
+                            <button className="ftb-btn" onClick={() => renameEntry([...selected][0], false)} title="Переименовать (F2)">
+                                <i className="bi bi-input-cursor-text" /> <span>Имя</span>
+                            </button>
+                        )}
+                        <button className="ftb-btn danger" onClick={() => trashEntries([...selected], filesWord(selected.size))} title="Удалить в корзину (Del)">
+                            <i className="bi bi-trash3" /> <span>В корзину</span>
+                        </button>
+                        <span className="fsel-hint">перетащи на папку, чтобы переместить</span>
                         <div className="ftb-import fsel-import">
                             <button className={`ftb-btn primary ${bulkOpen ? 'on' : ''}`} onClick={() => setBulkOpen(v => !v)}>
                                 <i className="bi bi-box-arrow-in-down" /> <span>Импортировать выбранные</span>
@@ -420,12 +500,14 @@ const FolderView = () => {
                                             .filter(Boolean).join(' · ') || 'Пусто'}
                                     onOpen={() => openFolder(f.path)}
                                     onContextMenu={e => { e.preventDefault(); setCtxMenu({ x: e.clientX, y: e.clientY, folder: f }); }}
+                                    dropType={DRAG_PATHS}
+                                    onDropData={(data) => moveTo(JSON.parse(data || '[]'), f.path)}
                                 />
                             ))}
                             {files.slice(0, Math.max(0, visible - folders.length)).map(f => (
                                 <FileTile key={f.path} file={f} onOpen={openFile}
                                           selected={selected.has(f.path)} selecting={selected.size > 0}
-                                          onToggle={toggleSelect} />
+                                          onToggle={toggleSelect} onDragStart={onDragFile} />
                             ))}
                             <div ref={sentinelRef} className="folder-sentinel" aria-hidden="true" />
                         </div>
@@ -446,6 +528,12 @@ const FolderView = () => {
                         <i className={`bi ${isPinned(ctxMenu.folder.path) ? 'bi-pin-angle-fill' : 'bi-pin-angle'}`} />
                         {isPinned(ctxMenu.folder.path) ? ' Открепить' : ' Закрепить'}
                     </button>
+                    <button onClick={() => { setCtxMenu(null); renameEntry(ctxMenu.folder.path, true); }}>
+                        <i className="bi bi-input-cursor-text" /> Переименовать
+                    </button>
+                    <button className="danger" onClick={() => { setCtxMenu(null); trashEntries([ctxMenu.folder.path], `Папка «${ctxMenu.folder.name}» со всем содержимым`); }}>
+                        <i className="bi bi-trash3" /> Удалить в корзину
+                    </button>
                     <div className="ctx-sep" />
                     <button onClick={() => { setCtxImport({ path: ctxMenu.folder.path, name: ctxMenu.folder.name, x: ctxMenu.x, y: ctxMenu.y }); setCtxMenu(null); }}>
                         <i className="bi bi-box-arrow-in-down" /> Импортировать в библиотеку…
@@ -461,6 +549,8 @@ const FolderView = () => {
                     </div>
                 </>
             )}
+
+            {dialog && <FsDialog {...dialog} onClose={() => setDialog(null)} />}
 
             <Modal
                 fileId={modalId}

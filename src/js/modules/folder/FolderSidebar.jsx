@@ -1,5 +1,5 @@
 import React, {useEffect, useMemo, useState} from 'react';
-import {fsApi} from '@/Infrastructure/Ipc';
+import {DRAG_PATHS, fsApi} from '@/Infrastructure/Ipc';
 import PrivateData from '@data/private';
 import {baseName, forgetRecent, togglePin, useFolderPrefs} from './folderPrefs';
 
@@ -24,8 +24,20 @@ function quickAccess() {
 
 const same = (a, b) => !!a && !!b && a.replace(/[\\/]+$/, '').toLowerCase() === b.replace(/[\\/]+$/, '').toLowerCase();
 
-const Item = ({ icon, label, sub, active, onClick, onRemove, removeTitle, children }) => (
-    <div className={`fsb-item ${active ? 'active' : ''}`} onClick={onClick} title={sub || label}>
+// Folder rows accept files dragged from the grid (moved there on drop).
+const Item = ({ icon, label, sub, active, onClick, onRemove, removeTitle, children, onDropPaths }) => {
+    const [over, setOver] = useState(false);
+    const accepts = (e) => !!onDropPaths && [...e.dataTransfer.types].includes(DRAG_PATHS);
+    return (
+    <div className={`fsb-item ${active ? 'active' : ''} ${over ? 'drop-over' : ''}`} onClick={onClick} title={sub || label}
+         onDragOver={e => { if (accepts(e)) { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; setOver(true); } }}
+         onDragLeave={() => setOver(false)}
+         onDrop={e => {
+             setOver(false);
+             if (!accepts(e)) return;
+             e.preventDefault();
+             onDropPaths(JSON.parse(e.dataTransfer.getData(DRAG_PATHS) || '[]'));
+         }}>
         <i className={`bi ${icon}`} />
         <span className="fsb-label">{label}</span>
         {children}
@@ -39,7 +51,8 @@ const Item = ({ icon, label, sub, active, onClick, onRemove, removeTitle, childr
             </button>
         )}
     </div>
-);
+    );
+};
 
 const Section = ({ title, children, empty }) => (
     <div className="fsb-section">
@@ -49,7 +62,7 @@ const Section = ({ title, children, empty }) => (
     </div>
 );
 
-const FolderSidebar = ({ current, onOpen }) => {
+const FolderSidebar = ({ current, onOpen, onDropPaths }) => {
     const prefs = useFolderPrefs();
     const quick = useMemo(quickAccess, []);
     const [drives, setDrives] = useState([]);
@@ -63,7 +76,8 @@ const FolderSidebar = ({ current, onOpen }) => {
             <Section title="Быстрый доступ">
                 {quick.map(q => (
                     <Item key={q.path} icon={q.icon} label={q.name} sub={q.path}
-                          active={same(q.path, current)} onClick={() => onOpen(q.path)} />
+                          active={same(q.path, current)} onClick={() => onOpen(q.path)}
+                          onDropPaths={onDropPaths && (paths => onDropPaths(paths, q.path))} />
                 ))}
             </Section>
 
@@ -71,7 +85,8 @@ const FolderSidebar = ({ current, onOpen }) => {
                 {prefs.pinned.map(p => (
                     <Item key={p.path} icon="bi-pin-angle-fill" label={p.name || baseName(p.path)} sub={p.path}
                           active={same(p.path, current)} onClick={() => onOpen(p.path)}
-                          onRemove={() => togglePin(p.path)} removeTitle="Открепить" />
+                          onRemove={() => togglePin(p.path)} removeTitle="Открепить"
+                          onDropPaths={onDropPaths && (paths => onDropPaths(paths, p.path))} />
                 ))}
             </Section>
 
