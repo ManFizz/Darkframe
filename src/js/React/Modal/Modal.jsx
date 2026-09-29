@@ -24,7 +24,9 @@ import {useResolvedTheme} from "@services/theme";
 
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(v, hi));
 
-const Modal = ({ fileId, mainArray, modalUpdater, displayFiles, onUpdated }) => {
+// autoSlideshow — start the slideshow as soon as the viewer opens (a "play" button
+// outside the viewer: selection / whole collection).
+const Modal = ({ fileId, mainArray, modalUpdater, displayFiles, onUpdated, autoSlideshow = false }) => {
     const [isLong, setIsLong]             = useState(false);
     const [degree, setDegree]             = useState(0);
     const [panelOpen, setPanelOpen]       = useState(true);
@@ -74,6 +76,15 @@ const Modal = ({ fileId, mainArray, modalUpdater, displayFiles, onUpdated }) => 
         document.addEventListener('keydown', onKey);
         return () => document.removeEventListener('keydown', onKey);
     }, [file, stripPref, setStripPref]);
+
+    const autoStarted = useRef(null);
+    useEffect(() => {
+        if (!file) { autoStarted.current = null; return; }
+        if (autoSlideshow && !ss.active && autoStarted.current !== autoSlideshow) {
+            autoStarted.current = autoSlideshow;
+            ss.start();
+        }
+    }, [file, autoSlideshow, ss]);
 
     // S starts the slideshow / toggles pause. While it runs, any other key, a click
     // on the media or the wheel pauses it (arrows still navigate).
@@ -349,6 +360,9 @@ const Modal = ({ fileId, mainArray, modalUpdater, displayFiles, onUpdated }) => 
             // GIF / WebP: turns into a player (pause, frames, speed) when animated.
             ? <AnimatedImage key={file.uniqueId} file={file} src={imageSrc} alt={file.title} style={imageStyle} />
             : <img
+                // Re-mounted per file during a slideshow so each slide fades in.
+                key={ss.active ? file.uniqueId : 'img'}
+                className={ss.active ? 'ss-slide' : undefined}
                 alt={file.title}
                 draggable={false}
                 onDragStart={(e) => e.preventDefault()}

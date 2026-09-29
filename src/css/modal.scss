@@ -765,3 +765,7 @@ $strip-h: 84px;
   input[type="range"] { width: 220px; accent-color: var(--df-accent); }
   .anim-frame { min-width: 64px; font-size: 12px; font-variant-numeric: tabular-nums; color: rgba(255, 255, 255, 0.75); text-align: center; }
 }
+
+// Slideshow: each image slide fades in.
+.modal-view img.ss-slide { animation: ssFade 0.45s ease-out; }
+@keyframes ssFade { from { opacity: 0; } }

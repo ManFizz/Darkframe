@@ -9,7 +9,7 @@ import CollectionTreeSelect, {pushRecentCollection} from './Collection/Collectio
 
 const fmtMB = (b) => `${(b / 1024 / 1024).toFixed(1)} МБ`;
 
-const BulkActionBar = ({ selectedItems, onDone, onChanged, permanent = false, totalCount = 0, onSelectAll, onInvert, onClear }) => {
+const BulkActionBar = ({ selectedItems, onDone, onChanged, onSlideshow, permanent = false, totalCount = 0, onSelectAll, onInvert, onClear }) => {
     const [moveOpen, setMoveOpen] = useState(false);
     const [compressOpen, setCompressOpen] = useState(false);
     const [cFormat, setCFormat]   = useState('webp');
@@ -165,6 +165,12 @@ const BulkActionBar = ({ selectedItems, onDone, onChanged, permanent = false, to
                     </div>
 
                     <BulkTags selectedItems={selectedItems} onChanged={onChanged} />
+
+                    {onSlideshow && selectedItems.length > 1 && (
+                        <button className="btn btn-sm btn-outline-secondary" onClick={onSlideshow} title="Слайд-шоу из выделенных">
+                            <i className="bi bi-play-circle me-1" /> Слайд-шоу
+                        </button>
+                    )}
 
                     {selectedItems.length === 2 && (
                         <button className="btn btn-sm btn-outline-secondary"

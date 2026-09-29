@@ -114,6 +114,21 @@ const LibraryView = () => {
     const reloadRef = useRef(reload);
     useEffect(() => { reloadRef.current = reload; });
 
+    // Slideshow of the selection / the whole view, started without opening a file first.
+    const [slideSet, setSlideSet] = useState(null);   // { items, token }
+    const startSlideshow = useCallback((list) => {
+        const media = list.filter(f => f.type === FILE_TYPES.IMAGE || f.type === FILE_TYPES.VIDEO);
+        if (!media.length) { notify({ message: 'Нечего показывать', type: 'info' }); return; }
+        setSlideSet({ items: media, token: Date.now() });
+        setModalFileId(media[0].uniqueId);
+    }, []);
+    const slideshowListRef = useRef([]);
+    useEffect(() => {
+        const onPlay = () => startSlideshow(slideshowListRef.current);
+        window.addEventListener('df:slideshow', onPlay);
+        return () => window.removeEventListener('df:slideshow', onPlay);
+    }, [startSlideshow]);
+
     // Ctrl+Z / Ctrl+Y (Ctrl+Shift+Z) — library edits only, so this lives with the
     // library view; text fields and the image editor keep their own undo.
     useEffect(() => {
@@ -130,6 +145,10 @@ const LibraryView = () => {
     useCommands('library-visual', () => [
         { id: 'vs:clip', group: 'Поиск по картинке', icon: 'bi-clipboard-image', title: 'Найти по картинке из буфера обмена', run: () => runVisualSearch({ clipboard: true }) },
         { id: 'vs:file', group: 'Поиск по картинке', icon: 'bi-image', title: 'Найти по картинке из файла…', run: () => runVisualSearch({ pick: true }) },
+    ]);
+    useCommands('library-slideshow', () => [
+        { id: 'ss:view', group: 'Библиотека', icon: 'bi-play-circle', title: 'Слайд-шоу: всё, что показано', hint: 'S в просмотрщике', run: () => startSlideshow(orderedItems) },
+        ...(selectedItems.length > 1 ? [{ id: 'ss:sel', group: 'Библиотека', icon: 'bi-play-circle', title: `Слайд-шоу: выделенные (${selectedItems.length})`, run: () => startSlideshow(selectedItems) }] : []),
     ]);
     useCommands('library-undo', () => [
         { id: 'undo', group: 'Библиотека', icon: 'bi-arrow-counterclockwise', title: 'Отменить последнее действие', hint: 'Ctrl+Z', run: undoLast },
@@ -161,6 +180,8 @@ const LibraryView = () => {
     // In the history view it's driven by loadHistory() instead of the item DB.
     const [orderedItems, setOrderedItems] = useState([]);
     useEffect(() => { if (!isHistory) setOrderedItems(filtered); }, [filtered, isHistory]);
+    // The top-bar play button shows the selection if there is one, else everything.
+    useEffect(() => { slideshowListRef.current = selectedItems.length > 1 ? selectedItems : orderedItems; });
 
     // Load recently-viewed for the chosen section, newest first. Snapshots are rebuilt
     // into ThumbFiles so the gallery + viewer work uniformly across sources.
@@ -370,10 +391,14 @@ const LibraryView = () => {
         <div className="library-layout">
             <Modal
                 fileId={modalFileId}
-                mainArray={orderedItems}
-                modalUpdater={(file) => setModalFileId(file?.uniqueId || null)}
-                displayFiles={orderedItems}
+                mainArray={slideSet ? slideSet.items : orderedItems}
+                modalUpdater={(file) => {
+                    setModalFileId(file?.uniqueId || null);
+                    if (!file) setSlideSet(null);   // viewer closed: back to the whole view
+                }}
+                displayFiles={slideSet ? slideSet.items : orderedItems}
                 onUpdated={isHistory ? undefined : handleUpdated}
+                autoSlideshow={slideSet?.token || false}
             />
             <div className="library-sidebar" onDragOver={e => e.stopPropagation()}>
                 <CollectionTree
@@ -477,6 +502,7 @@ const LibraryView = () => {
             {!isHistory && (
                 <BulkActionBar
                     selectedItems={selectedItems}
+                    onSlideshow={() => startSlideshow(selectedItems)}
                     permanent={isTrash}
                     totalCount={orderedItems.length}
                     onSelectAll={selectAll}
