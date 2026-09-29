@@ -16,7 +16,6 @@ import '/src/css/library.css';
 import ('/node_modules/react/cjs/react.production.min');
 import ('/node_modules/react-dom/cjs/react-dom.production.min');
 
-//import ('/node_modules/popper.js/dist/umd/popper.min.js');
 import ('/node_modules/bootstrap/dist/js/bootstrap.bundle.min.js');
 
 
