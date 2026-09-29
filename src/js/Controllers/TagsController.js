@@ -138,7 +138,6 @@ function encodeTag(tag) {
 		.replace(/\+/g, "%2B");       // + → %2B
 }
 
-const { R34ApiKey, R34UserId } = PrivateData;
 
 async function fetchTagInfo({ name, sourceType }) {
 	try {
@@ -146,7 +145,7 @@ async function fetchTagInfo({ name, sourceType }) {
 
 		const url =
 			`${sources.r34.tagsUrl}${encodeTag(name)}` +
-			`&api_key=${R34ApiKey}&user_id=${R34UserId}`;
+			`&api_key=${PrivateData.R34ApiKey}&user_id=${PrivateData.R34UserId}`;
 
 		const res = await fetch(url);
 		const text = await res.text();

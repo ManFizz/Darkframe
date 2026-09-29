@@ -4,8 +4,9 @@ import {GetThumbByData} from "@controllers/GalleryController";
 import {FILE_TYPES, SOURCE_TYPES} from "@/Constants";
 import {setSearchStatus} from "./R34Controller";
 
-const favUrl = `https://rule34.xxx/index.php?page=favorites&s=view&id=${PrivateData.R34UserId}`;
-const API_URL = `https://api.rule34.xxx/index.php?page=dapi&s=post&q=index&json=1&api_key=${PrivateData.R34ApiKey}&user_id=${PrivateData.R34UserId}`;
+// Built on use: the keys can change in the settings while the app runs.
+const favUrl = () => `https://rule34.xxx/index.php?page=favorites&s=view&id=${PrivateData.R34UserId}`;
+const apiUrl = () => `https://api.rule34.xxx/index.php?page=dapi&s=post&q=index&json=1&api_key=${PrivateData.R34ApiKey}&user_id=${PrivateData.R34UserId}`;
 
 let favoriteAbortController = null;
 
@@ -28,7 +29,7 @@ export async function DisplayRemoteFavoriteR34() {
         while (hasMore) {
             if (signal.aborted) throw new Error("AbortError");
 
-            const currentFavUrl = `${favUrl}&pid=${pid}`;
+            const currentFavUrl = `${favUrl()}&pid=${pid}`;
 
             const response = await fetch(currentFavUrl, { signal });
             const html = await response.text();
@@ -134,7 +135,7 @@ async function mapLimit(items, limit, worker) {
 async function fetchPostDetails(ids, signal) {
     const results = await mapLimit(ids, DETAIL_CONCURRENCY, async (id) => {
         try {
-            const data = await fetchJsonWithRetry(`${API_URL}&tags=id:${id}`, signal);
+            const data = await fetchJsonWithRetry(`${apiUrl()}&tags=id:${id}`, signal);
             return data?.[0] ?? null;
         } catch (e) {
             if (e.name === 'AbortError') throw e;   // let the caller stop the whole load

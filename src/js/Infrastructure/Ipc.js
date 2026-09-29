@@ -171,5 +171,4 @@ export const libraryRegistryApi = {
 export const configApi = {
     get:      ()     => invoke('config:get'),
     save:     (data) => invoke('config:save', data),
-    relaunch: ()     => invoke('config:relaunch'),
 };

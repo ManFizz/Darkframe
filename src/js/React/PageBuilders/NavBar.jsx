@@ -17,6 +17,7 @@ import {setTheme} from '@services/theme';
 import LibraryService from '@services/LibraryService';
 import {getFolderPrefs} from '@modules/folder/folderPrefs';
 import {SPECIAL} from '../Library/Collection/CollectionTree';
+import {useConfigVersion} from '@services/liveConfig';
 
 const VIEW_ICONS = { 1: 'bi-grid-3x3-gap-fill', 2: 'bi-grid-1x2', 3: 'bi-columns-gap' };
 const VIEW_NAMES = { 1: 'квадраты', 2: 'плитка', 3: 'колонки' };
@@ -42,6 +43,18 @@ const NavBar = () => {
     ];
 
     const [activeNav, setActiveNav] = useState(0);
+
+    // Settings saved: tabs may have appeared / disappeared. Keep the open tab
+    // highlighted at its new position, or fall back to the library if it's gone.
+    const configVersion = useConfigVersion();
+    useEffect(() => {
+        if (!configVersion) return;
+        const cur = navButtons[activeNav];
+        if (cur && cur.type === state.currentSource) return;
+        const idx = navButtons.findIndex(b => b.type === state.currentSource);
+        if (idx >= 0) setActiveNav(idx);
+        else handleNavigation(0);
+    }, [configVersion]);   // eslint-disable-line react-hooks/exhaustive-deps
 
     const handleNavigation = (idx) => {
         const btn = navButtons[idx];

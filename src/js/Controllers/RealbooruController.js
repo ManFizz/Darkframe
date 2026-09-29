@@ -3,7 +3,7 @@ import {setGallery} from "./AppInitializerController";
 import PrivateData from "../../../data/private";
 import {SOURCE_TYPES} from "@/Constants";
 
-const urlFavs = 'https://realbooru.com/index.php?page=favorites&s=view&id=' + PrivateData.RealBooruId;
+const urlFavs = () => 'https://realbooru.com/index.php?page=favorites&s=view&id=' + PrivateData.RealBooruId;
 const urlThumb = 'https://realbooru.com/index.php?page=post&s=view&id=';
 
 async function parseThumb(id) {
@@ -58,12 +58,12 @@ function parse(html) {
     result = [...result, ...r];
     if (r.length >= 50) {
         currentPid += 50;
-        loadUrl(urlFavs + '&pid=' + currentPid);
+        loadUrl(urlFavs() + '&pid=' + currentPid);
     } else {
         endResult();
     }
 }
 
 export function WorkRealBooru() {
-    loadUrl(urlFavs);
+    loadUrl(urlFavs());
 }

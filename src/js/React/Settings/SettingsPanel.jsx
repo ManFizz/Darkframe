@@ -1,5 +1,7 @@
 import React, {useEffect, useState} from 'react';
 import {configApi} from '@/Infrastructure/Ipc';
+import {applyConfig} from '@services/liveConfig';
+import {notify} from '@services/NotificationService';
 import AppearanceSection from './AppearanceSection';
 
 const SECRET_RE = /key|password|token/i;
@@ -169,9 +171,11 @@ const SettingsPanel = ({ onClose }) => {
         setError(null);
         try {
             await configApi.save({ settings, private: priv });
-            await configApi.relaunch();
+            applyConfig({ settings, private: priv });   // live — no restart
+            notify({ message: 'Настройки применены', type: 'success' });
         } catch (e) {
             setError(e.message);
+        } finally {
             setSaving(false);
         }
     };
@@ -191,7 +195,7 @@ const SettingsPanel = ({ onClose }) => {
         : [];
 
     // Rendered as a tab inside the Control Panel: no overlay/header of its own,
-    // just the settings body + a save/relaunch footer.
+    // just the settings body + a save footer.
     return (
         <>
             <div className="settings-body">
@@ -231,8 +235,8 @@ const SettingsPanel = ({ onClose }) => {
                 </button>
                 <button className="btn btn-primary btn-sm" onClick={handleSave} disabled={loading || saving}>
                     {saving
-                        ? <><i className="bi bi-arrow-repeat spin me-1" />Перезапуск…</>
-                        : <><i className="bi bi-check2 me-1" />Сохранить и перезапустить</>}
+                        ? <><i className="bi bi-arrow-repeat spin me-1" />Сохранение…</>
+                        : <><i className="bi bi-check2 me-1" />Сохранить</>}
                 </button>
             </div>
         </>
