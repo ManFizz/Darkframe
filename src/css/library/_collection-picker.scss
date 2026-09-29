@@ -298,3 +298,64 @@
   z-index: 1200;
   width: 320px;
 }
+
+// ─── Drop-to-collection panel (slides out while dragging a post / file) ───────
+.dtc-panel {
+  position: fixed;
+  top: 72px;
+  right: 12px;
+  bottom: 12px;
+  z-index: 1500;
+  width: 290px;
+  display: flex;
+  flex-direction: column;
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--bs-body-bg) 94%, transparent);
+  border: 1px solid var(--df-accent-dim);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(14px);
+  animation: dtcIn 0.16s ease-out;
+  overflow: hidden;
+}
+@keyframes dtcIn { from { opacity: 0; transform: translateX(30px); } }
+
+.dtc-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 14px 10px;
+  border-bottom: 1px solid var(--bs-border-color);
+  > .bi { font-size: 20px; color: var(--df-accent); }
+}
+.dtc-title { font-size: 14px; font-weight: 700; }
+.dtc-sub { font-size: 12px; color: var(--bs-secondary); }
+
+.dtc-list { flex: 1; overflow-y: auto; padding: 6px; }
+.dtc-label {
+  padding: 10px 10px 4px;
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--bs-secondary);
+}
+.dtc-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 36px;
+  padding-right: 10px;
+  border-radius: 9px;
+  font-size: 13px;
+  transition: background 0.1s;
+  * { pointer-events: none; }     // keep dragleave from firing on children
+  .bi { color: var(--bs-secondary); }
+  &.over {
+    background: var(--df-accent);
+    color: #fff;
+    .bi, .dtc-count { color: #fff; }
+  }
+}
+.dtc-emoji { width: 16px; text-align: center; }
+.dtc-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dtc-count { font-size: 11px; color: var(--bs-secondary); font-variant-numeric: tabular-nums; }

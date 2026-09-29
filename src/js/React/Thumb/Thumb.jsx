@@ -6,7 +6,7 @@ import {FILE_TYPES, SOURCE_TYPES} from "@/Constants";
 import {useFavorites} from "@hooks/useFavorites";
 import Collection from "./Collection";
 
-const Thumb = (({ file, isModal, modalUpdater, isSelected, onOpen, onToggleSelect, selectionActive, inLibrary, blockedTag }) => {
+const Thumb = (({ file, isModal, modalUpdater, isSelected, onOpen, onToggleSelect, selectionActive, inLibrary, blockedTag, onDragStart }) => {
     const handleClick = useCallback((e) => {
         if (file.type === FILE_TYPES.IMAGE ||
             file.type === FILE_TYPES.VIDEO ||
@@ -64,6 +64,8 @@ const Thumb = (({ file, isModal, modalUpdater, isSelected, onOpen, onToggleSelec
             className={`card thumb bg-dark ${isModal ? 'modal-active' : ''} ${isRemovedInFavs ? 'opacity-50' : ''} ${isSelected ? 'thumb-selected' : ''} ${selectionActive ? 'selection-active' : ''} ${blockedTag ? 'thumb-blocked' : ''}`}
             onClick={handleClick}
             onContextMenu={handleContextMenu}
+            draggable={!!onDragStart && hasOverlay}
+            onDragStart={onDragStart ? (e) => onDragStart(file, e) : undefined}
         >
             {selectable && (
                 <button

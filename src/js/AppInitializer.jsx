@@ -31,6 +31,7 @@ import {useBooruQuery} from './modules/r34/booruQuery';
 import {blockedBy, setHiddenCount, useBlacklist} from './modules/r34/blacklist';
 import {useLibraryLinks} from './modules/r34/libraryLinks';
 import BooruBulkBar from './modules/r34/BooruBulkBar';
+import DropToCollection, {startPostDrag} from './React/Library/Collection/DropToCollection';
 import useSelection from './Hooks/gallery/useSelection';
 import {BOORU_TYPES, CanMoreMedia} from './modules/r34/R34Controller';
 import {useViewPref} from '@services/viewPrefs';
@@ -192,6 +193,7 @@ const Main = () => {
                 <ImportActivity />
                 <BootOverlay />
                 <CompareView />
+                <DropToCollection />
                 <NavBar setLibraryItems={setLibraryItems} />
 
                 {isGeneric && (
@@ -226,6 +228,7 @@ const Main = () => {
                                 selectionActive={hasSelection}
                                 inLibrary={isBooru ? inLibrary : null}
                                 blacklist={hiding && showHidden ? blacklist : null}
+                                onDragPost={isBooru ? (f, e) => startPostDrag(e, selection.isSelected(f.uniqueId) ? selection.selectedItems : [f]) : undefined}
                             />
                         )}
                     </div>

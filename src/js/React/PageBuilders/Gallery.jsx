@@ -102,7 +102,7 @@ const GalleryFooter = ({ hasMore, loadedCount }) => {
 };
 
 const Gallery = ({ modalFileId, modalUpdater, displayArray, typeView, loadNextPage, isSelected,
-                   onToggleSelect, selectionActive, inLibrary, blacklist, infinite = true, hasMore, loadedCount }) => {
+                   onToggleSelect, selectionActive, inLibrary, blacklist, infinite = true, hasMore, loadedCount, onDragPost }) => {
     const isLoadingRef = useRef(false);
     const { view } = useBooruQuery();
 
@@ -122,6 +122,7 @@ const Gallery = ({ modalFileId, modalUpdater, displayArray, typeView, loadNextPa
                     selectionActive={selectionActive}
                     inLibrary={inLibrary ? inLibrary.has(postKey(file.sourceUrl)) : false}
                     blockedTag={blacklist ? blockedBy(file, blacklist) : null}
+                    onDragStart={onDragPost}
                 />
             ))}
 
