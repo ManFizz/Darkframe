@@ -1,5 +1,6 @@
 const { ipcMain, dialog, shell } = require('electron');
 const { importFiles, itemsPath, importDirectory, ensureTag } = require('../services/importService');
+const journal = require('../services/undoJournal');
 const { Item, Tag, ItemTag } = require('../models/associations');
 const Collection = require('../models/Collection');
 const { Op } = require('sequelize');
@@ -68,6 +69,18 @@ async function collectionPreviews(collectionId, childIds = [], limit = 3) {
 }
 
 function register() {
+    // Undo / redo (Ctrl+Z / Ctrl+Y) — see services/undoJournal.
+    ipcMain.handle('library:undo', () => journal.undo());
+    ipcMain.handle('library:redo', () => journal.redo());
+    ipcMain.handle('library:undoState', () => journal.state());
+
+    // Imports started by the user are one undo step each ("undo" = to the trash).
+    const recordImport = (res) => {
+        const ids = (res?.results || []).map(r => r?.id).filter(Boolean);
+        journal.recordCreated(ids.length > 1 ? `импорт · ${ids.length} файлов` : 'импорт', ids);
+        return res;
+    };
+
     ipcMain.handle('library:importDialog', async (_, { collectionId }) => {
         const { canceled, filePaths } = await dialog.showOpenDialog({
             properties: ['openFile', 'multiSelections'],
@@ -78,11 +91,11 @@ function register() {
 
         if (canceled || !filePaths.length) return { results: [], errors: [] };
 
-        return importFiles({ filePaths, collectionId });
+        return recordImport(await importFiles({ filePaths, collectionId }));
     });
 
     ipcMain.handle('library:importFiles', async (_, { filePaths, collectionId, tags, sourceUrl, allowDuplicate = false }) => {
-        return importFiles({ filePaths, collectionId, tags, sourceUrl, allowDuplicate });
+        return recordImport(await importFiles({ filePaths, collectionId, tags, sourceUrl, allowDuplicate }));
     });
 
     ipcMain.handle('library:getItems', async (_, params = {}) => {
@@ -136,6 +149,17 @@ function register() {
     });
 
     ipcMain.handle('library:bulkUpdateItems', async (_, { updates }) => {
+        const fields = {};
+        let withTags = false;
+        updates.forEach(({ data }) => {
+            Object.entries(data).forEach(([k, v]) => { if (k === 'tags') withTags = true; else fields[k] = v; });
+        });
+        if ('collectionId' in fields) fields.order = 0;   // moving re-numbers the order
+        return journal.around(journal.describe(fields, withTags, updates.length), updates.map(u => u.id),
+            Object.keys(fields), withTags, () => bulkUpdate(updates));
+    });
+
+    const bulkUpdate = async (updates) => {
         await sequelize.transaction(async (t) => {
             for (const { id, data } of updates) {
                 const { tags, ...fields } = data;
@@ -163,9 +187,16 @@ function register() {
             }
         });
         return { ok: true };
-    });
+    };
 
     ipcMain.handle('library:updateItem', async (_, { id, data }) => {
+        const { tags, ...fields } = data;
+        const touched = Object.keys(fields).concat('collectionId' in fields ? ['order'] : []);
+        return journal.around(journal.describe(fields, tags !== undefined, 1), [id], touched, tags !== undefined,
+            () => updateOne(id, data));
+    });
+
+    const updateOne = async (id, data) => {
         const { tags, ...fields } = data;
 
         // One transaction keeps all writes for a single save on one connection, and
@@ -195,7 +226,7 @@ function register() {
         });
 
         return { ok: true };
-    });
+    };
 
     // Remove an item's files from disk (best-effort on Windows locks).
     async function purgeItemFiles(id) {
@@ -226,7 +257,8 @@ function register() {
             await hardDeleteItem(id);
         } else {
             // Soft delete → trash. Files and tags stay so it can be restored.
-            await Item.unscoped().update({ deletedAt: Math.floor(Date.now() / 1000) }, { where: { id } });
+            await journal.around('удаление в корзину', [id], ['deletedAt'], false, () =>
+                Item.unscoped().update({ deletedAt: Math.floor(Date.now() / 1000) }, { where: { id } }));
         }
         return { ok: true };
     });
@@ -316,6 +348,7 @@ function register() {
                 return item;
             });
 
+            journal.recordCreated('дублирование', [created.id]);
             return { ok: true, id: created.id };
         } catch (e) {
             // Row couldn't be created — don't leave orphaned copied files behind.
@@ -354,13 +387,15 @@ function register() {
 
     ipcMain.handle('library:restoreItems', async (_, { ids = [] }) => {
         if (!ids.length) return { ok: true, count: 0 };
-        await Item.unscoped().update({ deletedAt: null }, { where: { id: { [Op.in]: ids } } });
+        await journal.around(journal.describe({ deletedAt: null }, false, ids.length), ids, ['deletedAt'], false, () =>
+            Item.unscoped().update({ deletedAt: null }, { where: { id: { [Op.in]: ids } } }));
         return { ok: true, count: ids.length };
     });
 
     ipcMain.handle('library:restoreItem', async (_, { id }) => {
         // Unscoped: the row we're restoring is currently trashed.
-        await Item.unscoped().update({ deletedAt: null }, { where: { id } });
+        await journal.around('восстановление', [id], ['deletedAt'], false, () =>
+            Item.unscoped().update({ deletedAt: null }, { where: { id } }));
         return { ok: true };
     });
 
@@ -528,10 +563,11 @@ function register() {
         if (permanent) {
             for (const id of ids) await hardDeleteItem(id);   // sequential: single SQLite writer
         } else {
-            await Item.unscoped().update(
-                { deletedAt: Math.floor(Date.now() / 1000) },
-                { where: { id: { [Op.in]: ids } } },
-            );
+            await journal.around(journal.describe({ deletedAt: 1 }, false, ids.length), ids, ['deletedAt'], false, () =>
+                Item.unscoped().update(
+                    { deletedAt: Math.floor(Date.now() / 1000) },
+                    { where: { id: { [Op.in]: ids } } },
+                ));
         }
         return { ok: true, count: ids.length };
     });
@@ -636,11 +672,11 @@ function register() {
             allResults.errors.push(...result.errors);
         }
 
-        return allResults;
+        return recordImport(allResults);
     });
 
     ipcMain.handle('library:importDirectory', async (_, { dirPath, collectionId }) => {
-        return importDirectory({ dirPath, collectionId });
+        return recordImport(await importDirectory({ dirPath, collectionId }));
     });
 
     ipcMain.handle('library:importFromEagle', async (_, { csvPath, collectionId }) => {
@@ -648,14 +684,14 @@ function register() {
     });
 
     ipcMain.handle('library:importUrl', async (event, { url, collectionId, tags, sourceUrl, title }) => {
-        return importFromUrl({
+        return recordImport(await importFromUrl({
             url,
             collectionId,
             tags: Array.isArray(tags) ? tags : [],
             sourceUrl,
             title,
             onProgress: (p) => { if (!event.sender.isDestroyed()) event.sender.send('library:urlImportProgress', p); },
-        });
+        }));
     });
 
     ipcMain.handle('library:importEagleDialog', async (event, { collectionId }) => {

@@ -22,6 +22,7 @@ async function prepareDatabase() {
 }
 
 function resetCaches() {
+    require('./undoJournal').clear();   // its snapshots belong to the old database
     require('./autoRules').invalidate();
     require('./tagAdmin').invalidateAliasCache();
 }

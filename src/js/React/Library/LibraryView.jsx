@@ -18,6 +18,8 @@ import {useLibraryStats} from "@hooks/library/useLibraryStats";
 import {useLibraryContext} from '@/LibraryContext';
 import Modal from "@react/Modal/Modal";
 import {notify} from '@services/NotificationService';
+import {undoLast, redoLast} from '@services/undo';
+import {useCommands} from '@services/commands';
 
 // Human labels for the history section selector (keys are SOURCE_TYPES / remoteType).
 const SECTION_LABELS = {
@@ -97,6 +99,24 @@ const LibraryView = () => {
     // refreshes the gallery every couple of seconds, not on every file.
     const reloadRef = useRef(reload);
     useEffect(() => { reloadRef.current = reload; });
+
+    // Ctrl+Z / Ctrl+Y (Ctrl+Shift+Z) — library edits only, so this lives with the
+    // library view; text fields and the image editor keep their own undo.
+    useEffect(() => {
+        const onKey = (e) => {
+            if (!(e.ctrlKey || e.metaKey) || e.altKey) return;
+            const t = e.target;
+            if (t?.closest?.('input, textarea, [contenteditable="true"]') || document.querySelector('.img-editor')) return;
+            if (e.code === 'KeyZ' && !e.shiftKey) { e.preventDefault(); undoLast(); }
+            else if (e.code === 'KeyY' || (e.code === 'KeyZ' && e.shiftKey)) { e.preventDefault(); redoLast(); }
+        };
+        document.addEventListener('keydown', onKey);
+        return () => document.removeEventListener('keydown', onKey);
+    }, []);
+    useCommands('library-undo', () => [
+        { id: 'undo', group: 'Библиотека', icon: 'bi-arrow-counterclockwise', title: 'Отменить последнее действие', hint: 'Ctrl+Z', run: undoLast },
+        { id: 'redo', group: 'Библиотека', icon: 'bi-arrow-clockwise', title: 'Повторить отменённое', hint: 'Ctrl+Y', run: redoLast },
+    ]);
     useEffect(() => {
         let timer = null, last = 0;
         const shows = (addedTo) => {
@@ -104,7 +124,9 @@ const LibraryView = () => {
             if (selectedCollection === SPECIAL.UNCATEGORIZED) return addedTo.includes(null);
             return addedTo.includes(selectedCollection);
         };
-        const off = LibraryService.onLibraryChanged(({ added, addedTo = [] }) => {
+        const off = LibraryService.onLibraryChanged(({ added, addedTo = [], reload }) => {
+            // Undo / redo: whatever it touched, show the current state right away.
+            if (reload) { reloadRef.current(); return; }
             if (!added || isTrash || isHistory || selectedCollection === SPECIAL.NONE) return;
             if (!shows(addedTo) || timer) return;
             timer = setTimeout(() => {

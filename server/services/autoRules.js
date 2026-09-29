@@ -133,7 +133,10 @@ async function applyToExisting(id) {
     const rule = toDto(row);
     if (!rule.rules.items.length) return { changed: 0 };
     const { changes } = await matchesOf(rule);
+    const journal = require('./undoJournal');
+    const snap = await journal.capture(changes.map(c => c.id), ['collectionId', 'order', 'rating'], true);
     for (const { id: itemId, ch } of changes) await applyChanges(itemId, ch);
+    journal.record(`правило «${rule.name || '#' + rule.id}» · ${changes.length} файлов`, snap);
     return { changed: changes.length };
 }
 
