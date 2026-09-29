@@ -37,7 +37,7 @@ async function createWindow() {
     win = new BrowserWindow({
         width: 700,
         height: 500,
-        icon: __dirname + "/img/icon.svg",
+        icon: path.join(__dirname, "assets", "icon.png"),
         webPreferences: {
             // The page has no Node / Electron access of its own: everything goes
             // through the preload bridge (window.darkframe) and IPC. Remote content
@@ -203,6 +203,9 @@ protocol.registerSchemesAsPrivileged([
     }
 ]);
 
+// Windows shows toast notifications (tray, watched folders) only for an app with an id.
+if (process.platform === 'win32') app.setAppUserModelId('Darkframe');
+
 app.whenReady().then(async () => {
     registerLibraryProtocol();
     require('./server/controllers/fsController').registerProtocol();
@@ -245,6 +248,8 @@ app.whenReady().then(async () => {
 
     if (SMOKE) require('./server/smoke').runSmokeCheck(win);
     else if (!SANDBOX) startApiServer();
+
+    if (!SMOKE) require('./server/services/tray').init(win);
 
     if (!SMOKE) require('./server/services/watchFolders').start()
         .catch(e => console.warn('[watch] start failed:', e.message));

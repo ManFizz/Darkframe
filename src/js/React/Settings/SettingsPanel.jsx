@@ -25,6 +25,7 @@ const META = {
         LongView:         { label: 'Режим длинных картинок',  desc: 'Особый показ очень высоких изображений в модалке' },
         HttpProxy:        { label: 'Использовать прокси',      desc: 'Проксировать запросы к удалённым источникам' },
         LibraryPath:      { label: 'Путь библиотеки (legacy)', desc: 'Папка старой библиотеки по умолчанию' },
+        CloseToTray:      { label: 'Сворачивать в трей при закрытии', desc: 'Крестик прячет окно в трей: отслеживаемые папки и API продолжают работать. Выход — через меню значка' },
     },
     private: {
         startPath:   { label: 'Стартовая папка',  desc: 'С какой папки открывается файловый источник' },
@@ -160,7 +161,7 @@ const SettingsPanel = ({ onClose }) => {
         configApi.get()
             .then(({ settings, private: p }) => {
                 // Sections added later still get a switch in older settings files.
-                setSettings({ EnableDanbooru: false, ...settings });
+                setSettings({ EnableDanbooru: false, CloseToTray: false, ...settings });
                 // Keys added after a user's data/private.js was created still get a field.
                 setPriv({ GelbooruApiKey: '', GelbooruUserId: '', DanbooruLogin: '', DanbooruApiKey: '', ...p });
             })

@@ -36,4 +36,14 @@ function register() {
     });
 }
 
-module.exports = { register };
+// One setting changed from the main process (tray menu): persisted like a save
+// from the panel, applied to this process at once.
+function setSetting(key, value) {
+    let cur = {};
+    try { cur = JSON.parse(fs.readFileSync(SETTINGS_OVERRIDE, 'utf8')); } catch { /* none yet */ }
+    cur[key] = value;
+    fs.writeFileSync(SETTINGS_OVERRIDE, JSON.stringify(cur, null, 2), 'utf8');
+    require('../../data/settings')[key] = value;
+}
+
+module.exports = { register, setSetting };
