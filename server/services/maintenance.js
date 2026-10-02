@@ -7,7 +7,14 @@ const { thumbAt } = require('./ffmpegOps');
 
 const itemsPath = () => getActive().itemsPath;   // active library, may change at runtime
 
+// For a manga the manifest plays the part of the original (its cover is the image).
 function findOriginal(itemDir) {
+    if (fs.existsSync(path.join(itemDir, 'manga.json'))) {
+        try {
+            const m = JSON.parse(fs.readFileSync(path.join(itemDir, 'manga.json'), 'utf8'));
+            return m.cover ? path.join(itemDir, 'pages', m.cover) : null;
+        } catch { return null; }
+    }
     try {
         const f = fs.readdirSync(itemDir).find(x => /^original\./i.test(x));
         return f ? path.join(itemDir, f) : null;

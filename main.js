@@ -151,6 +151,8 @@ function libraryFilePath(url) {
         return pick ? path.join(itemDir, pick) : null;
     }
     if (type === 'item') {
+        // Manga: the item "is" its cover page.
+        if (files.includes('manga.json')) return require('./server/services/manga/store').coverFile(id);
         // Prefer display.jpg (generated for HEIC/unsupported originals)
         if (files.includes('display.jpg')) return path.join(itemDir, 'display.jpg');
         const original = files.find(f => f.startsWith('original'));
@@ -162,7 +164,18 @@ function libraryFilePath(url) {
 function registerLibraryProtocol() {
     protocol.handle('library', async (request) => {
         try {
-            const filePath = libraryFilePath(new URL(request.url));
+            const url = new URL(request.url);
+            // Manga pages: library://page/<id>/<chapter>/<file>, previews: library://pthumb/…
+            if (url.hostname === 'page' || url.hostname === 'pthumb') {
+                const [, id, ...rest] = decodeURIComponent(url.pathname).split('/');
+                if (!/^[A-Za-z0-9._-]+$/.test(id || '')) return new Response('bad id', { status: 400 });
+                const store = require('./server/services/manga/store');
+                const rel = rest.join('/');
+                const file = url.hostname === 'page' ? store.resolvePage(id, rel) : await store.pageThumbFile(id, rel).catch(() => null);
+                if (!file) return new Response('not found', { status: 404 });
+                return fileResponse(file, request.headers.get('range'));
+            }
+            const filePath = libraryFilePath(url);
             if (!filePath || !fs.existsSync(filePath)) {
                 console.error('[Protocol] File not found:', filePath);
                 return new Response('not found', { status: 404 });

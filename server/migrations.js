@@ -120,6 +120,13 @@ async function migrations() {
     // Watched folders (auto import). New table — create if missing.
     await require('./models/WatchedFolder').sync();
 
+    // Manga: page count on the item + reading progress. New column / table.
+    if (!(await queryInterface.describeTable('Items')).pageCount) {
+        await queryInterface.addColumn('Items', 'pageCount', { type: DataTypes.INTEGER, allowNull: true, defaultValue: null });
+    }
+    await require('./models/MangaState').sync();
+    await require('./models/MangaDownload').sync();
+
     // Lookup indexes. Tags also holds the remote (r34 / gelbooru) tag cache — well over
     // a million rows — so "pinned" / per-tag lookups without an index were full scans
     // that stalled every other query at startup (one SQLite connection).

@@ -36,6 +36,8 @@ const Item = sequelize.define('Item', {
     phash:          { type: DataTypes.STRING(16), allowNull: true, defaultValue: null },
     // Video only: second of the frame chosen as the gallery thumbnail (NULL = default 10%).
     thumbAt:        { type: DataTypes.FLOAT, allowNull: true, defaultValue: null },
+    // Manga only (mimeType application/x-darkframe-manga): number of pages.
+    pageCount:      { type: DataTypes.INTEGER, allowNull: true, defaultValue: null },
 }, {
     timestamps: false,
     // Every ordinary read/count automatically hides trashed items. The trash and

@@ -198,7 +198,7 @@ function register() {
         }
 
         // editedAt / thumbAt cache-bust the URLs after an in-app edit (see itemUrls).
-        const plainItems = items.map(item => ({ ...item, ...itemUrls(item) }));
+        const plainItems = await require('../services/manga/progress').attach(items.map(item => ({ ...item, ...itemUrls(item) })));
 
         return { collections: collectionItems, items: plainItems };
     });

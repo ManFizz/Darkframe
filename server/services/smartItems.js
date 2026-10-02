@@ -17,7 +17,7 @@ async function getSmartItems(filter = {}) {
         const rows = await withTagNames(await Item.findAll({ where: { id: filter.ids }, raw: true }));
         const byId = new Map(rows.map(r => [r.id, r]));
         const items = filter.ids.map(id => byId.get(id)).filter(Boolean).map(item => ({ ...item, ...itemUrls(item) }));
-        return { collections: [], items };
+        return { collections: [], items: await require('./manga/progress').attach(items) };
     }
     const f = normalizeFilter(filter);
     const includeNames = f.tags.filter(t => !t.exclude).map(t => t.name);
@@ -56,7 +56,7 @@ async function getSmartItems(filter = {}) {
         .map(item => ({ ...item, ...itemUrls(item) }))
         .filter(p => matchItem(p, f, now, ctx));
 
-    return { collections: [], items: plain };
+    return { collections: [], items: await require('./manga/progress').attach(plain) };
 }
 
 module.exports = { getSmartItems };
