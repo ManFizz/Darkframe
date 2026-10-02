@@ -30,7 +30,6 @@ export async function readLibraryManga(item, { fromStart = false } = {}) {
         chapters,
         start: resume ? { chapter: st.chapter, page: st.page } : { chapter: chapters[0]?.id, page: 0 },
         reading: book.reading,
-        language: book.source?.language || null,
         onProgress: (pos) => mangaApi.saveProgress(item.id, pos).catch(() => {}),
         onSaveReading: (reading) => mangaApi.setReading(item.id, reading).catch(() => {}),
         // The editor changes the book under the reader: close it first.

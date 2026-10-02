@@ -9,6 +9,7 @@ const apiTokenController = require('./controllers/apiTokenController');
 const dragWheelController = require('./controllers/dragWheelController');
 const netController = require('./controllers/netController');
 const mangaController = require('./controllers/mangaController');
+const mangaSourcesController = require('./controllers/mangaSourcesController');
 require('./models/associations');
 const { installItemHooks } = require('./services/libraryEvents');
 
@@ -24,6 +25,7 @@ function setupIpcHandlers() {
 	dragWheelController.register();
 	netController.register();
 	mangaController.register();
+	mangaSourcesController.register();
 	// Push item changes (counts, API imports) to the renderer.
 	installItemHooks();
 }

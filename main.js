@@ -75,10 +75,10 @@ function setupContentSecurityPolicy() {
         "default-src 'self' library: mediacache:; " +
         "script-src 'self'; " +
         "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
-        "img-src 'self' data: blob: file: library: mediacache: fsthumb: https: http:; " +
+        "img-src 'self' data: blob: file: library: mediacache: fsthumb: mangaimg: https: http:; " +
         "media-src 'self' data: blob: file: library: mediacache: https: http:; " +
         "font-src 'self' data: https://fonts.gstatic.com; " +
-        "connect-src 'self' data: blob: library: mediacache: fsthumb:; " +
+        "connect-src 'self' data: blob: library: mediacache: fsthumb: mangaimg:; " +
         "worker-src 'self' blob:; " +
         "object-src 'none'; " +
         "frame-src 'none';";
@@ -188,6 +188,23 @@ function registerLibraryProtocol() {
     });
 }
 
+// Pages of online manga: mangaimg://p/?s=<source>&u=<url>[&r=1] — fetched by the
+// main process (referer, cookies of the manga session) and kept in a disk cache.
+function registerMangaImageProtocol() {
+    protocol.handle('mangaimg', async (request) => {
+        try {
+            const url = new URL(request.url);
+            const source = url.searchParams.get('s');
+            const src = url.searchParams.get('u');
+            if (!source || !/^https?:\/\//.test(src || '')) return new Response('bad url', { status: 400 });
+            const file = await require('./server/services/manga/images').fetchImage(source, src, { resolve: url.searchParams.get('r') === '1' });
+            return fileResponse(file, request.headers.get('range'), { 'Cache-Control': 'max-age=86400' });
+        } catch (e) {
+            return new Response(e.message || 'error', { status: 502 });
+        }
+    });
+}
+
 protocol.registerSchemesAsPrivileged([
     {
         scheme: 'library',
@@ -203,6 +220,10 @@ protocol.registerSchemesAsPrivileged([
         // Cached thumbnails of files on disk (Folders browser) — see fsController.
         scheme: 'fsthumb',
         privileges: { secure: true, standard: true, supportFetchAPI: true },
+    },
+    {
+        scheme: 'mangaimg',
+        privileges: { secure: true, standard: true, supportFetchAPI: true, corsEnabled: true },
     },
     {
         scheme: mediaCache.SCHEME,
@@ -221,6 +242,7 @@ if (process.platform === 'win32') app.setAppUserModelId('Darkframe');
 
 app.whenReady().then(async () => {
     registerLibraryProtocol();
+    registerMangaImageProtocol();
     require('./server/controllers/fsController').registerProtocol();
 
     // Fresh media cache each session, then register the caching protocol
@@ -266,6 +288,12 @@ app.whenReady().then(async () => {
 
     if (!SMOKE) require('./server/services/watchFolders').start()
         .catch(e => console.warn('[watch] start failed:', e.message));
+
+    if (!SMOKE) {
+        setTimeout(() => require('./server/services/manga/images').pruneCache(), 30000);
+        require('./server/services/manga/downloads').start()
+            .catch(e => console.warn('[manga] downloads:', e.message));
+    }
 });
 
 app.on('window-all-closed', () => {

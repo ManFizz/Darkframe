@@ -34,6 +34,7 @@ async function pasteToLibrary() {
         const res = await pasteImport({ collectionId: null });
         const added = res.results.length;
         notify(!res.kind ? 'В буфере нет картинки, ссылки или файлов'
+            : res.kind === 'manga' ? `Манга в очереди загрузки: ${res.manga.length}`
             : added ? `Добавлено в библиотеку: ${added}${res.skipped.length ? ` · уже было: ${res.skipped.length}` : ''}`
             : res.skipped.length ? 'Уже есть в библиотеке'
             : String(res.errors[0]?.error || 'Не удалось добавить'));

@@ -367,6 +367,16 @@ async function handleCreateCollection(req, res) {
     respond(res, 200, { ok: true, collection: col.toJSON() });
 }
 
+// A gallery page of a manga source (nhentai, e-hentai, AllHentai, MangaDex) →
+// the manga download queue. Body: { url, collectionId? }
+async function handleManga(req, res) {
+    const { url, collectionId = null } = await parseBody(req);
+    const m = require('./services/manga/sources').matchUrl(String(url || ''));
+    if (!m) { respond(res, 400, { error: 'not a gallery link of a known manga source' }); return; }
+    const job = await require('./services/manga/downloads').enqueue({ source: m.source, id: m.id, collectionId });
+    respond(res, 200, { ok: true, source: m.source, id: m.id, job: { id: job.id, status: job.status } });
+}
+
 async function handleRequest(req, res) {
     try {
         if (req.method === 'OPTIONS') { respond(res, 204, {}); return; }
@@ -381,6 +391,7 @@ async function handleRequest(req, res) {
         if (req.method === 'POST' && req.url === '/api/add')                 { if (authorize(req, res, 'import'))      await handleAdd(req, res);        return; }
         if (req.method === 'POST' && req.url === '/api/addBase64')           { if (authorize(req, res, 'import'))      await handleAddBase64(req, res);  return; }
         if (req.method === 'POST' && req.url.startsWith('/api/addStream'))   { if (authorize(req, res, 'import'))      await handleAddStream(req, res);  return; }
+        if (req.method === 'POST' && req.url === '/api/manga')        { if (authorize(req, res, 'import'))      await handleManga(req, res);      return; }
         if (req.method === 'GET'  && req.url.startsWith('/api/rim?')) { if (authorize(req, res, 'rim'))         await handleRim(req, res);        return; }
         if (req.method === 'GET'  && req.url === '/api/collections')  { if (authorize(req, res, 'read'))        await handleCollections(res);     return; }
         if (req.method === 'GET'  && req.url === '/api/stats')        { if (authorize(req, res, 'read'))        await handleGetStats(res);        return; }

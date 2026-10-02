@@ -122,7 +122,8 @@ async function createManga({
                 total += buf.length;
                 pages.push({ file, ...(await sizeOf(dst)), size: buf.length });
             }
-            manifest.chapters.push({ id: chId, title: chs[ci].title || '', pages });
+            // `src`: the chapter's id on the site it came from (finding new chapters later).
+            manifest.chapters.push({ id: chId, title: chs[ci].title || '', ...(chs[ci].sourceId ? { src: String(chs[ci].sourceId) } : {}), pages });
         }
         manifest.cover = manifest.chapters[0].pages[0].file;
         writeManifest(id, manifest);
@@ -185,6 +186,7 @@ function bookOf(id) {
         chapters: m.chapters.map(c => ({
             id: c.id,
             title: c.title,
+            src: c.src || null,
             pages: c.pages.map(p => ({ file: p.file, w: p.w, h: p.h, url: pageUrl(id, p.file, v), thumb: pthumbUrl(id, p.file, v) })),
         })),
         removed: (m.removed || []).map(r => ({ ...r, thumb: pthumbUrl(id, `~removed/${r.stored}`, v) })),
@@ -312,7 +314,7 @@ async function setReading(id, reading) {
 }
 
 // Adds image files at the end of a chapter (or as a new chapter).
-async function addPages(id, files, { chapter = null, newChapterTitle = null } = {}) {
+async function addPages(id, files, { chapter = null, newChapterTitle = null, sourceId = null } = {}) {
     const m = readManifest(id);
     let ch = chapter && m.chapters.find(c => c.id === chapter);
     if (!ch) {
@@ -320,6 +322,7 @@ async function addPages(id, files, { chapter = null, newChapterTitle = null } = 
         ch = newChapterTitle != null || !m.chapters.length ? { id: `c${n}`, title: newChapterTitle || '', pages: [] } : m.chapters[m.chapters.length - 1];
         if (!m.chapters.includes(ch)) m.chapters.push(ch);
     }
+    if (sourceId) ch.src = String(sourceId);
     fs.mkdirSync(path.join(itemDir(id), 'pages', ch.id), { recursive: true });
     const used = new Set(fs.readdirSync(path.join(itemDir(id), 'pages', ch.id)));
     let n = ch.pages.length;

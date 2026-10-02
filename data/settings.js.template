@@ -10,6 +10,7 @@ const Settings = {
     EnableGelbooru: false,
     EnableR34Favs: false,
     EnableDanbooru: false,
+    EnableManga: true,
     CloseToTray: false,
 };
 

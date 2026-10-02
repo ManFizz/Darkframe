@@ -71,6 +71,28 @@ export const mangaApi = {
     exportCbz:       (id)                    => invoke('manga:exportCbz', { id }),
     exportFolder:    (id)                    => invoke('manga:exportFolder', { id }),
     split:           (id)                    => invoke('manga:split', { id }),
+
+    // Online sources
+    sources:         ()                      => invoke('manga:sources'),
+    search:          (opts)                  => invoke('manga:search', opts),
+    gallery:         (source, id)            => invoke('manga:gallery', { source, id }),
+    chapter:         (source, id, chapterId) => invoke('manga:chapter', { source, id, chapterId }),
+    resolveUrl:      (url)                   => invoke('manga:resolveUrl', { url }),
+    inLibrary:       (source, ids)           => invoke('manga:inLibrary', { source, ids }),
+    download:        (opts)                  => invoke('manga:download', opts),
+    downloadUrl:     (url, collectionId)     => invoke('manga:downloadUrl', { url, collectionId }),
+    downloads:       ()                      => invoke('manga:downloads'),
+    newChapters:     (itemId)                => invoke('manga:newChapters', { itemId }),
+    downloadAction:  (id, action)            => invoke('manga:downloadAction', { id, action }),
+    clearDownloads:  ()                      => invoke('manga:clearDownloads'),
+    login:           (source)                => invoke('manga:login', { source }),
+    openSite:        (source, url)           => invoke('manga:openSite', { source, url }),
+    clearCache:      ()                      => invoke('manga:clearCache'),
+    onDownloads:     (fn)                    => {
+        const handler = (_, p) => fn(p);
+        ipcRenderer.on('manga:downloads', handler);
+        return () => ipcRenderer.removeListener('manga:downloads', handler);
+    },
 };
 
 export const autotagApi = {

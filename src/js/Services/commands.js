@@ -64,6 +64,7 @@ function channel() {
 
 export const collectionRequests = channel();   // library collection id
 export const folderRequests = channel();       // folder path
+export const mangaRequests = channel();        // { view: 'downloads' | 'search' | 'recent', source?, query?, open? }
 
 // Ranking: every word must appear in title / group / keywords; title prefix and
 // word-start matches rank first.

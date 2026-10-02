@@ -1,4 +1,4 @@
-import React, {useContext, useEffect, useState} from 'react';
+import React, {useContext, useEffect, useRef, useState} from 'react';
 import {getViewPrefs, setViewPref} from '@services/viewPrefs';
 import {createPortal} from 'react-dom';
 import {BsSliders} from "react-icons/bs";
@@ -12,8 +12,10 @@ import TagManager from '../Settings/TagManager';
 import ControlPanel from '../ControlPanel/ControlPanel';
 import {openHotkeysHelp} from '../Helpers/HotkeysHelp';
 import BooruSearchBar from '@modules/r34/BooruSearchBar';
-import {collectionRequests, folderRequests, useCommands} from '@services/commands';
+import {collectionRequests, folderRequests, mangaRequests, useCommands} from '@services/commands';
+import {openManga} from '@modules/manga/openManga';
 import {setTheme} from '@services/theme';
+import {notify} from '@services/NotificationService';
 import LibraryService from '@services/LibraryService';
 import {getFolderPrefs} from '@modules/folder/folderPrefs';
 import {SPECIAL} from '../Library/Collection/CollectionTree';
@@ -28,6 +30,7 @@ const NavBar = () => {
 
     const isLibrary = state.currentSource === SOURCE_TYPES.LIBRARY;
     const isFolder  = state.currentSource === SOURCE_TYPES.FOLDER;
+    const isManga   = state.currentSource === SOURCE_TYPES.MANGA;
     const [showPanel, setShowPanel] = useState(false);
     const [panelTab, setPanelTab] = useState('manage');
     const [panelTool, setPanelTool] = useState(null);
@@ -66,6 +69,20 @@ const NavBar = () => {
     };
 
     const navIndex = (type) => navButtons.findIndex(b => b.type === type && !b.action);
+
+    // openManga(): switch to the Manga tab, then hand the request to the view.
+    const navRef = useRef(null);
+    navRef.current = { navIndex: (t) => navButtons.findIndex(b => b.type === t && !b.action), handleNavigation };
+    useEffect(() => {
+        const onOpen = (e) => {
+            const i = navRef.current.navIndex(SOURCE_TYPES.MANGA);
+            if (i < 0) { notify({ message: 'Раздел «Манга» выключен в настройках', type: 'info' }); return; }
+            navRef.current.handleNavigation(i);
+            mangaRequests.request(e.detail || {});
+        };
+        window.addEventListener('df:openManga', onOpen);
+        return () => window.removeEventListener('df:openManga', onOpen);
+    }, []);
 
     useEffect(() => {
         const onOpen = (e) => openPanel(e.detail?.tab || 'manage', e.detail?.tool || null);
@@ -124,7 +141,11 @@ const NavBar = () => {
             hint: p.path, keywords: `папка ${p.path}`,
             run: () => { handleNavigation(folderIdx); folderRequests.request(p.path); },
         }));
-        return [...nav, ...special, ...cols, ...pins, ...panel, ...look];
+        const manga = navIndex(SOURCE_TYPES.MANGA) < 0 ? [] : [
+            { id: 'manga:downloads', group: 'Манга', icon: 'bi-download', title: 'Манга: загрузки', keywords: 'очередь скачать', run: () => openManga({ view: 'downloads' }) },
+            { id: 'manga:recent', group: 'Манга', icon: 'bi-clock-history', title: 'Манга: продолжить чтение', keywords: 'история', run: () => openManga({ view: 'recent' }) },
+        ];
+        return [...nav, ...special, ...cols, ...pins, ...manga, ...panel, ...look];
     });
 
     // Reopen the tab that was open last time (setting "Открывать там, где закрыл").
@@ -163,7 +184,7 @@ const NavBar = () => {
 
                 {isLibrary && libraryCtx ? (
                     <LibraryNavControls ctx={libraryCtx} />
-                ) : isFolder ? (
+                ) : isFolder || isManga ? (
                     <div className="navbar-spacer" />
                 ) : (
                     <BooruSearchBar sourceType={state.currentSource} />
@@ -173,7 +194,15 @@ const NavBar = () => {
                 <div className="navbar-actions">
                     {isLibrary && libraryCtx ? (
                         <LibraryNavSort ctx={libraryCtx} />
-                    ) : isFolder ? null : (
+                    ) : isFolder ? null : isManga ? (
+                        <button
+                            className={`btn navbar-settings-btn ${state.safeMode ? 'on' : ''}`}
+                            onClick={() => setSafeMode(!state.safeMode)}
+                            title={state.safeMode ? 'Безопасный режим включён (размытие)' : 'Безопасный режим'}
+                        >
+                            <i className={`bi ${state.safeMode ? 'bi-eye-slash-fill' : 'bi-eye'}`} />
+                        </button>
+                    ) : (
                         <>
                             <button
                                 className="btn navbar-settings-btn"

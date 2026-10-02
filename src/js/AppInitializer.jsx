@@ -31,6 +31,8 @@ import CommandPalette from './React/Helpers/CommandPalette';
 import MangaReader from './React/Manga/MangaReader';
 import PageEditor from './React/Manga/PageEditor';
 import FolderView from './modules/folder/FolderView';
+import MangaView from './modules/manga/MangaView';
+import {MangaDownloadsWatcher} from './modules/manga/useMangaDownloads';
 import {useBooruQuery} from './modules/r34/booruQuery';
 import {blockedBy, setHiddenCount, useBlacklist} from './modules/r34/blacklist';
 import {useLibraryLinks} from './modules/r34/libraryLinks';
@@ -139,9 +141,10 @@ const Main = () => {
 
     const isLibrary = state.currentSource === SOURCE_TYPES.LIBRARY;
     const isFolder  = state.currentSource === SOURCE_TYPES.FOLDER;
-    // Library and Folders are self-contained views (own sidebar, grid and viewer);
-    // the booru sources share the generic gallery + pagination below.
-    const isGeneric = !isLibrary && !isFolder;
+    const isManga   = state.currentSource === SOURCE_TYPES.MANGA;
+    // Library, Folders and Manga are self-contained views (own sidebar, grid and
+    // viewer); the booru sources share the generic gallery + pagination below.
+    const isGeneric = !isLibrary && !isFolder && !isManga;
     const booruView = useBooruQuery().view;   // 'saved' page has no pagination
     const isBooru = BOORU_TYPES.includes(state.currentSource);
     const [infinite] = useViewPref('booruInfinite');
@@ -204,6 +207,7 @@ const Main = () => {
                 <CommandPalette />
                 <MangaReader />
                 <PageEditor />
+                <MangaDownloadsWatcher />
                 <NavBar setLibraryItems={setLibraryItems} />
 
                 {isGeneric && (
@@ -223,6 +227,8 @@ const Main = () => {
                             <LibraryView />
                         ) : isFolder ? (
                             <FolderView />
+                        ) : isManga ? (
+                            <MangaView />
                         ) : (
                             <Gallery
                                 modalFileId={state.modalFileId}

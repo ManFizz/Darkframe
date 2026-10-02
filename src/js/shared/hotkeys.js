@@ -121,6 +121,39 @@ export const HOTKEY_GROUPS = [
         ],
     },
     {
+        id: 'reader',
+        title: 'Читалка манги',
+        icon: 'bi-book',
+        items: [
+            { keys: ['←', '/', '→'],            desc: 'Листать (в режиме «справа налево» ← — дальше)' },
+            { keys: ['Пробел', '/', 'PgDn'],     desc: 'Дальше (в ленте — на экран вниз; Shift — назад)' },
+            { keys: ['Home', '/', 'End'],        desc: 'Первая / последняя страница' },
+            { keys: ['Колесо'],                  desc: 'Листать; Ctrl + колесо — масштаб' },
+            { keys: ['+', '/', '−', '/', '0'],   desc: 'Масштаб / сброс' },
+            { keys: ['V'],                       desc: 'Режим: страница / разворот / лента', action: 'reader.mode' },
+            { keys: ['D'],                       desc: 'Направление чтения', action: 'reader.direction' },
+            { keys: ['W'],                       desc: 'Подгонка страницы', action: 'reader.fit' },
+            { keys: ['G'],                       desc: 'Миниатюры страниц', action: 'reader.thumbs' },
+            { keys: ['A'],                       desc: 'Лента: автопрокрутка', action: 'reader.autoscroll' },
+            { keys: ['F'],                       desc: 'Во весь экран', action: 'reader.fullscreen' },
+            { keys: ['[', '/', ']'],             desc: 'Предыдущая / следующая глава', action: ['reader.prevChapter', 'reader.nextChapter'] },
+            { keys: ['Клик по краю'],            desc: 'Листать; по центру — скрыть панели' },
+            { keys: ['Esc'],                     desc: 'Закрыть миниатюры / меню / читалку' },
+        ],
+    },
+    {
+        id: 'manga',
+        title: 'Манга',
+        icon: 'bi-journals',
+        items: [
+            { keys: ['/'],                       desc: 'Фокус в поиск по источнику' },
+            { keys: ['Ссылка в поиск'],          desc: 'Открыть карточку галереи по ссылке' },
+            { keys: ['Esc'],                     desc: 'Из карточки — назад к результатам' },
+            { keys: ['Ctrl', 'V'],               desc: 'В библиотеке: ссылка на галерею (nhentai, e-hentai, AllHentai, MangaDex) — в очередь загрузки' },
+            { keys: ['Del'],                     desc: 'Редактор страниц: выбранные страницы — в «удалённые» (можно вернуть)' },
+        ],
+    },
+    {
         id: 'general',
         title: 'Общее',
         icon: 'bi-keyboard',
@@ -137,8 +170,10 @@ export const HOTKEY_GROUPS = [
 // Which group matters most right now (it's shown first and highlighted).
 export function currentHotkeyContext() {
     if (document.querySelector('.img-editor')) return 'editor';
+    if (document.querySelector('.rd')) return 'reader';
     const modal = document.querySelector('.modal-view');
     if (modal) return modal.querySelector('video') ? 'video' : 'viewer';
+    if (document.querySelector('.mo-layout')) return 'manga';
     if (document.querySelector('.folder-layout')) return 'folders';
     if (document.querySelector('.booru-search')) return 'booru';
     return 'gallery';

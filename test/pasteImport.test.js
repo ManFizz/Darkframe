@@ -63,3 +63,25 @@ test('links in the text are downloaded', async () => {
     assert.equal(res.kind, 'links');
     assert.equal(res.results.length, 1, 'the same link twice is fetched once');
 });
+
+test('gallery links of manga sources go to the manga queue, other links are downloaded', async () => {
+    const downloads = require(S('services', 'manga', 'downloads'));
+    const queued = [];
+    const real = downloads.enqueue;
+    downloads.enqueue = async (o) => { queued.push(o); return { id: queued.length, ...o }; };
+    try {
+        clip = { text: 'https://nhentai.net/g/123/\nhttps://e-hentai.org/g/5/abcdef1234/' };
+        let res = await pasteImport({ collectionId: null });
+        assert.equal(res.kind, 'manga');
+        assert.deepEqual(queued.map(q => [q.source, q.id]), [['nhentai', '123'], ['ehentai', '5/abcdef1234']]);
+        assert.equal(res.results.length, 0);
+
+        clip = { text: `https://nhentai.net/g/77/ http://127.0.0.1:${port}/other.png` };
+        res = await pasteImport({});
+        assert.equal(res.kind, 'links');
+        assert.equal(res.manga.length, 1);
+        assert.equal(res.results.length + res.skipped.length, 1);
+    } finally {
+        downloads.enqueue = real;
+    }
+});

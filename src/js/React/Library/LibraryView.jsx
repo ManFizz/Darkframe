@@ -21,6 +21,7 @@ import {useLibraryContext} from '@/LibraryContext';
 import Modal from "@react/Modal/Modal";
 import {notify} from '@services/NotificationService';
 import {libraryApi} from '@/Infrastructure/Ipc';
+import {openManga} from '@modules/manga/openManga';
 import {readLibraryManga} from '@services/mangaLibrary';
 import {undoLast, redoLast} from '@services/undo';
 import {useCommands} from '@services/commands';
@@ -163,6 +164,14 @@ const LibraryView = () => {
         const where = target ? `«${LibraryService.getCollections().find(c => c.id === target)?.name || 'коллекция'}»` : '«Без коллекции»';
         const res = await libraryApi.paste(target).catch(e => ({ errors: [{ error: e.message }] }));
         const added = res?.results?.length || 0, dup = res?.skipped?.length || 0, err = res?.errors?.length || 0;
+        if (res?.manga?.length) {
+            notify({
+                message: `Манга в очереди загрузки в ${where}: ${res.manga.length}`,
+                type: 'success',
+                action: { label: 'Загрузки', onClick: () => openManga({ view: 'downloads' }) },
+            });
+            if (res.kind === 'manga') return;
+        }
         if (!res?.kind && !added && !err) {
             notify({ message: 'В буфере нет картинки, ссылки или файлов', type: 'info' });
             return;

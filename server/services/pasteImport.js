@@ -65,8 +65,18 @@ async function pasteImport({ collectionId = null } = {}) {
 
     const urls = (clipboard.readText() || '').match(/https?:\/\/[^\s"'<>]+/gi) || [];
     if (urls.length) {
-        const all = { kind: 'links', results: [], skipped: [], errors: [] };
-        for (const url of [...new Set(urls)].slice(0, 50)) {
+        const all = { kind: 'links', results: [], skipped: [], errors: [], manga: [] };
+        // Gallery links of the manga sources go to the manga download queue.
+        const mangaSources = require('./manga/sources');
+        const downloads = require('./manga/downloads');
+        const plain = [];
+        for (const url of [...new Set(urls)]) {
+            const m = mangaSources.matchUrl(url);
+            if (m) all.manga.push(await downloads.enqueue({ source: m.source, id: m.id, collectionId }));
+            else plain.push(url);
+        }
+        if (!plain.length) all.kind = 'manga';
+        for (const url of plain.slice(0, 50)) {
             const res = await importFromUrl({ url, collectionId, sourceUrl: url });
             all.results.push(...res.results);
             all.skipped.push(...res.skipped);

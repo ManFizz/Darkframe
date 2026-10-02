@@ -9,7 +9,7 @@ const SECRET_RE = /key|password|token/i;
 
 // Human labels + descriptions. Unknown keys fall back to the raw key, no desc.
 // Remote-section toggles, split out of the generic "settings" into their own card.
-const MODULE_KEYS = ['EnableR34', 'EnableGelbooru', 'EnableR34Favs', 'EnableDanbooru'];
+const MODULE_KEYS = ['EnableR34', 'EnableGelbooru', 'EnableR34Favs', 'EnableDanbooru', 'EnableManga'];
 
 const META = {
     modules: {
@@ -17,6 +17,7 @@ const META = {
         EnableGelbooru: { label: 'Gelbooru', desc: 'Показывать раздел gelbooru.com' },
         EnableR34Favs:  { label: 'R34 Favs', desc: 'Показывать раздел избранного rule34.xxx' },
         EnableDanbooru: { label: 'Danbooru', desc: 'Показывать раздел danbooru.donmai.us' },
+        EnableManga:    { label: 'Манга',    desc: 'Раздел онлайн-манги: nhentai, e-hentai, AllHentai, MangaDex' },
     },
     settings: {
         SafeView:         { label: 'Безопасный просмотр',     desc: 'Скрывать чувствительный контент по умолчанию' },
@@ -161,7 +162,7 @@ const SettingsPanel = ({ onClose }) => {
         configApi.get()
             .then(({ settings, private: p }) => {
                 // Sections added later still get a switch in older settings files.
-                setSettings({ EnableDanbooru: false, CloseToTray: false, ...settings });
+                setSettings({ EnableDanbooru: false, EnableManga: true, CloseToTray: false, ...settings });
                 // Keys added after a user's data/private.js was created still get a field.
                 setPriv({ GelbooruApiKey: '', GelbooruUserId: '', DanbooruLogin: '', DanbooruApiKey: '', ...p });
             })

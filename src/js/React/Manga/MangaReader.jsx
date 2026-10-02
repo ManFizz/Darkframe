@@ -54,6 +54,7 @@ const ReaderView = ({ book, onClose }) => {
     const [auto, setAuto] = useState(false);
     const [jump, setJump] = useState(null);
     const [error, setError] = useState(null);
+    const [retry, setRetry] = useState(0);
     const stageRef = useRef(null);
     const hideTimer = useRef(null);
     const wheelAcc = useRef(0);
@@ -68,14 +69,22 @@ const ReaderView = ({ book, onClose }) => {
 
     // Lazily loaded chapters (online sources).
     useEffect(() => {
+        setError(null);
         if (pages || !book.loadChapter || !chapter) return;
         let cancelled = false;
-        setError(null);
         book.loadChapter(chapter.id)
             .then(list => { if (!cancelled) setChapters(cs => cs.map((c, i) => (i === ch ? { ...c, pages: list } : c))); })
             .catch(e => { if (!cancelled) setError(e.message || String(e)); });
         return () => { cancelled = true; };
-    }, [ch, pages, book, chapter]);
+    }, [ch, pages, book, chapter, retry]);
+
+    // A chapter loaded lazily: the webtoon check couldn't run at the start.
+    const autoChecked = useRef(!!book.reading?.mode || !!book.chapters[startCh]?.pages);
+    useEffect(() => {
+        if (autoChecked.current || !pages) return;
+        autoChecked.current = true;
+        if (looksVertical(pages)) setPrefs(p => ({ ...p, mode: 'vertical' }));
+    }, [pages]);
 
     // Per-book mode / direction; the rest is a global preference.
     const setPref = useCallback((patch) => {
@@ -370,7 +379,10 @@ const ReaderView = ({ book, onClose }) => {
                  onPointerMove={onPointerMove}
                  onClickCapture={onClickCapture}>
                 {error ? (
-                    <div className="rd-msg err"><i className="bi bi-exclamation-triangle" /> {error}</div>
+                    <div className="rd-msg err">
+                        <i className="bi bi-exclamation-triangle" /> {error}
+                        {book.loadChapter && <button className="rd-btn rd-action" onClick={e => { e.stopPropagation(); setRetry(n => n + 1); }}>Повторить</button>}
+                    </div>
                 ) : !pages ? (
                     <div className="rd-msg"><i className="bi bi-arrow-repeat spin" /> Загружаю главу…</div>
                 ) : vertical ? (
