@@ -1,0 +1,456 @@
+import React, {useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState} from 'react';
+import {createPortal} from 'react-dom';
+import {cachedMediaUrl} from '@/Infrastructure/MediaCache';
+import {matches} from '@services/keymap';
+import {exitViewerFullscreen, toggleViewerFullscreen} from '../Modal/fullscreen';
+import {looksVertical, readerPrefs, registerReader, saveReaderPrefs} from './readerStore';
+
+const MODES = [
+    { id: 'paged', label: 'Страница', icon: 'bi-file-earmark' },
+    { id: 'double', label: 'Разворот', icon: 'bi-book' },
+    { id: 'vertical', label: 'Лента', icon: 'bi-distribute-vertical' },
+];
+const FITS = [
+    { id: 'screen', label: 'Целиком', icon: 'bi-aspect-ratio' },
+    { id: 'height', label: 'По высоте', icon: 'bi-arrows-vertical' },
+    { id: 'width', label: 'По ширине', icon: 'bi-arrows' },
+    { id: 'original', label: 'Оригинал', icon: 'bi-1-square' },
+];
+const src = (p) => cachedMediaUrl(p.url);
+const isWide = (p) => p.w > 0 && p.h > 0 && p.w > p.h * 1.15;
+
+// Spreads for the double-page mode: the cover (optionally) and wide pages alone.
+function buildSpreads(pages, mode, doubleOffset) {
+    if (mode !== 'double') return pages.map((_, i) => [i]);
+    const out = [];
+    let i = 0;
+    if (doubleOffset && pages.length) { out.push([0]); i = 1; }
+    while (i < pages.length) {
+        if (isWide(pages[i]) || i + 1 >= pages.length || isWide(pages[i + 1])) { out.push([i]); i += 1; }
+        else { out.push([i, i + 1]); i += 2; }
+    }
+    return out;
+}
+
+const ReaderView = ({ book, onClose }) => {
+    const [chapters, setChapters] = useState(book.chapters);
+    const startCh = Math.max(0, book.chapters.findIndex(c => c.id === book.start?.chapter));
+    const [ch, setCh] = useState(startCh);
+    const [page, setPage] = useState(book.start?.page || 0);
+    const [prefs, setPrefs] = useState(() => {
+        const p = readerPrefs();
+        const firstPages = book.chapters[startCh]?.pages;
+        const auto = looksVertical(firstPages) ? 'vertical' : null;
+        return {
+            ...p,
+            mode: book.reading?.mode || auto || p.mode,
+            direction: book.reading?.direction || (book.language && book.language !== 'japanese' && book.language !== 'chinese' ? 'ltr' : p.direction),
+        };
+    });
+    const [ui, setUi] = useState(true);
+    const [thumbs, setThumbs] = useState(false);
+    const [menu, setMenu] = useState(false);
+    const [zoom, setZoom] = useState(1);
+    const [auto, setAuto] = useState(false);
+    const [jump, setJump] = useState(null);
+    const [error, setError] = useState(null);
+    const stageRef = useRef(null);
+    const hideTimer = useRef(null);
+    const wheelAcc = useRef(0);
+
+    const chapter = chapters[ch];
+    const pages = chapter?.pages || null;
+    const total = useMemo(() => chapters.reduce((n, c) => n + (c.pages?.length || 0), 0), [chapters]);
+    const offset = useMemo(() => chapters.slice(0, ch).reduce((n, c) => n + (c.pages?.length || 0), 0), [chapters, ch]);
+    const vertical = prefs.mode === 'vertical';
+    const spreads = useMemo(() => (pages ? buildSpreads(pages, prefs.mode, prefs.doubleOffset) : []), [pages, prefs.mode, prefs.doubleOffset]);
+    const spreadIdx = Math.max(0, spreads.findIndex(s => s.includes(page)));
+
+    // Lazily loaded chapters (online sources).
+    useEffect(() => {
+        if (pages || !book.loadChapter || !chapter) return;
+        let cancelled = false;
+        setError(null);
+        book.loadChapter(chapter.id)
+            .then(list => { if (!cancelled) setChapters(cs => cs.map((c, i) => (i === ch ? { ...c, pages: list } : c))); })
+            .catch(e => { if (!cancelled) setError(e.message || String(e)); });
+        return () => { cancelled = true; };
+    }, [ch, pages, book, chapter]);
+
+    // Per-book mode / direction; the rest is a global preference.
+    const setPref = useCallback((patch) => {
+        setPrefs(p => ({ ...p, ...patch }));
+        const own = {};
+        if ('mode' in patch) own.mode = patch.mode;
+        if ('direction' in patch) own.direction = patch.direction;
+        if (Object.keys(own).length) book.onSaveReading?.(own);
+        const global = { ...patch };
+        delete global.mode; delete global.direction;
+        if (Object.keys(global).length) saveReaderPrefs(global);
+    }, [book]);
+
+    // Progress (debounced).
+    useEffect(() => {
+        if (!pages || !book.onProgress) return;
+        const t = setTimeout(() => book.onProgress({ chapter: chapter.id, page, position: offset + page, total }), 600);
+        return () => clearTimeout(t);
+    }, [page, ch, pages, total, offset, book, chapter]);
+
+    // UI hides after a moment of no mouse movement.
+    const wake = useCallback(() => {
+        setUi(true);
+        clearTimeout(hideTimer.current);
+        hideTimer.current = setTimeout(() => setUi(false), 2600);
+    }, []);
+    useEffect(() => { wake(); return () => clearTimeout(hideTimer.current); }, [wake]);
+
+    // Preload the next pages.
+    useEffect(() => {
+        if (!pages || vertical) return;
+        const last = spreads[spreadIdx]?.slice(-1)[0] ?? page;
+        pages.slice(last + 1, last + 5).forEach(p => { const i = new Image(); i.src = src(p); });
+    }, [pages, page, spreadIdx, spreads, vertical]);
+
+    const goChapter = useCallback((i, where = 'start') => {
+        if (i < 0 || i >= chapters.length) return false;
+        setCh(i);
+        setZoom(1);
+        const len = chapters[i].pages?.length || 0;
+        setPage(where === 'end' && len ? len - 1 : 0);
+        stageRef.current?.scrollTo({ top: 0 });
+        return true;
+    }, [chapters]);
+
+    const [atEnd, setAtEnd] = useState(false);
+    const next = useCallback(() => {
+        if (!pages) return;
+        if (spreadIdx < spreads.length - 1) { setPage(spreads[spreadIdx + 1][0]); stageRef.current?.scrollTo({ top: 0 }); return; }
+        if (!goChapter(ch + 1)) setAtEnd(true);
+    }, [pages, spreadIdx, spreads, ch, goChapter]);
+    const prev = useCallback(() => {
+        setAtEnd(false);
+        if (!pages) return;
+        if (spreadIdx > 0) { setPage(spreads[spreadIdx - 1][0]); stageRef.current?.scrollTo({ top: 0 }); return; }
+        goChapter(ch - 1, 'end');
+    }, [pages, spreadIdx, spreads, ch, goChapter]);
+
+    // ─── Vertical (webtoon) mode ──────────────────────────────────────────────
+    const imgRefs = useRef([]);
+    const scrollToPage = useCallback((i, smooth = false) => {
+        const el = imgRefs.current[i];
+        if (el) el.scrollIntoView({ block: 'start', behavior: smooth ? 'smooth' : 'auto' });
+    }, []);
+    // Restore the position when the column (re)appears.
+    useLayoutEffect(() => {
+        if (vertical && pages) requestAnimationFrame(() => scrollToPage(page));
+    }, [vertical, pages, ch]);   // eslint-disable-line react-hooks/exhaustive-deps
+    const onVerticalScroll = useCallback(() => {
+        const stage = stageRef.current;
+        if (!stage || !pages) return;
+        const line = stage.getBoundingClientRect().top + stage.clientHeight * 0.35;
+        let cur = 0;
+        for (let i = 0; i < imgRefs.current.length; i++) {
+            const el = imgRefs.current[i];
+            if (el && el.getBoundingClientRect().top <= line) cur = i; else if (el) break;
+        }
+        setPage(p => (p === cur ? p : cur));
+        setAtEnd(stage.scrollTop + stage.clientHeight >= stage.scrollHeight - 4 && ch === chapters.length - 1);
+    }, [pages, ch, chapters.length]);
+
+    // Autoscroll for the vertical mode.
+    useEffect(() => {
+        if (!auto || !vertical) return;
+        let raf, last = performance.now();
+        const step = (t) => {
+            const stage = stageRef.current;
+            if (stage) stage.scrollTop += (prefs.autoSpeed * (t - last)) / 1000;
+            last = t;
+            raf = requestAnimationFrame(step);
+        };
+        raf = requestAnimationFrame(step);
+        return () => cancelAnimationFrame(raf);
+    }, [auto, vertical, prefs.autoSpeed]);
+
+    // ─── Keyboard ─────────────────────────────────────────────────────────────
+    useEffect(() => {
+        const onKey = (e) => {
+            if (e.target.closest?.('input, textarea, select')) {
+                if (e.key === 'Escape') e.target.blur();
+                return;
+            }
+            const rtl = prefs.direction === 'rtl' && !vertical;
+            let handled = true;
+            if (e.key === 'Escape') { if (thumbs) setThumbs(false); else if (menu) setMenu(false); else onClose(); }
+            else if (matches(e, 'reader.mode')) setPref({ mode: MODES[(MODES.findIndex(m => m.id === prefs.mode) + 1) % MODES.length].id });
+            else if (matches(e, 'reader.direction')) setPref({ direction: prefs.direction === 'rtl' ? 'ltr' : 'rtl' });
+            else if (matches(e, 'reader.fit')) setPref({ fit: FITS[(FITS.findIndex(f => f.id === prefs.fit) + 1) % FITS.length].id });
+            else if (matches(e, 'reader.thumbs')) setThumbs(v => !v);
+            else if (matches(e, 'reader.fullscreen')) toggleViewerFullscreen();
+            else if (matches(e, 'reader.autoscroll')) setAuto(v => !v);
+            else if (matches(e, 'reader.nextChapter')) goChapter(ch + 1);
+            else if (matches(e, 'reader.prevChapter')) goChapter(ch - 1);
+            else if (vertical) {
+                const stage = stageRef.current;
+                if (e.key === ' ' || e.key === 'PageDown') stage.scrollBy({ top: (e.shiftKey ? -0.9 : 0.9) * stage.clientHeight, behavior: 'smooth' });
+                else if (e.key === 'PageUp') stage.scrollBy({ top: -0.9 * stage.clientHeight, behavior: 'smooth' });
+                else if (e.key === 'ArrowRight') scrollToPage(Math.min((pages?.length || 1) - 1, page + 1), true);
+                else if (e.key === 'ArrowLeft') scrollToPage(Math.max(0, page - 1), true);
+                else if (e.key === 'Home') scrollToPage(0);
+                else if (e.key === 'End') scrollToPage((pages?.length || 1) - 1);
+                else handled = false;
+            } else {
+                if (e.key === 'ArrowRight') (rtl ? prev : next)();
+                else if (e.key === 'ArrowLeft') (rtl ? next : prev)();
+                else if (e.key === ' ' || e.key === 'PageDown') {
+                    const stage = stageRef.current;
+                    if (stage && stage.scrollTop + stage.clientHeight < stage.scrollHeight - 4 && !e.shiftKey) stage.scrollBy({ top: 0.9 * stage.clientHeight, behavior: 'smooth' });
+                    else (e.shiftKey ? prev : next)();
+                }
+                else if (e.key === 'PageUp') prev();
+                else if (e.key === 'Home') setPage(0);
+                else if (e.key === 'End') setPage(spreads[spreads.length - 1]?.[0] || 0);
+                else if (e.key === '0') setZoom(1);
+                else if (e.key === '+' || e.key === '=') setZoom(z => Math.min(4, z + 0.25));
+                else if (e.key === '-') setZoom(z => Math.max(0.5, z - 0.25));
+                else handled = false;
+            }
+            if (handled) { e.preventDefault(); wake(); }
+            e.stopPropagation();   // nothing behind the reader reacts
+        };
+        window.addEventListener('keydown', onKey, true);
+        return () => window.removeEventListener('keydown', onKey, true);
+    }, [prefs, vertical, thumbs, menu, onClose, setPref, goChapter, ch, pages, page, spreads, next, prev, scrollToPage, wake]);
+
+    useEffect(() => () => exitViewerFullscreen(), []);
+
+    // ─── Paged: wheel turns the page once the current one is scrolled through ──
+    const onWheel = (e) => {
+        if (e.ctrlKey) {
+            e.preventDefault();
+            setZoom(z => Math.min(4, Math.max(0.5, +(z * (e.deltaY < 0 ? 1.1 : 0.9)).toFixed(2))));
+            return;
+        }
+        if (vertical) return;
+        const stage = stageRef.current;
+        const atBottom = stage.scrollTop + stage.clientHeight >= stage.scrollHeight - 2;
+        const atTop = stage.scrollTop <= 0;
+        if ((e.deltaY > 0 && atBottom) || (e.deltaY < 0 && atTop)) {
+            wheelAcc.current += e.deltaY;
+            if (Math.abs(wheelAcc.current) > 160) {
+                (wheelAcc.current > 0 ? next : prev)();
+                wheelAcc.current = 0;
+            }
+        } else wheelAcc.current = 0;
+    };
+
+    const onStageClick = (e) => {
+        if (vertical || e.target.closest('.rd-endcard')) { setUi(v => !v); return; }
+        const r = stageRef.current.getBoundingClientRect();
+        const x = (e.clientX - r.left) / r.width;
+        const rtl = prefs.direction === 'rtl';
+        if (x < 0.33) (rtl ? next : prev)();
+        else if (x > 0.67) (rtl ? prev : next)();
+        else setUi(v => !v);
+    };
+
+    // Drag to pan when zoomed / larger than the screen.
+    const drag = useRef(null);
+    const onPointerDown = (e) => {
+        if (e.button !== 0 || vertical) return;
+        const stage = stageRef.current;
+        drag.current = { x: e.clientX, y: e.clientY, l: stage.scrollLeft, t: stage.scrollTop, moved: false };
+    };
+    const onPointerMove = (e) => {
+        wake();
+        const d = drag.current;
+        if (!d || !(e.buttons & 1)) { drag.current = null; return; }
+        const dx = e.clientX - d.x, dy = e.clientY - d.y;
+        if (Math.abs(dx) + Math.abs(dy) > 4) d.moved = true;
+        stageRef.current.scrollLeft = d.l - dx;
+        stageRef.current.scrollTop = d.t - dy;
+    };
+    const onClickCapture = (e) => { if (drag.current?.moved) { e.stopPropagation(); } drag.current = null; };
+
+    const fitClass = `fit-${prefs.fit}`;
+    const pos = offset + page + 1;
+    const spreadPages = spreads[spreadIdx] || [];
+    const nextChapter = chapters[ch + 1];
+
+    const mediaStyle = (p, count) => {
+        if (prefs.fit === 'original') return { width: p.w ? p.w * zoom : undefined };
+        if (prefs.fit === 'width') return { width: `${(100 / count) * zoom}%` };
+        if (prefs.fit === 'height') return { height: `${100 * zoom}%`, maxWidth: 'none' };
+        return { maxHeight: `${100 * zoom}%`, maxWidth: `${(100 / count) * zoom}%` };
+    };
+
+    return createPortal(
+        <div className={`rd bg-${prefs.background} ${ui ? '' : 'rd-hidden-ui'} ${vertical ? 'is-vertical' : ''}`}
+             onMouseMove={wake}>
+            <div className="rd-top">
+                <button className="rd-btn" onClick={onClose} title="Закрыть (Esc)"><i className="bi bi-arrow-left" /></button>
+                <div className="rd-title" title={book.title}>
+                    <div className="rd-title-main">{book.title}</div>
+                    {chapters.length > 1 && (
+                        <select className="rd-chapter" value={ch} onChange={e => goChapter(Number(e.target.value))}>
+                            {chapters.map((c, i) => <option key={c.id} value={i}>{c.title || `Глава ${i + 1}`}</option>)}
+                        </select>
+                    )}
+                </div>
+                <div className="rd-seg" title="Режим (V)">
+                    {MODES.map(m => (
+                        <button key={m.id} className={prefs.mode === m.id ? 'on' : ''} onClick={() => setPref({ mode: m.id })} title={m.label}>
+                            <i className={`bi ${m.icon}`} /><span>{m.label}</span>
+                        </button>
+                    ))}
+                </div>
+                {!vertical && (
+                    <button className="rd-btn" onClick={() => setPref({ direction: prefs.direction === 'rtl' ? 'ltr' : 'rtl' })}
+                            title={prefs.direction === 'rtl' ? 'Справа налево (D)' : 'Слева направо (D)'}>
+                        <i className={`bi ${prefs.direction === 'rtl' ? 'bi-arrow-left-square' : 'bi-arrow-right-square'}`} />
+                        <span className="rd-btn-text">{prefs.direction === 'rtl' ? 'RTL' : 'LTR'}</span>
+                    </button>
+                )}
+                {!vertical && (
+                    <button className="rd-btn" onClick={() => setPref({ fit: FITS[(FITS.findIndex(f => f.id === prefs.fit) + 1) % FITS.length].id })}
+                            title={`Подгонка: ${FITS.find(f => f.id === prefs.fit)?.label} (W)`}>
+                        <i className={`bi ${FITS.find(f => f.id === prefs.fit)?.icon}`} />
+                    </button>
+                )}
+                {vertical && (
+                    <button className={`rd-btn ${auto ? 'on' : ''}`} onClick={() => setAuto(v => !v)} title="Автопрокрутка (A)">
+                        <i className={`bi ${auto ? 'bi-pause-fill' : 'bi-play-fill'}`} />
+                    </button>
+                )}
+                <button className={`rd-btn ${thumbs ? 'on' : ''}`} onClick={() => setThumbs(v => !v)} title="Миниатюры (G)"><i className="bi bi-grid-3x3-gap" /></button>
+                <button className={`rd-btn ${menu ? 'on' : ''}`} onClick={() => setMenu(v => !v)} title="Настройки"><i className="bi bi-sliders" /></button>
+                <button className="rd-btn" onClick={toggleViewerFullscreen} title="Во весь экран (F)"><i className="bi bi-fullscreen" /></button>
+                {(book.actions || []).map(a => (
+                    <button key={a.id} className="rd-btn rd-action" onClick={() => a.run({ close: onClose })} title={a.label}>
+                        <i className={`bi ${a.icon}`} /><span className="rd-btn-text">{a.label}</span>
+                    </button>
+                ))}
+            </div>
+
+            {menu && (
+                <div className="rd-menu" onMouseDown={e => e.stopPropagation()}>
+                    {vertical ? (
+                        <>
+                            <label>Ширина ленты: <b>{prefs.verticalWidth}px</b>
+                                <input type="range" min={400} max={1800} step={20} value={prefs.verticalWidth} onChange={e => setPref({ verticalWidth: Number(e.target.value) })} /></label>
+                            <label>Промежуток между страницами: <b>{prefs.gap}px</b>
+                                <input type="range" min={0} max={40} step={2} value={prefs.gap} onChange={e => setPref({ gap: Number(e.target.value) })} /></label>
+                            <label>Скорость автопрокрутки: <b>{prefs.autoSpeed}</b>
+                                <input type="range" min={20} max={600} step={10} value={prefs.autoSpeed} onChange={e => setPref({ autoSpeed: Number(e.target.value) })} /></label>
+                        </>
+                    ) : (
+                        <>
+                            <div className="rd-menu-row">Подгонка:
+                                {FITS.map(f => <button key={f.id} className={prefs.fit === f.id ? 'on' : ''} onClick={() => setPref({ fit: f.id })}>{f.label}</button>)}
+                            </div>
+                            {prefs.mode === 'double' && (
+                                <label className="rd-check"><input type="checkbox" checked={prefs.doubleOffset} onChange={e => setPref({ doubleOffset: e.target.checked })} /> Обложка отдельно (сдвиг разворотов)</label>
+                            )}
+                        </>
+                    )}
+                    <div className="rd-menu-row">Фон:
+                        {[['dark', 'Тёмный'], ['black', 'Чёрный'], ['light', 'Светлый']].map(([id, l]) => (
+                            <button key={id} className={prefs.background === id ? 'on' : ''} onClick={() => setPref({ background: id })}>{l}</button>
+                        ))}
+                    </div>
+                    <div className="rd-menu-hint">Клик по краям — листать, по центру — скрыть панели. Ctrl+колесо — масштаб.</div>
+                </div>
+            )}
+
+            <div ref={stageRef}
+                 className={`rd-stage ${vertical ? '' : `paged ${fitClass} dir-${prefs.direction}`}`}
+                 onWheel={onWheel}
+                 onScroll={vertical ? onVerticalScroll : undefined}
+                 onClick={onStageClick}
+                 onPointerDown={onPointerDown}
+                 onPointerMove={onPointerMove}
+                 onClickCapture={onClickCapture}>
+                {error ? (
+                    <div className="rd-msg err"><i className="bi bi-exclamation-triangle" /> {error}</div>
+                ) : !pages ? (
+                    <div className="rd-msg"><i className="bi bi-arrow-repeat spin" /> Загружаю главу…</div>
+                ) : vertical ? (
+                    <div className="rd-column" style={{ width: `min(100%, ${Math.round(prefs.verticalWidth * zoom)}px)`, gap: prefs.gap }}>
+                        {pages.map((p, i) => (
+                            <img key={`${chapter.id}:${i}`} ref={el => { imgRefs.current[i] = el; }}
+                                 src={src(p)} alt="" loading={Math.abs(i - page) < 4 ? 'eager' : 'lazy'} draggable={false}
+                                 style={p.w && p.h ? { aspectRatio: `${p.w} / ${p.h}` } : { minHeight: '60vh' }}
+                                 onLoad={e => { if (!p.w) e.currentTarget.style.minHeight = ''; }} />
+                        ))}
+                        <div className="rd-endcard">
+                            {nextChapter ? (
+                                <button className="rd-next-ch" onClick={() => goChapter(ch + 1)}>
+                                    Следующая глава: {nextChapter.title || `Глава ${ch + 2}`} <i className="bi bi-chevron-down" />
+                                </button>
+                            ) : <span>Конец</span>}
+                        </div>
+                    </div>
+                ) : (
+                    <div className="rd-spread" style={{ flexDirection: prefs.direction === 'rtl' ? 'row-reverse' : 'row' }}>
+                        {spreadPages.map(i => (
+                            <img key={`${chapter.id}:${i}`} src={src(pages[i])} alt="" draggable={false}
+                                 style={mediaStyle(pages[i], spreadPages.length)} />
+                        ))}
+                    </div>
+                )}
+                {atEnd && !vertical && (
+                    <div className="rd-endcard overlay" onClick={e => e.stopPropagation()}>
+                        <div className="rd-end-title">Конец</div>
+                        <button className="rd-next-ch" onClick={onClose}>Закрыть</button>
+                        <button className="rd-link" onClick={() => { setAtEnd(false); goChapter(0); setPage(0); }}>Сначала</button>
+                    </div>
+                )}
+            </div>
+
+            {thumbs && pages && (
+                <div className="rd-thumbs" onClick={e => e.stopPropagation()}>
+                    {pages.map((p, i) => (
+                        <button key={i} className={`rd-thumb ${(vertical ? page === i : spreadPages.includes(i)) ? 'on' : ''}`}
+                                onClick={() => { setAtEnd(false); setPage(i); if (vertical) scrollToPage(i); else stageRef.current?.scrollTo({ top: 0 }); }}>
+                            <img src={cachedMediaUrl(p.thumb || p.url)} alt="" loading="lazy" />
+                            <span>{i + 1}</span>
+                        </button>
+                    ))}
+                </div>
+            )}
+
+            <div className="rd-bottom">
+                {pages && pages.length > 1 && (
+                    <input className="rd-slider" type="range" min={0} max={pages.length - 1} value={page}
+                           style={{ direction: prefs.direction === 'rtl' && !vertical ? 'rtl' : 'ltr' }}
+                           onChange={e => { const i = Number(e.target.value); setAtEnd(false); setPage(i); if (vertical) scrollToPage(i); }} />
+                )}
+                {jump != null ? (
+                    <input className="rd-jump" autoFocus value={jump} onChange={e => setJump(e.target.value)}
+                           onBlur={() => setJump(null)}
+                           onKeyDown={e => {
+                               if (e.key === 'Enter') {
+                                   const i = Math.min((pages?.length || 1), Math.max(1, Number(jump) || 1)) - 1;
+                                   setPage(i); if (vertical) scrollToPage(i); setJump(null);
+                               }
+                           }} />
+                ) : (
+                    <button className="rd-count" onClick={() => setJump(String(page + 1))} title="Перейти к странице">
+                        {page + 1}{spreadPages.length > 1 ? `–${spreadPages[spreadPages.length - 1] + 1}` : ''} / {pages?.length || '…'}
+                        {chapters.length > 1 && <span className="rd-count-all"> · всего {pos}/{total}</span>}
+                    </button>
+                )}
+            </div>
+        </div>,
+        document.body,
+    );
+};
+
+// Mounted once; openReader(book) shows it.
+const MangaReader = () => {
+    const [book, setBook] = useState(null);
+    useEffect(() => registerReader((b) => setBook({ ...b })), []);
+    if (!book) return null;
+    return <ReaderView key={book.key} book={book} onClose={() => { setBook(null); book.onClose?.(); }} />;
+};
+
+export default MangaReader;

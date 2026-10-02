@@ -1,5 +1,6 @@
 import React, {useEffect, useState} from 'react';
 import LibraryService from '@services/LibraryService';
+import {mangaApi} from '@/Infrastructure/Ipc';
 import EagleImportProgress from './EagleImportProgress';
 import {notify} from '@services/NotificationService';
 import {ipcRenderer, webUtils} from '@/Infrastructure/electron';
@@ -188,11 +189,34 @@ const ImportButton = ({ collectionId, collectionName, onImported }) => {
 
         const allResults = { results: [], skipped: [], errors: [] };
 
+        // CBZ / ZIP archives are manga.
+        const archives = filePaths.filter(p => /\.(cbz|zip)$/i.test(p));
+        if (archives.length) {
+            const r = await mangaApi.importArchives(archives, collectionId ?? null);
+            notify({
+                message: r.items.length ? `Манга добавлена: ${r.items.length}${r.errors.length ? ` · ошибок: ${r.errors.length}` : ''}` : `Не удалось: ${r.errors[0]?.error || 'нет картинок'}`,
+                type: r.items.length ? 'success' : 'warning',
+            });
+            filePaths.splice(0, filePaths.length, ...filePaths.filter(p => !archives.includes(p)));
+            if (r.items.length) onImported?.();
+        }
+
         if (filePaths.length) {
             const r = await LibraryService.importFiles({ filePaths, collectionId });
             allResults.results.push(...(r.results || []));
             allResults.skipped.push(...(r.skipped || []));
             allResults.errors.push(...(r.errors || []));
+        }
+
+        // Shift + drop a folder = a manga made of it.
+        if (e.shiftKey && dirPaths.length) {
+            for (const dirPath of dirPaths.splice(0)) {
+                try {
+                    await mangaApi.importFolder(dirPath, { collectionId: collectionId ?? null });
+                    notify({ message: 'Манга из папки добавлена', type: 'success' });
+                } catch (err) { notify({ message: String(err.message).split(': ').pop(), type: 'warning' }); }
+            }
+            onImported?.();
         }
 
         for (const dirPath of dirPaths) {
@@ -288,11 +312,21 @@ const ImportButton = ({ collectionId, collectionName, onImported }) => {
                                 <i className="bi bi-box-arrow-in-down" /> CSV
                             </button>
                         </div>
+                        <div className="import-more-actions">
+                            <button className="import-ghost" title="Картинки папки — страницы; подпапки — главы"
+                                    onClick={async () => { const r = await mangaApi.importFolderDialog({ collectionId: collectionId ?? null }).catch(e => { notify({ message: String(e.message).split(': ').pop(), type: 'warning' }); return null; }); if (r?.length) { notify({ message: `Манга добавлена: ${r.length}`, type: 'success' }); onImported?.(); } }}>
+                                <i className="bi bi-book" /> Манга из папки
+                            </button>
+                            <button className="import-ghost" title="Комиксы / манга в CBZ или ZIP"
+                                    onClick={async () => { const r = await mangaApi.importArchiveDialog({ collectionId: collectionId ?? null }); if (r) { notify({ message: r.items.length ? `Манга добавлена: ${r.items.length}${r.errors.length ? ` · ошибок: ${r.errors.length}` : ''}` : `Не удалось: ${r.errors[0]?.error}`, type: r.items.length ? 'success' : 'warning' }); onImported?.(); } }}>
+                                <i className="bi bi-file-zip" /> CBZ / ZIP
+                            </button>
+                        </div>
                     </div>
                 )}
 
                 <div className="import-drop-hint">
-                    или перетащи файлы / папки
+                    или перетащи файлы / папки · CBZ — как мангу · Shift + папка — манга
                 </div>
             </div>
         </>

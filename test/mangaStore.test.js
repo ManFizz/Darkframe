@@ -131,3 +131,12 @@ test('library images → manga in the given order; split back into images', asyn
     const res = await convert.splitToImages(item.id);
     assert.equal(res.results.length, 3);
 });
+
+test('the same pages twice → refused as a duplicate (unless asked)', async () => {
+    const dir = path.join(src, 'dup');
+    for (let i = 1; i <= 2; i++) await page(dir, `${i}.jpg`, i * 90);
+    await convert.fromFolder(dir);
+    await assert.rejects(convert.fromFolder(dir), /уже есть/);
+    const again = await store.createManga({ title: 'copy', chapters: [{ files: [path.join(dir, '1.jpg'), path.join(dir, '2.jpg')] }], allowDuplicate: true });
+    assert.equal(again.pageCount, 2);
+});

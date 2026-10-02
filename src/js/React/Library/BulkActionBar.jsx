@@ -5,6 +5,7 @@ import {loadEditPreset} from '@services/imageEditPreset';
 import {FILE_TYPES} from '@/Constants';
 import BulkTags from './BulkTags';
 import {autotagItems} from '@services/autotagRun';
+import MakeMangaButton from '../Manga/MakeMangaButton';
 import {compareItemFromThumb, openCompare} from '../Compare/CompareView';
 import CollectionTreeSelect, {pushRecentCollection} from './Collection/CollectionTreeSelect';
 
@@ -178,6 +179,11 @@ const BulkActionBar = ({ selectedItems, onDone, onChanged, onSlideshow, permanen
                         {tagging ? <><i className="bi bi-arrow-repeat spin me-1" />{tagging.done}/{tagging.total}</>
                             : <><i className="bi bi-stars me-1" /> Автотеги</>}
                     </button>
+
+                    {selectedItems.filter(f => f.type === FILE_TYPES.IMAGE && !f.isManga).length > 1 && (
+                        <MakeMangaButton items={selectedItems.filter(f => f.type === FILE_TYPES.IMAGE && !f.isManga)}
+                                         collectionId={selectedItems[0]?.collectionId ?? null} onDone={() => onDone?.()} />
+                    )}
 
                     {onSlideshow && selectedItems.length > 1 && (
                         <button className="btn btn-sm btn-outline-secondary" onClick={onSlideshow} title="Слайд-шоу из выделенных">

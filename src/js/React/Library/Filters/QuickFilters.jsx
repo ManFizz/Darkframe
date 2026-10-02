@@ -12,6 +12,7 @@ const BUILT_IN = [
     { id: 'video',   label: 'Видео',          icon: 'bi-film',          patch: { types: ['video'] } },
     { id: 'gif',     label: 'GIF',            icon: 'bi-filetype-gif',  patch: { types: ['gif'] } },
     { id: 'image',   label: 'Изображения',    icon: 'bi-image',         patch: { types: ['image'] } },
+    { id: 'manga',   label: 'Манга',          icon: 'bi-book',          patch: { types: ['manga'] } },
     { id: 'nocol',   label: 'Без коллекции',  icon: 'bi-inbox',         patch: { noCollection: true } },
     { id: 'notags',  label: 'Без тегов',      icon: 'bi-tag',           patch: { noTags: true } },
     { id: 'unrated', label: 'Без оценки',     icon: 'bi-star',          patch: { ratingMin: 0, ratingMax: 0 } },

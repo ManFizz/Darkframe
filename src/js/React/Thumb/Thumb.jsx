@@ -99,6 +99,16 @@ const Thumb = (({ file, isModal, modalUpdater, isSelected, onOpen, onToggleSelec
             {file.score != null && hasOverlay && (
                 <span className="thumb-score" title="Score"><i className="bi bi-star-fill" /> {file.score}</span>
             )}
+            {file.isManga && (
+                <>
+                    <span className="thumb-manga" title="Манга"><i className="bi bi-book" /> {file.pageCount ?? ''}</span>
+                    {file.readPosition != null && file.pageCount > 0 && (
+                        <div className={`thumb-readbar ${file.readFinished ? 'done' : ''}`} title={file.readFinished ? 'Прочитано' : `Прочитано до ${file.readPosition + 1}-й стр.`}>
+                            <span style={{ width: `${file.readFinished ? 100 : Math.round(((file.readPosition + 1) / file.pageCount) * 100)}%` }} />
+                        </div>
+                    )}
+                </>
+            )}
             {inLibrary && (
                 <span className="thumb-inlib" title="Уже в библиотеке"><i className="bi bi-bookmark-check-fill" /></span>
             )}

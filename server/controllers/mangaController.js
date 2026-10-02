@@ -57,6 +57,12 @@ function register() {
         return res;
     });
 
+    // Files picked in the Folders browser, in the given order → one manga.
+    ipcMain.handle('manga:fromFiles', async (_, { files, title, collectionId = null }) => {
+        const item = await store.createManga({ title: title || path.basename(path.dirname(files[0] || '')) || 'Манга', chapters: [{ title: '', files }], collectionId });
+        return created('манга из файлов', [item])[0];
+    });
+
     ipcMain.handle('manga:importFolderDialog', async (event, { collectionId = null, mode = 'auto' } = {}) => {
         const { canceled, filePaths } = await dialog.showOpenDialog(winOf(event), {
             title: 'Папка с мангой', properties: ['openDirectory', 'multiSelections'],

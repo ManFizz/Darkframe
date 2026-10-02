@@ -42,6 +42,11 @@ export class ThumbFile {
         this.filePath = data.filePath || null;     // Folders browser: absolute path on disk
         this.score = data.score ?? null;           // booru posts
         this.remoteRating = data.remoteRating || null;
+        // Manga (library item made of pages)
+        this.isManga = this.mimeType === 'application/x-darkframe-manga';
+        this.pageCount = data.pageCount ?? null;
+        this.readPosition = data.readPosition ?? null;   // last read page (0-based, across chapters)
+        this.readFinished = !!data.readFinished;
 
         this.type = data.type || this._detectType(this.thumbUrl);
         this._meta = data._meta || null;

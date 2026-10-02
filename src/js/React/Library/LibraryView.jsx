@@ -21,6 +21,7 @@ import {useLibraryContext} from '@/LibraryContext';
 import Modal from "@react/Modal/Modal";
 import {notify} from '@services/NotificationService';
 import {libraryApi} from '@/Infrastructure/Ipc';
+import {readLibraryManga} from '@services/mangaLibrary';
 import {undoLast, redoLast} from '@services/undo';
 import {useCommands} from '@services/commands';
 import {matches} from '@services/keymap';
@@ -115,6 +116,11 @@ const LibraryView = () => {
     // refreshes the gallery every couple of seconds, not on every file.
     const reloadRef = useRef(reload);
     useEffect(() => { reloadRef.current = reload; });
+    useEffect(() => {
+        const onReload = () => reloadRef.current();
+        window.addEventListener('df:libraryReload', onReload);
+        return () => window.removeEventListener('df:libraryReload', onReload);
+    }, []);
 
     // Slideshow of the selection / the whole view, started without opening a file first.
     const [slideSet, setSlideSet] = useState(null);   // { items, token }
@@ -239,6 +245,7 @@ const LibraryView = () => {
     const { tree } = useCollections();
 
     const handleFileOpen = useCallback((file) => {
+        if (file.isManga) { readLibraryManga(file); return; }
         if (file.type === FILE_TYPES.IMAGE || file.type === FILE_TYPES.VIDEO) {
             setModalFileId(file.uniqueId);
         }

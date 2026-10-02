@@ -22,6 +22,7 @@ import {useViewPref} from "@services/viewPrefs";
 import {exitViewerFullscreen} from "./fullscreen";
 import {useResolvedTheme} from "@services/theme";
 import {matches} from '@services/keymap';
+import {readLibraryManga} from '@services/mangaLibrary';
 
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(v, hi));
 
@@ -356,7 +357,14 @@ const Modal = ({ fileId, mainArray, modalUpdater, displayFiles, onUpdated, autoS
         cursor: zoom > 1 ? 'grab' : 'default',
     };
     const imageSrc = cachedMediaUrl(file.getUrl());
-    const mediaContent = file.type === FILE_TYPES.IMAGE ? (
+    const mediaContent = file.isManga ? (
+        <div className="manga-cover-view">
+            <img src={imageSrc} alt={file.title} draggable={false} />
+            <button className="manga-cover-read" onClick={(e) => { e.stopPropagation(); readLibraryManga(file); }}>
+                <i className="bi bi-book-half" /> Читать · {file.pageCount} стр.
+            </button>
+        </div>
+    ) : file.type === FILE_TYPES.IMAGE ? (
         isMaybeAnimated(file, file.getUrl())
             // GIF / WebP: turns into a player (pause, frames, speed) when animated.
             ? <AnimatedImage key={file.uniqueId} file={file} src={imageSrc} alt={file.title} style={imageStyle} />
@@ -408,7 +416,7 @@ const Modal = ({ fileId, mainArray, modalUpdater, displayFiles, onUpdated, autoS
                         panelOpen={panelOpen}
                         showFav={!isLibrary && !hasFolderPanel}
                         onPanelToggle={hasSidePanel ? () => setPanelOpen(v => !v) : null}
-                        onEdit={isLibrary && onUpdated && file.type === FILE_TYPES.IMAGE && file.mimeType !== 'image/gif' ? () => setEditing(true) : null}
+                        onEdit={isLibrary && onUpdated && file.type === FILE_TYPES.IMAGE && file.mimeType !== 'image/gif' && !file.isManga ? () => setEditing(true) : null}
                         onApplyLast={isLibrary && onUpdated && file.type === FILE_TYPES.IMAGE && file.mimeType !== 'image/gif' && loadEditPreset() ? handleApplyLast : null}
                         onDuplicate={isLibrary && onUpdated ? handleDuplicate : null}
                         onSlideshow={ss.active ? null : ss.start}

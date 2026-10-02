@@ -60,6 +60,9 @@ export function useLibraryItems(collectionId, trash = false, smartFilterJson = n
             mimeType:   item.mimeType,
             remoteType: SOURCE_TYPES.LIBRARY,
             collectionId: item.collectionId,
+            pageCount:  item.pageCount,
+            readPosition: item.readPosition,
+            readFinished: item.readFinished,
         }));
 
         setItems([...collectionThumbs, ...thumbFiles]);

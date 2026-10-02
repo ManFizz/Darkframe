@@ -4,6 +4,7 @@ import {libraryApi} from '@/Infrastructure/Ipc';
 import RatingStars from './RatingStars';
 import TagEditor from './TagEditor';
 import SuggestTags from './SuggestTags';
+import MangaInfo from '../../Manga/MangaInfo';
 import CollectionPicker from '../Collection/CollectionPicker';
 import RelatedBlock, {SearchByThisButton} from './RelatedBlock';
 
@@ -143,8 +144,9 @@ const MetadataPanel = ({ file, onUpdated }) => {
 
             {activeTab === 'info' && (
                 <div className="metadata-content">
-                    <RelatedBlock file={file} onChanged={() => onUpdated?.('refresh')} />
-                    <SearchByThisButton file={file} />
+                    {file.isManga && <MangaInfo file={file} onChanged={() => onUpdated?.('refresh')} />}
+                    {!file.isManga && <RelatedBlock file={file} onChanged={() => onUpdated?.('refresh')} />}
+                    {!file.isManga && <SearchByThisButton file={file} />}
                     <div className="metadata-section">
                         <label>Рейтинг</label>
                         <RatingStars value={form.rating} onChange={v => update('rating', v)} />

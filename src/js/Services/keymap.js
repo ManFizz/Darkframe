@@ -32,6 +32,14 @@ export const ACTIONS = [
     { id: 'fs.newFolder',      group: 'Папки',     label: 'Новая папка',                    keys: ['Ctrl+Shift+KeyN'] },
     { id: 'fs.path',           group: 'Папки',     label: 'Ввести путь',                    keys: ['Ctrl+KeyL'] },
     { id: 'fs.filter',         group: 'Папки',     label: 'Фильтр по имени',                keys: ['Ctrl+KeyF'] },
+    { id: 'reader.mode',       group: 'Читалка манги', label: 'Режим: страница / разворот / лента', keys: ['KeyV'] },
+    { id: 'reader.direction',  group: 'Читалка манги', label: 'Направление: справа налево / слева направо', keys: ['KeyD'] },
+    { id: 'reader.fit',        group: 'Читалка манги', label: 'Подгонка: по высоте / ширине / целиком', keys: ['KeyW'] },
+    { id: 'reader.thumbs',     group: 'Читалка манги', label: 'Миниатюры страниц',                keys: ['KeyG'] },
+    { id: 'reader.fullscreen', group: 'Читалка манги', label: 'Во весь экран',                    keys: ['KeyF'] },
+    { id: 'reader.autoscroll', group: 'Читалка манги', label: 'Лента: автопрокрутка',              keys: ['KeyA'] },
+    { id: 'reader.nextChapter', group: 'Читалка манги', label: 'Следующая глава',                 keys: ['BracketRight'] },
+    { id: 'reader.prevChapter', group: 'Читалка манги', label: 'Предыдущая глава',                keys: ['BracketLeft'] },
 ];
 const BY_ID = new Map(ACTIONS.map(a => [a.id, a]));
 
@@ -64,9 +72,17 @@ export function matches(e, id) {
     return !!combo && bindingsOf(id).includes(combo);
 }
 
-// Which action (other than `except`) already uses a binding.
-export const conflictOf = (binding, except) =>
-    ACTIONS.find(a => a.id !== except && bindingsOf(a.id).includes(binding)) || null;
+// Where an action works: keys only clash inside one place (or with app-wide ones) —
+// F can be "fullscreen" both in the video player and in the manga reader.
+const SCOPES = { app: 'global', common: 'global', lib: 'library', viewer: 'viewer', media: 'viewer', video: 'viewer', fs: 'folders', reader: 'reader' };
+const scopeOf = (id) => SCOPES[id.split('.')[0]] || 'global';
+
+// Which action (other than `except`) already uses a binding where `except` works.
+export const conflictOf = (binding, except) => {
+    const scope = except ? scopeOf(except) : 'global';
+    return ACTIONS.find(a => a.id !== except && bindingsOf(a.id).includes(binding)
+        && (scope === 'global' || scopeOf(a.id) === 'global' || scopeOf(a.id) === scope)) || null;
+};
 
 export function setBinding(id, binding, { replaceIndex = 0 } = {}) {
     const clash = conflictOf(binding, id);

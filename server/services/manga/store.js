@@ -78,16 +78,29 @@ async function sizeOf(file) {
  */
 async function createManga({
     title, chapters, collectionId = null, tags = [], tagTypes = {}, sourceUrl = '', notes = '',
-    source = null, rating = 0, move = false, reading = null, importedAt = null,
+    source = null, rating = 0, move = false, reading = null, importedAt = null, allowDuplicate = false,
 }) {
     const chs = (chapters || []).map(c => ({ ...c, files: (c.files || []).filter(f => isImageFile(f) && fs.existsSync(f)) }))
         .filter(c => c.files.length);
     if (!chs.length) throw new Error('Нет картинок для манги');
 
+    // Same pages (by content) already in the library → don't make a second copy.
+    const hash = crypto.createHash('sha256');
+    chs.forEach(c => c.files.forEach(f => hash.update(crypto.createHash('sha256').update(fs.readFileSync(f)).digest())));
+    const fileHash = hash.digest('hex');
+    if (!allowDuplicate) {
+        const existing = await Item.unscoped().findOne({ where: { fileHash, mimeType: MANGA_MIME }, raw: true });
+        if (existing) {
+            const err = new Error(existing.deletedAt ? `Такая манга лежит в корзине: «${existing.title}»` : `Такая манга уже есть: «${existing.title}»`);
+            err.code = 'DUPLICATE';
+            err.existingId = existing.id;
+            throw err;
+        }
+    }
+
     const id = uuidv4();
     const dir = itemDir(id);
     fs.mkdirSync(path.join(dir, 'pages'), { recursive: true });
-    const hash = crypto.createHash('sha256');
     let total = 0;
     const manifest = { version: 1, chapters: [], removed: [], source, reading, createdAt: Math.floor(Date.now() / 1000) };
     try {
@@ -106,7 +119,6 @@ async function createManga({
                     fs.copyFileSync(src, dst);
                 }
                 const buf = fs.readFileSync(dst);
-                hash.update(crypto.createHash('sha256').update(buf).digest());
                 total += buf.length;
                 pages.push({ file, ...(await sizeOf(dst)), size: buf.length });
             }
@@ -130,7 +142,7 @@ async function createManga({
                 size: total,
                 pageCount: pageCountOf(manifest),
                 collectionId: collectionId || null,
-                fileHash: hash.digest('hex'),
+                fileHash,
                 importedAt: importedAt ?? Math.floor(Date.now() / 1000),
                 createdAt: Math.floor(Date.now() / 1000),
                 order: 0,

@@ -8,7 +8,7 @@ const FILTER_DEFAULTS = {
     tags:               [],       // [{ name, exclude }]
     ratingMin:          0,
     ratingMax:          10,       // 0..10; min=max=0 → "unrated only"
-    types:              [],       // subset of ['image', 'video', 'gif']; empty = any
+    types:              [],       // subset of ['image', 'video', 'gif', 'manga']; empty = any
     sizeMin:            null,     // bytes
     sizeMax:            null,     // bytes
     minSide:            null,     // px — the shorter side must be at least this
@@ -125,7 +125,7 @@ function rulesNeedHistory(group) {
     return group.items.some(x => (x.items ? rulesNeedHistory(x) : x.field === 'viewed'));
 }
 
-const MEDIA_TYPES = ['image', 'video', 'gif'];
+const MEDIA_TYPES = ['image', 'video', 'gif', 'manga'];
 const ORIENTATIONS = ['any', 'portrait', 'landscape', 'square'];
 
 const num = (v) => (v === null || v === undefined || v === '' || !isFinite(Number(v)) ? null : Number(v));
@@ -153,9 +153,10 @@ function normalizeFilter(f = {}) {
     return n;
 }
 
-// 'video' | 'gif' | 'image' — works for renderer ThumbFiles (numeric type) and raw rows.
+// 'video' | 'gif' | 'image' | 'manga' — works for renderer ThumbFiles (numeric type) and raw rows.
 function mediaKind(item) {
     const mime = String(item.mimeType || '');
+    if (mime === 'application/x-darkframe-manga') return 'manga';
     if (mime.startsWith('video/') || item.type === 2) return 'video';
     if (mime === 'image/gif') return 'gif';
     return 'image';

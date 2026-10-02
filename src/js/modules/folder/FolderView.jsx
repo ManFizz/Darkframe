@@ -2,6 +2,9 @@ import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import PrivateData from '@data/private';
 import {DRAG_PATHS, fsApi, fsThumbUrl} from '@/Infrastructure/Ipc';
 import FsDialog from './FsDialog';
+import {mangaApi} from '@/Infrastructure/Ipc';
+import {readLibraryManga} from '@services/mangaLibrary';
+import MakeMangaButton from '@react/Manga/MakeMangaButton';
 import {folderRequests, useCommands} from '@services/commands';
 import {ipcRenderer} from '@/Infrastructure/electron';
 import LibraryService from '@services/LibraryService';
@@ -364,9 +367,24 @@ const FolderView = () => {
         setSelected(new Set());
     };
 
-    const importFolderAt = async (dirPath, collectionId) => {
+    const importFolderAt = async (dirPath, collectionId, as = null) => {
         setCtxImport(null);
         pushRecentCollection(collectionId);
+        if (as) {
+            // A folder as manga: its pictures are pages, subfolders chapters
+            // ('auto'), or every subfolder its own manga ('each').
+            try {
+                const items = await mangaApi.importFolder(dirPath, { collectionId: collectionId ?? null, mode: as === 'manga-each' ? 'each' : 'auto' });
+                notify({
+                    message: items.length === 1 ? `Манга «${items[0].title}» — ${items[0].pageCount} стр.` : `Манги добавлено: ${items.length}`,
+                    type: 'success',
+                    action: items.length === 1 ? { label: 'Читать', onClick: () => readLibraryManga(items[0]) } : null,
+                });
+            } catch (e) {
+                notify({ message: String(e.message).replace(/^Error invoking remote method '[^']+': (Error: )?/, ''), type: 'warning' });
+            }
+            return;
+        }
         report(await LibraryService.importDirectory({ dirPath, collectionId }), 'Импортировано из папки');
     };
 
@@ -515,6 +533,10 @@ const FolderView = () => {
                         <button className="ftb-btn danger" onClick={() => trashEntries([...selected], filesWord(selected.size))} title="Удалить в корзину (Del)">
                             <i className="bi bi-trash3" /> <span>В корзину</span>
                         </button>
+                        {selectedFiles.filter(f => f.kind !== 'video').length > 1 && (
+                            <MakeMangaButton className="ftb-btn" files={selectedFiles.filter(f => f.kind !== 'video').map(f => f.path)}
+                                             defaultTitle={nodePath.basename(fb.path || '')} onDone={() => setSelected(new Set())} />
+                        )}
                         <span className="fsel-hint">перетащи на папку, чтобы переместить</span>
                         <div className="ftb-import fsel-import">
                             <button className={`ftb-btn primary ${bulkOpen ? 'on' : ''}`} onClick={() => setBulkOpen(v => !v)}>
@@ -607,14 +629,26 @@ const FolderView = () => {
                     <button onClick={() => { setCtxImport({ path: ctxMenu.folder.path, name: ctxMenu.folder.name, x: ctxMenu.x, y: ctxMenu.y }); setCtxMenu(null); }}>
                         <i className="bi bi-box-arrow-in-down" /> Импортировать в библиотеку…
                     </button>
+                    <button onClick={() => { setCtxImport({ path: ctxMenu.folder.path, name: ctxMenu.folder.name, x: ctxMenu.x, y: ctxMenu.y, as: 'manga' }); setCtxMenu(null); }}>
+                        <i className="bi bi-book" /> Импортировать как мангу…
+                    </button>
+                    {ctxMenu.folder.dirs > 1 && (
+                        <button onClick={() => { setCtxImport({ path: ctxMenu.folder.path, name: ctxMenu.folder.name, x: ctxMenu.x, y: ctxMenu.y, as: 'manga-each' }); setCtxMenu(null); }}>
+                            <i className="bi bi-collection" /> Каждая подпапка — отдельная манга…
+                        </button>
+                    )}
                 </div>
             )}
             {ctxImport && (
                 <>
                     <div className="bulk-move-backdrop" onMouseDown={() => setCtxImport(null)} />
                     <div className="ctx-import" style={{ left: Math.min(ctxImport.x, window.innerWidth - 340), top: Math.min(ctxImport.y, window.innerHeight - 440) }}>
-                        <div className="ftb-import-hint">«{ctxImport.name}» с подпапками — в коллекцию:</div>
-                        <CollectionTreeSelect value={undefined} onSelect={(id) => importFolderAt(ctxImport.path, id)} onClose={() => setCtxImport(null)} />
+                        <div className="ftb-import-hint">
+                            {ctxImport.as === 'manga' ? `«${ctxImport.name}» как манга (подпапки — главы) — в коллекцию:`
+                                : ctxImport.as === 'manga-each' ? `Подпапки «${ctxImport.name}» — отдельные манги — в коллекцию:`
+                                : `«${ctxImport.name}» с подпапками — в коллекцию:`}
+                        </div>
+                        <CollectionTreeSelect value={undefined} onSelect={(id) => importFolderAt(ctxImport.path, id, ctxImport.as)} onClose={() => setCtxImport(null)} />
                     </div>
                 </>
             )}

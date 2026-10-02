@@ -7,7 +7,7 @@ const FIELDS = {
     title:       { label: 'Название',         cmps: [['has', 'содержит'], ['not', 'не содержит']], input: 'text', ph: 'текст' },
     source:      { label: 'Источник (домен)', cmps: [['is', 'это'], ['not', 'не'], ['present', 'указан'], ['empty', 'не указан']], input: 'text', ph: 'pixiv.net' },
     rating:      { label: 'Рейтинг',          cmps: [['gte', '≥'], ['lte', '≤'], ['eq', '=']], input: 'number', min: 0, max: 10 },
-    type:        { label: 'Тип',              cmps: [['is', 'это'], ['not', 'не']], input: 'select', options: [['image', 'Изображение'], ['video', 'Видео'], ['gif', 'GIF']] },
+    type:        { label: 'Тип',              cmps: [['is', 'это'], ['not', 'не']], input: 'select', options: [['image', 'Изображение'], ['video', 'Видео'], ['gif', 'GIF'], ['manga', 'Манга']] },
     size:        { label: 'Размер, МБ',       cmps: [['gte', '≥'], ['lte', '≤']], input: 'number', step: 0.5 },
     duration:    { label: 'Длительность, с',  cmps: [['gte', '≥'], ['lte', '≤']], input: 'number' },
     width:       { label: 'Ширина, px',       cmps: [['gte', '≥'], ['lte', '≤']], input: 'number' },

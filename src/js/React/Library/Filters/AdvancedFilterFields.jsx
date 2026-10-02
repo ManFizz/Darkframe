@@ -56,6 +56,7 @@ const TYPES = [
     { id: 'image', label: 'Изображения', icon: 'bi-image' },
     { id: 'video', label: 'Видео',       icon: 'bi-film' },
     { id: 'gif',   label: 'GIF',         icon: 'bi-filetype-gif' },
+    { id: 'manga', label: 'Манга',       icon: 'bi-book' },
 ];
 
 const ORIENTATIONS = [

@@ -48,6 +48,31 @@ export const openExternalUrl = (url) => invoke('shell:openUrl', { url });
 // Seek-bar preview sprite for a library ({ itemId }) or folder ({ path }) video.
 export const getStoryboard = (req) => invoke('media:storyboard', req);
 
+export const mangaApi = {
+    book:            (id)                    => invoke('manga:book', { id }),
+    saveProgress:    (id, pos)               => invoke('manga:saveProgress', { id, ...pos }),
+    resetProgress:   (id)                    => invoke('manga:resetProgress', { id }),
+    setReading:      (id, reading)           => invoke('manga:setReading', { id, reading }),
+    recent:          (limit)                 => invoke('manga:recent', { limit }),
+    removePages:     (id, files)             => invoke('manga:removePages', { id, files }),
+    restorePages:    (id, stored)            => invoke('manga:restorePages', { id, stored }),
+    purgeRemoved:    (id)                    => invoke('manga:purgeRemoved', { id }),
+    reorder:         (id, orders)            => invoke('manga:reorder', { id, orders }),
+    setCover:        (id, file)              => invoke('manga:setCover', { id, file }),
+    renameChapter:   (id, chapter, title)    => invoke('manga:renameChapter', { id, chapter, title }),
+    addPagesDialog:  (id, opts = {})         => invoke('manga:addPagesDialog', { id, ...opts }),
+    fromItems:       (ids, opts = {})        => invoke('manga:fromItems', { ids, ...opts }),
+    fromFiles:       (files, opts = {})      => invoke('manga:fromFiles', { files, ...opts }),
+    importFolderDialog: (opts = {})          => invoke('manga:importFolderDialog', opts),
+    importFolder:    (dir, opts = {})        => invoke('manga:importFolder', { dir, ...opts }),
+    planFolder:      (dir, mode)             => invoke('manga:planFolder', { dir, mode }),
+    importArchiveDialog: (opts = {})         => invoke('manga:importArchiveDialog', opts),
+    importArchives:  (files, collectionId)   => invoke('manga:importArchives', { files, collectionId }),
+    exportCbz:       (id)                    => invoke('manga:exportCbz', { id }),
+    exportFolder:    (id)                    => invoke('manga:exportFolder', { id }),
+    split:           (id)                    => invoke('manga:split', { id }),
+};
+
 export const autotagApi = {
     status:   ()          => invoke('autotag:status'),
     download: ()          => invoke('autotag:download'),
