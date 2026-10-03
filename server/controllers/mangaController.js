@@ -26,6 +26,12 @@ function register() {
     ipcMain.handle('manga:resetProgress', (_, { id }) => progress.reset(id));
     ipcMain.handle('manga:setReading', (_, { id, reading }) => store.setReading(id, reading || {}));
     ipcMain.handle('manga:recent', (_, { limit } = {}) => progress.recent(limit));
+    // One page → a separate image in the library (button / key in the reader).
+    ipcMain.handle('manga:savePage', async (_, opts) => {
+        const res = await require('../services/manga/savePage').savePage(opts || {});
+        if (res.item) journal.recordCreated('страница манги', [res.item.id]);
+        return res;
+    });
 
     // ─── Page editing ───────────────────────────────────────────────────────
     ipcMain.handle('manga:removePages', (_, { id, files }) => store.removePages(id, files || []));

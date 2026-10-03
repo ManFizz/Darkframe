@@ -54,6 +54,7 @@ export const mangaApi = {
     resetProgress:   (id)                    => invoke('manga:resetProgress', { id }),
     setReading:      (id, reading)           => invoke('manga:setReading', { id, reading }),
     recent:          (limit)                 => invoke('manga:recent', { limit }),
+    savePage:        (opts)                  => invoke('manga:savePage', opts),
     removePages:     (id, files)             => invoke('manga:removePages', { id, files }),
     restorePages:    (id, stored)            => invoke('manga:restorePages', { id, stored }),
     purgeRemoved:    (id)                    => invoke('manga:purgeRemoved', { id }),

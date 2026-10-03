@@ -135,6 +135,7 @@ export const HOTKEY_GROUPS = [
             { keys: ['D'],                       desc: 'Направление чтения', action: 'reader.direction' },
             { keys: ['W'],                       desc: 'Подгонка страницы', action: 'reader.fit' },
             { keys: ['G'],                       desc: 'Миниатюры страниц', action: 'reader.thumbs' },
+            { keys: ['S'],                       desc: 'Сохранить страницу в библиотеку (отдельной картинкой)', action: 'reader.savePage' },
             { keys: ['A'],                       desc: 'Лента: автопрокрутка', action: 'reader.autoscroll' },
             { keys: ['F'],                       desc: 'Во весь экран', action: 'reader.fullscreen' },
             { keys: ['[', '/', ']'],             desc: 'Предыдущая / следующая глава', action: ['reader.prevChapter', 'reader.nextChapter'] },

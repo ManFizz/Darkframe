@@ -26,7 +26,7 @@ export function readOnline(g, { start = null, onDownload = null } = {}) {
         chapters,
         loadChapter: (chapterId) => mangaApi.chapter(g.source, g.id, chapterId).catch(e => { throw new Error(errText(e)); }),
         start: start || resume || { chapter: chapters[0].id, page: 0 },
-        reading: { ...(g.reading || {}), ...(saved?.reading || {}) },
+        reading: g.reading || null,   // the site may mark a title as a webtoon
         onProgress: (pos) => {
             const c = chapters.find(x => x.id === pos.chapter);
             onlineHistory.save(g.source, g.id, {
@@ -34,7 +34,10 @@ export function readOnline(g, { start = null, onDownload = null } = {}) {
                 chapterIndex: chapters.indexOf(c), pagesInChapter: null,
             });
         },
-        onSaveReading: (reading) => onlineHistory.save(g.source, g.id, { reading }),
+        savePage: (p, { page, chapterTitle }) => mangaApi.savePage({
+            source: g.source, url: p.src, resolve: p.resolve, page, chapterTitle,
+            title: g.title, tags: g.tags || [], sourceUrl: g.url,
+        }),
         actions: [
             ...(g.login ? [{ id: 'login', label: 'Войти', icon: 'bi-person-circle', run: () => mangaApi.login(g.source) }] : []),
             ...(onDownload ? [{ id: 'download', label: 'Скачать', icon: 'bi-download', run: () => onDownload() }] : []),

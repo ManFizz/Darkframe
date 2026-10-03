@@ -285,3 +285,37 @@ test('new chapters: a manga saved with some chapters gets the missing ones appen
         global.fetch = realFetch;
     }
 });
+
+test('save page: a library manga page and an online page become images with the manga data', async () => {
+    const realGet = sources.get;
+    sources.get = (id) => (id === 'fake' ? fake : realGet(id));
+    stubNetwork();
+    try {
+        const { savePage } = require(S('services', 'manga', 'savePage'));
+        const { Item, Tag } = require(S('models', 'associations'));
+        const job = await finished((await downloads.enqueue({ source: 'fake', id: 's1' })).id);
+        const book = store.bookOf(job.itemId);
+        const res = await savePage({ itemId: job.itemId, file: book.chapters[1].pages[0].file, page: 1, chapterTitle: 'Two' });
+        const it = await Item.findByPk(res.item.id, { include: [{ model: Tag, as: 'tags' }] });
+        assert.equal(it.title, 'Gallery s1 — стр. 1 · Two');
+        assert.equal(it.sourceUrl, 'https://fake.test/g/s1');
+        assert.match(it.fileName, /^Gallery s1 - p001\.png$/);
+        assert.deepEqual(it.tags.map(t => t.name).sort(), ['artist one', 'plain']);
+        assert.ok(it.mimeType.startsWith('image/'));
+        // same page again → reported as already there
+        assert.equal((await savePage({ itemId: job.itemId, file: book.chapters[1].pages[0].file, page: 1 })).skipped, true);
+
+        const online = await savePage({
+            source: 'fake', url: 'https://fake.test/o1/1/7.png', page: 7, title: 'Online one',
+            tags: [{ name: 'New Artist', type: 'artist' }], sourceUrl: 'https://fake.test/g/o1',
+        });
+        const o = await Item.findByPk(online.item.id, { include: [{ model: Tag, as: 'tags' }] });
+        assert.equal(o.title, 'Online one — стр. 7');
+        assert.equal(o.sourceUrl, 'https://fake.test/g/o1');
+        assert.equal(o.tags[0].name, 'new artist');
+        assert.equal(o.tags[0].type, 1);
+    } finally {
+        sources.get = realGet;
+        global.fetch = realFetch;
+    }
+});

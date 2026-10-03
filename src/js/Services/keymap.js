@@ -40,6 +40,7 @@ export const ACTIONS = [
     { id: 'reader.autoscroll', group: 'Читалка манги', label: 'Лента: автопрокрутка',              keys: ['KeyA'] },
     { id: 'reader.nextChapter', group: 'Читалка манги', label: 'Следующая глава',                 keys: ['BracketRight'] },
     { id: 'reader.prevChapter', group: 'Читалка манги', label: 'Предыдущая глава',                keys: ['BracketLeft'] },
+    { id: 'reader.savePage',   group: 'Читалка манги', label: 'Сохранить страницу в библиотеку', keys: ['KeyS'] },
 ];
 const BY_ID = new Map(ACTIONS.map(a => [a.id, a]));
 

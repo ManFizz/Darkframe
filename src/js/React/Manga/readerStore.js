@@ -8,10 +8,9 @@
  *   chapters: [{ id, title, pages: [{ url, w, h, thumb? }] | null }],
  *   loadChapter?(chapterId) → pages   // online sources load chapters lazily
  *   start?: { chapter, page },
- *   reading?: { mode, direction },    // saved per book
- *   language?: 'japanese' | …         // right-to-left default for Japanese
+ *   reading?: { mode },               // 'vertical' — a webtoon (mode / direction are otherwise global)
  *   onProgress?({ chapter, page, position, total }),
- *   onSaveReading?(reading),
+ *   savePage?(page, { page, chapter, chapterTitle }) → { item } | { skipped }
  *   actions?: [{ id, label, icon, run }],
  * }
  */

@@ -2,6 +2,7 @@ import React, {useCallback, useEffect, useLayoutEffect, useMemo, useRef, useStat
 import {createPortal} from 'react-dom';
 import {cachedMediaUrl} from '@/Infrastructure/MediaCache';
 import {matches} from '@services/keymap';
+import {notify} from '@services/NotificationService';
 import {exitViewerFullscreen, toggleViewerFullscreen} from '../Modal/fullscreen';
 import {looksVertical, readerPrefs, registerReader, saveReaderPrefs} from './readerStore';
 
@@ -41,11 +42,9 @@ const ReaderView = ({ book, onClose }) => {
         const p = readerPrefs();
         const firstPages = book.chapters[startCh]?.pages;
         const auto = looksVertical(firstPages) ? 'vertical' : null;
-        return {
-            ...p,
-            mode: book.reading?.mode || auto || p.mode,
-            direction: book.reading?.direction || (book.language && book.language !== 'japanese' && book.language !== 'chinese' ? 'ltr' : p.direction),
-        };
+        // Mode and direction are the viewer's choice, the same for every book; only
+        // webtoon strips (tall pages, or marked so by the site) open as a strip.
+        return { ...p, mode: book.reading?.mode === 'vertical' || auto ? 'vertical' : p.mode };
     });
     const [ui, setUi] = useState(true);
     const [thumbs, setThumbs] = useState(false);
@@ -79,24 +78,18 @@ const ReaderView = ({ book, onClose }) => {
     }, [ch, pages, book, chapter, retry]);
 
     // A chapter loaded lazily: the webtoon check couldn't run at the start.
-    const autoChecked = useRef(!!book.reading?.mode || !!book.chapters[startCh]?.pages);
+    const autoChecked = useRef(book.reading?.mode === 'vertical' || !!book.chapters[startCh]?.pages);
     useEffect(() => {
         if (autoChecked.current || !pages) return;
         autoChecked.current = true;
         if (looksVertical(pages)) setPrefs(p => ({ ...p, mode: 'vertical' }));
     }, [pages]);
 
-    // Per-book mode / direction; the rest is a global preference.
+    // Remembered for good: the next book opens the same way.
     const setPref = useCallback((patch) => {
         setPrefs(p => ({ ...p, ...patch }));
-        const own = {};
-        if ('mode' in patch) own.mode = patch.mode;
-        if ('direction' in patch) own.direction = patch.direction;
-        if (Object.keys(own).length) book.onSaveReading?.(own);
-        const global = { ...patch };
-        delete global.mode; delete global.direction;
-        if (Object.keys(global).length) saveReaderPrefs(global);
-    }, [book]);
+        saveReaderPrefs(patch);
+    }, []);
 
     // Progress (debounced).
     useEffect(() => {
@@ -144,6 +137,26 @@ const ReaderView = ({ book, onClose }) => {
         const last = spreads[spreadIdx]?.slice(-1)[0] ?? page;
         pages.slice(last + 1, last + 5).forEach(p => { const i = new Image(); i.src = src(p); });
     }, [pages, page, spreadIdx, spreads, vertical]);
+
+    // The current page → a separate image in the library (book.savePage does the work).
+    const [saving, setSaving] = useState(false);
+    const savePage = useCallback(async () => {
+        const p = pages?.[page];
+        if (!p || !book.savePage || saving) return;
+        setSaving(true);
+        try {
+            const res = await book.savePage(p, { page: page + 1, chapter, chapterTitle: chapters.length > 1 ? (chapter?.title || `Глава ${ch + 1}`) : '' });
+            if (res?.skipped) {
+                notify({ message: res.reason === 'trashed' ? 'Эта страница уже лежит в корзине библиотеки' : `Страница уже есть в библиотеке · «${res.collectionName}»`, type: 'info' });
+            } else {
+                notify({ message: `Страница ${page + 1} сохранена в библиотеку · Ctrl+Z — отменить`, type: 'success' });
+            }
+        } catch (e) {
+            notify({ message: `Не удалось сохранить: ${String(e?.message || e).replace(/^Error invoking remote method '[^']+': (Error: )?/, '')}`, type: 'warning' });
+        } finally {
+            setSaving(false);
+        }
+    }, [pages, page, book, saving, chapter, chapters.length, ch]);
 
     const goChapter = useCallback((i, where = 'start') => {
         if (i < 0 || i >= chapters.length) return false;
@@ -221,6 +234,7 @@ const ReaderView = ({ book, onClose }) => {
             else if (matches(e, 'reader.direction')) setPref({ direction: prefs.direction === 'rtl' ? 'ltr' : 'rtl' });
             else if (matches(e, 'reader.fit')) setPref({ fit: FITS[(FITS.findIndex(f => f.id === prefs.fit) + 1) % FITS.length].id });
             else if (matches(e, 'reader.thumbs')) setThumbs(v => !v);
+            else if (matches(e, 'reader.savePage')) savePage();
             else if (matches(e, 'reader.fullscreen')) toggleViewerFullscreen();
             else if (matches(e, 'reader.autoscroll')) setAuto(v => !v);
             else if (matches(e, 'reader.nextChapter')) goChapter(ch + 1);
@@ -267,7 +281,7 @@ const ReaderView = ({ book, onClose }) => {
         };
         window.addEventListener('keydown', onKey, true);
         return () => window.removeEventListener('keydown', onKey, true);
-    }, [prefs, vertical, thumbs, menu, onClose, setPref, goChapter, ch, pages, page, spreads, next, prev, scrollToPage, wake]);
+    }, [prefs, vertical, thumbs, menu, onClose, setPref, goChapter, ch, pages, page, spreads, next, prev, scrollToPage, wake, savePage]);
 
     useEffect(() => () => exitViewerFullscreen(), []);
     // The button that opened the reader (or a tab radio) keeps focus otherwise.
@@ -345,6 +359,12 @@ const ReaderView = ({ book, onClose }) => {
                         </select>
                     )}
                 </div>
+                {book.savePage && (
+                    <button className="rd-btn" onClick={savePage} disabled={saving || !pages}
+                            title={`Сохранить страницу ${page + 1} в библиотеку отдельной картинкой (S)`}>
+                        <i className={`bi ${saving ? 'bi-arrow-repeat spin' : 'bi-download'}`} />
+                    </button>
+                )}
                 <div className="rd-seg" title="Режим (V)">
                     {MODES.map(m => (
                         <button key={m.id} className={prefs.mode === m.id ? 'on' : ''} onClick={() => setPref({ mode: m.id })} title={m.label}>

@@ -29,9 +29,9 @@ export async function readLibraryManga(item, { fromStart = false } = {}) {
         title: item.title || 'Манга',
         chapters,
         start: resume ? { chapter: st.chapter, page: st.page } : { chapter: chapters[0]?.id, page: 0 },
-        reading: book.reading,
+        // Pages carry their sizes here: webtoon strips are recognised by them.
         onProgress: (pos) => mangaApi.saveProgress(item.id, pos).catch(() => {}),
-        onSaveReading: (reading) => mangaApi.setReading(item.id, reading).catch(() => {}),
+        savePage: (p, { page, chapterTitle }) => mangaApi.savePage({ itemId: item.id, file: p.file, page, chapterTitle }),
         // The editor changes the book under the reader: close it first.
         actions: [{ id: 'pages', label: 'Страницы', icon: 'bi-grid-3x3', run: ({ close }) => { close(); openPageEditor(item); } }],
         // Tiles show the reading progress: refresh the open library view.
