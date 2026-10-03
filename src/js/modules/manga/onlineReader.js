@@ -3,6 +3,19 @@ import {openReader} from '@react/Manga/readerStore';
 import {notify} from '@services/NotificationService';
 import {onlineHistory} from './onlineHistory';
 
+// The site's sign-in window; says afterwards whether the sign-in took.
+export async function loginTo(source) {
+    try {
+        const r = await mangaApi.login(source);
+        if (r?.loggedIn) notify({ message: 'Вход выполнен — главы теперь открываются', type: 'success' });
+        else if (r?.loggedIn === false) notify({ message: 'Вход не обнаружен. Если вы входили — откройте «Войти» ещё раз и дождитесь, пока окно вернётся на сайт', type: 'warning', duration: 9000 });
+        return !!r?.loggedIn;
+    } catch (e) {
+        notify({ message: errText(e), type: 'warning' });
+        return false;
+    }
+}
+
 export const errText = (e) => String(e?.message || e).replace(/^Error invoking remote method '[^']+': (Error: )?/, '');
 
 /**
@@ -39,7 +52,7 @@ export function readOnline(g, { start = null, onDownload = null } = {}) {
             title: g.title, tags: g.tags || [], sourceUrl: g.url,
         }),
         actions: [
-            ...(g.login ? [{ id: 'login', label: 'Войти', icon: 'bi-person-circle', run: () => mangaApi.login(g.source) }] : []),
+            ...(g.login ? [{ id: 'login', label: 'Войти', icon: 'bi-person-circle', run: () => loginTo(g.source) }] : []),
             ...(onDownload ? [{ id: 'download', label: 'Скачать', icon: 'bi-download', run: () => onDownload() }] : []),
         ],
     });

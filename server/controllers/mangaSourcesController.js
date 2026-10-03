@@ -43,11 +43,27 @@ async function mark(source, items) {
 }
 
 let siteWin = null;
+
+// What the site window went through (hosts and paths only, no query strings or
+// cookie values) — for finding out why a sign-in didn't stick.
+function siteLog(line) {
+    try {
+        const fs = require('fs');
+        const path = require('path');
+        const file = path.join(require('electron').app.getPath('userData'), 'manga-site.log');
+        try { if (fs.statSync(file).size > 256 * 1024) fs.rmSync(file); } catch { /* none yet */ }
+        fs.appendFileSync(file, `${new Date().toISOString()} ${line}\n`);
+    } catch { /* ignore */ }
+}
+const bare = (u) => { try { const x = new URL(u); return `${x.host}${x.pathname}`; } catch { return '?'; } };
+
 // A site page in the manga session: sign-in (AllHentai), a Cloudflare check.
-// Resolves when the window is closed.
-function openSiteWindow(parent, url, title, referrer = null) {
+// `onPage(win)` runs after every page load; returning true closes the window
+// (e.g. the sign-in is done). Resolves when the window is closed.
+function openSiteWindow(parent, url, title, { referrer = null, onPage = null } = {}) {
     const load = (w) => w.loadURL(url, referrer ? { httpReferrer: referrer } : undefined).catch(() => {});
     if (siteWin && !siteWin.isDestroyed()) {
+        siteWin.onPage = onPage;
         load(siteWin);
         siteWin.focus();
         return siteWin.closedPromise;
@@ -60,13 +76,31 @@ function openSiteWindow(parent, url, title, referrer = null) {
         autoHideMenuBar: true,
         webPreferences: { partition: http.PARTITION, contextIsolation: true, nodeIntegration: false, sandbox: true },
     });
+    win.onPage = onPage;
     win.webContents.setUserAgent(http.UA());
     // Pop-ups (OAuth etc.) open in the same window instead of new ones.
     win.webContents.setWindowOpenHandler(({ url: u }) => {
         if (/^https?:\/\//i.test(u)) win.loadURL(u).catch(() => {});
         return { action: 'deny' };
     });
-    win.closedPromise = new Promise(resolve => win.on('closed', () => { siteWin = null; resolve(true); }));
+    siteLog(`open ${bare(url)}`);
+    win.webContents.on('did-navigate', (e, u, code) => siteLog(`nav ${code} ${bare(u)}`));
+    win.webContents.on('did-redirect-navigation', (e, u) => siteLog(`redirect ${bare(u)}`));
+    win.webContents.on('did-fail-load', (e, code, desc, u, main) => { if (main) siteLog(`fail ${code} ${desc} ${bare(u)}`); });
+    win.webContents.on('did-finish-load', async () => {
+        if (!win.onPage || win.isDestroyed()) return;
+        try { if (await win.onPage(win)) win.close(); } catch { /* page went away */ }
+    });
+    win.closedPromise = new Promise(resolve => win.on('closed', async () => {
+        siteWin = null;
+        try {
+            const all = await require('electron').session.fromPartition(http.PARTITION).cookies.get({});
+            const byHost = {};
+            all.forEach(c => { (byHost[c.domain] ||= []).push(c.name); });
+            siteLog(`closed; cookies: ${Object.entries(byHost).map(([d, n]) => `${d}[${n.join(',')}]`).join(' ')}`);
+        } catch { /* ignore */ }
+        resolve(true);
+    }));
     load(win);
     siteWin = win;
     return win.closedPromise;
@@ -134,9 +168,21 @@ function register() {
     ipcMain.handle('manga:login', async (event, { source }) => {
         const src = sources.get(source);
         const url = typeof src.loginUrl === 'function' ? await src.loginUrl() : (src.loginUrl || src.home);
+        let done = false;
         // AllHentai answers its sign-in link only when coming from the site itself.
-        await openSiteWindow(winOf(event), url, `${src.name} — вход`, `${new URL(url).origin}/`);
-        return true;
+        await openSiteWindow(winOf(event), url, `${src.name} — вход`, {
+            referrer: `${new URL(url).origin}/`,
+            // Back on the site and signed in → that's it, close the window.
+            onPage: src.signedIn ? async (win) => {
+                const ok = await src.signedIn(win);
+                siteLog(`check ${bare(win.webContents.getURL())} → ${ok}`);
+                if (ok) done = true;
+                return ok;
+            } : null,
+        });
+        const loggedIn = done || (src.checkLogin ? await src.checkLogin().catch(() => false) : null);
+        siteLog(`login result ${loggedIn}`);
+        return { loggedIn };
     });
     ipcMain.handle('manga:openSite', async (event, { source, url }) => {
         const src = sources.get(source);

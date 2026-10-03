@@ -7,7 +7,7 @@ import {readLibraryManga} from '@services/mangaLibrary';
 import CollectionTreeSelect, {pushRecentCollection} from '@react/Library/Collection/CollectionTreeSelect';
 import LibraryService from '@services/LibraryService';
 import {onlineHistory} from './onlineHistory';
-import {errText, readOnline} from './onlineReader';
+import {errText, loginTo, readOnline} from './onlineReader';
 import {useMangaDownloads} from './useMangaDownloads';
 
 /**
@@ -217,7 +217,7 @@ const SearchPane = ({ source, onOpenGallery }) => {
                     <i className="bi bi-globe2" />
                 </button>
                 {source.login && (
-                    <button className="ftb-btn" onClick={() => mangaApi.login(source.id)} title="Войти на сайте (нужно для чтения глав)">
+                    <button className="ftb-btn" onClick={() => loginTo(source.id)} title="Войти на сайте (нужно для чтения глав)">
                         <i className="bi bi-person-circle" /> <span>Войти</span>
                     </button>
                 )}
@@ -370,7 +370,7 @@ const GalleryPane = ({ target, onBack, onSearchTag }) => {
                             )}
                             {g?.login && (
                                 <button className="ftb-btn" title="Главы этого сайта видны только после входа — окно сайта, войдите в свой аккаунт"
-                                        onClick={() => mangaApi.login(target.source)}>
+                                        onClick={() => loginTo(target.source)}>
                                     <i className="bi bi-person-circle" /> <span>Войти на сайте</span>
                                 </button>
                             )}

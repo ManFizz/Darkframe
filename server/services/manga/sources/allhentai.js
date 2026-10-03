@@ -139,12 +139,46 @@ function parseReader(html) {
     return list.filter(Array.isArray).map(x => ({ url: `${x[0] || ''}${x[1] || ''}${x[2] || ''}`, w: Number(x[3]) || 0, h: Number(x[4]) || 0 }));
 }
 
+const SIGNED_IN = '!!window.current_user_id';
+const isSiteHost = (u) => { try { return /allhen|allhentai/i.test(new URL(u).hostname); } catch { return false; } };
+
+// The sign-in window is on the site and the page knows the user → signed in.
+// The session lives on that domain: use it from now on.
+async function signedIn(win) {
+    const url = win.webContents.getURL();
+    if (!isSiteHost(url)) return false;
+    const ok = !!(await win.webContents.executeJavaScript(SIGNED_IN).catch(() => false));
+    if (ok) { base = new URL(url).origin; baseAt = Date.now(); }
+    return ok;
+}
+
+// Signed in? (a real page load — the site decides it from its own session)
+async function checkLogin() {
+    const b = await origin();
+    const page = await require('../browserPage').loadPage(`${b}/`, { script: SIGNED_IN });
+    if (page && isSiteHost(page.url)) { base = new URL(page.url).origin; baseAt = Date.now(); }
+    return page ? !!page.value : false;
+}
+
+const realPages = (pages, b) => pages
+    .filter(p => !/\/static\/deleted/.test(p.url))
+    .map(p => ({ ...p, url: p.url.startsWith('/') ? b + p.url : p.url }));
+
 async function chapterPages(slug, chapterId) {
     const b = await origin();
-    const { body } = await http.text(`${b}${chapterId}?mtr=true`, { referer: `${b}/${slug}`, allowError: true });
-    const pages = parseReader(body);
+    const url = `${b}${chapterId}?mtr=true`;
+    const { body } = await http.text(url, { referer: `${b}/${slug}`, allowError: true });
+    let pages = parseReader(body);
+    let real = pages ? realPages(pages, b) : [];
+    // Guest view: the same page the way the browser (signed in) sees it.
+    if (!real.length) {
+        const page = await require('../browserPage').loadPage(url, { referrer: `${b}/${slug}` }).catch(() => null);
+        if (page) {
+            pages = parseReader(page.html) ?? pages;
+            real = pages ? realPages(pages, b) : [];
+        }
+    }
     if (pages == null) throw new Error('Глава не открылась — возможно, нужен вход на сайт');
-    const real = pages.filter(p => !/\/static\/deleted/.test(p.url)).map(p => ({ ...p, url: p.url.startsWith('/') ? b + p.url : p.url }));
     if (!real.length) {
         const err = new Error('Страницы видны только после входа на сайте — нажмите «Войти» и войдите в аккаунт');
         err.code = 'LOGIN';
@@ -160,6 +194,8 @@ module.exports = {
     sorts: SORTS,
     tagTypes: TYPE,
     login: true,
+    signedIn,
+    checkLogin,
     loginUrl: async () => `${await origin()}/internal/auth`,
     searchHint: 'название (рус. / англ. / оригинал)',
     matchUrl(url) {
