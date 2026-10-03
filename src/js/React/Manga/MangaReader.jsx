@@ -208,7 +208,9 @@ const ReaderView = ({ book, onClose }) => {
     // ─── Keyboard ─────────────────────────────────────────────────────────────
     useEffect(() => {
         const onKey = (e) => {
-            if (e.target.closest?.('input, textarea, select')) {
+            // Text fields keep their keys; the page slider / checkboxes / whatever had
+            // focus behind the reader don't take the arrows away from it.
+            if (e.target.closest?.('input:not([type=range]):not([type=radio]):not([type=checkbox]):not([type=button]), textarea, select')) {
                 if (e.key === 'Escape') e.target.blur();
                 return;
             }
@@ -227,6 +229,11 @@ const ReaderView = ({ book, onClose }) => {
                 const stage = stageRef.current;
                 if (e.key === ' ' || e.key === 'PageDown') stage.scrollBy({ top: (e.shiftKey ? -0.9 : 0.9) * stage.clientHeight, behavior: 'smooth' });
                 else if (e.key === 'PageUp') stage.scrollBy({ top: -0.9 * stage.clientHeight, behavior: 'smooth' });
+                else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+                    // Plain scrolling, like a browser page (held key — continuous).
+                    const dy = (e.key === 'ArrowDown' ? 1 : -1) * (e.repeat ? 70 : 120);
+                    stage.scrollBy({ top: dy, behavior: e.repeat ? 'auto' : 'smooth' });
+                }
                 else if (e.key === 'ArrowRight') scrollToPage(Math.min((pages?.length || 1) - 1, page + 1), true);
                 else if (e.key === 'ArrowLeft') scrollToPage(Math.max(0, page - 1), true);
                 else if (e.key === 'Home') scrollToPage(0);
@@ -235,6 +242,10 @@ const ReaderView = ({ book, onClose }) => {
             } else {
                 if (e.key === 'ArrowRight') (rtl ? prev : next)();
                 else if (e.key === 'ArrowLeft') (rtl ? next : prev)();
+                else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+                    // A page taller than the screen (fit to width, zoom): scroll it.
+                    stageRef.current?.scrollBy({ top: (e.key === 'ArrowDown' ? 1 : -1) * (e.repeat ? 70 : 120), behavior: e.repeat ? 'auto' : 'smooth' });
+                }
                 else if (e.key === ' ' || e.key === 'PageDown') {
                     const stage = stageRef.current;
                     if (stage && stage.scrollTop + stage.clientHeight < stage.scrollHeight - 4 && !e.shiftKey) stage.scrollBy({ top: 0.9 * stage.clientHeight, behavior: 'smooth' });
@@ -259,6 +270,8 @@ const ReaderView = ({ book, onClose }) => {
     }, [prefs, vertical, thumbs, menu, onClose, setPref, goChapter, ch, pages, page, spreads, next, prev, scrollToPage, wake]);
 
     useEffect(() => () => exitViewerFullscreen(), []);
+    // The button that opened the reader (or a tab radio) keeps focus otherwise.
+    useEffect(() => { document.activeElement?.blur?.(); }, []);
 
     // ─── Paged: wheel turns the page once the current one is scrolled through ──
     const onWheel = (e) => {
@@ -461,7 +474,8 @@ const ReaderView = ({ book, onClose }) => {
                 {pages && pages.length > 1 && (
                     <input className="rd-slider" type="range" min={0} max={pages.length - 1} value={page}
                            style={{ direction: prefs.direction === 'rtl' && !vertical ? 'rtl' : 'ltr' }}
-                           onChange={e => { const i = Number(e.target.value); setAtEnd(false); setPage(i); if (vertical) scrollToPage(i); }} />
+                           onChange={e => { const i = Number(e.target.value); setAtEnd(false); setPage(i); if (vertical) scrollToPage(i); }}
+                           onPointerUp={e => e.currentTarget.blur()} />
                 )}
                 {jump != null ? (
                     <input className="rd-jump" autoFocus value={jump} onChange={e => setJump(e.target.value)}
