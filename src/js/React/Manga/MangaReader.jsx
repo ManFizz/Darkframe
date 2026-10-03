@@ -105,13 +105,38 @@ const ReaderView = ({ book, onClose }) => {
         return () => clearTimeout(t);
     }, [page, ch, pages, total, offset, book, chapter]);
 
-    // UI hides after a moment of no mouse movement.
+    // UI hides after a moment of no mouse movement; it stays while the pointer is
+    // over the bars / panels.
+    const overUi = useRef(false);
     const wake = useCallback(() => {
         setUi(true);
         clearTimeout(hideTimer.current);
-        hideTimer.current = setTimeout(() => setUi(false), 2600);
+        const hide = () => { if (overUi.current) hideTimer.current = setTimeout(hide, 1200); else setUi(false); };
+        hideTimer.current = setTimeout(hide, 2600);
     }, []);
     useEffect(() => { wake(); return () => clearTimeout(hideTimer.current); }, [wake]);
+
+    // Turning pages never brings the bars up — and hides them, unless they're in use.
+    const firstPage = useRef(true);
+    useEffect(() => {
+        if (firstPage.current) { firstPage.current = false; return; }
+        if (overUi.current) return;
+        clearTimeout(hideTimer.current);
+        setUi(false);
+    }, [page, ch]);
+
+    // Only a real mouse move shows the bars: the hand resting on the mouse while
+    // clicking through pages jitters by a pixel or two.
+    const lastPtr = useRef(null);
+    const onMouseMove = (e) => {
+        overUi.current = !!e.target.closest?.('.rd-top, .rd-bottom, .rd-thumbs, .rd-menu');
+        const l = lastPtr.current;
+        lastPtr.current = { x: e.clientX, y: e.clientY };
+        if (overUi.current) { wake(); return; }
+        if (!l) return;
+        if (Math.hypot(e.clientX - l.x, e.clientY - l.y) > 14) wake();
+        else lastPtr.current = l;   // small moves add up from the same point
+    };
 
     // Preload the next pages.
     useEffect(() => {
@@ -223,7 +248,10 @@ const ReaderView = ({ book, onClose }) => {
                 else if (e.key === '-') setZoom(z => Math.max(0.5, z - 0.25));
                 else handled = false;
             }
-            if (handled) { e.preventDefault(); wake(); }
+            // Settings keys show the bars (to see what changed); turning pages doesn't.
+            const turn = ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', ' ', 'PageDown', 'PageUp', 'Home', 'End'].includes(e.key)
+                || matches(e, 'reader.nextChapter') || matches(e, 'reader.prevChapter');
+            if (handled) { e.preventDefault(); if (!turn && e.key !== 'Escape') wake(); }
             e.stopPropagation();   // nothing behind the reader reacts
         };
         window.addEventListener('keydown', onKey, true);
@@ -270,7 +298,6 @@ const ReaderView = ({ book, onClose }) => {
         drag.current = { x: e.clientX, y: e.clientY, l: stage.scrollLeft, t: stage.scrollTop, moved: false };
     };
     const onPointerMove = (e) => {
-        wake();
         const d = drag.current;
         if (!d || !(e.buttons & 1)) { drag.current = null; return; }
         const dx = e.clientX - d.x, dy = e.clientY - d.y;
@@ -294,7 +321,7 @@ const ReaderView = ({ book, onClose }) => {
 
     return createPortal(
         <div className={`rd bg-${prefs.background} ${ui ? '' : 'rd-hidden-ui'} ${vertical ? 'is-vertical' : ''}`}
-             onMouseMove={wake}>
+             onMouseMove={onMouseMove}>
             <div className="rd-top">
                 <button className="rd-btn" onClick={onClose} title="Закрыть (Esc)"><i className="bi bi-arrow-left" /></button>
                 <div className="rd-title" title={book.title}>
