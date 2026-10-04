@@ -51,11 +51,13 @@ const SearchBar = ({ source, query, setQuery, filters, setFilters, onSearch, onO
     // "-" in front means "exclude".
     const text = query.trim();
     const exclude = text.startsWith('-');
+    const min = source.suggestMin || 1;
+    const short = text.replace(/^-/, '').length < min;   // e-hentai suggests from 2 letters
 
     useEffect(() => {
         if (!open) return;
         const t = text.replace(/^-/, '');
-        if (!t) { setItems([]); setLoading(false); return; }
+        if (!t || t.length < min) { setItems([]); setLoading(false); return; }
         const id = ++req.current;
         setLoading(true);
         const timer = setTimeout(() => {
@@ -71,7 +73,7 @@ const SearchBar = ({ source, query, setQuery, filters, setFilters, onSearch, onO
                 .finally(() => { if (id === req.current) setLoading(false); });
         }, 220);
         return () => clearTimeout(timer);
-    }, [text, open, source.id, filters]);
+    }, [text, open, source.id, filters, min]);
 
     const recent = useMemo(() => (open && !text ? loadRecent(source.id) : []), [open, text, source.id]);
     const rows = text ? items : recent.map(r => ({ kind: 'recent', ...r }));
@@ -187,7 +189,11 @@ const SearchBar = ({ source, query, setQuery, filters, setFilters, onSearch, onO
                 </div>
             )}
             {open && text && !loading && !items.length && (
-                <div className="mo-ac"><div className="mo-ac-empty">Подсказок нет — Enter ищет по тексту</div></div>
+                <div className="mo-ac">
+                    <div className="mo-ac-empty">
+                        {short ? `Подсказки по тегам — от ${min} символов; Enter ищет по тексту` : 'Подсказок нет — Enter ищет по тексту'}
+                    </div>
+                </div>
             )}
         </div>
     );

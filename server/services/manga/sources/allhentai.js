@@ -254,6 +254,35 @@ const realPages = (pages, b) => pages
 
 // Why a chapter shows no pages: structure only (counts, hosts, whether the site
 // sees a user) — no page text, no ids.
+// What a reader page without the usual page list is made of — structure only:
+// address paths, script file names, variable names, element ids / counts, the
+// site's own notice boxes. No page text, no titles, no ids of anything.
+const PAGE_PROBE = String.raw`(() => {
+    const host = (u) => { try { const x = new URL(u, location.href); return x.host + '/' + (x.pathname.split('/')[1] || ''); } catch { return '?'; } };
+    const imgs = {};
+    document.querySelectorAll('img').forEach(i => { const k = host(i.getAttribute('src') || i.dataset.src || ''); imgs[k] = (imgs[k] || 0) + 1; });
+    const inline = [...document.scripts].filter(s => !s.src).map(s => s.textContent).join('\n');
+    const vars = [...new Set((inline.match(/(?:window\.|var |let |const )([A-Za-z_$][\w$]{2,40})\s*=/g) || []).map(v => v.replace(/^(window\.|var |let |const )/, '').replace(/\s*=$/, '')))].slice(0, 60);
+    const calls = [...new Set(inline.match(/rm_h\.[A-Za-z]+/g) || [])];
+    const notices = [...document.querySelectorAll('.alert')]
+        .map(e => (e.innerText || '').trim().replace(/\s+/g, ' ').slice(0, 160)).filter(Boolean).slice(0, 6);
+    return {
+        user: !!window.current_user_id,
+        path: location.pathname.split('/').length + ' parts' + (location.search ? ' ?' + [...new URLSearchParams(location.search).keys()].join(',') : ''),
+        scripts: [...document.scripts].filter(s => s.src).map(s => s.src.split('/').pop().replace(/-[\w]{6,}(?=\.js)/, '')).slice(0, 30),
+        vars, calls, imgs, notices,
+        ids: [...document.querySelectorAll('[id]')].map(e => e.id).filter(id => !/\d{4,}/.test(id)).slice(0, 50),
+        readerish: [...new Set([...document.querySelectorAll('[class*="reader"], [class*="Reader"], [class*="chapter"]')].flatMap(e => [...e.classList]).filter(c => /reader|chapter/i.test(c)))].slice(0, 30),
+        forms: [...document.forms].map(f => { try { return new URL(f.action).pathname; } catch { return '?'; } }),
+    };
+})()`;
+
+function probeLog(url, page) {
+    const { siteLog, bare } = require('../siteLog');
+    const reqs = (page.requests || []).map(r => { try { const x = new URL(r.url); return `${r.type}:${r.status} ${x.host}${x.pathname}${x.search ? '?' + [...x.searchParams.keys()].join(',') : ''}`; } catch { return '?'; } });
+    siteLog(`probe ${bare(url)} → final ${bare(page.url)}: ${JSON.stringify(page.value)} requests=${JSON.stringify(reqs.slice(0, 40))}`);
+}
+
 function diagnose(url, html, pages, browserUser) {
     const { siteLog, bare } = require('../siteLog');
     const list = pages || [];
@@ -281,11 +310,14 @@ async function chapterPages(slug, chapterId) {
     let browserUser = null;
     // Guest view: the same page the way the browser (signed in) sees it.
     if (!real.length) {
-        const page = await require('../browserPage').loadPage(url, { referrer: `${b}/${slug}`, script: SIGNED_IN }).catch(() => null);
-        browserUser = page ? !!page.value : null;
+        const page = await require('../browserPage').loadPage(url, {
+            referrer: `${b}/${slug}`, script: PAGE_PROBE, settle: 2500, trackRequests: true,
+        }).catch(() => null);
+        browserUser = page ? !!page.value?.user : null;
         if (page) {
             pages = parseReader(page.html) ?? pages;
             real = pages ? realPages(pages, b) : [];
+            if (!real.length) probeLog(url, page);
         }
     }
     diagnose(url, body, pages, browserUser);

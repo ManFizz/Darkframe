@@ -124,17 +124,48 @@
 
 .rating-stars {
   display: flex;
-  flex-wrap: nowrap;
-  justify-content: center;
-  font-size: 21px;
-  color: var(--bs-warning);
-  cursor: pointer;
-
-  i:hover ~ i { color: var(--bs-secondary); }
-  i.bi {
-    padding: 0 1.5px;
-  }
+  align-items: center;
+  gap: 10px;
 }
+.rating-stars-row { display: flex; flex: 1; justify-content: space-between; min-width: 0; }
+.rating-star {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  padding: 2px 0;
+  border: none;
+  background: transparent;
+  color: var(--bs-secondary);
+  cursor: pointer;
+  flex: 1;
+  min-width: 0;
+  .bi { font-size: 19px; line-height: 1; transition: transform 0.1s, color 0.1s; }
+  .rating-star-n { font-size: 9.5px; line-height: 1; opacity: 0.35; font-variant-numeric: tabular-nums; transition: opacity 0.1s, color 0.1s; }
+  &.on { color: var(--bs-warning); .rating-star-n { opacity: 1; color: var(--bs-warning); } }
+  &.edge .bi { transform: scale(1.18); }
+}
+// While hovering, the numbers stand out more: easy to see where the click lands.
+.rating-stars.hovering .rating-star.on .rating-star-n { font-weight: 700; }
+.rating-stars-value {
+  min-width: 46px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  b { font-size: 18px; color: var(--bs-warning); }
+  span { font-size: 11px; color: var(--bs-secondary); margin-left: 1px; }
+  .none { font-size: 16px; }
+  em { display: block; font-style: normal; font-size: 10px; color: var(--bs-secondary); }
+}
+
+// Tags header: the title and "suggest tags" in one row.
+.st-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  .st-ask, .st-hint { margin-top: 0; }
+}
+.metadata-tail { gap: 8px; padding-top: 4px; border-top: 1px dashed var(--bs-border-color); }
 
 
 // ─── Copies / look-alikes of the open item ───────────────────────────────────

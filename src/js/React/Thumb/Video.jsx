@@ -2,13 +2,12 @@ import React, {useMemo, useState} from "react";
 import Settings from "@data/settings";
 import Image from "./Image";
 import {cachedMediaUrl} from "@/Infrastructure/MediaCache";
-import {useHoverVideo} from "./useHoverVideo";
 
 const loadingUrl = "./images/loading.gif";
 
-const Video = ({ file }) => {
+// hoverOverlay: the hover preview, driven by the whole tile (Thumb).
+const Video = ({ file, hoverOverlay = null }) => {
     const [isLoading, setIsLoading] = useState(Settings.Resize);
-    const hover = useHoverVideo(file.contentUrl);
 
     const hasThumb = useMemo(() =>
             file.thumbUrl?.trim() && file.thumbUrl !== file.contentUrl,
@@ -17,9 +16,9 @@ const Video = ({ file }) => {
 
     if (hasThumb) {
         return (
-            <div className="hover-video-host" onMouseEnter={hover.onMouseEnter} onMouseLeave={hover.onMouseLeave}>
+            <div className="hover-video-host">
                 <Image file={file} />
-                {hover.overlay}
+                {hoverOverlay}
                 <span className="video-mark"><i className="bi bi-play-fill" /></span>
             </div>
         );

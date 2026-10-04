@@ -416,8 +416,8 @@ const Modal = ({ fileId, mainArray, modalUpdater, displayFiles, onUpdated, autoS
                         panelOpen={panelOpen}
                         showFav={!isLibrary && !hasFolderPanel}
                         onPanelToggle={hasSidePanel ? () => setPanelOpen(v => !v) : null}
-                        onEdit={isLibrary && onUpdated && file.type === FILE_TYPES.IMAGE && file.mimeType !== 'image/gif' && !file.isManga ? () => setEditing(true) : null}
-                        onApplyLast={isLibrary && onUpdated && file.type === FILE_TYPES.IMAGE && file.mimeType !== 'image/gif' && loadEditPreset() ? handleApplyLast : null}
+                        onEdit={isLibrary && onUpdated && file.type === FILE_TYPES.IMAGE && !file.isManga ? () => setEditing(true) : null}
+                        onApplyLast={isLibrary && onUpdated && file.type === FILE_TYPES.IMAGE && !file.isManga && loadEditPreset() ? handleApplyLast : null}
                         onDuplicate={isLibrary && onUpdated ? handleDuplicate : null}
                         onSlideshow={ss.active ? null : ss.start}
                         hidden={ss.active && !ss.paused}

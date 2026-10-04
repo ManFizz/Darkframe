@@ -29,8 +29,8 @@ const BulkActionBar = ({ selectedItems, onDone, onChanged, onSlideshow, permanen
     // Re-encode every selected still image (format / quality / max side). Each keeps
     // its own crop/colour edits, and the pristine original stays available for revert.
     const compressAll = async () => {
-        const targets = selectedItems.filter(f => f.type === FILE_TYPES.IMAGE && f.mimeType !== 'image/gif');
-        if (!targets.length) { notify({ message: 'Нет подходящих изображений (GIF и видео пропускаются)', type: 'warning' }); return; }
+        const targets = selectedItems.filter(f => f.type === FILE_TYPES.IMAGE && !f.isManga);
+        if (!targets.length) { notify({ message: 'Нет подходящих изображений (видео пропускаются)', type: 'warning' }); return; }
         if (!confirm(`Пересжать ${targets.length} изображений? Оригиналы сохранятся — можно будет откатить.`)) return;
         setCompressOpen(false);
 
@@ -103,7 +103,7 @@ const BulkActionBar = ({ selectedItems, onDone, onChanged, onSlideshow, permanen
     const applyLastEdit = async () => {
         const preset = loadEditPreset();
         if (!preset) return;
-        const targets = selectedItems.filter(f => f.type === FILE_TYPES.IMAGE && f.mimeType !== 'image/gif');
+        const targets = selectedItems.filter(f => f.type === FILE_TYPES.IMAGE && !f.isManga);   // GIF too: frame by frame
         if (!targets.length) { notify({ message: 'Нет подходящих изображений', type: 'warning' }); return; }
         if (!confirm(`Применить последнюю правку к ${targets.length} изображениям?`)) return;
 

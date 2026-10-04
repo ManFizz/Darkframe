@@ -20,24 +20,44 @@
     align-items: center;
   }
 
-  // Source tabs: quiet by default, active one rides the accent gradient + glow.
-  .nav-source-group { gap: 2px; }
+  // Source tabs in islands (library · sites · folders + manga), each one a pill
+  // like the action island on the right; the active tab rides the accent.
+  .nav-sections { gap: 8px; align-items: center; }
+  .nav-island {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    padding: 3px;
+    border-radius: 999px;
+    background: var(--df-island);
+    border: 1px solid var(--df-glass-border);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+  }
 
   .nav-source-tab {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
     border: 1px solid transparent;
     border-radius: 999px;
-    padding: 6px 16px;
+    padding: 5px 14px;
     font-weight: 600;
-    font-size: 14px;
+    font-size: 13.5px;
     color: var(--bs-secondary);
     background: transparent;
     transition: color .15s, background .15s, box-shadow .2s;
 
+    .bi { font-size: 14px; opacity: 0.8; }
     &:hover { color: var(--bs-body-color); background: var(--df-hover); }
+  }
+  // Narrow window: icons only.
+  @media (max-width: 1250px) {
+    .nav-source-tab { padding: 5px 11px; span { display: none; } .bi { opacity: 1; } }
   }
 
   .btn-check:checked + .nav-source-tab {
     color: #fff;
+    .bi { opacity: 1; }
     background: linear-gradient(135deg, var(--df-accent), var(--df-accent-dim));
     box-shadow: 0 4px 16px var(--df-accent-glow);
   }

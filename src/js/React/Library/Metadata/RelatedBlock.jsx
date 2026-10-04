@@ -16,10 +16,9 @@ export const SearchByThisButton = ({ file, onOpened }) => (
 
 const fmtSize = (b) => (b == null ? '' : b < 1024 ** 2 ? `${Math.round(b / 1024)} КБ` : `${(b / 1024 ** 2).toFixed(1)} МБ`);
 
-// Exact copies and look-alikes of the open library item, each one click away from
-// a side-by-side comparison. Fetched with a short delay so arrow-key browsing
-// doesn't fire a request per skipped file.
-const RelatedBlock = ({ file, onChanged }) => {
+// Exact copies and look-alikes of the open library item. Fetched with a short
+// delay so arrow-key browsing doesn't fire a request per skipped file.
+export function useRelations(file) {
     const [data, setData] = useState(null);
     const [version, setVersion] = useState(0);
 
@@ -34,18 +33,25 @@ const RelatedBlock = ({ file, onChanged }) => {
         }, 350);
         return () => { cancelled = true; clearTimeout(timer); };
     }, [file?.id, version]);
+    return { data, reload: () => setVersion(v => v + 1) };
+}
 
-    if (!data || (!data.exact.length && !data.similar.length)) {
-        return data && data.unhashed > 0 && String(file.mimeType || '').startsWith('image/') ? (
-            <div className="rel-hint" title="Панель управления → Дубликаты → Похожие → «Посчитать отпечатки»">
-                <i className="bi bi-info-circle" /> Похожих не найдено среди файлов с отпечатком ({data.unhashed} без отпечатка)
-            </div>
-        ) : null;
-    }
+// "Nothing similar" note — at the end of the panel, next to the library-wide search.
+export const RelatedHint = ({ file, data }) => (
+    data && !data.exact.length && !data.similar.length && data.unhashed > 0 && String(file.mimeType || '').startsWith('image/') ? (
+        <div className="rel-hint" title="Панель управления → Дубликаты → Похожие → «Посчитать отпечатки»">
+            <i className="bi bi-info-circle" /> Похожих не найдено среди файлов с отпечатком ({data.unhashed} без отпечатка)
+        </div>
+    ) : null
+);
+
+// Found copies / look-alikes, each one click away from a side-by-side comparison.
+const RelatedBlock = ({ file, data, reload, onChanged }) => {
+    if (!data || (!data.exact.length && !data.similar.length)) return null;
 
     const compare = (row) => openCompare(
         [compareItemFromThumb(file), { ...row, url: `library://item/${row.id}` }],
-        { onDone: () => { setVersion(v => v + 1); onChanged?.(); } },
+        { onDone: () => { reload(); onChanged?.(); } },
     );
 
     const Thumbs = ({ rows }) => (

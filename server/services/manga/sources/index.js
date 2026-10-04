@@ -40,7 +40,8 @@ function keyOfUrl(url) {
 const describe = () => list.map(s => ({
     id: s.id, name: s.name, home: s.home, sorts: s.sorts, login: !!s.login, searchHint: s.searchHint || '',
     tagGroups: s.tagGroups || [],
-    cursor: !!s.cursor,               // pages go by "next" links only (no page numbers)
+    cursor: !!s.cursor,
+    suggestMin: s.suggestMin || 1,   // tag suggestions start from this many letters               // pages go by "next" links only (no page numbers)
     loggedIn: s.loggedIn ?? null,
 }));
 

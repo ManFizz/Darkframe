@@ -37,16 +37,18 @@ const TagBrowser = ({ source, filters, onAdd, onClose }) => {
     useEffect(() => { load(1); }, [source.id, type, sort]);   // eslint-disable-line react-hooks/exhaustive-deps
 
     // Names typed: browsable lists are filtered here; everything else asks the site.
+    const min = source.suggestMin || 1;
     const remote = !group?.browse || (list.hasMore && q.trim().length >= 2);
+    const tooShort = remote && q.trim().length > 0 && q.trim().length < min;
     useEffect(() => {
-        if (!remote || !q.trim()) { setFound(null); return; }
+        if (!remote || !q.trim() || q.trim().length < min) { setFound(null); return; }
         const t = setTimeout(() => {
             mangaApi.suggest(source.id, q.trim(), group.type)
                 .then(r => setFound((r || []).filter(x => x.kind === 'tag' && x.type === group.type)))
                 .catch(() => setFound([]));
         }, 250);
         return () => clearTimeout(t);
-    }, [q, remote, source.id, group?.type]);
+    }, [q, remote, source.id, group?.type, min]);
 
     const shown = useMemo(() => {
         if (found) return found;
@@ -101,6 +103,7 @@ const TagBrowser = ({ source, filters, onAdd, onClose }) => {
                         Ещё · стр. {list.page + 1} из {list.pages}
                     </button>
                 )}
+                {tooShort && <div className="mo-empty small">Введите ещё символ — сайт ищет от {min} букв</div>}
                 {found && !found.length && <div className="mo-empty small">Ничего не найдено</div>}
             </div>
         </div>

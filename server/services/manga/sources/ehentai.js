@@ -115,17 +115,6 @@ function parsePageLinks(html) {
     return [...new Set([...html.matchAll(/href="(https:\/\/e-hentai\.org\/s\/[0-9a-f]+\/\d+-(\d+))"/g)].map(m => m[1]))];
 }
 
-async function pageLinks(gid, token, count) {
-    const links = [];
-    for (let p = 0; links.length < count && p < 500; p++) {
-        const { body } = await http.text(`${BASE}/g/${gid}/${token}/?p=${p}`, { headers: H });
-        const found = parsePageLinks(body).filter(l => !links.includes(l));
-        if (!found.length) break;
-        links.push(...found);
-    }
-    return links.sort((a, b) => Number(a.split('-').pop()) - Number(b.split('-').pop()));
-}
-
 async function gallery(id) {
     const [gid, token] = String(id).split('/');
     const g = await gdata(gid, token);
@@ -153,12 +142,52 @@ async function gallery(id) {
     };
 }
 
+// Big galleries (thousands of pages) would need a hundred listing requests before
+// the first page shows. Instead every page gets a stable key URL right away
+// (…/g/<gid>/<token>/?page=N) and is looked up when it's actually shown: the
+// listing page holding it is fetched then (and kept), then its viewer page.
+const listings = new Map();   // "gid/token" → { perPage, pages: Map(p → Promise<links>) }
+
+function listingPage(gid, token, p) {
+    const key = `${gid}/${token}`;
+    if (!listings.has(key)) {
+        if (listings.size > 30) listings.delete(listings.keys().next().value);
+        listings.set(key, { perPage: null, pages: new Map() });
+    }
+    const L = listings.get(key);
+    if (!L.pages.has(p)) {
+        const job = http.text(`${BASE}/g/${gid}/${token}/?p=${p}`, { headers: H })
+            .then(({ body }) => {
+                const links = parsePageLinks(body).sort((a, b) => Number(a.split('-').pop()) - Number(b.split('-').pop()));
+                if (p === 0 && links.length) L.perPage = links.length;
+                return links;
+            })
+            .catch(e => { L.pages.delete(p); throw e; });
+        L.pages.set(p, job);
+    }
+    return { L, job: L.pages.get(p) };
+}
+
+// The viewer page of page n (1-based).
+async function viewerOf(gid, token, n) {
+    let { L } = listingPage(gid, token, 0);
+    await L.pages.get(0);
+    const per = L.perPage || 20;
+    const { job } = listingPage(gid, token, Math.floor((n - 1) / per));
+    const links = await job;
+    const hit = links.find(l => Number(l.split('-').pop()) === n);
+    if (!hit) throw new Error(`Страница ${n} не найдена в галерее`);
+    return hit;
+}
+
+const PAGE_KEY = /\/g\/(\d+)\/([0-9a-f]+)\/\?page=(\d+)$/;
+
 async function chapterPages(id) {
     const [gid, token] = String(id).split('/');
     const g = await gdata(gid, token);
-    const links = await pageLinks(gid, token, Number(g.filecount) || 0);
-    // The reader / downloader fetch these through resolveImage.
-    return links.map(l => ({ url: l, w: 0, h: 0, resolve: true }));
+    const count = Number(g.filecount) || 0;
+    listingPage(gid, token, 0);   // start on the first listing page right away
+    return Array.from({ length: count }, (_, i) => ({ url: `${BASE}/g/${gid}/${token}/?page=${i + 1}`, w: 0, h: 0, resolve: true }));
 }
 
 // /s/ viewer page → the image. `nl` asks for another image server when one fails.
@@ -172,6 +201,8 @@ function parseViewer(html) {
 // The image of a viewer page. When that image server fails, the fetcher calls
 // again with `retry` (the page's nl key) to be sent to another one.
 async function resolveImage(viewerUrl, { nl = null } = {}) {
+    const key = viewerUrl.match(PAGE_KEY);
+    if (key) viewerUrl = await viewerOf(key[1], key[2], Number(key[3]));
     const { body } = await http.text(nl ? `${viewerUrl}?nl=${encodeURIComponent(nl)}` : viewerUrl, { headers: H, referer: `${BASE}/` });
     const v = parseViewer(body);
     if (!v.src) throw new Error('Не удалось получить страницу');
@@ -193,6 +224,7 @@ module.exports = {
     urlOf: (id) => `${BASE}/g/${id}/`,
     tagGroups: TAG_GROUPS,
     cursor: true,
+    suggestMin: 2,
     browseTags,
     suggest,
     search,

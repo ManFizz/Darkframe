@@ -21,6 +21,15 @@ import {getFolderPrefs} from '@modules/folder/folderPrefs';
 import {SPECIAL} from '../Library/Collection/CollectionTree';
 import {useConfigVersion} from '@services/liveConfig';
 
+// Tabs grouped into islands: the library, the booru sites, local folders + manga.
+const NAV_TYPE_ICON = {
+    [SOURCE_TYPES.LIBRARY]: 'bi-collection', [SOURCE_TYPES.FOLDER]: 'bi-folder2', [SOURCE_TYPES.MANGA]: 'bi-book',
+};
+const NAV_ICON = { 'R34 Favs': 'bi-heart' };
+const sectionOf = (btn) => (btn.type === SOURCE_TYPES.LIBRARY ? 'library'
+    : btn.type === SOURCE_TYPES.FOLDER || btn.type === SOURCE_TYPES.MANGA ? 'local' : 'boorus');
+const SECTION_TITLE = { library: 'Библиотека', boorus: 'Сайты', local: 'Папки и манга' };
+
 const VIEW_ICONS = { 1: 'bi-grid-3x3-gap-fill', 2: 'bi-grid-1x2', 3: 'bi-columns-gap' };
 const VIEW_NAMES = { 1: 'квадраты', 2: 'плитка', 3: 'колонки' };
 
@@ -46,6 +55,9 @@ const NavBar = () => {
     ];
 
     const [activeNav, setActiveNav] = useState(0);
+    const navSections = ['library', 'boorus', 'local']
+        .map(id => ({ id, title: SECTION_TITLE[id], items: navButtons.map((btn, idx) => ({ btn, idx })).filter(x => sectionOf(x.btn) === id) }))
+        .filter(sec => sec.items.length);
 
     // Settings saved: tabs may have appeared / disappeared. Keep the open tab
     // highlighted at its new position, or fall back to the library if it's gone.
@@ -158,28 +170,31 @@ const NavBar = () => {
         // Glass top bar, themed like the rest of the app.
         <header className="navbar navbar-expand-lg sticky-top navbar-glass">
             <div className="container-fluid">
-                <div className="navbar-nav flex-row flex-wrap">
-                    <div className="btn-group nav-source-group">
-                        {navButtons.map((btn, idx) => (
-                            <React.Fragment key={btn.label}>
-                                <input
-                                    type="radio"
-                                    className="btn-check"
-                                    name="nav-radio"
-                                    id={`nav-${idx}`}
-                                    checked={activeNav === idx}
-                                    readOnly
-                                />
-                                <label
-                                    className="btn nav-source-tab"
-                                    htmlFor={`nav-${idx}`}
-                                    onClick={() => handleNavigation(idx)}
-                                >
-                                    {btn.label}
-                                </label>
-                            </React.Fragment>
-                        ))}
-                    </div>
+                <div className="navbar-nav flex-row flex-wrap nav-sections">
+                    {navSections.map(sec => (
+                        <div key={sec.id} className={`nav-island nav-island--${sec.id}`} title={sec.title}>
+                            {sec.items.map(({ btn, idx }) => (
+                                <React.Fragment key={btn.label}>
+                                    <input
+                                        type="radio"
+                                        className="btn-check"
+                                        name="nav-radio"
+                                        id={`nav-${idx}`}
+                                        checked={activeNav === idx}
+                                        readOnly
+                                    />
+                                    <label
+                                        className="btn nav-source-tab"
+                                        htmlFor={`nav-${idx}`}
+                                        onClick={() => handleNavigation(idx)}
+                                    >
+                                        <i className={`bi ${NAV_ICON[btn.label] || NAV_TYPE_ICON[btn.type] || 'bi-globe2'}`} />
+                                        <span>{btn.label}</span>
+                                    </label>
+                                </React.Fragment>
+                            ))}
+                        </div>
+                    ))}
                 </div>
 
                 {isLibrary && libraryCtx ? (

@@ -5,10 +5,11 @@ const http = require('./http');
  * with the site's own scripts. For sites where a plain request isn't enough (the
  * sign-in state lives in what the page's scripts set up). Images aren't loaded.
  *
- * Returns { html, url, value } — value: the result of `script` run on the page
- * `settle` ms after it loaded. Outside Electron (tests) → null.
+ * Returns { html, url, value, requests } — value: the result of `script` run on
+ * the page `settle` ms after it loaded; requests (trackRequests): the page's own
+ * XHR / fetch calls { type, url, status }. Outside Electron (tests) → null.
  */
-async function loadPage(url, { referrer = null, script = null, settle = 0, timeout = 40000 } = {}) {
+async function loadPage(url, { referrer = null, script = null, settle = 0, timeout = 40000, trackRequests = false } = {}) {
     let BrowserWindow;
     try { ({ BrowserWindow } = require('electron')); } catch { return null; }
     if (typeof BrowserWindow !== 'function') return null;
@@ -21,6 +22,14 @@ async function loadPage(url, { referrer = null, script = null, settle = 0, timeo
     win.webContents.setUserAgent(http.UA());
     win.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
     let timer;
+    const requests = [];
+    const ses = win.webContents.session;
+    if (trackRequests) {
+        ses.webRequest.onCompleted((d) => {
+            if (d.webContentsId === win.webContents.id && (d.resourceType === 'xhr' || d.resourceType === 'fetch' || d.resourceType === 'mainFrame'))
+                requests.push({ type: d.resourceType, url: d.url, status: d.statusCode });
+        });
+    }
     try {
         // The document is enough (the data sits in its inline scripts) — no waiting
         // for every ad and counter. A redirect "aborts" the first load; the
@@ -35,9 +44,10 @@ async function loadPage(url, { referrer = null, script = null, settle = 0, timeo
         if (settle) await new Promise(r => setTimeout(r, settle));
         const html = await win.webContents.executeJavaScript('document.documentElement.outerHTML');
         const value = script ? await win.webContents.executeJavaScript(script).catch(() => null) : null;
-        return { html, url: win.webContents.getURL(), value };
+        return { html, url: win.webContents.getURL(), value, requests };
     } finally {
         clearTimeout(timer);
+        if (trackRequests) ses.webRequest.onCompleted(null);
         if (!win.isDestroyed()) win.destroy();
     }
 }

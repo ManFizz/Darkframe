@@ -5,6 +5,7 @@ import {getCurrentSource} from "@controllers/AppInitializerController";
 import {FILE_TYPES, SOURCE_TYPES} from "@/Constants";
 import {useFavorites} from "@hooks/useFavorites";
 import Collection from "./Collection";
+import {useHoverVideo} from "./useHoverVideo";
 
 const Thumb = (({ file, isModal, modalUpdater, isSelected, onOpen, onToggleSelect, selectionActive, inLibrary, blockedTag, onDragStart }) => {
     const handleClick = useCallback((e) => {
@@ -16,6 +17,9 @@ const Thumb = (({ file, isModal, modalUpdater, isSelected, onOpen, onToggleSelec
     }, [file, modalUpdater]);
 
     const { isFav, isPending, toggleFav } = useFavorites();
+    // Hover preview of a video: on the whole tile — the overlay (open / heart)
+    // lies on top of the picture and would swallow the hover otherwise.
+    const hover = useHoverVideo(file.type === FILE_TYPES.VIDEO ? file.contentUrl : null);
 
     const handleLikeClick = (event) => {
         event.stopPropagation();
@@ -43,7 +47,7 @@ const Thumb = (({ file, isModal, modalUpdater, isSelected, onOpen, onToggleSelec
     const renderContent = () => {
         switch (file.type) {
             case FILE_TYPES.IMAGE: return <Image file={file} />;
-            case FILE_TYPES.VIDEO: return <Video file={file} />;
+            case FILE_TYPES.VIDEO: return <Video file={file} hoverOverlay={hover.overlay} />;
             case FILE_TYPES.LIBRARY: return <Collection file={file} />;
             default: return null;
         }
@@ -65,6 +69,8 @@ const Thumb = (({ file, isModal, modalUpdater, isSelected, onOpen, onToggleSelec
             className={`card thumb bg-dark ${isModal ? 'modal-active' : ''} ${isRemovedInFavs ? 'opacity-50' : ''} ${isSelected ? 'thumb-selected' : ''} ${selectionActive ? 'selection-active' : ''} ${blockedTag ? 'thumb-blocked' : ''}`}
             onClick={handleClick}
             onContextMenu={handleContextMenu}
+            onMouseEnter={hover.onMouseEnter}
+            onMouseLeave={hover.onMouseLeave}
             draggable={!!onDragStart && hasOverlay}
             onDragStart={onDragStart ? (e) => onDragStart(file, e) : undefined}
         >

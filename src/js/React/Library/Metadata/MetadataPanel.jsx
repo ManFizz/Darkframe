@@ -6,7 +6,7 @@ import TagEditor from './TagEditor';
 import SuggestTags from './SuggestTags';
 import MangaInfo from '../../Manga/MangaInfo';
 import CollectionPicker from '../Collection/CollectionPicker';
-import RelatedBlock, {SearchByThisButton} from './RelatedBlock';
+import RelatedBlock, {RelatedHint, SearchByThisButton, useRelations} from './RelatedBlock';
 
 function formatSize(bytes) {
     if (!bytes) return '—';
@@ -24,6 +24,7 @@ function formatDuration(seconds) {
 const MetadataPanel = ({ file, onUpdated }) => {
     const [form, setForm]           = useState(null);
     const [activeTab, setActiveTab] = useState('info');
+    const relations = useRelations(file?.isManga ? null : file);
 
     const fileRef        = useRef(file);
     const saveTimeout    = useRef(null);
@@ -145,12 +146,11 @@ const MetadataPanel = ({ file, onUpdated }) => {
             {activeTab === 'info' && (
                 <div className="metadata-content">
                     {file.isManga && <MangaInfo file={file} onChanged={() => onUpdated?.('refresh')} />}
-                    {!file.isManga && <RelatedBlock file={file} onChanged={() => onUpdated?.('refresh')} />}
-                    {!file.isManga && <SearchByThisButton file={file} />}
                     <div className="metadata-section">
                         <label>Рейтинг</label>
                         <RatingStars value={form.rating} onChange={v => update('rating', v)} />
                     </div>
+                    {!file.isManga && <RelatedBlock file={file} data={relations.data} reload={relations.reload} onChanged={() => onUpdated?.('refresh')} />}
 
                     <div className="metadata-section">
                         <label>Название</label>
@@ -162,9 +162,9 @@ const MetadataPanel = ({ file, onUpdated }) => {
                     </div>
 
                     <div className="metadata-section">
-                        <label>Теги</label>
-                        <TagEditor tags={form.tags} onChange={v => update('tags', v)} />
-                        <SuggestTags file={file} onAdd={(names) => update('tags', [...new Set([...(form.tags || []), ...names])])} />
+                        <SuggestTags file={file} label="Теги" onAdd={(names) => update('tags', [...new Set([...(form.tags || []), ...names])])}>
+                            <TagEditor tags={form.tags} onChange={v => update('tags', v)} />
+                        </SuggestTags>
                     </div>
 
                     <div className="metadata-section">
@@ -207,6 +207,13 @@ const MetadataPanel = ({ file, onUpdated }) => {
                             placeholder="Заметки..."
                         />
                     </div>
+
+                    {!file.isManga && (
+                        <div className="metadata-section metadata-tail">
+                            <RelatedHint file={file} data={relations.data} />
+                            <SearchByThisButton file={file} />
+                        </div>
+                    )}
                 </div>
             )}
 
