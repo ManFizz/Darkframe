@@ -347,7 +347,8 @@ async function chapterPages(slug, chapterId) {
             if (!real.length) {
                 probeLog(url, page);
                 // The pictures the page itself shows / its page data, when they are real.
-                const isReal = (u) => u && !/\/static\//.test(u) && !/\/uploads\/(pics|avatars?)\//.test(u);
+                // Site placeholders (/static/) and site images (covers, avatars: /uploads/) aren't pages.
+                const isReal = (u) => u && !/\/static\//.test(u) && !/\/uploads\//.test(u);
                 const fromData = (page.value?.dataUrls || []).filter(isReal);
                 const fromDom = (page.value?.pics || []).filter(isReal);
                 const found = [...new Set(fromData.length ? fromData : fromDom)];

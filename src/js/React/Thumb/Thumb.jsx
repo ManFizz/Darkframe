@@ -19,7 +19,7 @@ const Thumb = (({ file, isModal, modalUpdater, isSelected, onOpen, onToggleSelec
     const { isFav, isPending, toggleFav } = useFavorites();
     // Hover preview of a video: on the whole tile — the overlay (open / heart)
     // lies on top of the picture and would swallow the hover otherwise.
-    const hover = useHoverVideo(file.type === FILE_TYPES.VIDEO ? file.contentUrl : null);
+    const hover = useHoverVideo(file.type === FILE_TYPES.VIDEO ? file.contentUrl : null, { startAt: file.thumbAt });
 
     const handleLikeClick = (event) => {
         event.stopPropagation();

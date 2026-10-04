@@ -8,8 +8,12 @@ const isLocal = (src) => /^(library|file):/i.test(String(src || ''));
  * Silent preview of a video while the tile is hovered (library + folder files only;
  * remote videos would have to stream). Returns mouse handlers for the tile and the
  * overlay element to render inside it (absolutely positioned, covers the thumbnail).
+ *
+ * It starts on the frame the thumbnail shows, so the picture doesn't jump:
+ *   startAt — the chosen thumbnail frame (seconds), when one was picked;
+ *   otherwise the default thumbnail frame: 10% of the length, at most `cap` s.
  */
-export function useHoverVideo(src) {
+export function useHoverVideo(src, { startAt = null, cap = Infinity } = {}) {
     const [active, setActive] = useState(false);
     const [ready, setReady] = useState(false);
     const timer = useRef(null);
@@ -40,7 +44,9 @@ export function useHoverVideo(src) {
             preload="auto"
             onLoadedMetadata={e => {
                 const v = e.currentTarget;
-                if (v.duration > 4) v.currentTime = v.duration * 0.1;   // skip intros / black frames
+                const d = v.duration || 0;
+                const at = startAt != null ? startAt : Math.min(d * 0.1, cap);
+                if (d && at > 0) v.currentTime = Math.min(at, Math.max(0, d - 0.1));
             }}
             onPlaying={() => setReady(true)}
         />

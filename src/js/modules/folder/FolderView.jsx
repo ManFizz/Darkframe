@@ -60,7 +60,8 @@ const FileTile = React.memo(({ file, onOpen, selected, selecting, onToggle, onDr
     const [loaded, setLoaded] = useState(false);
     const [broken, setBroken] = useState(false);
     const t = file.thumb;
-    const hover = useHoverVideo(file.kind === 'video' ? t.contentUrl : null);
+    // Folder thumbnails take the frame at 10%, at most 30 s in (fsThumbs).
+    const hover = useHoverVideo(file.kind === 'video' ? t.contentUrl : null, { cap: 30 });
     // Plain click opens; Ctrl / Shift click (or the checkbox) select — like Explorer.
     const onClick = (e) => {
         if (e.ctrlKey || e.metaKey || e.shiftKey) { e.preventDefault(); onToggle(file, e); }
