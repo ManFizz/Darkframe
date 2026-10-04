@@ -264,6 +264,29 @@ const PAGE_PROBE = String.raw`(() => {
     const inline = [...document.scripts].filter(s => !s.src).map(s => s.textContent).join('\n');
     const vars = [...new Set((inline.match(/(?:window\.|var |let |const )([A-Za-z_$][\w$]{2,40})\s*=/g) || []).map(v => v.replace(/^(window\.|var |let |const )/, '').replace(/\s*=$/, '')))].slice(0, 60);
     const calls = [...new Set(inline.match(/rm_h\.[A-Za-z]+/g) || [])];
+    // Page pictures as the page itself shows them (signed-in readers may fill
+    // them in from script instead of the readerInit list).
+    const abs = (u) => { try { return new URL(u, location.href).href; } catch { return null; } };
+    const pics = [...document.querySelectorAll('img#mangaPicture, img.manga-img')]
+        .map(i => abs(i.getAttribute('data-src') || i.getAttribute('data-original') || i.getAttribute('src') || ''))
+        .filter(Boolean);
+    // Image addresses anywhere in __PAGE_DATA__ (in order), and its shape.
+    const IMG = /\.(jpe?g|png|webp|gif|avif)(\?|$)/i;
+    const dataUrls = [];
+    const shape = (v, d = 0) => {
+        if (d > 5) return '…';
+        if (Array.isArray(v)) {
+            if (v.length >= 3 && v.slice(0, 3).every(x => typeof x === 'string') && IMG.test(v.slice(0, 3).join(''))) dataUrls.push(abs(v.slice(0, 3).join('')));
+            else v.forEach(x => shape(x, d + 1));
+            return '[' + (v.length ? shape(v[0], d + 1) : '') + ']x' + v.length;
+        }
+        if (v && typeof v === 'object') return '{' + Object.entries(v).map(([k, x]) => k + ':' + shape(x, d + 1)).join(',') + '}';
+        if (typeof v === 'string') { if (IMG.test(v) && /^(https?:)?\//.test(v)) dataUrls.push(abs(v)); return 'str' + v.length; }
+        return typeof v;
+    };
+    let dataShape = null;
+    try { dataShape = window.__PAGE_DATA__ ? shape(window.__PAGE_DATA__).slice(0, 1500) : null; } catch { dataShape = 'err'; }
+    const kind = (u) => { try { const x = new URL(u); return /\/static\//.test(x.pathname) ? x.pathname.replace(/^.*\/static\//, 'static/') : x.host; } catch { return '?'; } };
     const notices = [...document.querySelectorAll('.alert')]
         .map(e => (e.innerText || '').trim().replace(/\s+/g, ' ').slice(0, 160)).filter(Boolean).slice(0, 6);
     return {
@@ -274,13 +297,17 @@ const PAGE_PROBE = String.raw`(() => {
         ids: [...document.querySelectorAll('[id]')].map(e => e.id).filter(id => !/\d{4,}/.test(id)).slice(0, 50),
         readerish: [...new Set([...document.querySelectorAll('[class*="reader"], [class*="Reader"], [class*="chapter"]')].flatMap(e => [...e.classList]).filter(c => /reader|chapter/i.test(c)))].slice(0, 30),
         forms: [...document.forms].map(f => { try { return new URL(f.action).pathname; } catch { return '?'; } }),
+        dataShape,
+        picKinds: pics.map(kind), dataKinds: dataUrls.map(kind),
+        pics, dataUrls,
     };
 })()`;
 
 function probeLog(url, page) {
     const { siteLog, bare } = require('../siteLog');
     const reqs = (page.requests || []).map(r => { try { const x = new URL(r.url); return `${r.type}:${r.status} ${x.host}${x.pathname}${x.search ? '?' + [...x.searchParams.keys()].join(',') : ''}`; } catch { return '?'; } });
-    siteLog(`probe ${bare(url)} → final ${bare(page.url)}: ${JSON.stringify(page.value)} requests=${JSON.stringify(reqs.slice(0, 40))}`);
+    const { pics, dataUrls, ...shown } = page.value || {};
+    siteLog(`probe ${bare(url)} → final ${bare(page.url)}: ${JSON.stringify(shown)} requests=${JSON.stringify(reqs.slice(0, 40))}`);
 }
 
 function diagnose(url, html, pages, browserUser) {
@@ -317,7 +344,18 @@ async function chapterPages(slug, chapterId) {
         if (page) {
             pages = parseReader(page.html) ?? pages;
             real = pages ? realPages(pages, b) : [];
-            if (!real.length) probeLog(url, page);
+            if (!real.length) {
+                probeLog(url, page);
+                // The pictures the page itself shows / its page data, when they are real.
+                const isReal = (u) => u && !/\/static\//.test(u) && !/\/uploads\/(pics|avatars?)\//.test(u);
+                const fromData = (page.value?.dataUrls || []).filter(isReal);
+                const fromDom = (page.value?.pics || []).filter(isReal);
+                const found = [...new Set(fromData.length ? fromData : fromDom)];
+                if (found.length) {
+                    real = found.map(u => ({ url: u, w: 0, h: 0 }));
+                    require('../siteLog').siteLog(`chapter ${require('../siteLog').bare(url)}: pages from ${fromData.length ? 'page data' : 'page pictures'} ×${found.length}`);
+                }
+            }
         }
     }
     diagnose(url, body, pages, browserUser);
