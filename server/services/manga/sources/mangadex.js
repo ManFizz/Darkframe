@@ -24,9 +24,65 @@ const coverOf = (m) => {
     return rel?.attributes?.fileName ? `https://uploads.mangadex.org/covers/${m.id}/${rel.attributes.fileName}.256.jpg` : null;
 };
 
-async function search({ query = '', page = 1, sort = 'followedCount' } = {}) {
+// ─── Tags (one list for the whole site) and authors ────────────────────────────
+let allTags = null;
+async function tagList() {
+    if (allTags) return allTags;
+    const r = await http.json(`${API}/manga/tag`);
+    allTags = (r.data || []).map(t => ({ type: t.attributes.group, id: t.id, name: t.attributes.name?.en || '' })).filter(t => t.name)
+        .sort((a, b) => a.name.localeCompare(b.name));
+    return allTags;
+}
+async function findTag(f) {
+    if (f.id) return f;
+    const hit = (await tagList()).find(t => t.name.toLowerCase() === String(f.name).toLowerCase());
+    return hit ? { ...f, ...hit } : null;
+}
+async function authors(q) {
+    const r = await http.json(`${API}/author?name=${encodeURIComponent(q)}&limit=10`).catch(() => ({}));
+    return (r.data || []).map(a => ({ type: 'author', id: a.id, name: a.attributes?.name }));
+}
+
+const TAG_GROUPS = [
+    { type: 'genre', label: 'Жанры', browse: true },
+    { type: 'theme', label: 'Темы', browse: true },
+    { type: 'format', label: 'Формат', browse: true },
+    { type: 'content', label: 'Контент', browse: true },
+    { type: 'author', label: 'Авторы' },
+];
+
+async function browseTags(type) {
+    const items = (await tagList()).filter(t => t.type === type);
+    return { items, page: 1, pages: 1, hasMore: false };
+}
+
+async function suggest(text, { type = null, limit = 25 } = {}) {
+    const q = String(text || '').trim();
+    if (!q) return [];
+    const norm = q.toLowerCase();
+    const tags = type === 'author' ? [] : (await tagList().catch(() => [])).filter(t => (!type || t.type === type) && t.name.toLowerCase().includes(norm));
+    const [people, titles] = await Promise.all([
+        !type || type === 'author' ? authors(q) : [],
+        !type ? search({ query: q, page: 1 }).catch(() => ({ items: [] })) : { items: [] },
+    ]);
+    return [
+        ...[...tags, ...people].slice(0, limit).map(t => ({ kind: 'tag', ...t })),
+        ...titles.items.slice(0, 6).map(m => ({ kind: 'gallery', id: m.id, title: m.title, cover: m.cover })),
+    ];
+}
+
+async function search({ query = '', page = 1, sort = 'followedCount', filters = [] } = {}) {
     const p = new URLSearchParams({ limit: '24', offset: String((page - 1) * 24) });
     if (query.trim()) p.set('title', query.trim());
+    for (const f0 of filters) {
+        if (f0.type === 'author' || f0.type === 'artist') {
+            const id = f0.id || (await authors(f0.name))[0]?.id;
+            if (!f0.exclude && id) p.append('authorOrArtist', id);
+            continue;
+        }
+        const f = await findTag(f0).catch(() => null);
+        if (f) p.append(f.exclude ? 'excludedTags[]' : 'includedTags[]', f.id);
+    }
     p.append('includes[]', 'cover_art');
     RATINGS.forEach(r => p.append('contentRating[]', r));
     LANGS.forEach(l => p.append('availableTranslatedLanguage[]', l));
@@ -40,7 +96,7 @@ async function search({ query = '', page = 1, sort = 'followedCount' } = {}) {
         url: `${SITE}/title/${m.id}`,
         tags: (m.attributes.tags || []).map(t => t.attributes?.name?.en).filter(Boolean).slice(0, 10),
     }));
-    return { items, page, hasMore: data.offset + data.limit < data.total, total: data.total, next: page + 1 };
+    return { items, page, pages: Math.ceil((data.total || 0) / 24) || null, hasMore: data.offset + data.limit < data.total, total: data.total, next: page + 1 };
 }
 
 async function gallery(id) {
@@ -113,6 +169,9 @@ module.exports = {
         return m ? m[1] : null;
     },
     urlOf: (id) => `${SITE}/title/${id}`,
+    tagGroups: TAG_GROUPS,
+    browseTags,
+    suggest,
     search,
     gallery,
     chapterPages,

@@ -44,18 +44,7 @@ async function mark(source, items) {
 
 let siteWin = null;
 
-// What the site window went through (hosts and paths only, no query strings or
-// cookie values) — for finding out why a sign-in didn't stick.
-function siteLog(line) {
-    try {
-        const fs = require('fs');
-        const path = require('path');
-        const file = path.join(require('electron').app.getPath('userData'), 'manga-site.log');
-        try { if (fs.statSync(file).size > 256 * 1024) fs.rmSync(file); } catch { /* none yet */ }
-        fs.appendFileSync(file, `${new Date().toISOString()} ${line}\n`);
-    } catch { /* ignore */ }
-}
-const bare = (u) => { try { const x = new URL(u); return `${x.host}${x.pathname}`; } catch { return '?'; } };
+const { siteLog, bare } = require('../services/manga/siteLog');
 
 // A site page in the manga session: sign-in (AllHentai), a Cloudflare check.
 // `onPage(win)` runs after every page load; returning true closes the window
@@ -115,12 +104,27 @@ function register() {
 
     ipcMain.handle('manga:sources', () => sources.describe());
 
-    ipcMain.handle('manga:search', async (_, { source, query = '', page = 1, sort = null, next = null }) => {
+    ipcMain.handle('manga:suggest', async (_, { source, text = '', type = null }) => {
+        const src = sources.get(source);
+        if (!src.suggest) return [];
+        const list = await src.suggest(text, { type });
+        return list.map(x => (x.kind === 'gallery' ? { ...x, cover: coverUrl(source, x.cover) } : x));
+    });
+    ipcMain.handle('manga:browseTags', async (_, { source, type, page = 1, sort = 'popular' }) => {
+        const src = sources.get(source);
+        return src.browseTags ? src.browseTags(type, { page, sort }) : { items: [], page: 1, pages: 1, hasMore: false };
+    });
+    ipcMain.handle('manga:loginState', async (_, { source }) => {
+        const src = sources.get(source);
+        return src.checkLogin ? src.checkLogin().catch(() => null) : null;
+    });
+
+    ipcMain.handle('manga:search', async (_, { source, query = '', page = 1, sort = null, next = null, filters = [] }) => {
         const src = sources.get(source);
         // A pasted gallery link goes straight to the card.
         const link = sources.matchUrl(query.trim());
         if (link && /^https?:\/\//i.test(query.trim())) return { open: link, items: [], hasMore: false };
-        const res = await src.search({ query, page, sort: sort || src.sorts?.[0]?.id, next });
+        const res = await src.search({ query, page, sort: sort || src.sorts?.[0]?.id, next, filters });
         return { ...res, items: await mark(source, res.items || []) };
     });
 

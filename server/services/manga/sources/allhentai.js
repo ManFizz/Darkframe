@@ -10,6 +10,7 @@ const http = require('../http');
  */
 const ENTRY = 'https://allhentai.ru/';
 let base = null;
+let loggedIn = null;   // known after a sign-in / a check
 let baseAt = 0;
 
 async function origin() {
@@ -33,9 +34,60 @@ const SORTS = [
 const TYPE = { genre: 0, tag: 0, category: 5, person: 1, author: 1 };
 const PAGE = 50;
 
-async function search({ query = '', page = 1, sort = 'RATING' } = {}) {
+// ─── Filters: genres / categories (fixed lists), tags, parodies, people (by id) ──
+const ELEMENT_TYPE = { tag: 40, parody: 11 };
+let lists = null;   // { genre: [{ id, name }], category: [...] }, from the advanced search page
+let listsAt = 0;
+
+async function filterLists() {
+    if (lists && Date.now() - listsAt < 6 * 3600 * 1000) return lists;
+    const b = await origin();
+    const { body } = await http.text(`${b}/search/advanced`, { referer: `${b}/` });
+    const read = (key) => {
+        const m = body.match(new RegExp(`window\\.__FILTERS\\.${key}\\s*=\\s*(\\{[^\\n]*?\\});`));
+        try { return Object.entries(JSON.parse(m[1])).map(([id, name]) => ({ id: String(id), name: String(name) })); } catch { return []; }
+    };
+    lists = { genre: read('genre'), category: read('category') };
+    listsAt = Date.now();
+    return lists;
+}
+
+const apiJson = async (path) => {
+    const b = await origin();
+    return http.json(`${b}${path}`, { referer: `${b}/search/advanced`, headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' } });
+};
+async function searchElements(type, q) {
+    if (type === 'person') {
+        const r = await apiJson(`/search/persons?q=${encodeURIComponent(q)}`).catch(() => ({}));
+        return (r.results || []).map(x => ({ type, id: String(x.id), name: x.text }));
+    }
+    const r = await apiJson(`/search/elementsByType?type=${ELEMENT_TYPE[type]}&q=${encodeURIComponent(q)}`).catch(() => ({}));
+    return (r.results || []).map(x => ({ type, id: String(x.id), name: x.text }));
+}
+
+// A tag from a manga card has a name only — find its id.
+async function resolveFilter(f) {
+    if (f.id) return f;
+    const norm = (s) => String(s).trim().toLowerCase();
+    if (f.type === 'genre' || f.type === 'category') {
+        const hit = (await filterLists())[f.type].find(x => norm(x.name) === norm(f.name));
+        return hit ? { ...f, id: hit.id } : null;
+    }
+    const type = f.type === 'person' || f.type === 'author' ? 'person' : f.type === 'parody' ? 'parody' : 'tag';
+    const found = await searchElements(type, f.name);
+    const hit = found.find(x => norm(x.name) === norm(f.name)) || found[0];
+    return hit ? { ...f, type, id: hit.id } : null;
+}
+
+async function search({ query = '', page = 1, sort = 'RATING', filters = [] } = {}) {
     const b = await origin();
     const params = new URLSearchParams({ q: query.trim(), offset: String((page - 1) * PAGE), sortType: sort });
+    for (const f0 of filters) {
+        const f = await resolveFilter(f0).catch(() => null);
+        if (!f) continue;
+        if (f.type === 'person') { if (!f.exclude) params.append('includePersonsIds', f.id); }
+        else params.append(f.exclude ? 'excludeElementIds' : 'includeElementIds', f.id);
+    }
     const data = await http.json(`${b}/api/catalog/search?${params}`, {
         referer: `${b}/search/advanced`, headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
     });
@@ -49,7 +101,42 @@ async function search({ query = '', page = 1, sort = 'RATING' } = {}) {
         rating: e.rating?.rate ?? null,
         tags: (e.elements || []).map(x => x.name || x.title).filter(Boolean).slice(0, 12),
     })).filter(i => i.id);
-    return { items, page, hasMore: (data.offset || 0) + (data.list?.length || 0) < (data.total || 0), total: data.total ?? null, next: page + 1 };
+    const total = data.total ?? null;
+    return { items, page, pages: total != null ? Math.ceil(total / PAGE) : null, hasMore: (data.offset || 0) + (data.list?.length || 0) < (total || 0), total, next: page + 1 };
+}
+
+const TAG_GROUPS = [
+    { type: 'genre', label: 'Жанры', browse: true },
+    { type: 'category', label: 'Категории', browse: true },
+    { type: 'tag', label: 'Теги' },
+    { type: 'parody', label: 'Пародии' },
+    { type: 'person', label: 'Авторы' },
+];
+
+async function browseTags(type) {
+    if (type !== 'genre' && type !== 'category') return { items: [], page: 1, pages: 1, hasMore: false };
+    const items = (await filterLists())[type].map(x => ({ type, id: x.id, name: x.name }));
+    return { items, page: 1, pages: 1, hasMore: false };
+}
+
+async function suggest(text, { type = null, limit = 30 } = {}) {
+    const q = String(text || '').trim();
+    if (!q) return [];
+    const norm = q.toLowerCase();
+    const want = (t) => !type || type === t;
+    const l = await filterLists().catch(() => ({ genre: [], category: [] }));
+    const local = ['genre', 'category'].filter(want)
+        .flatMap(t => l[t].filter(x => x.name.toLowerCase().includes(norm)).map(x => ({ kind: 'tag', type: t, id: x.id, name: x.name })));
+    const remote = await Promise.all([
+        want('tag') ? searchElements('tag', q) : [],
+        want('parody') ? searchElements('parody', q) : [],
+        want('person') ? searchElements('person', q) : [],
+        !type ? apiJson(`/search/suggestion?query=${encodeURIComponent(q)}`).catch(() => ({})) : {},
+    ]);
+    const galleries = (remote[3].suggestions || []).filter(x => x.elementId?.type === 'MANGA' && x.elementId.linkName)
+        .slice(0, 6).map(x => ({ kind: 'gallery', id: x.elementId.linkName, title: x.value, cover: x.thumbnail || null }));
+    const tags = [...local, ...remote[0], ...remote[1], ...remote[2].slice(0, 8)].map(t => ({ kind: 'tag', ...t }));
+    return [...tags.slice(0, limit), ...galleries];
 }
 
 function parseManga(html, slug, b) {
@@ -148,7 +235,7 @@ async function signedIn(win) {
     const url = win.webContents.getURL();
     if (!isSiteHost(url)) return false;
     const ok = !!(await win.webContents.executeJavaScript(SIGNED_IN).catch(() => false));
-    if (ok) { base = new URL(url).origin; baseAt = Date.now(); }
+    if (ok) { base = new URL(url).origin; baseAt = Date.now(); loggedIn = true; }
     return ok;
 }
 
@@ -157,12 +244,33 @@ async function checkLogin() {
     const b = await origin();
     const page = await require('../browserPage').loadPage(`${b}/`, { script: SIGNED_IN });
     if (page && isSiteHost(page.url)) { base = new URL(page.url).origin; baseAt = Date.now(); }
-    return page ? !!page.value : false;
+    loggedIn = page ? !!page.value : false;
+    return loggedIn;
 }
 
 const realPages = (pages, b) => pages
-    .filter(p => !/\/static\/deleted/.test(p.url))
+    .filter(p => !/\/static\//.test(p.url))
     .map(p => ({ ...p, url: p.url.startsWith('/') ? b + p.url : p.url }));
+
+// Why a chapter shows no pages: structure only (counts, hosts, whether the site
+// sees a user) — no page text, no ids.
+function diagnose(url, html, pages, browserUser) {
+    const { siteLog, bare } = require('../siteLog');
+    const list = pages || [];
+    const deleted = list.filter(p => /\/static\//.test(p.url));
+    const u = list.map(p => p.url.match(/[?&]u=(\d+)/)?.[1]).find(x => x != null);
+    // What the page addresses look like: site placeholders by file name (they are
+    // the site's own images), real pages only by host.
+    const kinds = {};
+    list.forEach(p => {
+        let k;
+        try { const x = new URL(p.url, url); k = /\/static\//.test(x.pathname) ? x.pathname.replace(/^.*\/static\//, 'static/') : `${x.host}/…`; } catch { k = '?'; }
+        kinds[k] = (kinds[k] || 0) + 1;
+    });
+    siteLog(`chapter ${bare(url)}: reader=${pages ? list.length : 'none'} placeholders=${deleted.length}`
+        + ` user=${u == null ? '?' : u === '0' ? 'guest' : 'signed-in'} browserUser=${browserUser}`
+        + ` kinds=${Object.entries(kinds).map(([k, n]) => `${k}×${n}`).join(' ')} len=${(html || '').length}`);
+}
 
 async function chapterPages(slug, chapterId) {
     const b = await origin();
@@ -170,17 +278,23 @@ async function chapterPages(slug, chapterId) {
     const { body } = await http.text(url, { referer: `${b}/${slug}`, allowError: true });
     let pages = parseReader(body);
     let real = pages ? realPages(pages, b) : [];
+    let browserUser = null;
     // Guest view: the same page the way the browser (signed in) sees it.
     if (!real.length) {
-        const page = await require('../browserPage').loadPage(url, { referrer: `${b}/${slug}` }).catch(() => null);
+        const page = await require('../browserPage').loadPage(url, { referrer: `${b}/${slug}`, script: SIGNED_IN }).catch(() => null);
+        browserUser = page ? !!page.value : null;
         if (page) {
             pages = parseReader(page.html) ?? pages;
             real = pages ? realPages(pages, b) : [];
         }
     }
+    diagnose(url, body, pages, browserUser);
     if (pages == null) throw new Error('Глава не открылась — возможно, нужен вход на сайт');
     if (!real.length) {
-        const err = new Error('Страницы видны только после входа на сайте — нажмите «Войти» и войдите в аккаунт');
+        const signedIn = (pages || []).some(p => /[?&]u=[1-9]/.test(p.url)) || browserUser;
+        const err = new Error(signedIn
+            ? 'Сайт не отдаёт страницы этой главы даже после входа (глава закрыта на сайте или для вашего аккаунта)'
+            : 'Страницы видны только после входа на сайте — нажмите «Войти» и войдите в аккаунт');
         err.code = 'LOGIN';
         throw err;
     }
@@ -193,7 +307,11 @@ module.exports = {
     get home() { return base || ENTRY; },
     sorts: SORTS,
     tagTypes: TYPE,
+    tagGroups: TAG_GROUPS,
+    browseTags,
+    suggest,
     login: true,
+    get loggedIn() { return loggedIn; },
     signedIn,
     checkLogin,
     loginUrl: async () => `${await origin()}/internal/auth`,

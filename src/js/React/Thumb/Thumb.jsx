@@ -34,7 +34,8 @@ const Thumb = (({ file, isModal, modalUpdater, isSelected, onOpen, onToggleSelec
 
     const handleContextMenu = (event) => {
         event.preventDefault();
-        if (file.type !== FILE_TYPES.IMAGE && file.type !== FILE_TYPES.VIDEO) return;
+        // Right click opens: the viewer, or the reader for a manga.
+        if (file.type !== FILE_TYPES.IMAGE && file.type !== FILE_TYPES.VIDEO && !file.isManga) return;
         if (onOpen) onOpen(file);
         else modalUpdater(file, event);
     };

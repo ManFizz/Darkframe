@@ -175,11 +175,12 @@ const ReaderView = ({ book, onClose }) => {
         if (!goChapter(ch + 1)) setAtEnd(true);
     }, [pages, spreadIdx, spreads, ch, goChapter]);
     const prev = useCallback(() => {
-        setAtEnd(false);
+        // From the "the end" card back to the last page, not one before it.
+        if (atEnd) { setAtEnd(false); return; }
         if (!pages) return;
         if (spreadIdx > 0) { setPage(spreads[spreadIdx - 1][0]); stageRef.current?.scrollTo({ top: 0 }); return; }
         goChapter(ch - 1, 'end');
-    }, [pages, spreadIdx, spreads, ch, goChapter]);
+    }, [atEnd, pages, spreadIdx, spreads, ch, goChapter]);
 
     // ─── Vertical (webtoon) mode ──────────────────────────────────────────────
     const imgRefs = useRef([]);

@@ -76,6 +76,9 @@ export const mangaApi = {
     // Online sources
     sources:         ()                      => invoke('manga:sources'),
     search:          (opts)                  => invoke('manga:search', opts),
+    suggest:         (source, text, type)    => invoke('manga:suggest', { source, text, type }),
+    browseTags:      (source, type, opts={}) => invoke('manga:browseTags', { source, type, ...opts }),
+    loginState:      (source)                => invoke('manga:loginState', { source }),
     gallery:         (source, id)            => invoke('manga:gallery', { source, id }),
     chapter:         (source, id, chapterId) => invoke('manga:chapter', { source, id, chapterId }),
     resolveUrl:      (url)                   => invoke('manga:resolveUrl', { url }),

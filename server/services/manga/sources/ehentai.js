@@ -33,18 +33,69 @@ function parseSearch(html) {
         const language = tags.find(t => t.startsWith('language:') && t !== 'language:translated')?.slice(9) || null;
         items.push({ id: `${link[1]}/${link[2]}`, title, cover, pages, category, language, url: `${BASE}/g/${link[1]}/${link[2]}/`, tags });
     }
-    const next = html.match(/id="dnext" href="[^"]*[?&]next=(\d+)/)?.[1] || null;
+    // In the HTML the query string is escaped: "?f_search=…&amp;next=123".
+    const next = html.match(/id="dnext" href="[^"]*(?:[?&]|&amp;)next=(\d+)/)?.[1] || null;
     const total = Number((html.match(/Found (?:about )?([\d,]+) results?/)?.[1] || '').replace(/,/g, '')) || null;
     return { items, next, total };
 }
 
-async function search({ query = '', page = 1, next = null } = {}) {
+// Gallery categories: a bit each; f_cats is the mask of the *hidden* ones.
+const CATS = { 'Doujinshi': 2, 'Manga': 4, 'Artist CG': 8, 'Game CG': 16, 'Western': 512, 'Non-H': 256, 'Image Set': 32, 'Cosplay': 64, 'Asian Porn': 128, 'Misc': 1 };
+const ALL_CATS = 1023;
+
+function catMask(filters) {
+    const cats = filters.filter(f => f.type === 'category' && CATS[f.name]);
+    if (!cats.length) return null;
+    const on = cats.filter(f => !f.exclude);
+    if (on.length) return ALL_CATS - on.reduce((m, f) => m | CATS[f.name], 0);
+    return cats.reduce((m, f) => m | CATS[f.name], 0);
+}
+// Filters → e-hentai syntax: female:"big breasts$" -male:"x$"
+const token = (f) => `${f.exclude ? '-' : ''}${f.type}:"${String(f.name).replace(/"/g, '')}$"`;
+
+async function search({ query = '', page = 1, next = null, filters = [] } = {}) {
     const params = new URLSearchParams();
-    if (query.trim()) params.set('f_search', query.trim());
+    const q = [query.trim(), ...filters.filter(f => f.type !== 'category').map(token)].filter(Boolean).join(' ');
+    if (q) params.set('f_search', q);
+    const mask = catMask(filters);
+    if (mask != null) params.set('f_cats', String(mask));
     if (next) params.set('next', next);
     const { body } = await http.text(`${BASE}/?${params}`, { headers: H });
     const r = parseSearch(body);
     return { items: r.items, page, hasMore: !!r.next, next: r.next, total: r.total };
+}
+
+// ─── Tags ─────────────────────────────────────────────────────────────────────
+// E-Hentai has no tag lists — namespaces are searched by name (tagsuggest).
+const TAG_GROUPS = [
+    { type: 'category', label: 'Категории', browse: true },
+    { type: 'female', label: 'Female' },
+    { type: 'male', label: 'Male' },
+    { type: 'mixed', label: 'Mixed' },
+    { type: 'other', label: 'Other' },
+    { type: 'parody', label: 'Пародии' },
+    { type: 'character', label: 'Персонажи' },
+    { type: 'artist', label: 'Художники' },
+    { type: 'group', label: 'Группы' },
+    { type: 'cosplayer', label: 'Косплееры' },
+    { type: 'language', label: 'Языки' },
+];
+
+async function browseTags(type) {
+    if (type !== 'category') return { items: [], page: 1, pages: 1, hasMore: false };
+    return { items: Object.keys(CATS).map(name => ({ type, name })), page: 1, pages: 1, hasMore: false };
+}
+
+async function suggest(text, { type = null, limit = 25 } = {}) {
+    const q = String(text || '').trim();
+    if (q.length < 2) return [];
+    const res = await http.json(API, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ method: 'tagsuggest', text: q }),
+    }).catch(() => ({}));
+    const tags = Object.values(res.tags || {}).map(t => ({ kind: 'tag', type: t.ns, name: t.tn }));
+    const cats = Object.keys(CATS).filter(c => c.toLowerCase().includes(q.toLowerCase())).map(name => ({ kind: 'tag', type: 'category', name }));
+    return [...cats, ...tags].filter(t => !type || t.type === type).slice(0, limit);
 }
 
 // ─── Gallery ────────────────────────────────────────────────────────────────
@@ -140,6 +191,10 @@ module.exports = {
         return m ? `${m[1]}/${m[2]}` : null;
     },
     urlOf: (id) => `${BASE}/g/${id}/`,
+    tagGroups: TAG_GROUPS,
+    cursor: true,
+    browseTags,
+    suggest,
     search,
     gallery,
     chapterPages,

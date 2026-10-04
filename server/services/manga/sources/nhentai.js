@@ -40,15 +40,49 @@ async function toCard(g, i) {
     };
 }
 
-async function search({ query = '', page = 1, sort = 'date' } = {}) {
-    const q = query.trim();
+// Filters → nhentai search syntax: tag:"big breasts" -artist:"x"
+const token = (f) => `${f.exclude ? '-' : ''}${f.type}:"${String(f.name).replace(/"/g, '')}"`;
+
+async function search({ query = '', page = 1, sort = 'date', filters = [] } = {}) {
+    const q = [query.trim(), ...filters.map(token)].filter(Boolean).join(' ');
     const data = q
         ? await http.json(`${API}/search?query=${encodeURIComponent(q)}&sort=${encodeURIComponent(sort)}&page=${page}`)
         : sort !== 'date'
             ? await http.json(`${API}/search?query=${encodeURIComponent('*')}&sort=${encodeURIComponent(sort)}&page=${page}`).catch(() => http.json(`${API}/galleries?page=${page}&per_page=25`))
             : await http.json(`${API}/galleries?page=${page}&per_page=25`);
     const items = await Promise.all((data.result || []).map(toCard));
-    return { items, page, hasMore: page < (data.num_pages || 0), total: data.total ?? null, next: page + 1 };
+    return { items, page, pages: data.num_pages || null, hasMore: page < (data.num_pages || 0), total: data.total ?? null, next: page + 1 };
+}
+
+// ─── Tags: groups, browsing, autocomplete ──────────────────────────────────────
+const TAG_GROUPS = [
+    { type: 'tag', label: 'Теги', browse: true },
+    { type: 'parody', label: 'Пародии', browse: true },
+    { type: 'character', label: 'Персонажи', browse: true },
+    { type: 'artist', label: 'Художники', browse: true },
+    { type: 'group', label: 'Группы', browse: true },
+    { type: 'language', label: 'Языки', browse: true },
+    { type: 'category', label: 'Категории', browse: true },
+];
+const toTag = (t) => ({ type: t.type, name: t.name, id: t.id, count: t.count ?? null });
+
+async function browseTags(type, { page = 1, sort = 'popular' } = {}) {
+    const data = await http.json(`${API}/tags/${encodeURIComponent(type)}?sort=${sort === 'name' ? 'name' : 'popular'}&page=${page}&per_page=100`);
+    return { items: (data.result || []).map(toTag), page, pages: data.num_pages || 1, hasMore: page < (data.num_pages || 0), total: data.total ?? null };
+}
+
+async function suggest(text, { type = null, limit = 20 } = {}) {
+    const q = String(text || '').trim();
+    if (!q) return [];
+    const out = [];
+    // A gallery number → that gallery.
+    if (/^\d{1,7}$/.test(q)) out.push({ kind: 'gallery', id: q, title: `Галерея #${q}` });
+    const tags = await http.json(`${API}/tags/search`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query: q, ...(type ? { type } : {}), limit }),
+    }).catch(() => []);
+    (Array.isArray(tags) ? tags : tags.result || []).forEach(t => out.push({ kind: 'tag', ...toTag(t) }));
+    return out;
 }
 
 async function gallery(id) {
@@ -86,6 +120,9 @@ module.exports = {
         return m ? m[1] : null;
     },
     urlOf: (id) => `${BASE}/g/${id}/`,
+    tagGroups: TAG_GROUPS,
+    browseTags,
+    suggest,
     search,
     gallery,
     // Images need nothing special.

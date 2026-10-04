@@ -44,7 +44,7 @@ test('e-hentai: search rows, page links in order, viewer image + retry key', () 
         `<a href="https://e-hentai.org/g/${gid}/${tok}/"><div class="gl4e glname"><div class="glink">${title}</div>` +
         `<div><table><tr><td><div class="gt" title="language:english">english</div><div class="gtl" title="other:full color">full color</div></td></tr></table></div></div></a></div></td></tr>`;
     const html = `<p>Found about 1,234 results.</p><table class="itg glte">${row(10, 'aa11', 'First &amp; one', 20)}${row(11, 'bb22', 'Second', 3)}</table>` +
-        `<a id="dnext" href="https://e-hentai.org/?next=11">Next</a>`;
+        `<a id="dnext" href="https://e-hentai.org/?f_search=x&amp;next=11">Next</a>`;
     const r = ehentai._parse.parseSearch(html);
     assert.equal(r.items.length, 2);
     assert.deepEqual(r.items[0], {

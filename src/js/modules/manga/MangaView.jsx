@@ -8,6 +8,8 @@ import CollectionTreeSelect, {pushRecentCollection} from '@react/Library/Collect
 import LibraryService from '@services/LibraryService';
 import {onlineHistory} from './onlineHistory';
 import {errText, loginTo, readOnline} from './onlineReader';
+import SearchBar, {pushRecent, sameFilter} from './SearchBar';
+import TagBrowser from './TagBrowser';
 import {useMangaDownloads} from './useMangaDownloads';
 
 /**
@@ -30,16 +32,8 @@ const STATUS = {
 const TAG_GROUPS = [
     ['artist', 'Авторы'], ['person', 'Авторы'], ['author', 'Авторы'], ['group', 'Группы'], ['parody', 'Пародии'],
     ['character', 'Персонажи'], ['language', 'Язык'], ['category', 'Категория'], ['female', 'Female'], ['male', 'Male'],
-    ['mixed', 'Mixed'], ['genre', 'Жанры'], ['theme', 'Темы'], ['format', 'Формат'], ['content', 'Контент'],
+    ['mixed', 'Mixed'], ['other', 'Other'], ['cosplayer', 'Косплееры'], ['genre', 'Жанры'], ['theme', 'Темы'], ['format', 'Формат'], ['content', 'Контент'],
 ];
-
-// Search query for a tag in the syntax of the source.
-function tagQuery(source, t) {
-    const q = /\s/.test(t.name) ? `"${t.name}"` : t.name;
-    if (source === 'nhentai') return `${t.type === 'tag' ? 'tag' : t.type}:${q}`;
-    if (source === 'ehentai') return `${t.type}:"${t.name}$"`;
-    return t.name;
-}
 
 const ago = (ms) => {
     const s = Math.round((Date.now() - ms) / 1000);
@@ -94,8 +88,9 @@ const DownloadButton = ({ gallery, item, chapters = null, className = 'ftb-btn p
 };
 
 // ─── Search results ──────────────────────────────────────────────────────────
-const Card = React.memo(({ item, source, onOpen }) => (
-    <div className="mo-card" onClick={() => onOpen(item)} title={item.title}>
+const Card = React.memo(({ item, source, onOpen, onRead }) => (
+    <div className="mo-card" onClick={() => onOpen(item)} title={`${item.title}\nПКМ — сразу читать`}
+         onContextMenu={e => { e.preventDefault(); onRead?.(item); }}>
         <Cover src={item.cover} />
         <div className="mo-card-badges">
             {item.inLibrary && <span className="mo-badge lib" title="Уже в библиотеке"><i className="bi bi-bookmark-check-fill" /></span>}
@@ -117,92 +112,126 @@ const Card = React.memo(({ item, source, onOpen }) => (
     </div>
 ));
 
-const SearchPane = ({ source, onOpenGallery }) => {
+const SearchPane = ({ source, onOpenGallery, onRead }) => {
     const [query, setQuery] = useState(() => loadPrefs().queries?.[source.id] || '');
+    const [filters, setFilters] = useState(() => loadPrefs().filters?.[source.id] || []);
     const [sort, setSort] = useState(() => loadPrefs().sorts?.[source.id] || source.sorts?.[0]?.id || null);
     const [hideInLib, setHideInLib] = useState(() => !!loadPrefs().hideInLib);
-    const [res, setRes] = useState({ items: [], loading: false, error: null, hasMore: false, page: 0, next: null, total: null });
-    const [hidden, setHidden] = useState(0);
+    const [tagsOpen, setTagsOpen] = useState(false);
+    const [logged, setLogged] = useState(source.loggedIn ?? null);
+    const [jump, setJump] = useState('');
+    const [res, setRes] = useState({ items: [], loading: false, error: null, hasMore: false, first: 1, page: 0, pages: null, next: null, total: null });
     const reqId = useRef(0);
     const sentinel = useRef(null);
     const scrollRef = useRef(null);
     const inputRef = useRef(null);
+    const state = useRef({});
+    state.current = { query, filters, sort, res };
 
-    const run = useCallback(async ({ q = query, s = sort, more = false } = {}) => {
+    // q / f / s — overrides (a value just set isn't in the state yet); page — start
+    // at that page; more — the next page under the loaded ones.
+    const run = useCallback(async ({ q, f, s, more = false, page: startPage = 1 } = {}) => {
+        const cur = state.current;
+        q = q ?? cur.query; f = f ?? cur.filters; s = s ?? cur.sort;
         const id = ++reqId.current;
-        setRes(r => ({ ...r, loading: true, error: null, ...(more ? {} : { items: [], page: 0, next: null }) }));
-        if (!more) { scrollRef.current?.scrollTo({ top: 0 }); setHidden(0); }
+        setRes(r => ({ ...r, loading: true, error: null, ...(more ? {} : { items: [], page: 0, first: startPage, next: null }) }));
+        if (!more) scrollRef.current?.scrollTo({ top: 0 });
         const p = loadPrefs();
-        savePrefs({ queries: { ...(p.queries || {}), [source.id]: q }, sorts: { ...(p.sorts || {}), [source.id]: s } });
+        savePrefs({
+            queries: { ...(p.queries || {}), [source.id]: q },
+            filters: { ...(p.filters || {}), [source.id]: f },
+            sorts: { ...(p.sorts || {}), [source.id]: s },
+        });
+        if (!more && (q.trim() || f.length)) pushRecent(source.id, q, f);
         try {
-            const page = more ? res.page + 1 : 1;
-            const r = await mangaApi.search({ source: source.id, query: q, sort: s, page, next: more ? res.next : null });
+            const page = more ? cur.res.page + 1 : startPage;
+            const r = await mangaApi.search({ source: source.id, query: q, filters: f, sort: s, page, next: more ? cur.res.next : null });
             if (id !== reqId.current) return;
             if (r.open) { setRes(x => ({ ...x, loading: false })); onOpenGallery(r.open); return; }
             setRes(x => {
                 const seen = new Set(more ? x.items.map(i => i.id) : []);
                 const fresh = (r.items || []).filter(i => !seen.has(i.id));
-                return { items: more ? [...x.items, ...fresh] : fresh, loading: false, error: null, hasMore: !!r.hasMore && fresh.length > 0, page, next: r.next, total: r.total };
+                return {
+                    items: more ? [...x.items, ...fresh] : fresh, loading: false, error: null,
+                    hasMore: !!r.hasMore && (r.items || []).length > 0,
+                    first: more ? x.first : page, page, pages: r.pages ?? x.pages, next: r.next, total: r.total,
+                };
             });
         } catch (e) {
             if (id !== reqId.current) return;
             setRes(x => ({ ...x, loading: false, error: errText(e) }));
         }
-    }, [query, sort, source.id, res.page, res.next, onOpenGallery]);
+    }, [source.id, onOpenGallery]);
 
-    // New source → its last query.
+    useEffect(() => { run(); }, [source.id]);   // eslint-disable-line react-hooks/exhaustive-deps
+
+    // Signed in or not (sites that need it).
     useEffect(() => {
-        const p = loadPrefs();
-        const q = p.queries?.[source.id] || '';
-        const s = p.sorts?.[source.id] || source.sorts?.[0]?.id || null;
-        setQuery(q);
-        setSort(s);
-        run({ q, s });
-    }, [source.id]);   // eslint-disable-line react-hooks/exhaustive-deps
+        if (!source.login) return;
+        let alive = true;
+        mangaApi.loginState(source.id).then(v => { if (alive && v != null) setLogged(v); }).catch(() => {});
+        return () => { alive = false; };
+    }, [source.id, source.login]);
+    const login = async () => {
+        const ok = await loginTo(source.id);
+        setLogged(ok || !!(await mangaApi.loginState(source.id).catch(() => null)));
+    };
 
-    // Endless scrolling.
-    const runRef = useRef(run);
-    runRef.current = run;
+    // Endless scrolling: the next page comes when the end is near.
     useEffect(() => {
         const el = sentinel.current;
         if (!el) return;
         const io = new IntersectionObserver(([e]) => {
-            if (e.isIntersecting && res.hasMore && !res.loading && !res.error) runRef.current({ more: true });
-        }, { root: scrollRef.current, rootMargin: '600px' });
+            const r = state.current.res;
+            if (e.isIntersecting && r.hasMore && !r.loading && !r.error) run({ more: true });
+        }, { root: scrollRef.current, rootMargin: '800px' });
         io.observe(el);
         return () => io.disconnect();
-    }, [res.hasMore, res.loading, res.error, res.items.length]);
+    }, [res.hasMore, res.loading, res.error, res.items.length, hideInLib, run]);
 
     // Marks change when a download finishes.
     useEffect(() => mangaApi.onDownloads(async () => {
-        const ids = res.items.map(i => i.id);
+        const ids = state.current.res.items.map(i => i.id);
         if (!ids.length) return;
         const lib = await mangaApi.inLibrary(source.id, ids).catch(() => null);
         if (lib) setRes(x => ({ ...x, items: x.items.map(i => (lib[i.id] && !i.inLibrary ? { ...i, inLibrary: lib[i.id], downloading: null } : i)) }));
-    }), [res.items, source.id]);
+    }), [source.id]);
 
     const openCard = useCallback((i) => onOpenGallery({ source: source.id, id: i.id, preview: i }), [onOpenGallery, source.id]);
+    const readCard = useCallback((i) => onRead({ source: source.id, id: i.id }), [onRead, source.id]);
     const shown = useMemo(() => (hideInLib ? res.items.filter(i => !i.inLibrary) : res.items), [res.items, hideInLib]);
-    useEffect(() => setHidden(res.items.length - shown.length), [res.items.length, shown.length]);
+    const hidden = res.items.length - shown.length;
+
+    // A tag from the tag panel.
+    const addFilter = (f) => {
+        const next = [...filters.filter(x => !sameFilter(x, f)), f];
+        setFilters(next);
+        run({ f: next });
+    };
 
     useEffect(() => {
         const onKey = (e) => {
-            if (e.key === '/' && !e.target.closest?.('input, textarea')) { e.preventDefault(); inputRef.current?.focus(); }
+            if (e.key === '/' && !e.target.closest?.('input, textarea') && !document.querySelector('.rd')) { e.preventDefault(); inputRef.current?.focus(); }
         };
         document.addEventListener('keydown', onKey);
         return () => document.removeEventListener('keydown', onKey);
     }, []);
 
+    const goPage = (n) => { if (n >= 1) { run({ page: res.pages ? Math.min(res.pages, n) : n }); setJump(''); } };
+    const pageInfo = !res.page ? ''
+        : source.cursor ? `загружено страниц: ${res.page - res.first + 1}`
+        : `стр. ${res.first === res.page ? res.page : `${res.first}–${res.page}`}${res.pages ? ` из ${res.pages.toLocaleString('ru')}` : ''}`;
+
     return (
         <div className="mo-pane">
             <div className="folder-toolbar mo-toolbar">
-                <div className="mo-search">
-                    <i className="bi bi-search" />
-                    <input ref={inputRef} value={query} placeholder={source.searchHint || 'Поиск'} spellCheck={false}
-                           onChange={e => setQuery(e.target.value)}
-                           onKeyDown={e => { if (e.key === 'Enter') run({ q: e.target.value }); if (e.key === 'Escape' && query) { setQuery(''); run({ q: '' }); } }} />
-                    {query && <button className="mo-search-clear" title="Очистить" onClick={() => { setQuery(''); run({ q: '' }); }}><i className="bi bi-x" /></button>}
-                </div>
+                <SearchBar source={source} query={query} setQuery={setQuery} filters={filters} setFilters={setFilters}
+                           onSearch={(o) => run(o)} onOpenGallery={onOpenGallery} inputRef={inputRef} />
+                {source.tagGroups?.length > 0 && (
+                    <button className={`ftb-btn ${tagsOpen ? 'on' : ''}`} onClick={() => setTagsOpen(v => !v)} title="Теги, пародии, персонажи, авторы…">
+                        <i className="bi bi-tags" /> <span>Теги</span>
+                    </button>
+                )}
                 {source.sorts?.length > 1 && (
                     <select className="form-select form-select-sm mo-sort" value={sort || ''} onChange={e => { setSort(e.target.value); run({ s: e.target.value }); }}>
                         {source.sorts.map(s => <option key={s.id} value={s.id}>{s.label}</option>)}
@@ -212,34 +241,64 @@ const SearchPane = ({ source, onOpenGallery }) => {
                         onClick={() => { setHideInLib(v => !v); savePrefs({ hideInLib: !hideInLib }); }}>
                     <i className="bi bi-bookmark-x" />
                 </button>
-                <button className="ftb-btn" onClick={() => run()} title="Обновить"><i className="bi bi-arrow-clockwise" /></button>
+                <button className="ftb-btn" onClick={() => run({ page: res.first || 1 })} title="Обновить"><i className="bi bi-arrow-clockwise" /></button>
                 <button className="ftb-btn" onClick={() => mangaApi.openSite(source.id).then(() => run())} title="Открыть сайт в окне (проверка Cloudflare и т. п.)">
                     <i className="bi bi-globe2" />
                 </button>
                 {source.login && (
-                    <button className="ftb-btn" onClick={() => loginTo(source.id)} title="Войти на сайте (нужно для чтения глав)">
-                        <i className="bi bi-person-circle" /> <span>Войти</span>
+                    <button className={`ftb-btn ${logged ? 'mo-logged' : ''}`} onClick={login}
+                            title={logged ? 'Вы вошли на сайт · открыть окно входа ещё раз' : 'Войти на сайте (нужно для чтения глав)'}>
+                        <i className={`bi ${logged ? 'bi-person-check-fill' : 'bi-person-circle'}`} /> <span>{logged ? 'Вы вошли' : 'Войти'}</span>
                     </button>
                 )}
             </div>
             <div className="mo-status">
                 {res.total != null && <span>Найдено: {res.total.toLocaleString('ru')}</span>}
+                {res.items.length > 0 && <span>· показано {shown.length}</span>}
+                {pageInfo && <span>· {pageInfo}</span>}
                 {hidden > 0 && <span>· скрыто из библиотеки: {hidden}</span>}
             </div>
-            <div className="mo-scroll" ref={scrollRef}>
-                {res.error && (
-                    <div className="mo-error">
-                        <i className="bi bi-exclamation-triangle" /> {res.error}
-                        <button className="ftb-btn" onClick={() => run({ more: res.items.length > 0 })}>Повторить</button>
-                        <button className="ftb-btn" onClick={() => mangaApi.openSite(source.id).then(() => run())}>Открыть сайт</button>
+            <div className="mo-body">
+                <div className="mo-scroll" ref={scrollRef}>
+                    {res.error && (
+                        <div className="mo-error">
+                            <i className="bi bi-exclamation-triangle" /> {res.error}
+                            <button className="ftb-btn" onClick={() => run({ more: res.items.length > 0, page: res.first || 1 })}>Повторить</button>
+                            <button className="ftb-btn" onClick={() => mangaApi.openSite(source.id).then(() => run())}>Открыть сайт</button>
+                        </div>
+                    )}
+                    {res.first > 1 && !res.loading && (
+                        <button className="ftb-btn mo-prev-page" onClick={() => goPage(res.first - 1)}><i className="bi bi-chevron-up" /> <span>Страница {res.first - 1}</span></button>
+                    )}
+                    <div className="mo-grid">
+                        {shown.map(item => <Card key={item.id} item={item} source={source.id} onOpen={openCard} onRead={readCard} />)}
+                        {res.loading && Array.from({ length: res.items.length ? 6 : 18 }, (_, i) => <div key={`s${i}`} className="mo-card skel"><div className="mo-cover" /></div>)}
                     </div>
-                )}
-                <div className="mo-grid">
-                    {shown.map(item => <Card key={item.id} item={item} source={source.id} onOpen={openCard} />)}
-                    {res.loading && Array.from({ length: res.items.length ? 6 : 18 }, (_, i) => <div key={`s${i}`} className="mo-card skel"><div className="mo-cover" /></div>)}
+                    {!res.loading && !res.error && !res.items.length && <div className="mo-empty">Ничего не найдено</div>}
+                    <div ref={sentinel} className="mo-sentinel" />
+                    {res.items.length > 0 && (
+                        <div className="mo-pager">
+                            {res.hasMore
+                                ? (
+                                    <button className="ftb-btn primary" disabled={res.loading} onClick={() => run({ more: true })}>
+                                        <i className={`bi ${res.loading ? 'bi-arrow-repeat spin' : 'bi-chevron-down'}`} /> <span>Загрузить ещё</span>
+                                    </button>
+                                )
+                                : !res.loading && <span className="mo-pager-end">Это всё</span>}
+                            {!source.cursor && res.pages > 1 && (
+                                <span className="mo-pager-jump">
+                                    Страница
+                                    <input type="number" min={1} max={res.pages} value={jump} placeholder={String(res.page)}
+                                           onChange={e => setJump(e.target.value)}
+                                           onKeyDown={e => { if (e.key === 'Enter') goPage(Number(jump)); }} />
+                                    из {res.pages.toLocaleString('ru')}
+                                    <button className="ftb-btn" disabled={!(Number(jump) >= 1)} onClick={() => goPage(Number(jump))}>Перейти</button>
+                                </span>
+                            )}
+                        </div>
+                    )}
                 </div>
-                {!res.loading && !res.error && !res.items.length && <div className="mo-empty">Ничего не найдено</div>}
-                <div ref={sentinel} className="mo-sentinel" />
+                {tagsOpen && <TagBrowser source={source} filters={filters} onAdd={addFilter} onClose={() => setTagsOpen(false)} />}
             </div>
         </div>
     );
@@ -387,7 +446,9 @@ const GalleryPane = ({ target, onBack, onSearchTag }) => {
                             <div className="mo-tags" key={label}>
                                 <span className="mo-tags-label">{label}</span>
                                 {tags.map(t => (
-                                    <button key={`${t.type}:${t.name}`} className="mo-tag" title="Искать по тегу" onClick={() => onSearchTag(tagQuery(target.source, t))}>{t.name}</button>
+                                    <button key={`${t.type}:${t.name}`} className="mo-tag" title="Искать с этим тегом · ПКМ — без него"
+                                            onClick={() => onSearchTag({ type: t.type, name: t.name, id: t.id ?? null, exclude: false })}
+                                            onContextMenu={e => { e.preventDefault(); onSearchTag({ type: t.type, name: t.name, id: t.id ?? null, exclude: true }); }}>{t.name}</button>
                                 ))}
                             </div>
                         ))}
@@ -498,7 +559,7 @@ const DownloadsPane = ({ jobs, onOpenGallery }) => {
 };
 
 // ─── Continue reading ────────────────────────────────────────────────────────
-const RecentPane = ({ onOpenGallery }) => {
+const RecentPane = ({ onOpenGallery, onRead }) => {
     const [lib, setLib] = useState(null);
     const [online, setOnline] = useState(onlineHistory.list);
     useEffect(() => { mangaApi.recent(40).then(setLib).catch(() => setLib([])); }, []);
@@ -519,7 +580,7 @@ const RecentPane = ({ onOpenGallery }) => {
                 {lib && !lib.length && <div className="mo-empty small">Начатой манги в библиотеке нет</div>}
                 <div className="mo-grid">
                     {(lib || []).map(it => (
-                        <div key={it.id} className="mo-card" onClick={() => readLibraryManga(it)} title={it.title}>
+                        <div key={it.id} className="mo-card" onClick={() => readLibraryManga(it)} onContextMenu={e => { e.preventDefault(); readLibraryManga(it); }} title={it.title}>
                             <Cover src={it.thumbPath} />
                             <div className="mo-card-title">{it.title}</div>
                             <div className="mo-card-meta">
@@ -534,7 +595,9 @@ const RecentPane = ({ onOpenGallery }) => {
                 {!online.length && <div className="mo-empty small">Здесь появится то, что вы читали онлайн</div>}
                 <div className="mo-grid">
                     {online.map(e => (
-                        <div key={e.key} className="mo-card" onClick={() => onOpenGallery({ source: e.source, id: e.id, preview: { title: e.title, cover: e.cover } })} title={e.title}>
+                        <div key={e.key} className="mo-card" onClick={() => onOpenGallery({ source: e.source, id: e.id, preview: { title: e.title, cover: e.cover } })}
+                             onContextMenu={ev => { ev.preventDefault(); onRead({ source: e.source, id: e.id }); }} title={`${e.title}
+ПКМ — продолжить чтение`}>
                             <Cover src={e.cover} />
                             <button className="mo-card-remove" title="Убрать из истории" onClick={ev => { ev.stopPropagation(); onlineHistory.remove(e.key); }}>
                                 <i className="bi bi-x" />
@@ -569,6 +632,15 @@ const MangaView = () => {
     const source = sources.find(s => s.id === sourceId) || sources[0];
     const openGallery = useCallback((g) => { setGallery(g); setView('gallery'); }, []);
     const openFromSearch = useCallback((g) => openGallery({ ...g, from: 'search' }), [openGallery]);
+    // Right click on a card: straight into the reader.
+    const quickRead = useCallback(async ({ source: src, id }) => {
+        try {
+            const g = await mangaApi.gallery(src, id);
+            readOnline(g);
+        } catch (e) {
+            notify({ message: errText(e), type: 'warning' });
+        }
+    }, []);
     const back = useCallback(() => setView(v => (v === 'gallery' ? (gallery?.from || 'search') : v)), [gallery]);
 
     // Requests from elsewhere: "Загрузки" in a notice, a gallery link, …
@@ -591,9 +663,10 @@ const MangaView = () => {
         return () => document.removeEventListener('keydown', onKey);
     }, [view, back]);
 
-    const searchTag = (q) => {
+    // A tag of a gallery card → a new search on that site with just this tag.
+    const searchTag = (f) => {
         const p = loadPrefs();
-        savePrefs({ queries: { ...(p.queries || {}), [gallery.source]: q } });
+        savePrefs({ queries: { ...(p.queries || {}), [gallery.source]: '' }, filters: { ...(p.filters || {}), [gallery.source]: [f] } });
         setSourceId(gallery.source);
         setSearchKey(k => k + 1);
         setView('search');
@@ -642,7 +715,7 @@ const MangaView = () => {
                 {/* The search stays mounted under the card: results and scroll survive "Назад". */}
                 {source && (
                     <div className={`mo-keep ${view === 'search' ? '' : 'hidden'}`}>
-                        <SearchPane key={`${source.id}:${searchKey}`} source={source} onOpenGallery={openFromSearch} />
+                        <SearchPane key={`${source.id}:${searchKey}`} source={source} onOpenGallery={openFromSearch} onRead={quickRead} />
                     </div>
                 )}
                 {view === 'gallery' && gallery ? (
@@ -650,7 +723,7 @@ const MangaView = () => {
                 ) : view === 'downloads' ? (
                     <DownloadsPane jobs={jobs} onOpenGallery={(g) => openGallery({ ...g, from: 'downloads' })} />
                 ) : view === 'recent' ? (
-                    <RecentPane onOpenGallery={(g) => openGallery({ ...g, from: 'recent' })} />
+                    <RecentPane onOpenGallery={(g) => openGallery({ ...g, from: 'recent' })} onRead={quickRead} />
                 ) : !source ? (
                     <div className="mo-empty">Загрузка источников…</div>
                 ) : null}
