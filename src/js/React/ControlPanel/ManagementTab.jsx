@@ -1,4 +1,5 @@
 import React, {useState} from 'react';
+import {isWeb} from '@/Infrastructure/electron';
 import DuplicatesTab from './DuplicatesTab';
 import IntegrityTool from './IntegrityTool';
 import MediaGenTool from './MediaGenTool';
@@ -23,7 +24,7 @@ const ManagementTab = ({ initialTool }) => {
     return (
         <>
             <div className="cp-subtabs">
-                {TOOLS.map(t => (
+                {TOOLS.filter(t => !isWeb || (t.id !== 'watch' && t.id !== 'autotag')).map(t => (
                     <button
                         key={t.id}
                         className={`cp-subtab ${tool === t.id ? 'active' : ''}`}

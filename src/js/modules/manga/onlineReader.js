@@ -1,4 +1,5 @@
 import {mangaApi} from '@/Infrastructure/Ipc';
+import {isWeb} from '@/Infrastructure/electron';
 import {openReader} from '@react/Manga/readerStore';
 import {notify} from '@services/NotificationService';
 import {onlineHistory} from './onlineHistory';
@@ -52,7 +53,7 @@ export function readOnline(g, { start = null, onDownload = null } = {}) {
             title: g.title, tags: g.tags || [], sourceUrl: g.url,
         }),
         actions: [
-            ...(g.login ? [{ id: 'login', label: 'Войти', icon: 'bi-person-circle', run: () => loginTo(g.source) }] : []),
+            ...(g.login && !isWeb ? [{ id: 'login', label: 'Войти', icon: 'bi-person-circle', run: () => loginTo(g.source) }] : []),
             ...(onDownload ? [{ id: 'download', label: 'Скачать', icon: 'bi-download', run: () => onDownload() }] : []),
         ],
     });

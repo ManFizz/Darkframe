@@ -1,5 +1,6 @@
 import React, {useEffect, useState} from 'react';
 import {mangaApi} from '@/Infrastructure/Ipc';
+import {isWeb} from '@/Infrastructure/electron';
 import {notify} from '@services/NotificationService';
 import {openPageEditor, readLibraryManga} from '@services/mangaLibrary';
 import {openManga} from '@modules/manga/openManga';
@@ -90,12 +91,14 @@ const MangaInfo = ({ file, onChanged }) => {
                 </div>
             )}
             <div className="mi-more">
+                {!isWeb && <>
                 <button disabled={!!busy} onClick={() => act('cbz', () => mangaApi.exportCbz(file.id), r => `Сохранено: ${r.pages} стр. в CBZ`)}>
                     {busy === 'cbz' ? <i className="bi bi-arrow-repeat spin" /> : <i className="bi bi-file-zip" />} CBZ
                 </button>
                 <button disabled={!!busy} onClick={() => act('dir', () => mangaApi.exportFolder(file.id), r => `Сохранено страниц: ${r.pages}`)}>
                     <i className="bi bi-folder-symlink" /> В папку
                 </button>
+                </>}
                 <button disabled={!!busy} title="Каждая страница — отдельная картинка в библиотеке (манга остаётся)"
                         onClick={() => act('split', () => mangaApi.split(file.id), r => `Картинок добавлено: ${r.results.length} · Ctrl+Z — отменить`)}>
                     <i className="bi bi-images" /> На картинки

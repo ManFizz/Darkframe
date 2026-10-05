@@ -1,5 +1,6 @@
 import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {mangaApi} from '@/Infrastructure/Ipc';
+import {appUrl, isWeb} from '@/Infrastructure/electron';
 import {notify} from '@services/NotificationService';
 import {mangaRequests, useCommands} from '@services/commands';
 import {openManga} from './openManga';
@@ -242,10 +243,17 @@ const SearchPane = ({ source, onOpenGallery, onRead }) => {
                     <i className="bi bi-bookmark-x" />
                 </button>
                 <button className="ftb-btn" onClick={() => run({ page: res.first || 1 })} title="Обновить"><i className="bi bi-arrow-clockwise" /></button>
-                <button className="ftb-btn" onClick={() => mangaApi.openSite(source.id).then(() => run())} title="Открыть сайт в окне (проверка Cloudflare и т. п.)">
-                    <i className="bi bi-globe2" />
-                </button>
-                {source.login && (
+                {!isWeb && (
+                    <button className="ftb-btn" onClick={() => mangaApi.openSite(source.id).then(() => run())} title="Открыть сайт в окне (проверка Cloudflare и т. п.)">
+                        <i className="bi bi-globe2" />
+                    </button>
+                )}
+                {source.login && isWeb && (
+                    <span className={`ftb-btn ${logged ? 'mo-logged' : ''}`} title={logged ? 'На компьютере выполнен вход на сайт' : 'Вход на сайт — на компьютере: вкладка Manga → Войти'}>
+                        <i className={`bi ${logged ? 'bi-person-check-fill' : 'bi-person-circle'}`} /> <span>{logged ? 'Вы вошли' : 'Вход — на ПК'}</span>
+                    </span>
+                )}
+                {source.login && !isWeb && (
                     <button className={`ftb-btn ${logged ? 'mo-logged' : ''}`} onClick={login}
                             title={logged ? 'Вы вошли на сайт · открыть окно входа ещё раз' : 'Войти на сайте (нужно для чтения глав)'}>
                         <i className={`bi ${logged ? 'bi-person-check-fill' : 'bi-person-circle'}`} /> <span>{logged ? 'Вы вошли' : 'Войти'}</span>
@@ -264,7 +272,7 @@ const SearchPane = ({ source, onOpenGallery, onRead }) => {
                         <div className="mo-error">
                             <i className="bi bi-exclamation-triangle" /> {res.error}
                             <button className="ftb-btn" onClick={() => run({ more: res.items.length > 0, page: res.first || 1 })}>Повторить</button>
-                            <button className="ftb-btn" onClick={() => mangaApi.openSite(source.id).then(() => run())}>Открыть сайт</button>
+                            {!isWeb && <button className="ftb-btn" onClick={() => mangaApi.openSite(source.id).then(() => run())}>Открыть сайт</button>}
                         </div>
                     )}
                     {res.first > 1 && !res.loading && (
@@ -381,7 +389,7 @@ const GalleryPane = ({ target, onBack, onSearchTag }) => {
             <div className="folder-toolbar mo-toolbar">
                 <button className="ftb-btn" onClick={onBack} title="Назад (Esc)"><i className="bi bi-arrow-left" /> <span>Назад</span></button>
                 <div className="mo-crumb">{title}</div>
-                {g?.url && <button className="ftb-btn" onClick={() => mangaApi.openSite(target.source, g.url)} title="Открыть на сайте"><i className="bi bi-box-arrow-up-right" /></button>}
+                {g?.url && <button className="ftb-btn" onClick={() => (isWeb ? window.open(g.url, '_blank', 'noopener') : mangaApi.openSite(target.source, g.url))} title="Открыть на сайте"><i className="bi bi-box-arrow-up-right" /></button>}
             </div>
             <div className="mo-scroll">
                 {error && !g && (
@@ -427,7 +435,7 @@ const GalleryPane = ({ target, onBack, onSearchTag }) => {
                                     <i className="bi bi-plus-circle" /> <span>Новые главы: {fresh.length}</span>
                                 </button>
                             )}
-                            {g?.login && (
+                            {g?.login && !isWeb && (
                                 <button className="ftb-btn" title="Главы этого сайта видны только после входа — окно сайта, войдите в свой аккаунт"
                                         onClick={() => loginTo(target.source)}>
                                     <i className="bi bi-person-circle" /> <span>Войти на сайте</span>
@@ -524,7 +532,7 @@ const DownloadsPane = ({ jobs, onOpenGallery }) => {
                         return (
                             <div key={j.id} className={`mo-job ${j.status}`}>
                                 <div className="mo-job-cover" onClick={() => onOpenGallery({ source: j.source, id: j.galleryId })}>
-                                    <Cover src={j.cover ? `mangaimg://p/?s=${encodeURIComponent(j.source)}&u=${encodeURIComponent(j.cover)}` : null} />
+                                    <Cover src={j.cover ? appUrl(`mangaimg://p/?s=${encodeURIComponent(j.source)}&u=${encodeURIComponent(j.cover)}`) : null} />
                                 </div>
                                 <div className="mo-job-body">
                                     <div className="mo-job-title" onClick={() => onOpenGallery({ source: j.source, id: j.galleryId })}>{j.title || j.url || j.galleryId}</div>

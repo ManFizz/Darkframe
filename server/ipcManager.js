@@ -1,3 +1,5 @@
+// First: every handler registered below is also kept for the phone / browser access.
+require('./remote/registry').install();
 const { registerAll } = require('./modules');
 const favoriteController = require('./controllers/favoriteController');
 const favoriteTagController = require('./controllers/favoriteTagController');
@@ -10,6 +12,7 @@ const dragWheelController = require('./controllers/dragWheelController');
 const netController = require('./controllers/netController');
 const mangaController = require('./controllers/mangaController');
 const mangaSourcesController = require('./controllers/mangaSourcesController');
+const remoteController = require('./controllers/remoteController');
 require('./models/associations');
 const { installItemHooks } = require('./services/libraryEvents');
 
@@ -26,6 +29,7 @@ function setupIpcHandlers() {
 	netController.register();
 	mangaController.register();
 	mangaSourcesController.register();
+	remoteController.register();
 	// Push item changes (counts, API imports) to the renderer.
 	installItemHooks();
 }

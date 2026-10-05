@@ -3,6 +3,7 @@ import {createPortal} from 'react-dom';
 import {cachedMediaUrl} from '@/Infrastructure/MediaCache';
 import {matches} from '@services/keymap';
 import {notify} from '@services/NotificationService';
+import {swipeHandlers} from '@services/mobile';
 import {exitViewerFullscreen, toggleViewerFullscreen} from '../Modal/fullscreen';
 import {looksVertical, readerPrefs, registerReader, saveReaderPrefs} from './readerStore';
 
@@ -363,7 +364,7 @@ const ReaderView = ({ book, onClose }) => {
                 {book.savePage && (
                     <button className="rd-btn" onClick={savePage} disabled={saving || !pages}
                             title={`Сохранить страницу ${page + 1} в библиотеку отдельной картинкой (S)`}>
-                        <i className={`bi ${saving ? 'bi-arrow-repeat spin' : 'bi-download'}`} />
+                        <i className={`bi ${saving ? 'bi-arrow-repeat spin' : 'bi-file-earmark-arrow-down'}`} />
                     </button>
                 )}
                 <div className="rd-seg" title="Режим (V)">
@@ -438,7 +439,13 @@ const ReaderView = ({ book, onClose }) => {
                  onClick={onStageClick}
                  onPointerDown={onPointerDown}
                  onPointerMove={onPointerMove}
-                 onClickCapture={onClickCapture}>
+                 onClickCapture={onClickCapture}
+                 {...swipeHandlers((dir) => {
+                     // Swipe like turning a paper page: in right-to-left manga the
+                     // next page comes from the left (swipe to the right).
+                     const rtl = prefs.direction === 'rtl';
+                     if (dir > 0) (rtl ? next : prev)(); else (rtl ? prev : next)();
+                 }, { enabled: !vertical && zoom <= 1 })}>
                 {error ? (
                     <div className="rd-msg err">
                         <i className="bi bi-exclamation-triangle" /> {error}

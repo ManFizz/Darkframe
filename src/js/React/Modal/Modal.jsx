@@ -23,6 +23,7 @@ import {exitViewerFullscreen} from "./fullscreen";
 import {useResolvedTheme} from "@services/theme";
 import {matches} from '@services/keymap';
 import {readLibraryManga} from '@services/mangaLibrary';
+import {isMobileView, swipeHandlers} from '@services/mobile';
 
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(v, hi));
 
@@ -31,7 +32,8 @@ const clamp = (v, lo, hi) => Math.max(lo, Math.min(v, hi));
 const Modal = ({ fileId, mainArray, modalUpdater, displayFiles, onUpdated, autoSlideshow = false }) => {
     const [isLong, setIsLong]             = useState(false);
     const [degree, setDegree]             = useState(0);
-    const [panelOpen, setPanelOpen]       = useState(true);
+    // Phone: the picture gets the whole screen; the info panel opens on request.
+    const [panelOpen, setPanelOpen]       = useState(() => !isMobileView());
     const [editing, setEditing]           = useState(false);
     const [zoom, setZoom]                 = useState(1);
     const [pan, setPan]                   = useState({ x: 0, y: 0 });
@@ -430,7 +432,13 @@ const Modal = ({ fileId, mainArray, modalUpdater, displayFiles, onUpdated, autoS
                 {/* The media area is always rendered in the same spot so toggling the
                     panel never remounts <Video> (which would restart playback). Only
                     the panel / tags sibling swaps. */}
-                <div className="modal-media-area" ref={contentRef} onPointerDown={onMediaPointerDown}>
+                <div className="modal-media-area" ref={contentRef} onPointerDown={onMediaPointerDown}
+                     {...swipeHandlers((dir) => {
+                         // Swipe left → next, right → previous (not while zoomed in).
+                         const i = mainArray.findIndex(f => f.uniqueId === file.uniqueId);
+                         const next = mainArray[i - dir];
+                         if (next) modalUpdater(next);
+                     }, { enabled: zoom <= 1 && !editing })}>
                     <div className="modal-content-wrapper">
                         {editing ? null : mediaContent}
                     </div>

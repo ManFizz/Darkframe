@@ -1,5 +1,6 @@
 import React, {useEffect, useState} from 'react';
 import {libraryApi} from '@/Infrastructure/Ipc';
+import {appUrl} from '@/Infrastructure/electron';
 import {compareItemFromThumb, openCompare} from '../../Compare/CompareView';
 import {runVisualSearch} from '@services/visualSearch';
 
@@ -50,7 +51,7 @@ const RelatedBlock = ({ file, data, reload, onChanged }) => {
     if (!data || (!data.exact.length && !data.similar.length)) return null;
 
     const compare = (row) => openCompare(
-        [compareItemFromThumb(file), { ...row, url: `library://item/${row.id}` }],
+        [compareItemFromThumb(file), { ...row, url: appUrl(`library://item/${row.id}`) }],
         { onDone: () => { reload(); onChanged?.(); } },
     );
 

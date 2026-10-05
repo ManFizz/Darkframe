@@ -1,6 +1,7 @@
 import React, {useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState} from 'react';
 import LibraryService from '@services/LibraryService';
 import {notify} from '@services/NotificationService';
+import {appUrl} from '@/Infrastructure/electron';
 import {saveEditPreset} from '@services/imageEditPreset';
 import {NEUTRAL_COLOR, DEFAULT_OUTPUT, cssFilter, colorFactors, normalizeEditParams} from '@/shared/imageAdjust';
 
@@ -99,7 +100,7 @@ const ImageEditor = ({ file, onCancel, onSaved }) => {
         const legacy = !!file.editedAt && !file.editParams;
         const im = new window.Image();
         im.onload = () => setImg(im);
-        im.src = legacy ? file.getUrl() : `library://source/${file.id}?v=${file.editedAt || 0}`;
+        im.src = legacy ? file.getUrl() : appUrl(`library://source/${file.id}?v=${file.editedAt || 0}`);
     }, [file]);
 
     useLayoutEffect(() => {

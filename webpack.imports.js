@@ -1,5 +1,9 @@
 // noinspection ES6UnusedImports
 
+// First of all: in a phone / browser (no Electron) this sets up window.darkframe
+// over the network before anything reads it.
+import '/src/js/Infrastructure/webBridge.js';
+
 // Stylesheets are static imports on purpose: style-loader injects them in import
 // order, so the app's overrides always land after Bootstrap. (As dynamic import()s
 // the chunks raced and Bootstrap could win — blue buttons, wrong theme colours.)

@@ -1,4 +1,4 @@
-import {ipcRenderer} from './electron';
+import {appUrl, ipcRenderer} from './electron';
 
 export async function invoke(channel, ...args) {
     try {
@@ -140,7 +140,7 @@ export const savedSearchesApi = {
 
 // fsthumb:// URL of a cached thumbnail for a file on disk.
 export const fsThumbUrl = (file, width = 360) =>
-    `fsthumb://t/?p=${encodeURIComponent(file)}&w=${width}`;
+    appUrl(`fsthumb://t/?p=${encodeURIComponent(file)}&w=${width}`);
 
 export const libraryApi = {
     importDialog:      (data) => invoke('library:importDialog', data),
@@ -223,6 +223,14 @@ export const apiTokensApi = {
     revoke:         (id)           => invoke('apitokens:revoke', { id }),
     setEnabled:     (id, enabled)  => invoke('apitokens:setEnabled', { id, enabled }),
     setRequireAuth: (value)        => invoke('apitokens:setRequireAuth', { value }),
+};
+
+export const remoteApi = {
+    status:       ()                 => invoke('remote:status'),
+    setSettings:  (s)                => invoke('remote:setSettings', s),
+    createCode:   (opts = {})        => invoke('remote:createCode', opts),
+    updateDevice: (id, patch)        => invoke('remote:updateDevice', { id, ...patch }),
+    revoke:       (id)               => invoke('remote:revoke', { id }),
 };
 
 export const libraryRegistryApi = {

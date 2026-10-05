@@ -1,0 +1,204 @@
+// ─── Phone layout ────────────────────────────────────────────────────────────
+// Only for the app opened in a phone's browser over the network (html.df-web) on
+// a narrow screen; the desktop window keeps its layout at any width.
+
+@mixin phone {
+  @media (max-width: 760px) {
+    html.df-web { @content; }
+  }
+}
+
+@include phone {
+  --df-modal-top: 0px;
+
+  body { overscroll-behavior: none; }
+
+  // Top bar: tabs + actions in one scrollable row, the search under them.
+  .navbar-glass {
+    padding: 6px 8px;
+    .container-fluid { flex-wrap: wrap; gap: 6px; padding: 0; }
+  }
+  .nav-sections { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; max-width: 100%; gap: 4px; }
+  .nav-island { padding: 2px; }
+  .navbar-glass .nav-source-tab { padding: 6px 10px; span { display: none; } .bi { font-size: 16px; opacity: 1; } }
+  .navbar-actions {
+    margin-left: auto;
+    max-width: 100%;
+    overflow-x: auto;
+    scrollbar-width: none;
+    flex-wrap: nowrap;
+    gap: 2px;
+    .btn { padding: 4px 8px; }
+  }
+  .library-nav-controls { flex: 1 1 100%; max-width: none; flex-wrap: wrap; order: 5; }
+  .navbar-spacer { display: none; }
+
+  // ── Library: collections in a drawer, the grid gets the screen ─────────────
+  .library-layout { position: relative; }
+  .library-sidebar {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 1100;
+    width: min(86vw, 330px);
+    min-width: 0;
+    max-width: none;
+    transform: translateX(-105%);
+    transition: transform 0.22s ease;
+    background: var(--bs-body-bg);
+    box-shadow: 12px 0 40px rgba(0, 0, 0, 0.5);
+    padding-top: max(8px, env(safe-area-inset-top));
+  }
+  .library-layout.drawer-open .library-sidebar { transform: none; }
+  .lib-drawer-backdrop { position: fixed; inset: 0; z-index: 1090; background: rgba(0, 0, 0, 0.5); }
+  .library-main { margin-right: 0; }
+  .library-layout > .metadata-panel { display: none; }
+
+  .lib-drawer-btn {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 6px 8px 2px;
+    padding: 8px 12px;
+    border: 1px solid var(--df-glass-border);
+    border-radius: 12px;
+    background: var(--df-island);
+    color: var(--bs-body-color);
+    font-weight: 600;
+    font-size: 14px;
+    .bi { font-size: 20px; }
+    span:nth-child(2) { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: left; }
+  }
+  .lib-drawer-count { font-size: 12px; color: var(--bs-secondary); font-weight: 500; }
+
+  .quick-filters-chips { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
+  .bulk-action-bar { flex-wrap: wrap; gap: 6px; padding: 6px 8px; }
+
+  // Square tiles, three in a row, like a phone gallery.
+  .gallery-view-2 {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 3px;
+    padding: 3px;
+    .thumb-drag-wrapper, .thumb {
+      min-width: 0;
+      max-width: none;
+      min-height: 0;
+      max-height: none;
+      aspect-ratio: 1;
+      margin: 0;
+      border-radius: 6px;
+    }
+    .thumb img, .thumb video { width: 100%; height: 100%; object-fit: cover; }
+    .gallery-divider { grid-column: 1 / -1; }
+    .ftile { grid-column: span 1; }
+  }
+  .thumb .overlay { display: none; }
+  .thumb-check { opacity: 0; }
+  .thumb.selection-active .thumb-check, .thumb.thumb-selected .thumb-check { opacity: 1; }
+
+  // ── Viewer: full screen; the info panel slides up under the picture ────────
+  .modal-view {
+    top: 0;
+    height: 100dvh;
+    z-index: 1050;
+    background: #0d0b12;
+    &.favorite { background: #160a18; }
+    img, video { max-width: 100vw; max-height: calc(100dvh - 64px); border-radius: 0; border: none; }
+  }
+  .modal-view.with-panel {
+    flex-direction: column;
+    .modal-media-area { flex: 1 1 auto; min-height: 40dvh; padding-left: 0 !important; }
+    &:not(.long) .modal-media-area img, &:not(.long) .modal-media-area video { max-width: 100vw; max-height: 50dvh; }
+  }
+  .modal-panel-wrapper {
+    width: 100%;
+    max-height: 55dvh;
+    border-left: none;
+    border-top: 1px solid var(--df-glass-border, rgba(255, 255, 255, 0.08));
+    border-radius: 16px 16px 0 0;
+  }
+  .modal-nav-container { height: 100dvh; }
+  .modal-nav-container .modal-nav-counter {
+    top: auto;
+    bottom: calc(14px + env(safe-area-inset-bottom));
+    left: 50%;
+  }
+  .modal-view.with-strip .modal-nav-counter { bottom: calc(100px + env(safe-area-inset-bottom)); }
+  .modal-nav-row {
+    max-width: calc(100vw - 16px);
+    margin: max(8px, env(safe-area-inset-top)) 8px 0;
+    overflow-x: auto;
+    scrollbar-width: none;
+    .bi { width: 40px; height: 40px; flex-shrink: 0; }
+  }
+
+  // ── Control panel and other dialogs: whole screen ──────────────────────────
+  .settings-overlay { padding: 0; }
+  .settings-modal { width: 100vw; max-width: none; height: 100dvh; max-height: none; border-radius: 0; }
+  .cp-tabs, .cp-subtabs { overflow-x: auto; flex-wrap: nowrap; scrollbar-width: none; }
+
+  // ── Manga tab ──────────────────────────────────────────────────────────────
+  .mo-layout { flex-direction: column; --mo-card: 108px; }
+  .mo-layout > .fsb {
+    width: auto;
+    display: flex;
+    gap: 4px;
+    padding: 6px 8px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    border-right: none;
+    border-bottom: 1px solid var(--bs-border-color);
+    .fsb-section { display: contents; }
+    .fsb-title, .mo-tips, .fsb-empty { display: none; }
+    .fsb-item { flex: 0 0 auto; white-space: nowrap; padding: 6px 10px; border: 1px solid var(--bs-border-color); border-radius: 999px; }
+    .fsb-label { overflow: visible; }
+  }
+  .mo-toolbar { padding: 6px 8px; gap: 6px; }
+  .mo-sbar { flex: 1 1 100%; min-width: 0; }
+  .mo-sort { min-width: 0; flex: 1; }
+  .mo-scroll { padding: 4px 8px 20px; }
+  .mo-grid { gap: 10px 8px; }
+  .mo-card { padding: 3px; }
+  .mo-card-quick { opacity: 1; }
+  .mo-tb { position: fixed; inset: 0; width: 100vw; z-index: 1200; background: var(--bs-body-bg); }
+  .mo-detail { flex-direction: column; gap: 12px; }
+  .mo-cover.big { width: 150px; }
+  .mo-title { font-size: 18px; }
+  .mo-tags-label { min-width: 100%; }
+  .mo-job { flex-wrap: wrap; }
+  .mo-pager { gap: 8px; }
+
+  // ── Manga reader ───────────────────────────────────────────────────────────
+  .rd-top { flex-wrap: wrap; padding: max(6px, env(safe-area-inset-top)) 6px 6px; }
+  .rd-seg span, .rd-btn-text { display: none; }
+  .rd-title { flex: 1 1 100%; order: -1; }
+  .rd-chapter { max-width: 45vw; }
+  .rd-btn { min-width: 40px; height: 40px; }
+  .rd-bottom { padding-bottom: max(8px, env(safe-area-inset-bottom)); }
+  .rd-menu { right: 8px; left: 8px; width: auto; }
+}
+
+// Desktop / wide screens never show the phone-only controls.
+.lib-drawer-btn, .lib-drawer-backdrop { display: none; }
+@include phone {
+  .lib-drawer-btn { display: flex; }
+  .lib-drawer-backdrop { display: block; }
+}
+
+// Lost connection to the computer (server-sent events dropped).
+html.df-offline body::after {
+  content: 'Нет связи с компьютером…';
+  position: fixed;
+  left: 50%;
+  bottom: 16px;
+  transform: translateX(-50%);
+  z-index: 5000;
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: rgba(200, 40, 60, 0.92);
+  color: #fff;
+  font-size: 13px;
+  pointer-events: none;
+}

@@ -14,6 +14,7 @@ import {openHotkeysHelp} from '../Helpers/HotkeysHelp';
 import BooruSearchBar from '@modules/r34/BooruSearchBar';
 import {collectionRequests, folderRequests, mangaRequests, useCommands} from '@services/commands';
 import {openManga} from '@modules/manga/openManga';
+import {isWeb} from '@/Infrastructure/electron';
 import {setTheme} from '@services/theme';
 import {notify} from '@services/NotificationService';
 import LibraryService from '@services/LibraryService';
@@ -112,6 +113,7 @@ const NavBar = () => {
             { id: 'panel:settings', group: 'Инструменты', icon: 'bi-gear', title: 'Настройки', run: () => openPanel('settings') },
             { id: 'panel:stats', group: 'Инструменты', icon: 'bi-bar-chart-line', title: 'Статистика', run: () => openPanel('stats') },
             { id: 'panel:access', group: 'Инструменты', icon: 'bi-key', title: 'Доступ: API-токены', keywords: 'расширение', run: () => openPanel('access') },
+            { id: 'panel:devices', group: 'Инструменты', icon: 'bi-phone', title: 'Телефон: подключить устройство', keywords: 'мобильный сеть wifi qr планшет', run: () => openPanel('devices') },
             tool('dupes', 'Поиск дубликатов', 'bi-images'),
             tool('integrity', 'Проверка целостности', 'bi-clipboard-check'),
             tool('media', 'Превью и размеры', 'bi-image'),
@@ -157,7 +159,9 @@ const NavBar = () => {
             { id: 'manga:downloads', group: 'Манга', icon: 'bi-download', title: 'Манга: загрузки', keywords: 'очередь скачать', run: () => openManga({ view: 'downloads' }) },
             { id: 'manga:recent', group: 'Манга', icon: 'bi-clock-history', title: 'Манга: продолжить чтение', keywords: 'история', run: () => openManga({ view: 'recent' }) },
         ];
-        return [...nav, ...special, ...cols, ...pins, ...manga, ...panel, ...look];
+        // On a phone the PC's settings / tokens / devices / tools stay on the PC.
+        const PC_ONLY = ['panel:settings', 'panel:access', 'panel:devices', 'tool:watch', 'tool:autotag'];
+        return [...nav, ...special, ...cols, ...pins, ...manga, ...(isWeb ? panel.filter(c => !PC_ONLY.includes(c.id)) : panel), ...look];
     });
 
     // Reopen the tab that was open last time (setting "Открывать там, где закрыл").

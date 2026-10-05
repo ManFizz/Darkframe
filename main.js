@@ -161,6 +161,9 @@ function libraryFilePath(url) {
     return null;
 }
 
+// The protocol handlers are also kept for the phone / browser access (remote/server).
+require('./server/remote/protocols').install(protocol);
+
 function registerLibraryProtocol() {
     protocol.handle('library', async (request) => {
         try {
@@ -289,6 +292,13 @@ app.whenReady().then(async () => {
     if (!SMOKE) require('./server/services/watchFolders').start()
         .catch(e => console.warn('[watch] start failed:', e.message));
 
+    // Phone / browser access over the home network, if switched on. A sandbox
+    // instance only with its own port (DARKFRAME_REMOTE_PORT).
+    if (!SMOKE && (!SANDBOX || process.env.DARKFRAME_REMOTE_PORT)) {
+        require('./server/controllers/remoteController').startIfEnabled()
+            .catch(e => console.warn('[remote] start failed:', e.message));
+    }
+
     if (!SMOKE) {
         setTimeout(() => require('./server/services/manga/images').pruneCache(), 30000);
         require('./server/services/manga/downloads').start()
@@ -298,6 +308,7 @@ app.whenReady().then(async () => {
 
 app.on('window-all-closed', () => {
     stopApiServer();
+    require('./server/remote/server').stop();
     require('./server/services/watchFolders').stop();
     require('./server/controllers/dragWheelController').stop();
     // Best-effort; the renderer may still hold file handles, so leftovers are

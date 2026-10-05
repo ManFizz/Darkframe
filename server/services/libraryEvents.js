@@ -14,6 +14,8 @@ function broadcast(channel, payload) {
         const wc = win.webContents;
         if (wc && !wc.isDestroyed()) wc.send(channel, payload);
     }
+    // …and to the phones / browsers connected over the network.
+    try { require('../remote/server').emit(channel, payload); } catch { /* tests */ }
 }
 
 // ─── Item changes ─────────────────────────────────────────────────────────────

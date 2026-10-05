@@ -1,9 +1,9 @@
-import React, {useEffect, useState} from 'react';
+import React, {useEffect, useRef, useState} from 'react';
 import LibraryService from '@services/LibraryService';
 import {mangaApi} from '@/Infrastructure/Ipc';
 import EagleImportProgress from './EagleImportProgress';
 import {notify} from '@services/NotificationService';
-import {ipcRenderer, webUtils} from '@/Infrastructure/electron';
+import {ipcRenderer, isWeb, uploadFile, webUtils} from '@/Infrastructure/electron';
 
 const ImportButton = ({ collectionId, collectionName, onImported }) => {
     const [importing, setImporting] = useState(false);
@@ -13,6 +13,29 @@ const ImportButton = ({ collectionId, collectionName, onImported }) => {
     // The secondary import paths (link/folder/json/csv) are hidden until asked for —
     // "Добавить файлы" is the one action people reach for 95% of the time.
     const [expanded, setExpanded] = useState(false);
+    const fileInput = useRef(null);
+    const [uploading, setUploading] = useState(null);   // { done, total } — phone uploads
+
+    // Phone / browser: files from the device go up to the PC one by one.
+    const uploadAll = async (files) => {
+        const list = [...files];
+        if (!list.length) return;
+        const all = { results: [], skipped: [], errors: [] };
+        setUploading({ done: 0, total: list.length });
+        for (let i = 0; i < list.length; i++) {
+            try {
+                const r = await uploadFile(list[i], { collectionId: collectionId ?? null });
+                all.results.push(...(r.results || []));
+                all.skipped.push(...(r.skipped || []).map(s => ({ ...s, filePath: null })));
+                all.errors.push(...(r.errors || []));
+            } catch (e) {
+                all.errors.push({ error: e.message });
+            }
+            setUploading({ done: i + 1, total: list.length });
+        }
+        setUploading(null);
+        await handleImport(all);
+    };
 
     useEffect(() => {
         const handler = (_, p) => setUrlProgress(p);
@@ -70,6 +93,7 @@ const ImportButton = ({ collectionId, collectionName, onImported }) => {
     };
 
     const handleImportFiles = async () => {
+        if (isWeb) { fileInput.current?.click(); return; }
         const raw = await LibraryService.importDialog(collectionId);
         await handleImport(raw);
     };
@@ -164,6 +188,7 @@ const ImportButton = ({ collectionId, collectionName, onImported }) => {
     const handleDrop = async (e) => {
         e.preventDefault();
         e.stopPropagation();
+        if (isWeb) { await uploadAll(e.dataTransfer.files); return; }
 
         
         const filePaths = [];
@@ -239,10 +264,15 @@ const ImportButton = ({ collectionId, collectionName, onImported }) => {
 
             <div className="import-zone" onDrop={handleDrop} onDragOver={e => e.preventDefault()}>
                 {/* Primary path — one clear button */}
-                <button className="import-primary" onClick={handleImportFiles}>
-                    <i className="bi bi-plus-lg" />
-                    Добавить файлы
+                <button className="import-primary" onClick={handleImportFiles} disabled={!!uploading}>
+                    {uploading
+                        ? <><i className="bi bi-arrow-repeat spin" /> Загрузка {uploading.done}/{uploading.total}</>
+                        : <><i className="bi bi-plus-lg" /> Добавить файлы</>}
                 </button>
+                {isWeb && (
+                    <input ref={fileInput} type="file" multiple hidden accept="image/*,video/*,.cbz,.zip"
+                           onChange={e => { uploadAll(e.target.files); e.target.value = ''; }} />
+                )}
 
                 <div className="import-target">
                     {collectionName ? <>в <b>{collectionName}</b></> : 'без коллекции'}
@@ -254,7 +284,7 @@ const ImportButton = ({ collectionId, collectionName, onImported }) => {
                     onClick={() => setExpanded(v => !v)}
                 >
                     <i className="bi bi-chevron-down" />
-                    Ссылка · Папка · JSON · CSV
+                    {isWeb ? 'По ссылке' : 'Ссылка · Папка · JSON · CSV'}
                 </button>
 
                 {expanded && (
@@ -301,6 +331,7 @@ const ImportButton = ({ collectionId, collectionName, onImported }) => {
                             </div>
                         )}
 
+                        {!isWeb && <>
                         <div className="import-more-actions">
                             <button className="import-ghost" onClick={handleImportDirectory}>
                                 <i className="bi bi-folder-plus" /> Папку
@@ -322,11 +353,14 @@ const ImportButton = ({ collectionId, collectionName, onImported }) => {
                                 <i className="bi bi-file-zip" /> CBZ / ZIP
                             </button>
                         </div>
+                        </>}
                     </div>
                 )}
 
                 <div className="import-drop-hint">
-                    или перетащи файлы / папки · CBZ — как мангу · Shift + папка — манга
+                    {isWeb
+                        ? 'Файлы с этого устройства уйдут в библиотеку на компьютере · CBZ / ZIP — как манга'
+                        : 'или перетащи файлы / папки · CBZ — как мангу · Shift + папка — манга'}
                 </div>
             </div>
         </>

@@ -1,6 +1,7 @@
 import React, {useCallback, useEffect, useState} from 'react';
 import {createPortal} from 'react-dom';
 import {mangaApi} from '@/Infrastructure/Ipc';
+import {isWeb} from '@/Infrastructure/electron';
 import {notify} from '@services/NotificationService';
 import {registerPageEditor} from '@services/mangaLibrary';
 
@@ -123,6 +124,7 @@ const PageEditor = () => {
                         <b>{item.title}</b>
                         <span>{book ? `${flat.length} стр.${book.chapters.length > 1 ? ` · ${book.chapters.length} гл.` : ''}` : '…'}</span>
                     </div>
+                    {!isWeb && <>
                     <button className="btn btn-sm btn-outline-secondary" disabled={busy || !book}
                             onClick={() => run(() => mangaApi.addPagesDialog(item.id, { chapter: book.chapters[book.chapters.length - 1]?.id }))}>
                         <i className="bi bi-plus-lg me-1" />Страницы
@@ -131,6 +133,7 @@ const PageEditor = () => {
                             onClick={() => run(() => mangaApi.addPagesDialog(item.id, { newChapterTitle: `Глава ${book.chapters.length + 1}` }))}>
                         <i className="bi bi-journal-plus me-1" />Новая глава
                     </button>
+                    </>}
                     <button className="pe-close" onClick={close} title="Закрыть (Esc)"><i className="bi bi-x-lg" /></button>
                 </div>
 

@@ -21,6 +21,8 @@ import {useLibraryContext} from '@/LibraryContext';
 import Modal from "@react/Modal/Modal";
 import {notify} from '@services/NotificationService';
 import {libraryApi} from '@/Infrastructure/Ipc';
+import {isWeb} from '@/Infrastructure/electron';
+import {useMobile} from '@services/mobile';
 import {openManga} from '@modules/manga/openManga';
 import {readLibraryManga} from '@services/mangaLibrary';
 import {undoLast, redoLast} from '@services/undo';
@@ -159,6 +161,7 @@ const LibraryView = () => {
     // collection" when a special / smart view is open).
     const pasteRef = useRef(null);
     pasteRef.current = async () => {
+        if (isWeb) return;   // the PC's clipboard — not over the network
         const special = Object.values(SPECIAL).includes(selectedCollection) || !!smartFilterJson;
         const target = special ? null : selectedCollection;
         const where = target ? `«${LibraryService.getCollections().find(c => c.id === target)?.name || 'коллекция'}»` : '«Без коллекции»';
@@ -267,13 +270,23 @@ const LibraryView = () => {
 
     // Clicking a thumb body selects it (Explorer-style: plain = single, ctrl = toggle,
     // shift = range). Opening the viewer is the overlay button / context menu / dbl-click.
+    // Phone: a tap opens the file; once something is selected (long press), taps
+    // add to / take from the selection instead.
+    const mobile = useMobile();
+    const [drawer, setDrawer] = useState(false);
+    useEffect(() => { setDrawer(false); }, [selectedCollection, smartFilterJson]);
     const handleFileClick = useCallback((file, e) => {
         if (file.type === FILE_TYPES.LIBRARY) {
             handleCollectionSelect(file._meta.collectionId);
             return;
         }
+        if (mobile) {
+            if (selected.size) toggle(file.uniqueId);
+            else handleFileOpen(file);
+            return;
+        }
         handleSelect(file.uniqueId, e || {});
-    }, [handleSelect, handleCollectionSelect]);
+    }, [handleSelect, handleCollectionSelect, mobile, selected, toggle, handleFileOpen]);
 
     // Checkbox overlay: toggle (shift extends the range) without disturbing modifiers.
     const handleCheckbox = useCallback((file, e) => {
@@ -427,7 +440,8 @@ const LibraryView = () => {
     }, [clear, refreshStats, reload]);
 
     return (
-        <div className="library-layout">
+        <div className={`library-layout ${drawer ? 'drawer-open' : ''}`}>
+            {mobile && drawer && <div className="lib-drawer-backdrop" onClick={() => setDrawer(false)} />}
             <Modal
                 fileId={modalFileId}
                 mainArray={slideSet ? slideSet.items : orderedItems}
@@ -485,6 +499,13 @@ const LibraryView = () => {
             </div>
 
             <div className="library-main">
+            {mobile && (
+                <button className="lib-drawer-btn" onClick={() => setDrawer(true)}>
+                    <i className="bi bi-list" />
+                    <span>{isTrash ? 'Корзина' : isHistory ? 'История' : currentCollectionName || (selectedCollection === SPECIAL.UNCATEGORIZED ? 'Без коллекции' : 'Все файлы')}</span>
+                    <span className="lib-drawer-count">{orderedItems.length}</span>
+                </button>
+            )}
             {isTrash && (
                 <div className="trash-toolbar">
                     <i className="bi bi-trash me-1" />

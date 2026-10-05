@@ -2,7 +2,7 @@ import React, {useCallback, useEffect, useState} from 'react';
 import {openCompare} from '../Compare/CompareView';
 import LibraryService from '@services/LibraryService';
 import {notify} from '@services/NotificationService';
-import {ipcRenderer} from '@/Infrastructure/electron';
+import {appUrl, ipcRenderer} from '@/Infrastructure/electron';
 
 const fmtSize = (bytes) => {
     if (!bytes) return '0 B';
@@ -227,7 +227,7 @@ const DuplicatesTab = () => {
                                     </span>
                                     <button className="cp-linkbtn" title="Сравнить первые два бок о бок"
                                             onClick={() => openCompare(group.items.slice(0, 2).map(it => ({
-                                                ...it, url: `library://item/${it.id}`,
+                                                ...it, url: appUrl(`library://item/${it.id}`),
                                             })), { onDone: scan })}>
                                         <i className="bi bi-layout-split" /> Сравнить
                                     </button>

@@ -1,4 +1,4 @@
-import React, {useCallback} from "react";
+import React, {useCallback, useRef} from "react";
 import Image from "./Image";
 import Video from "./Video";
 import {getCurrentSource} from "@controllers/AppInitializerController";
@@ -8,7 +8,26 @@ import Collection from "./Collection";
 import {useHoverVideo} from "./useHoverVideo";
 
 const Thumb = (({ file, isModal, modalUpdater, isSelected, onOpen, onToggleSelect, selectionActive, inLibrary, blockedTag, onDragStart }) => {
+    // Touch: a long press selects (like a phone gallery); the click and the
+    // context menu that follow it are swallowed.
+    const press = useRef({ timer: null, fired: false, x: 0, y: 0 });
+    const onTouchStart = (e) => {
+        if (!onToggleSelect || e.touches.length !== 1) return;
+        const t = e.touches[0];
+        press.current = { fired: false, x: t.clientX, y: t.clientY, timer: setTimeout(() => {
+            press.current.fired = true;
+            navigator.vibrate?.(15);
+            onToggleSelect(file, {});
+        }, 450) };
+    };
+    const onTouchMove = (e) => {
+        const t = e.touches[0];
+        if (t && Math.hypot(t.clientX - press.current.x, t.clientY - press.current.y) > 10) clearTimeout(press.current.timer);
+    };
+    const onTouchEnd = () => clearTimeout(press.current.timer);
+
     const handleClick = useCallback((e) => {
+        if (press.current.fired) { press.current.fired = false; return; }
         if (file.type === FILE_TYPES.IMAGE ||
             file.type === FILE_TYPES.VIDEO ||
             file.type === FILE_TYPES.COLLECTION) {
@@ -38,6 +57,7 @@ const Thumb = (({ file, isModal, modalUpdater, isSelected, onOpen, onToggleSelec
 
     const handleContextMenu = (event) => {
         event.preventDefault();
+        if (press.current.fired || event.nativeEvent?.pointerType === 'touch') return;
         // Right click opens: the viewer, or the reader for a manga.
         if (file.type !== FILE_TYPES.IMAGE && file.type !== FILE_TYPES.VIDEO && !file.isManga) return;
         if (onOpen) onOpen(file);
@@ -71,6 +91,10 @@ const Thumb = (({ file, isModal, modalUpdater, isSelected, onOpen, onToggleSelec
             onContextMenu={handleContextMenu}
             onMouseEnter={hover.onMouseEnter}
             onMouseLeave={hover.onMouseLeave}
+            onTouchStart={onTouchStart}
+            onTouchMove={onTouchMove}
+            onTouchEnd={onTouchEnd}
+            onTouchCancel={onTouchEnd}
             draggable={!!onDragStart && hasOverlay}
             onDragStart={onDragStart ? (e) => onDragStart(file, e) : undefined}
         >

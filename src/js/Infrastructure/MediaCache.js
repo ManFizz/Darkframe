@@ -7,8 +7,12 @@
  * through the same mediacache:// URL guarantees each remote file is downloaded
  * only once per session.
  */
+import {appUrl} from './electron';
+
 export function cachedMediaUrl(url) {
     if (!url || typeof url !== 'string') return url;
     if (!/^https?:\/\//i.test(url)) return url;
-    return `mediacache://media/?u=${encodeURIComponent(url)}`;
+    // Already through the app's own server (phone access).
+    if (typeof location !== 'undefined' && url.startsWith(`${location.origin}/x/`)) return url;
+    return appUrl(`mediacache://media/?u=${encodeURIComponent(url)}`);
 }

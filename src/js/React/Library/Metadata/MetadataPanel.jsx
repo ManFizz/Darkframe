@@ -1,6 +1,7 @@
 import React, {useCallback, useEffect, useRef, useState} from 'react';
 import LibraryService from '@services/LibraryService';
 import {libraryApi} from '@/Infrastructure/Ipc';
+import {isWeb} from '@/Infrastructure/electron';
 import RatingStars from './RatingStars';
 import TagEditor from './TagEditor';
 import SuggestTags from './SuggestTags';
@@ -232,7 +233,7 @@ const MetadataPanel = ({ file, onUpdated }) => {
                         </div>
                     ))}
 
-                    <div className="metadata-section">
+                    {!isWeb && <div className="metadata-section">
                         <button
                             className="btn btn-sm btn-outline-secondary w-100"
                             onClick={() => libraryApi.revealItem({ id: file.id })}
@@ -240,7 +241,7 @@ const MetadataPanel = ({ file, onUpdated }) => {
                             <i className="bi bi-folder2-open me-1" />
                             Показать в проводнике
                         </button>
-                    </div>
+                    </div>}
                 </div>
             )}
 

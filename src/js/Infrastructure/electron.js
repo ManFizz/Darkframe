@@ -35,3 +35,10 @@ export const nodePath = bridge.path;
 export const sys = bridge.sys;
 export const fileUrl = (p) => bridge.fileUrl(p);
 export const isDir = (p) => bridge.isDir(p);
+
+// Running in a browser over the network (phone / tablet), not in the desktop app.
+export const isWeb = !!bridge.web;
+export const webDevice = bridge.web?.device || null;
+// An app file URL (library://, mangaimg://, …) the way this page can load it.
+export const appUrl = (u) => (bridge.appUrl ? bridge.appUrl(u) : u);
+export const uploadFile = (file, opts) => bridge.upload(file, opts);
