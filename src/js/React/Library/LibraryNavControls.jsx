@@ -249,7 +249,7 @@ const RatingFilter = ({ filters, update }) => {
         <div className="rating-filter" ref={ref}>
             <button className={`btn btn-outline-secondary ${active ? 'rating-filter-active' : ''}`}
                     onClick={() => setOpen(v => !v)}>
-                {ratingLabel(min, max)}
+                {active ? ratingLabel(min, max) : <><i className="bi bi-star rf-icon" /><span className="rf-text">Рейтинг</span></>}
             </button>
 
             {open && (

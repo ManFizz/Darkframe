@@ -174,7 +174,7 @@ const NavBar = () => {
         // Glass top bar, themed like the rest of the app.
         <header className="navbar navbar-expand-lg sticky-top navbar-glass">
             <div className="container-fluid">
-                <div className="navbar-nav flex-row flex-wrap nav-sections">
+                <div className="navbar-nav flex-row nav-sections">
                     {navSections.map(sec => (
                         <div key={sec.id} className={`nav-island nav-island--${sec.id}`} title={sec.title}>
                             {sec.items.map(({ btn, idx }) => (

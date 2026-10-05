@@ -50,7 +50,13 @@
     .bi { font-size: 14px; opacity: 0.8; }
     &:hover { color: var(--bs-body-color); background: var(--df-hover); }
   }
-  // Narrow window: icons only.
+  // The bar never wraps to a second row; as the window narrows it gives up text:
+  // first the other tabs show only their icons (the open one keeps its name), then
+  // all tabs. Full names stay in the tooltips.
+  .nav-sections { flex-wrap: nowrap; flex-shrink: 0; }
+  @media (max-width: 1800px) {
+    .btn-check:not(:checked) + .nav-source-tab { padding: 5px 10px; span { display: none; } .bi { opacity: 0.9; } }
+  }
   @media (max-width: 1250px) {
     .nav-source-tab { padding: 5px 11px; span { display: none; } .bi { opacity: 1; } }
   }
@@ -73,11 +79,15 @@
     background: var(--df-island);
     border: 1px solid var(--df-glass-border);
 
+    flex-shrink: 0;
+    white-space: nowrap;
+
     .btn {
       border-color: transparent;
       background: transparent;
       color: var(--bs-secondary);
       border-radius: 999px;
+      white-space: nowrap;
 
       &:hover { color: var(--bs-body-color); background: var(--df-hover); }
     }
@@ -100,8 +110,22 @@
   align-items: center;
   gap: 8px;
   flex: 1;
+  min-width: 0;
   max-width: 660px;
   margin: 0 auto;
+}
+.rating-filter .rf-icon { display: none; }
+// Narrower windows: the filters shrink and words turn into icons.
+@media (max-width: 1450px) {
+  .library-nav-controls { gap: 6px; }
+  .nav-search { min-width: 100px; }
+  .tag-filter { min-width: 90px; }
+  .rating-filter .rf-icon { display: inline; }
+  .rating-filter .rf-text { display: none; }
+}
+@media (max-width: 1300px) {
+  .library-nav-controls .nav-counter { display: none; }
+  .navbar-actions { gap: 2px; .btn { padding-left: 8px; padding-right: 8px; } }
 }
 
 // Glass search pill — matches the topbar island.
@@ -499,7 +523,9 @@
   .sort-menu-caret { font-size: 10px; opacity: 0.6; }
   &.active { color: var(--df-accent) !important; }
 }
-.sort-menu-label { max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sort-menu-label { max-width: 130px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+// Tight window: the sort shows its icon only (the name is in the tooltip).
+@media (max-width: 1700px) { .sort-menu-label { display: none; } }
 .sort-menu-panel {
   position: absolute;
   top: calc(100% + 6px);
