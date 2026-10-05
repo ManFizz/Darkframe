@@ -1,9 +1,10 @@
 import React, {useEffect, useRef, useState} from 'react';
-import {SORT_FIELDS, SORT_ORDER, RATING_MIN, RATING_MAX} from '@hooks/library/useLibraryFilter'
+import {RATING_MIN, RATING_MAX} from '@hooks/library/useLibraryFilter'
 import {libraryApi} from '@/Infrastructure/Ipc';
 import LibraryService from '@services/LibraryService';
 import {notify} from '@services/NotificationService';
 import NotificationBell from "@react/Helpers/NotificationBell";
+import SortMenu from './SortMenu';
 import {normalizeFilter, advancedCount, isFilterActive, toSmartFilter} from '@/shared/filterPredicate';
 import AdvancedFilterFields, {ADVANCED_RESET} from './Filters/AdvancedFilterFields';
 import {useTagPrefs} from '@services/tagPrefs';
@@ -340,46 +341,8 @@ export const LibraryNavSort = ({ ctx }) => {
             <AdvancedFilter filters={filters} patch={patch} />
             <RatingFilter filters={filters} update={update} />
 
-            {/* Сортировка */}
-            <div className="btn-group dropdown">
-                <button className="btn btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">
-                    {
-                        {
-                            [SORT_FIELDS.ORDER]:       'Порядок',
-                            [SORT_FIELDS.IMPORTED_AT]: 'Дата',
-                            [SORT_FIELDS.TITLE]:       'Название',
-                            [SORT_FIELDS.RATING]:      'Рейтинг',
-                            [SORT_FIELDS.SIZE]:        'Размер',
-                        }[filters.sortBy]
-                    }
-                </button>
-                <ul className="dropdown-menu dropdown-menu-end">
-                    {[
-                        [SORT_FIELDS.ORDER,       'Порядок'],
-                        [SORT_FIELDS.IMPORTED_AT, 'Дата добавления'],
-                        [SORT_FIELDS.TITLE,       'Название'],
-                        [SORT_FIELDS.RATING,      'Рейтинг'],
-                        [SORT_FIELDS.SIZE,        'Размер'],
-                    ].map(([value, label]) => (
-                        <li key={value}>
-                            <button
-                                className={`dropdown-item ${filters.sortBy === value ? 'active' : ''}`}
-                                onClick={() => update('sortBy', value)}
-                            >
-                                {label}
-                            </button>
-                        </li>
-                    ))}
-                </ul>
-            </div>
-
-            {/* Порядок */}
-            <button
-                className="btn btn-outline-secondary"
-                onClick={() => update('order', filters.order === SORT_ORDER.DESC ? SORT_ORDER.ASC : SORT_ORDER.DESC)}
-            >
-                <i className={`bi bi-sort-${filters.order === SORT_ORDER.DESC ? 'down' : 'up'}`} />
-            </button>
+            {/* Порядок: что, в какую сторону, случайный, группы */}
+            <SortMenu filters={filters} patch={patch} />
 
             <NotificationBell />
         </div>

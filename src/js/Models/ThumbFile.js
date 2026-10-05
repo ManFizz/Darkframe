@@ -37,6 +37,9 @@ export class ThumbFile {
         this.editedAt = data.editedAt || null;
         this.editParams = data.editParams || null;   // JSON string of the last image edit
         this.thumbAt = data.thumbAt ?? null;
+        this.duration = data.duration ?? null;
+        this.viewCount = data.viewCount ?? 0;          // times opened in the viewer (library)
+        this.lastViewedAt = data.lastViewedAt ?? null;
         this.mimeType = data.mimeType || null;
         this.notes = data.notes || null;
         this.filePath = data.filePath || null;     // Folders browser: absolute path on disk

@@ -61,6 +61,9 @@ export function useLibraryItems(collectionId, trash = false, smartFilterJson = n
             remoteType: SOURCE_TYPES.LIBRARY,
             collectionId: item.collectionId,
             pageCount:  item.pageCount,
+            duration:   item.duration,
+            viewCount:  item.viewCount,
+            lastViewedAt: item.lastViewedAt,
             readPosition: item.readPosition,
             readFinished: item.readFinished,
         }));

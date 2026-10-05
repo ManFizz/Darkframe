@@ -1,5 +1,6 @@
 import {useCallback, useMemo, useState} from 'react';
 import {FILTER_DEFAULTS, normalizeFilter, matchItem} from '@/shared/filterPredicate';
+import {comparator, newSeed} from '@/shared/librarySort';
 
 export const SORT_FIELDS = {
     ORDER:       'order',
@@ -26,6 +27,7 @@ const initialFilters = {
     ...FILTER_DEFAULTS,
     sortBy:    SORT_FIELDS.ORDER,
     order:     SORT_ORDER.ASC,
+    seed:      newSeed(),   // random order: same seed → same shuffle
 };
 
 export function useLibraryFilter(items) {
@@ -68,7 +70,7 @@ export function useLibraryFilter(items) {
 
     // Clears every condition but keeps the chosen sorting.
     const reset = useCallback(() => {
-        setFilters(prev => ({ ...initialFilters, sortBy: prev.sortBy, order: prev.order }));
+        setFilters(prev => ({ ...initialFilters, sortBy: prev.sortBy, order: prev.order, seed: prev.seed }));
     }, []);
 
     const filtered = useMemo(() => {
@@ -76,13 +78,7 @@ export function useLibraryFilter(items) {
         const now = Math.floor(Date.now() / 1000);
         const result = items.filter(item => matchItem(item, f, now));
 
-        result.sort((a, b) => {
-            let va = a[filters.sortBy] ?? 0;
-            let vb = b[filters.sortBy] ?? 0;
-
-            if (typeof va === 'string') return va.localeCompare(vb) * filters.order;
-            return (va - vb) * filters.order;
-        });
+        result.sort(comparator(filters.sortBy, filters.order, filters.seed));
 
         return result;
     }, [items, filters]);

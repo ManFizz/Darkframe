@@ -8,6 +8,11 @@ const DEFAULTS = {
     ratingDividers: true,   // group the gallery under "★ N" headers when sorted by rating
     collapsedRatings: [],   // rating groups folded by clicking their header
     dateDividers: true,     // month headers when sorted by date
+    typeDividers: true,     // "Изображения / GIF / Видео / Манга" headers when sorted by type
+    collapsedTypes: [],
+    librarySort: null,      // { sortBy, order } — the last chosen order
+    sortPerCollection: false,   // remember the order separately for each collection
+    sortByCollection: {},   // collection id → { sortBy, order }
     filmstrip: true,        // thumbnail strip at the bottom of the viewer
     collapsedMonths: [],    // folded months ("2026-09")
     restoreSession: true,   // reopen the tab / collection / folder that was open last
@@ -35,6 +40,7 @@ export function setViewPref(name, value) {
 export function useViewPref(name) {
     const [value, setValue] = useState(current[name]);
     useEffect(() => {
+        setValue(current[name]);   // the pref's name can change (e.g. which groups fold)
         const fn = (prefs) => setValue(prefs[name]);
         listeners.add(fn);
         return () => listeners.delete(fn);

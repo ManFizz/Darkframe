@@ -15,9 +15,23 @@ const plural = (n) => {
 
 const MONTHS = ['Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь', 'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'];
 
-// How the gallery is split into groups: by rating (sorted by rating) or by the month
-// of import (sorted by date). `key` must be stable and serialisable (folded groups
-// are remembered in the view prefs).
+const monthKey = (t) => {
+    if (!t) return 'none';
+    const d = new Date(t * 1000);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+};
+const NO_DATE = { importedAt: 'Без даты', lastViewedAt: 'Ещё не открывались', editedAt: 'Без правок' };
+const KINDS = [
+    { label: 'Изображения', icon: 'bi-image' },
+    { label: 'GIF', icon: 'bi-filetype-gif' },
+    { label: 'Видео', icon: 'bi-film' },
+    { label: 'Манга', icon: 'bi-book' },
+];
+const kindOf = (f) => (f.isManga ? 3 : String(f.mimeType || '').startsWith('video/') ? 2 : f.mimeType === 'image/gif' ? 1 : 0);
+
+// How the gallery is split into groups: by rating, by the month of a date field
+// ("month:importedAt", "month:lastViewedAt"…) or by file type. `key` must be
+// stable and serialisable (folded groups are remembered in the view prefs).
 const GROUPINGS = {
     rating: {
         key: (f) => f.rating || 0,
@@ -27,23 +41,30 @@ const GROUPINGS = {
             ? <><i className="bi bi-star-fill" />{k}<small>/ 10</small></>
             : <><i className="bi bi-star" />Без оценки</>),
     },
-    month: {
-        key: (f) => {
-            const t = f.importedAt || f.time;
-            if (!t) return 'none';
-            const d = new Date(t * 1000);
-            return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-        },
+    type: {
+        key: kindOf,
+        collapsedPref: 'collapsedTypes',
+        muted: () => false,
+        label: (k) => <><i className={`bi ${KINDS[k].icon}`} />{KINDS[k].label}</>,
+    },
+};
+
+function groupingFor(groupBy) {
+    if (!groupBy) return null;
+    if (!groupBy.startsWith('month')) return GROUPINGS[groupBy] || null;
+    const field = groupBy.split(':')[1] || 'importedAt';
+    return {
+        key: (f) => monthKey(f[field] || (field === 'importedAt' ? f.time : 0)),
         collapsedPref: 'collapsedMonths',
         muted: (k) => k === 'none',
         label: (k) => {
-            if (k === 'none') return <><i className="bi bi-calendar-x" />Без даты</>;
+            if (k === 'none') return <><i className="bi bi-calendar-x" />{NO_DATE[field] || 'Без даты'}</>;
             const [y, m] = k.split('-').map(Number);
             const thisYear = new Date().getFullYear();
             return <><i className="bi bi-calendar3" />{MONTHS[m - 1]}{y !== thisYear && <small>{y}</small>}</>;
         },
-    },
-};
+    };
+}
 
 // Full-row header between groups: label, rule and count on one line.
 // Clicking it folds / unfolds the group.
@@ -77,7 +98,7 @@ const INITIAL = 150;
 const CHUNK   = 150;
 
 const LibraryGallery = ({ items, onReordered, isSelected, selectedIds, selectionActive, modalUpdater, onToggleSelect, typeView = 2, onFileOpen, scrollRef, resetKey, reorderable = true, groupBy = null }) => {
-    const grouping = GROUPINGS[groupBy] || null;
+    const grouping = useMemo(() => groupingFor(groupBy), [groupBy]);
     const { isDragging, overId, onDragStart, onDragOver, onDrop, onDragEnd } =
         useItemReorder(items, onReordered, selectedIds);
 

@@ -23,6 +23,7 @@ import {notify} from '@services/NotificationService';
 import {libraryApi} from '@/Infrastructure/Ipc';
 import {isWeb} from '@/Infrastructure/electron';
 import {useMobile} from '@services/mobile';
+import {newSeed, sortOf} from '@/shared/librarySort';
 import {openManga} from '@modules/manga/openManga';
 import {readLibraryManga} from '@services/mangaLibrary';
 import {undoLast, redoLast} from '@services/undo';
@@ -56,9 +57,31 @@ const LibraryView = () => {
         setSelectedCollection(id);
         if (id !== SPECIAL.VISUAL) setViewPref('lastCollection', id);   // results aren't a place to return to
     }), []);
-    const { filtered, filters, update, setLibraryItems, refreshStats, statsVersion } = useLibraryContext();
+    const { filtered, filters, update, patch, setLibraryItems, refreshStats, statsVersion } = useLibraryContext();
     const [ratingDividers] = useViewPref('ratingDividers');
     const [dateDividers] = useViewPref('dateDividers');
+    const [typeDividers] = useViewPref('typeDividers');
+
+    // The order is remembered: one for the whole library, or (option in the menu)
+    // separately for each collection.
+    const [sortPerCollection] = useViewPref('sortPerCollection');
+    const sortLoadedFor = useRef(undefined);
+    useEffect(() => {
+        const prefs = getViewPrefs();
+        // Search-by-picture results come closest first.
+        if (selectedCollection === SPECIAL.VISUAL) { patch({ sortBy: 'order', order: 1 }); sortLoadedFor.current = null; return; }
+        const s = (sortPerCollection && prefs.sortByCollection?.[selectedCollection]) || prefs.librarySort;
+        if (s?.sortBy) patch({ sortBy: s.sortBy, order: s.order || 1 });
+        sortLoadedFor.current = selectedCollection;
+    }, [selectedCollection, sortPerCollection]);   // eslint-disable-line react-hooks/exhaustive-deps
+    useEffect(() => {
+        if (sortLoadedFor.current !== selectedCollection) return;
+        const s = { sortBy: filters.sortBy, order: filters.order };
+        setViewPref('librarySort', s);
+        if (sortPerCollection && selectedCollection != null) {
+            setViewPref('sortByCollection', { ...(getViewPrefs().sortByCollection || {}), [selectedCollection]: s });
+        }
+    }, [filters.sortBy, filters.order]);   // eslint-disable-line react-hooks/exhaustive-deps
     const { favoritesId } = useLibraryStats(statsVersion);
 
     // A restored selection may point at a collection deleted since: fall back.
@@ -190,6 +213,9 @@ const LibraryView = () => {
     useCommands('library-slideshow', () => [
         { id: 'paste', group: 'Библиотека', icon: 'bi-clipboard-plus', title: 'Вставить из буфера обмена в эту коллекцию', hint: 'Ctrl+V', run: () => pasteRef.current() },
         { id: 'ss:view', group: 'Библиотека', icon: 'bi-play-circle', title: 'Слайд-шоу: всё, что показано', hint: 'S в просмотрщике', run: () => startSlideshow(orderedItems) },
+        { id: 'sort:shuffle', group: 'Библиотека', icon: 'bi-shuffle', title: 'Перемешать (случайный порядок)', keywords: 'рандом случайно порядок сортировка', run: () => patch({ sortBy: 'random', seed: newSeed() }) },
+        { id: 'sort:new', group: 'Библиотека', icon: 'bi-calendar-plus', title: 'Порядок: сначала новые', keywords: 'сортировка дата', run: () => patch({ sortBy: 'importedAt', order: -1 }) },
+        { id: 'sort:views', group: 'Библиотека', icon: 'bi-eye', title: 'Порядок: давно не открывал', keywords: 'сортировка просмотры забытые', run: () => patch({ sortBy: 'lastViewedAt', order: 1 }) },
         ...(selectedItems.length > 1 ? [{ id: 'ss:sel', group: 'Библиотека', icon: 'bi-play-circle', title: `Слайд-шоу: выделенные (${selectedItems.length})`, run: () => startSlideshow(selectedItems) }] : []),
     ]);
     useCommands('library-undo', () => [
@@ -593,7 +619,8 @@ const LibraryView = () => {
                         reorderable={!isHistory}
                         groupBy={isHistory ? null
                             : ratingDividers && filters.sortBy === 'rating' ? 'rating'
-                            : dateDividers && filters.sortBy === 'importedAt' ? 'month'
+                            : dateDividers && sortOf(filters.sortBy).month ? `month:${filters.sortBy}`
+                            : typeDividers && filters.sortBy === 'type' ? 'type'
                             : null}
                         resetKey={isHistory ? `history:${historySection ?? 'all'}` : selectedCollection}
                     />
