@@ -68,15 +68,21 @@ function createCode({ access = 'full', name = '' } = {}) {
     return { code, expiresIn: CODE_TTL / 1000 };
 }
 
+// Is the code still good (without using it up)? → { access } | null
+function peek(code) {
+    const c = codes.get(String(code || ''));
+    return c && c.expires >= Date.now() ? { access: c.access, name: c.name } : null;
+}
+
 // Code → a new device and its token (shown to the device once, as a cookie).
-function redeem(code, agent = '') {
+function redeem(code, agent = '', name = '') {
     const c = codes.get(String(code || ''));
     if (!c || c.expires < Date.now()) return null;
     codes.delete(code);
     const token = `dfr_${crypto.randomBytes(32).toString('base64url')}`;
     const d = {
         id: crypto.randomUUID(),
-        name: c.name || guessName(agent),
+        name: String(name || '').trim().slice(0, 60) || c.name || guessName(agent),
         hash: sha(token),
         access: c.access,
         createdAt: now(),
@@ -147,4 +153,4 @@ function lanAddresses() {
     return out.sort((a, b) => rank(a) - rank(b));
 }
 
-module.exports = { settings, setSettings, list, createCode, redeem, check, update, revoke, lanAddresses, setFile, DEFAULT_PORT };
+module.exports = { settings, setSettings, list, createCode, peek, redeem, guessName, check, update, revoke, lanAddresses, setFile, DEFAULT_PORT };

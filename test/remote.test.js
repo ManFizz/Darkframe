@@ -32,8 +32,14 @@ const rpc = (cookie, channel, args = [], extra = {}) => request('POST', '/rpc', 
 
 async function pair(access) {
     const { code } = devices.createCode({ access });
-    const r = await request('GET', `/pair?c=${code}`, { headers: { 'User-Agent': 'Mozilla/5.0 (Linux; Android 14; Pixel 8 Build/AP1A)' } });
-    assert.equal(r.status, 302);
+    const ua = { 'User-Agent': 'Mozilla/5.0 (Linux; Android 14; Pixel 8 Build/AP1A)' };
+    // Opening the link (and any link preview / prefetch) only shows the button.
+    assert.equal((await request('GET', `/pair?c=${code}`, { headers: ua })).status, 200);
+    const page = await request('GET', `/pair?c=${code}`, { headers: ua });
+    assert.match(page.body, /Подключить/);
+    const r = await request('POST', '/pair', { body: `c=${code}&name=`, headers: { ...ua, 'Content-Type': 'application/x-www-form-urlencoded' } });
+    assert.equal(r.status, 200);
+    assert.match(r.body, /подключено/);
     return r.headers['set-cookie'][0].split(';')[0];
 }
 
@@ -63,7 +69,9 @@ test('without pairing nothing opens; a used code is gone', async () => {
     assert.match(page.body, /не подключено/);
     assert.equal((await rpc('', 'test:echo', [1])).status, 401);
     const { code } = devices.createCode({});
-    assert.equal((await request('GET', `/pair?c=${code}`)).status, 302);
+    const post = () => request('POST', '/pair', { body: `c=${code}`, headers: { 'Content-Type': 'application/x-www-form-urlencoded' } });
+    assert.equal((await post()).status, 200);
+    assert.equal((await post()).status, 403);
     assert.equal((await request('GET', `/pair?c=${code}`)).status, 403);
 });
 

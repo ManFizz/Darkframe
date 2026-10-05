@@ -7,7 +7,7 @@ const RADIUS = 40;   // thumbnails rendered on each side of the current one
 // Thumbnail strip along the bottom of the viewer: neighbours of the current file,
 // click to jump. Only a window around the current item is rendered, so it stays
 // cheap in collections of thousands.
-const Filmstrip = ({ items, current, onPick }) => {
+const Filmstrip = ({ items, current, onPick, onHide }) => {
     const media = useMemo(
         () => items.filter(f => f.type === FILE_TYPES.IMAGE || f.type === FILE_TYPES.VIDEO),
         [items]);
@@ -31,6 +31,11 @@ const Filmstrip = ({ items, current, onPick }) => {
             // vertical wheel scrolls the strip sideways
             if (trackRef.current && Math.abs(e.deltaY) > Math.abs(e.deltaX)) trackRef.current.scrollLeft += e.deltaY;
         }}>
+            {onHide && (
+                <button className="fs-hide" onClick={onHide} title="Спрятать ленту (T)">
+                    <i className="bi bi-chevron-down" />
+                </button>
+            )}
             <div className="fs-track" ref={trackRef}>
                 {from > 0 && <div className="fs-more">+{from}</div>}
                 {shown.map(f => (

@@ -107,32 +107,74 @@
     &.favorite { background: #160a18; }
     img, video { max-width: 100vw; max-height: calc(100dvh - 64px); border-radius: 0; border: none; }
   }
+  // The info panel is a sheet over the lower part of the screen; the picture stays
+  // in the upper part. While it's open the video bar, the strip and the arrows
+  // step aside.
   .modal-view.with-panel {
     flex-direction: column;
-    .modal-media-area { flex: 1 1 auto; min-height: 40dvh; padding-left: 0 !important; }
-    &:not(.long) .modal-media-area img, &:not(.long) .modal-media-area video { max-width: 100vw; max-height: 50dvh; }
+    justify-content: flex-start;
+    .modal-media-area { flex: 0 0 auto; height: 38dvh; min-height: 0; padding: 56px 0 0 !important; background: none; }
+    &:not(.long) .modal-media-area img, &:not(.long) .modal-media-area video { max-width: 100vw; max-height: 34dvh; }
+    .video-controls, .filmstrip, .fs-show, .arrow, .vc-expand { display: none !important; }
   }
   .modal-panel-wrapper {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 1150;
     width: 100%;
-    max-height: 55dvh;
+    height: 62dvh;
     border-left: none;
     border-top: 1px solid var(--df-glass-border, rgba(255, 255, 255, 0.08));
-    border-radius: 16px 16px 0 0;
+    border-radius: 18px 18px 0 0;
+    box-shadow: 0 -16px 40px rgba(0, 0, 0, 0.5);
+    padding-bottom: env(safe-area-inset-bottom);
+    .metadata-preview { display: none; }
+    .metadata-panel { min-height: 0; }
+    &::before {   // grab bar
+      content: '';
+      display: block;
+      width: 42px;
+      height: 4px;
+      margin: 8px auto 2px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.25);
+    }
   }
   .modal-nav-container { height: 100dvh; }
+  // Arrows: swipes do it on a phone.
+  .modal-nav-container .arrow { display: none; }
   .modal-nav-container .modal-nav-counter {
-    top: auto;
-    bottom: calc(14px + env(safe-area-inset-bottom));
-    left: 50%;
+    top: max(18px, calc(env(safe-area-inset-top) + 10px));
+    left: auto;
+    right: 10px;
+    transform: none;
   }
-  .modal-view.with-strip .modal-nav-counter { bottom: calc(100px + env(safe-area-inset-bottom)); }
   .modal-nav-row {
-    max-width: calc(100vw - 16px);
+    max-width: calc(100vw - 80px);
     margin: max(8px, env(safe-area-inset-top)) 8px 0;
     overflow-x: auto;
     scrollbar-width: none;
     .bi { width: 40px; height: 40px; flex-shrink: 0; }
   }
+
+  // Video bar: play controls on top, time + a few buttons under them; the rest
+  // (A-B, play mode, picture-in-picture, volume slider) is for the desktop.
+  .video-controls.v2 { width: calc(100% - 16px); bottom: calc(10px + env(safe-area-inset-bottom)); gap: 6px; }
+  .vc-pill {
+    grid-template-columns: 1fr auto;
+    grid-template-areas: "center center" "left right";
+    row-gap: 2px;
+    padding: 6px 10px;
+  }
+  .vc-center { grid-area: center; }
+  .vc-left { grid-area: left; }
+  .vc-right { grid-area: right; }
+  .vc-center > .vc-btn:first-child, .vc-center > .vc-btn:last-child { display: none; }
+  .vc-ab, .vc-mode, .vc-vol-popup, .vc-right .vc-btn:has(.bi-pip) { display: none !important; }
+  .vc-btn { min-width: 40px; min-height: 40px; }
+  .vc-preview, .vc-tooltip { display: none; }
 
   // ── Control panel and other dialogs: whole screen ──────────────────────────
   .settings-overlay { padding: 0; }

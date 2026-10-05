@@ -48,6 +48,10 @@ const ReaderView = ({ book, onClose }) => {
         return { ...p, mode: book.reading?.mode === 'vertical' || auto ? 'vertical' : p.mode };
     });
     const [ui, setUi] = useState(true);
+    // Touch screens: tap zones are explained once.
+    const touch = typeof window !== 'undefined' && !!window.matchMedia?.('(pointer: coarse)').matches;
+    const [hint, setHint] = useState(() => { try { return touch && !localStorage.getItem('jsg_reader_hint'); } catch { return false; } });
+    const dismissHint = () => { setHint(false); try { localStorage.setItem('jsg_reader_hint', '1'); } catch { /* ignore */ } };
     const [thumbs, setThumbs] = useState(false);
     const [menu, setMenu] = useState(false);
     const [zoom, setZoom] = useState(1);
@@ -123,6 +127,8 @@ const ReaderView = ({ book, onClose }) => {
     // clicking through pages jitters by a pixel or two.
     const lastPtr = useRef(null);
     const onMouseMove = (e) => {
+        // Touch: taps also send mouse moves — the bars are shown / hidden by taps only.
+        if (touch) return;
         overUi.current = !!e.target.closest?.('.rd-top, .rd-bottom, .rd-thumbs, .rd-menu');
         const l = lastPtr.current;
         lastPtr.current = { x: e.clientX, y: e.clientY };
@@ -433,7 +439,7 @@ const ReaderView = ({ book, onClose }) => {
             )}
 
             <div ref={stageRef}
-                 className={`rd-stage ${vertical ? '' : `paged ${fitClass} dir-${prefs.direction}`}`}
+                 className={`rd-stage ${vertical ? '' : `paged ${fitClass} dir-${prefs.direction}`} ${zoom > 1 ? 'zoomed' : ''}`}
                  onWheel={onWheel}
                  onScroll={vertical ? onVerticalScroll : undefined}
                  onClick={onStageClick}
@@ -495,6 +501,24 @@ const ReaderView = ({ book, onClose }) => {
                             <span>{i + 1}</span>
                         </button>
                     ))}
+                </div>
+            )}
+
+            {/* Touch screens: a button to bring the bars back, and a one-time hint. */}
+            {touch && !ui && (
+                <button className="rd-fab" onClick={e => { e.stopPropagation(); clearTimeout(hideTimer.current); setUi(true); }} title="Меню">
+                    <i className="bi bi-three-dots" />
+                </button>
+            )}
+            {touch && hint && (
+                <div className="rd-hint" onClick={e => { e.stopPropagation(); dismissHint(); }}>
+                    <div className="rd-hint-zones">
+                        <span>{prefs.direction === 'rtl' && !vertical ? 'дальше' : 'назад'}</span>
+                        <span>меню</span>
+                        <span>{prefs.direction === 'rtl' && !vertical ? 'назад' : 'дальше'}</span>
+                    </div>
+                    <p>{vertical ? 'Лента: листайте пальцем вверх-вниз.' : 'Касание по краю или свайп — листать.'} Касание по центру — меню.</p>
+                    <button className="rd-btn rd-action">Понятно</button>
                 </div>
             )}
 

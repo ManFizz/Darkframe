@@ -382,6 +382,7 @@ const ImageEditor = ({ file, onCancel, onSaved }) => {
         dragRef.current = null;
         window.removeEventListener('pointermove', onPointerMove);
         window.removeEventListener('pointerup', onPointerUp);
+        window.removeEventListener('pointercancel', onPointerUp);
     }, [onPointerMove]);
 
     const startCropDrag = useCallback((e, mode) => {
@@ -390,6 +391,7 @@ const ImageEditor = ({ file, onCancel, onSaved }) => {
         dragRef.current = { mode, sx: e.clientX, sy: e.clientY, crop, aspect, snap: snapOn, boxW: view.boxW, boxH: view.boxH };
         window.addEventListener('pointermove', onPointerMove);
         window.addEventListener('pointerup', onPointerUp);
+        window.addEventListener('pointercancel', onPointerUp);   // a touch the system took over
     }, [crop, aspect, snapOn, view, onPointerMove, onPointerUp]);
 
     // ─── Pan (drag background) + zoom (wheel) ───────────────────────────────────

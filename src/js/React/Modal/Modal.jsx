@@ -418,6 +418,8 @@ const Modal = ({ fileId, mainArray, modalUpdater, displayFiles, onUpdated, autoS
                         panelOpen={panelOpen}
                         showFav={!isLibrary && !hasFolderPanel}
                         onPanelToggle={hasSidePanel ? () => setPanelOpen(v => !v) : null}
+                        stripOpen={!!stripPref}
+                        onStripToggle={mainArray.length > 1 ? () => setStripPref(!stripPref) : null}
                         onEdit={isLibrary && onUpdated && file.type === FILE_TYPES.IMAGE && !file.isManga ? () => setEditing(true) : null}
                         onApplyLast={isLibrary && onUpdated && file.type === FILE_TYPES.IMAGE && !file.isManga && loadEditPreset() ? handleApplyLast : null}
                         onDuplicate={isLibrary && onUpdated ? handleDuplicate : null}
@@ -427,7 +429,12 @@ const Modal = ({ fileId, mainArray, modalUpdater, displayFiles, onUpdated, autoS
                 )}
 
                 {ss.active && !editing && <SlideshowHud ss={ss} file={file} />}
-                {showStrip && <Filmstrip items={mainArray} current={file} onPick={modalUpdater} />}
+                {showStrip && <Filmstrip items={mainArray} current={file} onPick={modalUpdater} onHide={() => setStripPref(false)} />}
+                {!stripPref && !ss.active && !editing && mainArray.length > 1 && (
+                    <button className="fs-show" onClick={() => setStripPref(true)} title="Показать ленту миниатюр (T)">
+                        <i className="bi bi-chevron-up" />
+                    </button>
+                )}
 
                 {/* The media area is always rendered in the same spot so toggling the
                     panel never remounts <Video> (which would restart playback). Only

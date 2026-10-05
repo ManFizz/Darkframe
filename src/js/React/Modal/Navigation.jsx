@@ -17,7 +17,7 @@ const isCanDisplayedByIdx = (mainArray, nextIdx) => {
 };
 
 // hidden — visually hidden (slideshow running) but still mounted, so Escape / arrows work
-const Navigation = ({ uiTheme = 'dark', file, modalUpdater, mainArray, setDegree, panelOpen, onPanelToggle, onEdit, onApplyLast, onDuplicate, onSlideshow, showFav, hidden = false }) => {
+const Navigation = ({ uiTheme = 'dark', file, modalUpdater, mainArray, setDegree, panelOpen, onPanelToggle, stripOpen = false, onStripToggle = null, onEdit, onApplyLast, onDuplicate, onSlideshow, showFav, hidden = false }) => {
     const { isFav, isPending, toggleFav } = useFavorites();
     const [editingCounter, setEditingCounter] = useState(false);
     const [counterInput, setCounterInput] = useState('');
@@ -162,6 +162,13 @@ const Navigation = ({ uiTheme = 'dark', file, modalUpdater, mainArray, setDegree
                         className="bi bi-play-btn"
                         title="Слайдшоу (S)"
                         onClick={onSlideshow}
+                    />
+                )}
+                {onStripToggle && (
+                    <i
+                        className={`bi bi-film modal-nav-panel-btn ${stripOpen ? 'active' : ''}`}
+                        onClick={onStripToggle}
+                        title={stripOpen ? 'Спрятать ленту миниатюр (T)' : 'Показать ленту миниатюр (T)'}
                     />
                 )}
                 {onPanelToggle && (

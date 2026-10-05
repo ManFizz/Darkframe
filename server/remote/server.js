@@ -141,15 +141,43 @@ const manifest = () => JSON.stringify({
     icons: [{ src: '/x/app/icon.png', sizes: '256x256', type: 'image/png' }],
 });
 
-function pairPage(message, ok = false) {
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+function pairPage(message, { ok = false, head = '' } = {}) {
     return `<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Darkframe</title><style>
+<title>Darkframe</title>${head}<style>
 body{margin:0;min-height:100vh;display:grid;place-items:center;background:#14111c;color:#e9e6f2;font:16px/1.5 system-ui,sans-serif}
 .box{max-width:420px;padding:28px;margin:16px;border-radius:18px;background:#1d1828;border:1px solid #322a44;text-align:center}
 h1{font-size:22px;margin:0 0 10px}p{color:#b7b0c8;margin:8px 0}a{color:#b48cff}
-</style></head><body><div class="box"><h1>Darkframe</h1>${message}${ok ? '<p><a href="/">Открыть библиотеку</a></p>' : ''}</div></body></html>`;
+.btn{display:block;width:100%;box-sizing:border-box;margin-top:14px;padding:13px;border:none;border-radius:12px;background:#9b6bff;color:#fff;font:600 16px system-ui,sans-serif;text-decoration:none}
+input{width:100%;box-sizing:border-box;margin-top:10px;padding:11px 12px;border-radius:10px;border:1px solid #3a3150;background:#14111c;color:#e9e6f2;font-size:15px}
+label{display:block;text-align:left;font-size:13px;color:#9a92ad;margin-top:12px}
+</style></head><body><div class="box"><h1>Darkframe</h1>${message}${ok ? '<a class="btn" href="/">Открыть библиотеку</a>' : ''}</div></body></html>`;
 }
-const NOT_PAIRED = '<p>Это устройство не подключено.</p><p>На компьютере откройте <b>Панель → Доступ → Телефон и другие устройства</b> и отсканируйте QR-код камерой телефона.</p>';
+const NOT_PAIRED = '<p>Это устройство не подключено.</p><p>На компьютере откройте <b>Панель управления → Устройства</b>, нажмите «Подключить устройство» и отсканируйте QR-код камерой телефона.</p>';
+const html = (res, status, body) => send(res, status, body, { 'Content-Type': 'text/html; charset=utf-8' });
+
+// Pairing in two steps: opening the link only shows a button; the device is added
+// when the button is pressed (POST). Link previews / prefetching (camera apps,
+// messengers, the browser itself) open the link too — they must not use the code up.
+async function pair(req, res, url) {
+    if (deviceOf(req)) return html(res, 200, pairPage('<p>Это устройство уже подключено.</p>', { ok: true }));
+    if (req.method === 'POST') {
+        const form = new URLSearchParams((await readBody(req, 64 * 1024)).toString('utf8'));
+        const r = devices.redeem(form.get('c'), req.headers['user-agent'], form.get('name'));
+        if (!r) return html(res, 403, pairPage('<p>Код устарел или уже использован.</p><p>Покажите на компьютере новый QR-код.</p>'));
+        res.setHeader('Set-Cookie', `${COOKIE}=${encodeURIComponent(r.token)}; Path=/; Max-Age=${5 * 365 * 86400}; HttpOnly; SameSite=Lax`);
+        return html(res, 200, pairPage(`<p>Готово — «${esc(r.device.name)}» подключено${r.device.access === 'view' ? ' (только просмотр)' : ''}.</p><p>Совет: в меню браузера «Добавить на главный экран» — будет как приложение.</p>`,
+            { ok: true, head: '<meta http-equiv="refresh" content="2;url=/">' }));
+    }
+    const code = url.searchParams.get('c');
+    const c = devices.peek(code);
+    if (!c) return html(res, 403, pairPage('<p>Ссылка устарела или уже использована.</p><p>Покажите на компьютере новый QR-код.</p>'));
+    return html(res, 200, pairPage(`<p>Подключить это устройство к библиотеке${c.access === 'view' ? ' (только просмотр)' : ''}?</p>
+<form method="post" action="/pair"><input type="hidden" name="c" value="${esc(code)}">
+<label>Название устройства<input name="name" value="${esc(c.name || devices.guessName(req.headers['user-agent']))}" maxlength="60"></label>
+<button class="btn" type="submit">Подключить</button></form>`));
+}
 
 // ─── Protocol files ───────────────────────────────────────────────────────────
 async function protocolFile(req, res, scheme, rest) {
@@ -208,14 +236,7 @@ async function route(req, res) {
     const url = new URL(req.url, 'http://local');
     const p = decodeURIComponent(url.pathname);
 
-    if (p === '/pair') {
-        const r = devices.redeem(url.searchParams.get('c'), req.headers['user-agent']);
-        if (!r) return send(res, 403, pairPage('<p>Ссылка устарела или уже использована.</p><p>Покажите на компьютере новый QR-код.</p>'), { 'Content-Type': 'text/html; charset=utf-8' });
-        return send(res, 302, '', {
-            Location: '/',
-            'Set-Cookie': `${COOKIE}=${encodeURIComponent(r.token)}; Path=/; Max-Age=${5 * 365 * 86400}; HttpOnly; SameSite=Strict`,
-        });
-    }
+    if (p === '/pair') return pair(req, res, url);
     if (p === '/favicon.ico') return send(res, 204, '');
 
     const device = deviceOf(req);

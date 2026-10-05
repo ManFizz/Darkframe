@@ -100,6 +100,25 @@
   &.h-e  { top: 50%; right: -6px;   transform: translateY(-50%); cursor: ew-resize; }
 }
 
+// Fingers: the editor handles every touch itself (no page scroll / browser zoom
+// mid-drag), and the handles get a much bigger invisible grip.
+.img-editor-stage, .img-editor-crop, .img-editor-handle { touch-action: none; }
+@media (pointer: coarse) {
+  .img-editor-handle {
+    width: 18px;
+    height: 18px;
+    &::after { content: ''; position: absolute; inset: -16px; }
+    &.h-nw { left: -9px;  top: -9px; }
+    &.h-ne { right: -9px; top: -9px; }
+    &.h-sw { left: -9px;  bottom: -9px; }
+    &.h-se { right: -9px; bottom: -9px; }
+    &.h-n  { top: -9px; }
+    &.h-s  { bottom: -9px; }
+    &.h-w  { left: -9px; }
+    &.h-e  { right: -9px; }
+  }
+}
+
 // ─── Toolbar ──────────────────────────────────────────────────────────────────
 .img-editor-toolbar {
   flex-shrink: 0;

@@ -652,6 +652,37 @@ $strip-h: 84px;
   .with-panel & { right: variables.$modal-panel-width; }
 }
 
+// Hide / show handles: a small tab on the strip's top edge, and one at the
+// bottom of the screen while the strip is hidden.
+.fs-hide, .fs-show {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 46px;
+  height: 18px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: none;
+  border-radius: 9px 9px 0 0;
+  background: rgba(6, 5, 10, 0.85);
+  color: rgba(255, 255, 255, 0.55);
+  font-size: 12px;
+  cursor: pointer;
+  &:hover { color: #fff; background: rgba(30, 24, 40, 0.95); }
+}
+.fs-hide { top: -18px; }
+.fs-show {
+  position: fixed;
+  bottom: 0;
+  z-index: 1101;
+  opacity: 0.45;
+  transition: opacity 0.15s;
+  &:hover { opacity: 1; }
+  .with-panel & { left: calc(50% - #{variables.$modal-panel-width} / 2); }
+}
+
 .fs-track {
   display: flex;
   align-items: center;
