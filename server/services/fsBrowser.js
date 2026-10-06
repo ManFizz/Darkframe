@@ -8,7 +8,7 @@ const fs = require('fs');
 const path = require('path');
 
 const IMAGE_EXT = new Set(['.jpg', '.jpeg', '.png', '.webp', '.gif', '.jfif', '.bmp', '.avif', '.heic', '.heif']);
-const VIDEO_EXT = new Set(['.mp4', '.webm', '.mkv', '.mov', '.avi', '.m4v']);
+const VIDEO_EXT = new Set(['.mp4', '.webm', '.mkv', '.mov', '.avi', '.m4v', '.ts', '.m2ts', '.mts']);
 const SKIP_NAMES = new Set(['.nomedia', '_gsdata_', '.stignore', '.stfolder', 'desktop.ini', 'thumbs.db', '$recycle.bin', 'system volume information']);
 
 const PREVIEWS_PER_DIR = 3;

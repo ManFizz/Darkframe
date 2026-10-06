@@ -1,5 +1,5 @@
 import {useCallback, useEffect, useRef, useState} from 'react';
-import {fsApi, fsThumbUrl} from '@/Infrastructure/Ipc';
+import {fsApi, fsThumbUrl, fsVideoUrl} from '@/Infrastructure/Ipc';
 import {ThumbFile} from '@/Models/ThumbFile';
 import {FILE_TYPES, SOURCE_TYPES} from '@/Constants';
 import {rememberVisit} from './folderPrefs';
@@ -15,9 +15,10 @@ export function toThumbFile(f) {
         title:      f.name,
         fileName:   f.name,
         thumbUrl:   fsThumbUrl(f.path),
-        contentUrl: fileUrl(f.path),
+        // .ts / .m2ts: repacked to MP4 on first open (the player can't read them).
+        contentUrl: /\.(ts|m2ts|mts)$/i.test(f.path) ? fsVideoUrl(f.path) : fileUrl(f.path),
         type:       f.kind === 'video' ? FILE_TYPES.VIDEO : FILE_TYPES.IMAGE,
-        mimeType:   f.kind === 'gif' ? 'image/gif' : f.kind === 'video' ? `video/${f.ext}` : `image/${f.ext}`,
+        mimeType:   f.kind === 'gif' ? 'image/gif' : f.kind === 'video' ? (/^(ts|m2ts|mts)$/i.test(f.ext) ? 'video/mp4' : `video/${f.ext}`) : `image/${f.ext}`,
         remoteType: SOURCE_TYPES.FOLDER,
         size:       f.size,
         time:       Math.floor(f.mtime / 1000),

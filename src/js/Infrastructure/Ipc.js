@@ -139,6 +139,8 @@ export const savedSearchesApi = {
 };
 
 // fsthumb:// URL of a cached thumbnail for a file on disk.
+// A folder video the player can't open directly (.ts …) → played through the app.
+export const fsVideoUrl = (file) => appUrl(`fsthumb://v/?p=${encodeURIComponent(file)}`);
 export const fsThumbUrl = (file, width = 360) =>
     appUrl(`fsthumb://t/?p=${encodeURIComponent(file)}&w=${width}`);
 

@@ -61,6 +61,17 @@ function registerProtocol() {
         }
         if (!file || !path.isAbsolute(file)) return new Response('bad path', { status: 400 });
 
+        // fsthumb://v/?p=… — the file as a playable video (.ts → its MP4 twin).
+        if (new URL(request.url).hostname === 'v') {
+            try {
+                const remux = require('../services/remuxCache');
+                const out = remux.needsRemux(file) ? await remux.playable(file) : file;
+                return require('../fileResponse').fileResponse(out, request.headers.get('range'));
+            } catch (e) {
+                return new Response(`Не удалось подготовить видео: ${e.message}`, { status: 500 });
+            }
+        }
+
         const thumb = await fsThumbs.getThumb(file, cacheDir(), width);
         if (!thumb) return new Response('no thumbnail', { status: 404 });
         const res = await net.fetch(pathToFileURL(thumb).toString());
@@ -112,6 +123,7 @@ function register() {
 
     // Trim the thumbnail cache a little after startup (never blocks launch).
     setTimeout(() => fsThumbs.pruneCache(cacheDir()).catch(() => {}), 30000);
+    setTimeout(() => require('../services/remuxCache').prune(), 60000);
 }
 
 module.exports = { SCHEME, register, registerProtocol };

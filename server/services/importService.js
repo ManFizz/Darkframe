@@ -32,6 +32,7 @@ const MIME_TYPES = {
 const SUPPORTED_EXTENSIONS = new Set([
     '.jpg', '.jpeg', '.png', '.webp', '.gif', '.jfif',
     '.mp4', '.webm', '.avi', '.mkv', '.mov',
+    '.ts', '.m2ts', '.mts',   // stored as MP4 (repacked on import, see importFile)
 ]);
 
 function getFileHash(filePath) {
@@ -85,8 +86,19 @@ async function importFile({ job = null, quiet = false, origin = 'app', ...args }
     const tracker = job || own;
     tracker?.step(path.basename(args.filePath || ''));
     let ok = false;
+    let twinDir = null;
     try {
+        // .ts / .m2ts: the player can't open them — the library keeps an MP4
+        // (a lossless repack when the streams allow, else a re-encode).
+        if (args.filePath && require('./remuxCache').needsRemux(args.filePath)) {
+            twinDir = fs.mkdtempSync(path.join(require('os').tmpdir(), 'darkframe-remux-'));
+            const mp4 = path.join(twinDir, `${path.basename(args.filePath, path.extname(args.filePath))}.mp4`);
+            await require('./ffmpegOps').remuxToMp4(args.filePath, mp4);
+            args = { ...args, filePath: mp4, originalPath: args.filePath };
+        }
         const res = await importFileImpl(args);
+        // A skipped duplicate points at the original (the twin is temporary).
+        if (res.skipped && args.originalPath) res.filePath = args.originalPath;
         if (!res.skipped) {
             try {
                 // lazy: autoRules itself uses this module's ensureTag
@@ -100,6 +112,7 @@ async function importFile({ job = null, quiet = false, origin = 'app', ...args }
     } finally {
         tracker?.fileDone(ok);
         own?.end();
+        if (twinDir) fs.rmSync(twinDir, { recursive: true, force: true });
     }
 }
 

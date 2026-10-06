@@ -140,7 +140,7 @@ function register() {
         const { canceled, filePaths } = await dialog.showOpenDialog({
             properties: ['openFile', 'multiSelections'],
             filters: [
-                { name: 'Media', extensions: ['jpg','jpeg','png','webp','gif','mp4','webm','avi','mkv','mov'] }
+                { name: 'Media', extensions: ['jpg','jpeg','png','webp','gif','mp4','webm','avi','mkv','mov','ts','m2ts','mts'] }
             ]
         });
 

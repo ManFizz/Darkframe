@@ -178,7 +178,30 @@ async function replaceFile(from, target, attempts = 20) {
     }
 }
 
+/**
+ * A container the browser can't play (MPEG-TS from streams / camcorders) → MP4.
+ * First a lossless repack (seconds: the streams are copied as they are); if the
+ * codecs don't fit MP4 that way, a re-encode (H.264 + AAC).
+ */
+async function remuxToMp4(src, dst, { onProgress } = {}) {
+    const tmp = `${dst}.part.mp4`;
+    try {
+        await run(ffmpeg(src)
+            .outputOptions(['-map', '0:v:0?', '-map', '0:a:0?', '-c', 'copy', '-bsf:a', 'aac_adtstoasc', '-movflags', '+faststart', '-y'])
+            .output(tmp));
+    } catch {
+        let total = null;
+        try { total = (await probe(src)).duration || null; } catch { /* unknown */ }
+        await run(ffmpeg(src)
+            .outputOptions(['-map', '0:v:0?', '-map', '0:a:0?', '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '20', '-pix_fmt', 'yuv420p',
+                '-c:a', 'aac', '-b:a', '160k', '-movflags', '+faststart', '-y'])
+            .output(tmp), { total, onProgress });
+    }
+    fs.renameSync(tmp, dst);
+    return dst;
+}
+
 module.exports = {
-    THUMB_SIZE, isUrl, timemarkToSec, probe,
+    THUMB_SIZE, isUrl, timemarkToSec, probe, remuxToMp4,
     trimFile, captureFrame, thumbAt, storyboard, hashFile, replaceFile,
 };
