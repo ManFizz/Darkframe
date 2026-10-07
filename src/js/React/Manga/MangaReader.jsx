@@ -189,6 +189,20 @@ const ReaderView = ({ book, onClose }) => {
         goChapter(ch - 1, 'end');
     }, [atEnd, pages, spreadIdx, spreads, ch, goChapter]);
 
+    // Pages still loading (online ones can take a while): a placeholder with the
+    // page number instead of an empty screen, and "Повторить" if one fails.
+    const [loadState, setLoadState] = useState(() => new Map());   // url → 'ok' | 'err'
+    const [reloadKey, setReloadKey] = useState(() => new Map());   // url → n (remount to retry)
+    const markLoad = useCallback((url, st) => setLoadState(m => (m.get(url) === st ? m : new Map(m).set(url, st))), []);
+    const retryPage = useCallback((url) => {
+        setLoadState(m => { const n = new Map(m); n.delete(url); return n; });
+        setReloadKey(m => new Map(m).set(url, (m.get(url) || 0) + 1));
+    }, []);
+    const imgEvents = (p) => ({
+        onLoad: () => markLoad(p.url, 'ok'),
+        onError: () => markLoad(p.url, 'err'),
+    });
+
     // ─── Vertical (webtoon) mode ──────────────────────────────────────────────
     const imgRefs = useRef([]);
     const scrollToPage = useCallback((i, smooth = false) => {
@@ -461,12 +475,30 @@ const ReaderView = ({ book, onClose }) => {
                     <div className="rd-msg"><i className="bi bi-arrow-repeat spin" /> Загружаю главу…</div>
                 ) : vertical ? (
                     <div className="rd-column" style={{ width: `min(100%, ${Math.round(prefs.verticalWidth * zoom)}px)`, gap: prefs.gap }}>
-                        {pages.map((p, i) => (
-                            <img key={`${chapter.id}:${i}`} ref={el => { imgRefs.current[i] = el; }}
-                                 src={src(p)} alt="" loading={Math.abs(i - page) < 4 ? 'eager' : 'lazy'} draggable={false}
-                                 style={p.w && p.h ? { aspectRatio: `${p.w} / ${p.h}` } : { minHeight: '60vh' }}
-                                 onLoad={e => { if (!p.w) e.currentTarget.style.minHeight = ''; }} />
-                        ))}
+                        {pages.map((p, i) => {
+                            const st = loadState.get(p.url);
+                            return (
+                                <div key={`${chapter.id}:${i}`} className={`rd-vpage ${st ? `is-${st}` : 'is-wait'}`}>
+                                    <img key={reloadKey.get(p.url) || 0} ref={el => { imgRefs.current[i] = el; }}
+                                         src={src(p)} alt="" loading={Math.abs(i - page) < 4 ? 'eager' : 'lazy'} draggable={false}
+                                         style={p.w && p.h ? { aspectRatio: `${p.w} / ${p.h}` } : { minHeight: '60vh' }}
+                                         onLoad={e => { if (!p.w) e.currentTarget.style.minHeight = ''; markLoad(p.url, 'ok'); }}
+                                         onError={() => markLoad(p.url, 'err')} />
+                                    {st !== 'ok' && (
+                                        <div className="rd-page-wait">
+                                            {st === 'err' ? (
+                                                <>
+                                                    <span><i className="bi bi-exclamation-triangle" /> Стр. {i + 1} не загрузилась</span>
+                                                    <button className="rd-btn rd-action" onClick={e => { e.stopPropagation(); retryPage(p.url); }}>Повторить</button>
+                                                </>
+                                            ) : (
+                                                <><i className="bi bi-arrow-repeat spin" /><span>Стр. {i + 1}</span></>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
+                            );
+                        })}
                         <div className="rd-endcard">
                             {nextChapter ? (
                                 <button className="rd-next-ch" onClick={() => goChapter(ch + 1)}>
@@ -478,11 +510,33 @@ const ReaderView = ({ book, onClose }) => {
                 ) : (
                     <div className="rd-spread" style={{ flexDirection: prefs.direction === 'rtl' ? 'row-reverse' : 'row' }}>
                         {spreadPages.map(i => (
-                            <img key={`${chapter.id}:${i}`} src={src(pages[i])} alt="" draggable={false}
-                                 style={mediaStyle(pages[i], spreadPages.length)} />
+                            <img key={`${chapter.id}:${i}:${reloadKey.get(pages[i].url) || 0}`} src={src(pages[i])} alt="" draggable={false}
+                                 className={loadState.get(pages[i].url) === 'ok' ? '' : 'rd-img-wait'}
+                                 style={mediaStyle(pages[i], spreadPages.length)} {...imgEvents(pages[i])} />
                         ))}
                     </div>
                 )}
+                {pages && !vertical && !error && (() => {
+                    const waiting = spreadPages.filter(i => loadState.get(pages[i].url) !== 'ok');
+                    if (!waiting.length) return null;
+                    const failed = waiting.filter(i => loadState.get(pages[i].url) === 'err');
+                    const label = spreadPages.length > 1 ? `${spreadPages[0] + 1}–${spreadPages[spreadPages.length - 1] + 1}` : `${spreadPages[0] + 1}`;
+                    return (
+                        <div className={`rd-paged-wait ${failed.length ? 'err' : ''}`}>
+                            <div className="rd-paged-wait-card" onClick={e => e.stopPropagation()}>
+                                <div className="rd-paged-wait-num">{label}<small> / {pages.length}</small></div>
+                                {failed.length ? (
+                                    <>
+                                        <span><i className="bi bi-exclamation-triangle" /> Страница не загрузилась</span>
+                                        <button className="rd-btn rd-action" onClick={() => failed.forEach(i => retryPage(pages[i].url))}>Повторить</button>
+                                    </>
+                                ) : (
+                                    <span><i className="bi bi-arrow-repeat spin" /> Загрузка…</span>
+                                )}
+                            </div>
+                        </div>
+                    );
+                })()}
                 {atEnd && !vertical && (
                     <div className="rd-endcard overlay" onClick={e => e.stopPropagation()}>
                         <div className="rd-end-title">Конец</div>
@@ -540,7 +594,7 @@ const ReaderView = ({ book, onClose }) => {
                            }} />
                 ) : (
                     <button className="rd-count" onClick={() => setJump(String(page + 1))} title="Перейти к странице">
-                        {page + 1}{spreadPages.length > 1 ? `–${spreadPages[spreadPages.length - 1] + 1}` : ''} / {pages?.length || '…'}
+                        {(spreadPages[0] ?? page) + 1}{spreadPages.length > 1 ? `–${spreadPages[spreadPages.length - 1] + 1}` : ''} / {pages?.length || '…'}
                         {chapters.length > 1 && <span className="rd-count-all"> · всего {pos}/{total}</span>}
                     </button>
                 )}

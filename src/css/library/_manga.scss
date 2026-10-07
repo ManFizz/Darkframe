@@ -185,6 +185,66 @@
   img { display: block; width: 100%; height: auto; background: rgba(127, 127, 127, 0.08); }
 }
 
+// A page that hasn't arrived yet: its number and a spinner (shown after a moment,
+// so pages that are already there don't flash it).
+@keyframes rd-wait-in { from { opacity: 0; } to { opacity: 1; } }
+.rd-img-wait { opacity: 0.35; }
+.rd-paged-wait {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+  animation: rd-wait-in 0.2s ease 0.15s both;
+}
+.rd-paged-wait-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  min-width: 180px;
+  padding: 22px 30px;
+  border-radius: 18px;
+  background: rgba(20, 17, 28, 0.78);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: #fff;
+  font-size: 14px;
+  backdrop-filter: blur(6px);
+  pointer-events: auto;
+  .bi { margin-right: 4px; }
+  .rd-btn { pointer-events: auto; }
+}
+.rd-paged-wait.err .rd-paged-wait-card span { color: #ff8a8a; }
+.rd-paged-wait-num {
+  font-size: 44px;
+  font-weight: 800;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  small { font-size: 16px; font-weight: 600; opacity: 0.55; }
+}
+.rd-vpage { position: relative; }
+.rd-page-wait {
+  position: absolute;
+  left: 50%;
+  top: min(40%, 30vh);
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 22px;
+  border-radius: 14px;
+  background: rgba(20, 17, 28, 0.72);
+  color: #fff;
+  font-size: 15px;
+  font-weight: 600;
+  white-space: nowrap;
+  animation: rd-wait-in 0.2s ease 0.15s both;
+  .bi { font-size: 20px; }
+  .is-err & { color: #ff8a8a; }
+}
+
 .rd-msg {
   margin: auto;
   font-size: 15px;
