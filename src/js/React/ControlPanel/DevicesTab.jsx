@@ -12,6 +12,56 @@ const fmtAgo = (t) => {
     return new Date(t * 1000).toLocaleDateString('ru-RU');
 };
 
+// How to put the library on the phone's home screen as an app.
+const AppInstallHelp = ({ urls }) => {
+    const [open, setOpen] = useState(false);
+    const lan = urls.filter(u => !u.virtual);
+    const origin = (lan[0] || urls[0])?.url;
+    const copy = (text) => navigator.clipboard?.writeText(text).then(() => notify({ message: 'Скопировано', type: 'info' }));
+    return (
+        <div className="rm-app">
+            <button className="cp-linkbtn" onClick={() => setOpen(v => !v)}>
+                <i className={`bi bi-chevron-${open ? 'down' : 'right'} me-1`} />Как приложение на телефоне: своя иконка, во весь экран
+            </button>
+            {open && (
+                <div className="rm-app-body">
+                    <div className="rm-app-os">
+                        <b><i className="bi bi-apple" /> iPhone / iPad</b>
+                        <ol>
+                            <li>Подключите устройство по QR-коду и откройте библиотеку в Safari.</li>
+                            <li>«Поделиться» → «На экран Домой».</li>
+                        </ol>
+                        <span className="rm-hint">Откроется со своей иконкой, без адресной строки.</span>
+                    </div>
+                    <div className="rm-app-os">
+                        <b><i className="bi bi-android2" /> Android (Chrome)</b>
+                        <span className="rm-hint">
+                            Chrome ставит приложения только с защищённых (https) адресов. Домашний адрес компьютера нужно один раз отметить как доверенный:
+                        </span>
+                        <ol>
+                            <li>
+                                В Chrome на телефоне откройте <code>chrome://flags/#unsafely-treat-insecure-origin-as-secure</code>
+                                <button className="cp-linkbtn" onClick={() => copy('chrome://flags/#unsafely-treat-insecure-origin-as-secure')}>копировать</button>
+                            </li>
+                            <li>
+                                Впишите адрес <code>{origin}</code>
+                                <button className="cp-linkbtn" onClick={() => copy(origin)}>копировать</button>,
+                                выберите «Enabled» и нажмите «Relaunch».
+                            </li>
+                            <li>Откройте библиотеку: вверху появится кнопка <i className="bi bi-download" /> «Установить» (или меню Chrome → «Установить приложение»).</li>
+                        </ol>
+                        <span className="rm-hint">
+                            Без этого «Добавить на главный экран» даёт ярлык, который открывается во вкладке; кнопка <i className="bi bi-arrows-fullscreen" /> вверху разворачивает на весь экран.
+                            Если адрес компьютера в сети меняется, закрепите его в настройках роутера.
+                        </span>
+                    </div>
+                    <span className="rm-hint">Установленное на Android приложение, когда компьютер выключен, покажет «Компьютер недоступен» и откроется само, как только он появится.</span>
+                </div>
+            )}
+        </div>
+    );
+};
+
 /**
  * Phone / tablet / another computer's browser over the home network: switch the
  * server on, pair a device with a QR code, limit or revoke devices.
@@ -129,6 +179,8 @@ const DevicesTab = () => {
                     )}
                 </div>
             )}
+
+            {st?.running && <AppInstallHelp urls={st.urls} />}
 
             {st && (
                 <div className="apitok-list">

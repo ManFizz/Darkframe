@@ -15,6 +15,9 @@ import BooruSearchBar from '@modules/r34/BooruSearchBar';
 import {collectionRequests, folderRequests, mangaRequests, useCommands} from '@services/commands';
 import {openManga} from '@modules/manga/openManga';
 import {isWeb} from '@/Infrastructure/electron';
+import {installApp, toggleFullscreen, usePwa} from '@services/pwa';
+
+const touch = typeof window !== 'undefined' && !!window.matchMedia?.('(pointer: coarse)').matches;
 import {setTheme} from '@services/theme';
 import {notify} from '@services/NotificationService';
 import LibraryService from '@services/LibraryService';
@@ -37,6 +40,7 @@ const VIEW_NAMES = { 1: 'квадраты', 2: 'плитка', 3: 'колонк�
 const NavBar = () => {
     const { state, setCurrentSource, setTypeView, setSafeMode } = useContext(GalleryContext);
     const libraryCtx = useLibraryContext();
+    const pwa = usePwa();
 
     const isLibrary = state.currentSource === SOURCE_TYPES.LIBRARY;
     const isFolder  = state.currentSource === SOURCE_TYPES.FOLDER;
@@ -249,13 +253,25 @@ const NavBar = () => {
                             <i className="bi bi-tags-fill" />
                         </button>
                     )}
-                    <button
-                        className="btn navbar-settings-btn"
-                        onClick={openHotkeysHelp}
-                        title="Горячие клавиши (?)"
-                    >
-                        <i className="bi bi-keyboard" />
-                    </button>
+                    {pwa.installable && (
+                        <button className="btn navbar-settings-btn on" onClick={() => installApp()} title="Установить как приложение">
+                            <i className="bi bi-download" />
+                        </button>
+                    )}
+                    {/* Phone in a browser tab: full screen instead of the hotkeys. */}
+                    {isWeb && touch ? (pwa.canFullscreen && !pwa.standalone && (
+                        <button className="btn navbar-settings-btn" onClick={toggleFullscreen} title={pwa.fullscreen ? 'Выйти из полноэкранного режима' : 'Во весь экран'}>
+                            <i className={`bi ${pwa.fullscreen ? 'bi-fullscreen-exit' : 'bi-arrows-fullscreen'}`} />
+                        </button>
+                    )) : (
+                        <button
+                            className="btn navbar-settings-btn"
+                            onClick={openHotkeysHelp}
+                            title="Горячие клавиши (?)"
+                        >
+                            <i className="bi bi-keyboard" />
+                        </button>
+                    )}
                     <button
                         className="btn navbar-settings-btn"
                         onClick={() => openPanel(isLibrary ? 'manage' : 'settings')}

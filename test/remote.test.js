@@ -133,3 +133,24 @@ test('events: broadcasts and per-device progress arrive over /events; revoking c
     devices.revoke(dev.id);
     assert.equal((await rpc(cookie, 'test:echo', [1])).status, 401);
 });
+
+test('home screen app: manifest, icons, service worker and the offline page open without pairing', async () => {
+    const m = await request('GET', '/manifest.webmanifest');
+    assert.equal(m.status, 200);
+    const manifest = JSON.parse(m.body);
+    assert.equal(manifest.display, 'standalone');
+    assert.deepEqual(manifest.icons.map(i => i.sizes), ['192x192', '512x512', '512x512']);
+    assert.ok(manifest.icons.some(i => i.purpose === 'maskable'));
+    for (const icon of ['/icon-192.png', '/icon-512.png', '/icon-maskable-512.png', '/icon-180.png']) {
+        const r = await request('GET', icon);
+        assert.equal(r.status, 200, icon);
+        assert.equal(r.headers['content-type'], 'image/png');
+    }
+    const sw = await request('GET', '/sw.js');
+    assert.equal(sw.status, 200);
+    assert.match(sw.body, /Компьютер недоступен/, 'the offline page is built into the worker');
+    assert.equal((await request('GET', '/offline.html')).status, 200);
+    // anything else still needs a paired device
+    assert.equal((await request('GET', '/icon-64.png')).status, 401);
+    assert.equal((await request('GET', '/boot.js')).status, 401);
+});

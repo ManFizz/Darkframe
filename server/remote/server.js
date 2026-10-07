@@ -20,7 +20,8 @@ const policy = require('./policy');
  *   GET  /x/<scheme>/…     library://, mangaimg://, mediacache:// files (with Range)
  *   POST /upload           a file from the device → the library
  *
- * Everything but /pair needs a paired device (cookie, or a Bearer token).
+ * Everything but /pair and the home-screen app files (manifest, icons, sw.js,
+ * offline.html) needs a paired device (cookie, or a Bearer token).
  */
 const DIST = path.join(__dirname, '..', '..', 'dist');
 const COOKIE = 'df_remote';
@@ -117,7 +118,9 @@ function indexHtml() {
     let html = fs.readFileSync(path.join(DIST, 'index.html'), 'utf8');
     // boot.js (this device + the config) runs before the bundle; the manifest makes
     // it installable as an app on the phone's home screen.
-    html = html.replace('<head lang="en" data-bs-theme="dark">', '<head lang="en" data-bs-theme="dark"><link rel="manifest" href="/manifest.webmanifest"><meta name="theme-color" content="#14111c"><meta name="apple-mobile-web-app-capable" content="yes"><link rel="apple-touch-icon" href="/x/app/icon.png">');
+    html = html.replace('<head lang="en" data-bs-theme="dark">', `<head lang="en" data-bs-theme="dark">${APP_HEAD}`);
+    // Edge to edge on phones with a notch (the layout pads by env(safe-area-inset-*)).
+    html = html.replace(/<meta name="viewport" content="([^"]*)">/, (m, c) => `<meta name="viewport" content="${c},viewport-fit=cover">`);
     html = html.replace(/<script/, '<script src="/boot.js"></script><script');
     html = html.replace('<title>Gallery</title>', '<title>Darkframe</title>');
     return html;
@@ -135,11 +138,91 @@ async function bootJs(device) {
     return `window.__DF_WEB__ = ${JSON.stringify(boot).replace(/</g, '\\u003c')};`;
 }
 
+// ─── Home screen app ──────────────────────────────────────────────────────────
+// What makes the page an app on the phone: the manifest, icons, iOS tags, and a
+// service worker that shows a page of its own when the computer can't be reached.
+// None of it is private, so it's served before the device check (browsers fetch
+// the manifest and icons without cookies).
+const APP_HEAD = [
+    '<link rel="manifest" href="/manifest.webmanifest">',
+    '<meta name="theme-color" content="#14111c">',
+    '<meta name="mobile-web-app-capable" content="yes">',
+    '<meta name="apple-mobile-web-app-capable" content="yes">',
+    '<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">',
+    '<meta name="apple-mobile-web-app-title" content="Darkframe">',
+    '<link rel="apple-touch-icon" href="/icon-180.png">',
+    '<link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png">',
+].join('');
+
 const manifest = () => JSON.stringify({
-    name: 'Darkframe', short_name: 'Darkframe', start_url: '/', display: 'standalone',
+    id: '/', name: 'Darkframe', short_name: 'Darkframe', description: 'Библиотека картинок, видео и манги с компьютера',
+    start_url: '/', scope: '/', display: 'standalone', orientation: 'any', lang: 'ru',
     background_color: '#14111c', theme_color: '#14111c',
-    icons: [{ src: '/x/app/icon.png', sizes: '256x256', type: 'image/png' }],
+    icons: [
+        { src: '/icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
+        { src: '/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
+        { src: '/icon-maskable-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
+    ],
 });
+
+// The maskable icon: the background fills the square, the picture stays inside
+// the middle 80% that every launcher shape keeps.
+const MASKABLE_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256">
+<defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#b784ff"/><stop offset="1" stop-color="#6d3ad6"/></linearGradient></defs>
+<rect width="256" height="256" fill="url(#bg)"/>
+<g transform="translate(128 128) scale(0.72) translate(-128 -128)">
+<rect x="52" y="60" width="152" height="136" rx="18" fill="#1b1430"/><circle cx="160" cy="98" r="15" fill="#ffd66b"/>
+<path d="M64 184 L108 128 L140 164 L160 144 L192 184 Z" fill="#c9a6ff"/></g></svg>`;
+
+const icons = new Map();
+async function iconPng(name) {
+    const m = name.match(/^icon-(maskable-)?(\d+)\.png$/);
+    const size = m && Number(m[2]);
+    if (!size || ![180, 192, 512].includes(size)) return null;
+    if (!icons.has(name)) {
+        const sharp = require('sharp');
+        const svg = m[1] ? Buffer.from(MASKABLE_SVG) : fs.readFileSync(path.join(__dirname, '..', '..', 'assets', 'icon.svg'));
+        // iOS rounds the corners itself and shows transparency as black: a full square.
+        const src = size === 180 ? Buffer.from(MASKABLE_SVG.replace('scale(0.72)', 'scale(0.86)')) : svg;
+        icons.set(name, await sharp(src, { density: 384 }).resize(size, size).png().toBuffer());
+    }
+    return icons.get(name);
+}
+
+const OFFLINE_HTML = `<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#14111c"><title>Darkframe</title><style>
+body{margin:0;min-height:100vh;display:grid;place-items:center;background:#14111c;color:#e9e6f2;font:16px/1.5 system-ui,sans-serif}
+.box{max-width:420px;padding:28px;margin:16px;border-radius:18px;background:#1d1828;border:1px solid #322a44;text-align:center}
+h1{font-size:21px;margin:0 0 10px}p{color:#b7b0c8;margin:8px 0}
+button{display:block;width:100%;margin-top:16px;padding:13px;border:none;border-radius:12px;background:#9b6bff;color:#fff;font:600 16px system-ui,sans-serif}
+</style></head><body><div class="box"><h1>Компьютер недоступен</h1>
+<p>Darkframe открывается с вашего компьютера. Проверьте, что он включён, приложение запущено, а телефон в той же сети Wi-Fi.</p>
+<button onclick="location.replace('/')">Повторить</button></div>
+<script>addEventListener('online',()=>location.replace('/'));setInterval(()=>fetch('/manifest.webmanifest',{cache:'no-store'}).then(r=>r.ok&&location.replace('/')).catch(()=>{}),5000);</script>
+</body></html>`;
+
+// Service worker: the "computer is off" page is built into it (no cache storage
+// needed); nothing of the library is cached, everything else goes to the network.
+const SW_JS = `const OFFLINE = ${JSON.stringify(OFFLINE_HTML)};
+self.addEventListener('install', () => self.skipWaiting());
+self.addEventListener('activate', (e) => { e.waitUntil(self.clients.claim()); });
+self.addEventListener('fetch', (e) => {
+    if (e.request.mode !== 'navigate') return;
+    e.respondWith(fetch(e.request).catch(() => new Response(OFFLINE, { headers: { 'Content-Type': 'text/html; charset=utf-8' } })));
+});`;
+
+async function appFile(res, p) {
+    if (p === '/manifest.webmanifest') { send(res, 200, manifest(), { 'Content-Type': MIME['.webmanifest'], 'Cache-Control': 'no-cache' }); return true; }
+    if (p === '/sw.js') { send(res, 200, SW_JS, { 'Content-Type': 'text/javascript; charset=utf-8', 'Cache-Control': 'no-cache', 'Service-Worker-Allowed': '/' }); return true; }
+    if (p === '/offline.html') { send(res, 200, OFFLINE_HTML, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-cache' }); return true; }
+    if (/^\/icon-[\w-]+\.png$/.test(p)) {
+        const png = await iconPng(p.slice(1)).catch(() => null);
+        if (!png) return false;
+        send(res, 200, png, { 'Content-Type': 'image/png', 'Cache-Control': 'max-age=604800' });
+        return true;
+    }
+    return false;
+}
 
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
@@ -181,10 +264,6 @@ async function pair(req, res, url) {
 
 // ─── Protocol files ───────────────────────────────────────────────────────────
 async function protocolFile(req, res, scheme, rest) {
-    if (scheme === 'app') {   // the app icon for the home screen
-        const icon = path.join(__dirname, '..', '..', 'assets', 'icon.png');
-        return fs.existsSync(icon) ? send(res, 200, fs.readFileSync(icon), { 'Content-Type': 'image/png', 'Cache-Control': 'max-age=86400' }) : send(res, 404, 'no icon');
-    }
     const fn = protocols.get(scheme);
     if (!fn || scheme === 'fsthumb') return send(res, 404, 'not found');
     const request = { url: `${scheme}://${rest}`, method: 'GET', headers: new Headers(req.headers.range ? { range: req.headers.range } : {}) };
@@ -238,6 +317,7 @@ async function route(req, res) {
 
     if (p === '/pair') return pair(req, res, url);
     if (p === '/favicon.ico') return send(res, 204, '');
+    if (req.method === 'GET' && await appFile(res, p)) return;
 
     const device = deviceOf(req);
     if (!device) {
@@ -247,7 +327,6 @@ async function route(req, res) {
 
     if (req.method === 'GET' && (p === '/' || p === '/index.html')) return send(res, 200, indexHtml(), { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-cache' });
     if (p === '/boot.js') return send(res, 200, await bootJs(device), { 'Content-Type': 'text/javascript; charset=utf-8' });
-    if (p === '/manifest.webmanifest') return send(res, 200, manifest(), { 'Content-Type': MIME['.webmanifest'] });
     if (p === '/events') return events(req, res, device);
 
     const x = p.match(/^\/x\/([a-z]+)\/(.*)$/);
