@@ -37,6 +37,7 @@ async function savePage(opts) {
             if (t.type && types[t.type] != null) tagTypes[name] = types[t.type];
             return name;
         }).filter(Boolean);
+        tags = [...new Set(tags)];
         sourceUrl = opts.sourceUrl || '';
         collectionId = opts.collectionId || null;
     }

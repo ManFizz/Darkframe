@@ -199,12 +199,14 @@ async function importFileImpl({ filePath, collectionId = null, tags = [], source
         if (tags.length > 0) {
             // Sequential, not Promise.all — parallel INSERTs on the single SQLite
             // connection contend for the write lock and can throw SQLITE_BUSY.
-            const tagRecords = [];
+            // The same tag twice (another case, another group on the site, two
+            // names renamed to one) is attached once.
+            const tagIds = new Set();
             for (const name of tags) {
-                tagRecords.push(await ensureTag(name, t));
+                tagIds.add((await ensureTag(name, t)).id);
             }
             await ItemTag.bulkCreate(
-                tagRecords.map(tag => ({ itemId: id, tagId: tag.id })),
+                [...tagIds].map(tagId => ({ itemId: id, tagId })),
                 { transaction: t }
             );
         }

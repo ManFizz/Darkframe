@@ -314,6 +314,14 @@ test('save page: a library manga page and an online page become images with the 
         assert.equal(o.sourceUrl, 'https://fake.test/g/o1');
         assert.equal(o.tags[0].name, 'new artist');
         assert.equal(o.tags[0].type, 1);
+
+        // the same tag twice (another case / another group on the site) → attached once
+        const twice = await savePage({
+            source: 'fake', url: 'https://fake.test/o2/1/3.png', page: 3, title: 'Twice',
+            tags: [{ name: 'Some Tag', type: 'artist' }, { name: 'some tag', type: 'tag' }, 'Plain', 'plain '],
+        });
+        const tw = await Item.findByPk(twice.item.id, { include: [{ model: Tag, as: 'tags' }] });
+        assert.deepEqual(tw.tags.map(t => t.name).sort(), ['plain', 'some tag']);
     } finally {
         sources.get = realGet;
         global.fetch = realFetch;
