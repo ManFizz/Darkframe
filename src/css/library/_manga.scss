@@ -344,6 +344,22 @@
   font-weight: 700;
   pointer-events: none;
   .bi { color: var(--df-accent); }
+  .thumb-manga-online { color: #8ab4ff; }
+}
+// Subscriptions: chapters that came out since the manga was last opened.
+.thumb-manga-new {
+  position: absolute;
+  right: 8px;
+  bottom: 8px;
+  z-index: 2;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #e5484d;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 800;
+  pointer-events: none;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
 }
 .thumb-readbar {
   position: absolute;
@@ -360,7 +376,7 @@
 
 // ─── Side panel block / viewer cover / "make manga" popover ─────────────────
 .mi { margin-bottom: 12px; padding: 10px; border-radius: 12px; background: var(--df-accent-soft); border: 1px solid var(--df-accent-dim); }
-.mi-facts { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 8px; font-size: 12.5px; .bi { color: var(--df-accent); margin-right: 3px; } .done .bi { color: #3fb950; } }
+.mi-facts { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 8px; font-size: 12.5px; .bi { color: var(--df-accent); margin-right: 3px; } .done .bi { color: #3fb950; } .new { color: #e5484d; font-weight: 700; .bi { color: inherit; } } }
 .mi-main { display: flex; gap: 6px; margin-bottom: 6px; .btn-primary { flex: 1; } }
 .mi-online {
   display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 6px;
@@ -369,6 +385,7 @@
     background: var(--bs-body-bg); color: var(--bs-body-color); font-size: 11.5px; cursor: pointer;
     &:hover:not(:disabled) { border-color: var(--df-accent); }
     &.accent { border-color: var(--df-accent); color: var(--df-accent); font-weight: 600; }
+    &.on { background: var(--df-accent); border-color: var(--df-accent); color: #fff; }
     .bi { margin-right: 3px; }
   }
 }

@@ -14,9 +14,6 @@ const errText = (e) => String(e?.message || e).replace(/^Error invoking remote m
 const MangaInfo = ({ file, onChanged }) => {
     const [book, setBook] = useState(null);
     const [busy, setBusy] = useState(null);
-    const [fresh, setFresh] = useState(null);   // new chapters on the site: [{ id, title }]
-
-    useEffect(() => { setFresh(null); }, [file.id]);
     useEffect(() => {
         let cancelled = false;
         mangaApi.book(file.id).then(b => { if (!cancelled) setBook(b); }).catch(() => {});
@@ -24,17 +21,27 @@ const MangaInfo = ({ file, onChanged }) => {
     }, [file.id, file.pageCount, file.editedAt]);
 
     const online = book?.source?.kind === 'online' ? book.source : null;
+    const sub = book?.subscription?.on ? book.subscription : null;
+    const remote = book ? book.chapters.filter(c => c.remote).length : 0;
+    const reload = () => mangaApi.book(file.id).then(setBook).catch(() => {});
+    // New chapters on the site are added as online chapters (read at once, download later).
     const checkNew = () => act('new', async () => {
-        const r = await mangaApi.newChapters(file.id);
-        setFresh(r.chapters);
-        if (!r.chapters.length) notify({ message: 'Новых глав нет', type: 'info' });
+        const r = await mangaApi.checkUpdates(file.id);
+        await reload();
+        notify(r.added.length
+            ? { message: `Новых глав: ${r.added.length}${r.queued ? ' — в очереди загрузки' : ' — читаются онлайн'}`, type: 'success' }
+            : { message: 'Новых глав нет', type: 'info' });
         return null;
     });
-    const downloadNew = () => act('dl', async () => {
-        await mangaApi.download({ source: online.site, id: online.id, chapters: fresh.map(c => c.id), appendTo: file.id, title: file.title });
-        setFresh(null);
+    const downloadRemote = () => act('dl', async () => {
+        const r = await mangaApi.downloadRemote(file.id);
+        return r;
+    }, `Онлайн-главы (${remote}) в очереди загрузки`);
+    const toggleSub = () => act('sub', async () => {
+        await mangaApi.setSubscription(file.id, !sub);
+        await reload();
         return true;
-    }, 'Новые главы в очереди загрузки');
+    }, sub ? 'Подписка отменена' : 'Подписка оформлена — новые главы будут появляться сами');
 
     const pages = book ? book.chapters.reduce((n, c) => n + c.pages.length, 0) : file.pageCount;
     const st = book?.state;
@@ -56,8 +63,10 @@ const MangaInfo = ({ file, onChanged }) => {
     return (
         <div className="mi">
             <div className="mi-facts">
-                <span><i className="bi bi-book" /> {pages ?? '…'} стр.</span>
+                {!(book && pages === 0) && <span><i className="bi bi-book" /> {pages ?? '…'} стр.</span>}
                 {book?.chapters.length > 1 && <span><i className="bi bi-list-ol" /> {book.chapters.length} гл.</span>}
+                {remote > 0 && <span title="Главы не скачаны — читаются с сайта"><i className="bi bi-cloud" /> {remote === book.chapters.length ? 'онлайн' : `онлайн: ${remote}`}</span>}
+                {sub?.unseen > 0 && <span className="new"><i className="bi bi-stars" /> новых: {sub.unseen}</span>}
                 {st && <span className={st.finished ? 'done' : ''}>
                     <i className={`bi ${st.finished ? 'bi-check2-circle' : 'bi-bookmark'}`} /> {st.finished ? 'прочитано' : `стр. ${st.position + 1}`}
                 </span>}
@@ -70,27 +79,37 @@ const MangaInfo = ({ file, onChanged }) => {
                 {started && <button className="btn btn-sm btn-outline-secondary" onClick={() => readLibraryManga(file, { fromStart: true })} title="С первой страницы">
                     <i className="bi bi-skip-start" />
                 </button>}
-                <button className="btn btn-sm btn-outline-secondary" onClick={() => openPageEditor(file)} title="Удалить, переставить, добавить страницы">
+                {pages !== 0 && <button className="btn btn-sm btn-outline-secondary" onClick={() => openPageEditor(file)} title="Удалить, переставить, добавить страницы">
                     <i className="bi bi-grid-3x3 me-1" />Страницы
-                </button>
+                </button>}
             </div>
             {online && (
                 <div className="mi-online">
                     <button onClick={() => openManga({ open: { source: online.site, id: online.id } })} title="Карточка галереи на сайте (вкладка Manga)">
                         <i className="bi bi-globe2" /> {online.site}
                     </button>
-                    {!CHAPTERED.has(online.site) ? null : fresh?.length > 0 ? (
-                        <button className="accent" disabled={!!busy} onClick={downloadNew}>
-                            <i className="bi bi-download" /> Скачать новые главы: {fresh.length}
+                    {CHAPTERED.has(online.site) && (
+                        <button className={sub ? 'on' : ''} disabled={!!busy} onClick={toggleSub}
+                                title={sub ? `Подписка: новые главы проверяются сами${sub.checkedAt ? ` · проверено ${new Date(sub.checkedAt * 1000).toLocaleString('ru')}` : ''}${sub.error ? `
+Ошибка: ${sub.error}` : ''}
+Нажмите, чтобы отписаться` : 'Подписаться: новые главы будут появляться сами'}>
+                            <i className={`bi ${sub ? 'bi-bell-fill' : 'bi-bell'}`} /> {sub ? 'Подписка' : 'Подписаться'}
                         </button>
-                    ) : (
+                    )}
+                    {CHAPTERED.has(online.site) && (
                         <button disabled={!!busy} onClick={checkNew} title="Проверить, вышли ли на сайте главы, которых здесь нет">
-                            {busy === 'new' ? <i className="bi bi-arrow-repeat spin" /> : <i className="bi bi-arrow-repeat" />} Новые главы
+                            <i className={`bi bi-arrow-repeat ${busy === 'new' ? 'spin' : ''}`} /> Проверить обновления
+                        </button>
+                    )}
+                    {remote > 0 && (
+                        <button className="accent" disabled={!!busy} onClick={downloadRemote} title="Скачать главы, которые сейчас читаются с сайта">
+                            <i className="bi bi-download" /> Скачать {remote === book.chapters.length ? 'всё' : `онлайн-главы: ${remote}`}
                         </button>
                     )}
                 </div>
             )}
             <div className="mi-more">
+                {pages !== 0 && <>
                 {!isWeb && <>
                 <button disabled={!!busy} onClick={() => act('cbz', () => mangaApi.exportCbz(file.id), r => `Сохранено: ${r.pages} стр. в CBZ`)}>
                     {busy === 'cbz' ? <i className="bi bi-arrow-repeat spin" /> : <i className="bi bi-file-zip" />} CBZ
@@ -103,6 +122,7 @@ const MangaInfo = ({ file, onChanged }) => {
                         onClick={() => act('split', () => mangaApi.split(file.id), r => `Картинок добавлено: ${r.results.length} · Ctrl+Z — отменить`)}>
                     <i className="bi bi-images" /> На картинки
                 </button>
+                </>}
                 {st && <button disabled={!!busy} onClick={() => act('reset', () => mangaApi.resetProgress(file.id).then(() => true), 'Прогресс сброшен')}>
                     <i className="bi bi-arrow-counterclockwise" /> Сбросить прогресс
                 </button>}

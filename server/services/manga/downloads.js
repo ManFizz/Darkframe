@@ -71,7 +71,8 @@ async function work(job) {
         const g = await src.gallery(job.galleryId);
         const { chapters: wanted, appendTo } = parse(job.options);
         // New chapters for a manga already in the library: only the ones it lacks.
-        const have = appendTo ? new Set(store.bookOf(appendTo).chapters.map(c => c.src).filter(Boolean)) : null;
+        // (chapters so far read online count as missing: they get their pages now)
+        const have = appendTo ? new Set(store.bookOf(appendTo).chapters.filter(c => !c.remote).map(c => c.src).filter(Boolean)) : null;
         const chapters = g.chapters.filter(c => (!wanted?.length || wanted.includes(c.id)) && !have?.has(String(c.id)));
         if (appendTo && !chapters.length) {
             await update(job.id, { status: 'done', itemId: appendTo, error: 'Новых глав нет' });

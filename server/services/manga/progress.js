@@ -25,10 +25,15 @@ async function reset(itemId) {
     await MangaState.destroy({ where: { itemId } });
 }
 
-// Library rows → + readPosition / readFinished for manga tiles.
+// Library rows → + readPosition / readFinished / readTotal for manga tiles
+// (+ new / online chapters of subscriptions).
 async function attach(items) {
     const ids = items.filter(i => i.pageCount != null).map(i => i.id);
     if (!ids.length) return items;
+    return require('./subscriptions').attach(await attachState(items, ids));
+}
+
+async function attachState(items, ids) {
     const states = new Map();
     for (let i = 0; i < ids.length; i += 900) {
         (await MangaState.findAll({ where: { itemId: { [Op.in]: ids.slice(i, i + 900) } }, raw: true }))
@@ -36,7 +41,7 @@ async function attach(items) {
     }
     return items.map(it => {
         const s = states.get(it.id);
-        return s ? { ...it, readPosition: s.position, readFinished: !!s.finished, readAt: s.readAt } : it;
+        return s ? { ...it, readPosition: s.position, readFinished: !!s.finished, readAt: s.readAt, readTotal: s.total } : it;
     });
 }
 
@@ -48,7 +53,7 @@ async function recent(limit = 30) {
     const byId = new Map(items.map(i => [i.id, i]));
     return states.filter(s => byId.has(s.itemId)).slice(0, limit).map(s => {
         const it = byId.get(s.itemId);
-        return { ...it, ...itemUrls(it), readPosition: s.position, readAt: s.readAt };
+        return { ...it, ...itemUrls(it), readPosition: s.position, readAt: s.readAt, readTotal: s.total };
     });
 }
 

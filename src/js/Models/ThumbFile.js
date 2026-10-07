@@ -49,6 +49,9 @@ export class ThumbFile {
         this.isManga = this.mimeType === 'application/x-darkframe-manga';
         this.pageCount = data.pageCount ?? null;
         this.readPosition = data.readPosition ?? null;   // last read page (0-based, across chapters)
+        this.readTotal = data.readTotal ?? null;         // pages in all (guessed for online chapters)
+        this.mangaNew = data.mangaNew ?? 0;              // subscription: new chapters since last opened
+        this.mangaRemote = data.mangaRemote ?? 0;        // chapters read from the site (not downloaded)
         this.readFinished = !!data.readFinished;
 
         this.type = data.type || this._detectType(this.thumbUrl);

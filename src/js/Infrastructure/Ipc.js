@@ -92,6 +92,24 @@ export const mangaApi = {
     login:           (source)                => invoke('manga:login', { source }),
     openSite:        (source, url)           => invoke('manga:openSite', { source, url }),
     clearCache:      ()                      => invoke('manga:clearCache'),
+    addOnline:       (opts)                  => invoke('manga:addOnline', opts),
+    downloadRemote:  (itemId, chapters)      => invoke('manga:downloadRemote', { itemId, chapters }),
+    subscriptions:   ()                      => invoke('manga:subscriptions'),
+    setSubscription: (itemId, on)            => invoke('manga:setSubscription', { itemId, on }),
+    setSeen:         (itemId)                => invoke('manga:setSeen', { itemId }),
+    checkUpdates:    (itemId = null)         => invoke('manga:updateSubscriptions', { itemId }),
+    subsConfig:      ()                      => invoke('manga:subsConfig'),
+    setSubsConfig:   (patch)                 => invoke('manga:setSubsConfig', patch),
+    onSubs:          (fn)                    => {
+        const handler = (_, p) => fn(p);
+        ipcRenderer.on('manga:subs', handler);
+        return () => ipcRenderer.removeListener('manga:subs', handler);
+    },
+    onUpdates:       (fn)                    => {
+        const handler = (_, p) => fn(p);
+        ipcRenderer.on('manga:updates', handler);
+        return () => ipcRenderer.removeListener('manga:updates', handler);
+    },
     onDownloads:     (fn)                    => {
         const handler = (_, p) => fn(p);
         ipcRenderer.on('manga:downloads', handler);

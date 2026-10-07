@@ -599,3 +599,58 @@
 }
 .mo-prev-page { margin: 0 auto 12px; display: flex; }
 .mo-logged { color: #2f9e44; }
+
+// Subscriptions
+.mo-count.new { background: #e5484d; }
+.mo-count.muted { background: var(--bs-secondary-bg); color: var(--bs-secondary-color); }
+.mo-count-spin { margin-left: auto; font-size: 12px; color: var(--df-accent); }
+.mo-sub-on { background: var(--df-accent) !important; border-color: var(--df-accent) !important; color: #fff !important; }
+.mo-subs-config {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 18px;
+  max-width: 1000px;
+  margin-bottom: 12px;
+  padding: 8px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--bs-border-color);
+  font-size: 13px;
+  label { display: inline-flex; align-items: center; gap: 6px; margin: 0; cursor: pointer; }
+  select {
+    padding: 2px 6px; border-radius: 7px; border: 1px solid var(--bs-border-color);
+    background: var(--bs-body-bg); color: var(--bs-body-color); font-size: 13px;
+  }
+}
+.mo-subs-last { color: var(--bs-secondary); font-size: 12px; }
+.mo-subs { display: flex; flex-direction: column; gap: 8px; max-width: 1000px; }
+.mo-sub {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--bs-border-color);
+  background: var(--df-glass, transparent);
+  &.fresh { border-color: color-mix(in srgb, #e5484d 55%, transparent); }
+}
+.mo-sub-cover { position: relative; width: 54px; flex-shrink: 0; cursor: pointer; .mo-cover { border-radius: 6px; } }
+.mo-sub-new {
+  position: absolute; right: -6px; top: -6px; padding: 1px 6px; border-radius: 999px;
+  background: #e5484d; color: #fff; font-size: 11px; font-weight: 800;
+}
+.mo-sub-body { flex: 1; min-width: 0; }
+.mo-sub-title {
+  font-weight: 600; font-size: 13.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor: pointer;
+  &:hover { color: var(--df-accent); }
+}
+.mo-sub-meta {
+  display: flex; flex-wrap: wrap; gap: 4px 12px; margin-top: 3px; font-size: 12px; color: var(--bs-secondary);
+  .new { color: #e5484d; font-weight: 700; }
+}
+.mo-sub-error { margin-top: 4px; font-size: 12px; color: var(--bs-danger); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mo-sub-actions { display: flex; gap: 4px; flex-shrink: 0; }
+@media (max-width: 600px) {
+  .mo-sub { flex-wrap: wrap; }
+  .mo-sub-actions { width: 100%; justify-content: flex-end; }
+}

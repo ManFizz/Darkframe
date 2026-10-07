@@ -303,6 +303,8 @@ app.whenReady().then(async () => {
         setTimeout(() => require('./server/services/manga/images').pruneCache(), 30000);
         require('./server/services/manga/downloads').start()
             .catch(e => console.warn('[manga] downloads:', e.message));
+        require('./server/services/manga/subscriptions').start()
+            .catch(e => console.warn('[manga] subscriptions:', e.message));
     }
 });
 

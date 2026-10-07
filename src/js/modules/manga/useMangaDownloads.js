@@ -50,5 +50,19 @@ export const MangaDownloadsWatcher = () => {
             seed(list);
         });
     }, []);
+    // Subscriptions checked on schedule: what came out.
+    useEffect(() => mangaApi.onUpdates((r) => {
+        if (r?.reason !== 'schedule' || !r.items?.length) return;
+        const one = r.items.length === 1 ? r.items[0] : null;
+        const names = r.items.slice(0, 3).map(i => `«${i.title}» +${i.added}`).join(', ');
+        notify({
+            message: `Новые главы: ${names}${r.items.length > 3 ? ` и ещё ${r.items.length - 3}` : ''}`,
+            type: 'success',
+            duration: 10000,
+            action: one
+                ? { label: 'Читать', onClick: () => readLibraryManga({ id: one.id, title: one.title }) }
+                : { label: 'Подписки', onClick: () => openManga({ view: 'subs' }) },
+        });
+    }), []);
     return null;
 };

@@ -7,6 +7,7 @@ const http = require('../services/manga/http');
 const { MANGA_MIME } = require('../services/manga/store');
 const { Item } = require('../models/associations');
 const MangaDownload = require('../models/MangaDownload');
+const subscriptions = require('../services/manga/subscriptions');
 
 /**
  * IPC for online manga: sources, search, a gallery card, chapters for online
@@ -146,7 +147,12 @@ function register() {
 
     ipcMain.handle('manga:chapter', async (_, { source, id, chapterId }) => {
         const src = sources.get(source);
-        if (!src.chapterPages) throw new Error('У источника нет глав');
+        // Sites that give all pages with the gallery (nhentai): take them from there.
+        if (!src.chapterPages) {
+            const c = (await src.gallery(id)).chapters.find(x => String(x.id) === String(chapterId));
+            if (!c?.pages) throw new Error('Глава не найдена на сайте');
+            return images.toReaderPages(source, c.pages);
+        }
         return images.toReaderPages(source, await src.chapterPages(id, chapterId));
     });
 
@@ -167,6 +173,19 @@ function register() {
     ipcMain.handle('manga:newChapters', (_, { itemId }) => downloads.newChapters(itemId));
     ipcMain.handle('manga:downloadAction', (_, { id, action }) => downloads.action(id, action));
     ipcMain.handle('manga:clearDownloads', () => downloads.clearFinished());
+
+    // ─── In the library without downloading, subscriptions ──────────────────
+    ipcMain.handle('manga:addOnline', (_, opts) => subscriptions.addOnline(opts || {}));
+    // Chapters still online → the download queue (all, or `chapters`: site chapter ids).
+    ipcMain.handle('manga:downloadRemote', (_, { itemId, chapters = null }) => subscriptions.downloadRemote(itemId, chapters));
+    ipcMain.handle('manga:subscriptions', () => subscriptions.list());
+    ipcMain.handle('manga:setSubscription', (_, { itemId, on }) => subscriptions.setOn(itemId, !!on));
+    ipcMain.handle('manga:setSeen', (_, { itemId }) => subscriptions.seen(itemId));
+    // One manga (itemId) → { added, queued }; all → { items, errors, checked }.
+    ipcMain.handle('manga:updateSubscriptions', (_, { itemId = null } = {}) =>
+        (itemId ? subscriptions.checkOne(itemId) : subscriptions.checkAll()));
+    ipcMain.handle('manga:subsConfig', () => subscriptions.config());
+    ipcMain.handle('manga:setSubsConfig', (_, patch) => subscriptions.setConfig(patch || {}));
 
     // ─── Site window ────────────────────────────────────────────────────────
     ipcMain.handle('manga:login', async (event, { source }) => {

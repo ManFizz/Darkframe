@@ -12,7 +12,9 @@ const errText = (e) => String(e?.message || e).replace(/^Error invoking remote m
 // cover, add pages / chapters, rename chapters.
 const PageEditor = () => {
     const [item, setItem] = useState(null);
-    const [book, setBook] = useState(null);
+    const [book, setFullBook] = useState(null);
+    // Chapters still on the site have no pages to edit.
+    const setBook = useCallback((b) => setFullBook(b && { ...b, chapters: b.chapters.filter(c => !c.remote) }), []);
     const [sel, setSel] = useState(() => new Set());
     const [anchor, setAnchor] = useState(null);
     const [dropAt, setDropAt] = useState(null);     // { file, after }

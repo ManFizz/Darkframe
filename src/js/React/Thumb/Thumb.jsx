@@ -132,10 +132,14 @@ const Thumb = (({ file, isModal, modalUpdater, isSelected, onOpen, onToggleSelec
             )}
             {file.isManga && (
                 <>
-                    <span className="thumb-manga" title="Манга"><i className="bi bi-book" /> {file.pageCount ?? ''}</span>
-                    {file.readPosition != null && file.pageCount > 0 && (
+                    <span className="thumb-manga" title={file.mangaRemote ? `Манга · не скачанных глав: ${file.mangaRemote} (читаются с сайта)` : 'Манга'}>
+                        <i className="bi bi-book" /> {file.pageCount || ''}
+                        {file.mangaRemote > 0 && <i className="bi bi-cloud thumb-manga-online" />}
+                    </span>
+                    {file.mangaNew > 0 && <span className="thumb-manga-new" title={`Новых глав: ${file.mangaNew}`}>+{file.mangaNew}</span>}
+                    {file.readPosition != null && (file.readTotal || file.pageCount) > 0 && (
                         <div className={`thumb-readbar ${file.readFinished ? 'done' : ''}`} title={file.readFinished ? 'Прочитано' : `Прочитано до ${file.readPosition + 1}-й стр.`}>
-                            <span style={{ width: `${file.readFinished ? 100 : Math.round(((file.readPosition + 1) / file.pageCount) * 100)}%` }} />
+                            <span style={{ width: `${file.readFinished ? 100 : Math.min(100, Math.round(((file.readPosition + 1) / (file.readTotal || file.pageCount)) * 100))}%` }} />
                         </div>
                     )}
                 </>

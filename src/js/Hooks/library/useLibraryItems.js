@@ -66,6 +66,9 @@ export function useLibraryItems(collectionId, trash = false, smartFilterJson = n
             lastViewedAt: item.lastViewedAt,
             readPosition: item.readPosition,
             readFinished: item.readFinished,
+            readTotal:  item.readTotal,
+            mangaNew:   item.mangaNew,
+            mangaRemote: item.mangaRemote,
         }));
 
         setItems([...collectionThumbs, ...thumbFiles]);

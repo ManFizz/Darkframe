@@ -17,12 +17,12 @@ const PC_ONLY = [
     /^library:importFiles$/, /^library:importDirectory$/, /^library:importFromEagle$/, /^library:importFromJson$/,
     /^manga:importFolder$/, /^manga:importArchives$/, /^manga:fromFiles$/, /^manga:planFolder$/,
     /^manga:exportCbz$/, /^manga:exportFolder$/,
-    /^manga:login$/, /^manga:openSite$/,
+    /^manga:login$/, /^manga:openSite$/, /^manga:setSubsConfig$/,
     /^autotag:download$/, /^autotag:remove$/, /^autotag:settings$/,
 ];
 
 const VIEW_ALLOWED_WRITES = new Set([
-    'library:recordView', 'library:saveVideoPosition', 'manga:saveProgress', 'net:abort',
+    'library:recordView', 'library:saveVideoPosition', 'manga:saveProgress', 'manga:setSeen', 'net:abort',
 ]);
 const MUTATING = /(save|update|delete|remove|trash|purge|import|edit|move|rename|create|set[A-Z]|add|split|merge|revert|recompress|trim|restore|empty|reorder|clear|undo|redo|download|apply|duplicate|record|capture|compute|generate|cleanup|pin|reset|fromItems|from[A-Z])/;
 

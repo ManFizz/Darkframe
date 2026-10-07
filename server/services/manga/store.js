@@ -183,10 +183,12 @@ function bookOf(id) {
         cover: m.cover,
         source: m.source || null,
         reading: m.reading || null,
+        subscription: m.subscription || null,
         chapters: m.chapters.map(c => ({
             id: c.id,
             title: c.title,
             src: c.src || null,
+            ...(c.remote ? { remote: true } : {}),
             pages: c.pages.map(p => ({ file: p.file, w: p.w, h: p.h, url: pageUrl(id, p.file, v), thumb: pthumbUrl(id, p.file, v) })),
         })),
         removed: (m.removed || []).map(r => ({ ...r, thumb: pthumbUrl(id, `~removed/${r.stored}`, v) })),
@@ -212,8 +214,9 @@ async function pageThumbFile(id, file) {
 // Bump the revision (cache-busts page / thumb URLs) and keep the Item row in step.
 async function commit(id, m, { cover = false } = {}) {
     m.rev = (m.rev || 0) + 1;
-    m.chapters = m.chapters.filter(c => c.pages.length || m.chapters.length === 1);
-    if (!m.chapters.some(c => c.pages.some(p => p.file === m.cover))) {
+    m.chapters = m.chapters.filter(c => c.pages.length || c.remote || m.chapters.length === 1);
+    // Added without downloading: the site's cover stays until a page is made the cover.
+    if (!m.siteCover && !m.chapters.some(c => c.pages.some(p => p.file === m.cover))) {
         m.cover = m.chapters.find(c => c.pages.length)?.pages[0]?.file || null;
         cover = true;
     }
@@ -226,6 +229,7 @@ async function commit(id, m, { cover = false } = {}) {
         patch.height = dims.height;
     }
     await Item.unscoped().update(patch, { where: { id } });
+    require('./subscriptions').touch(id);
     require('../libraryEvents').broadcast('library:changed', { reload: true, counts: false });
     return bookOf(id);
 }
@@ -296,6 +300,7 @@ async function setCover(id, file) {
     const m = readManifest(id);
     if (!allPages(m).some(p => p.file === file)) throw new Error('Нет такой страницы');
     m.cover = file;
+    delete m.siteCover;
     return commit(id, m, { cover: true });
 }
 
@@ -317,6 +322,9 @@ async function setReading(id, reading) {
 async function addPages(id, files, { chapter = null, newChapterTitle = null, sourceId = null } = {}) {
     const m = readManifest(id);
     let ch = chapter && m.chapters.find(c => c.id === chapter);
+    // A chapter so far read online: its pages land in the same place.
+    if (!ch && sourceId) ch = m.chapters.find(c => c.remote && c.src === String(sourceId));
+    if (ch?.remote) { delete ch.remote; if (newChapterTitle && !ch.title) ch.title = newChapterTitle; }
     if (!ch) {
         const n = m.chapters.reduce((x, c) => Math.max(x, Number(c.id.slice(1)) || 0), 0) + 1;
         ch = newChapterTitle != null || !m.chapters.length ? { id: `c${n}`, title: newChapterTitle || '', pages: [] } : m.chapters[m.chapters.length - 1];
@@ -352,8 +360,106 @@ function resolvePage(id, rel) {
 function coverFile(id) {
     try {
         const m = readManifest(id);
+        if (m.siteCover || !m.cover) {
+            const f = path.join(itemDir(id), 'cover.jpg');
+            if (fs.existsSync(f)) return f;
+        }
         return m.cover ? pagePath(id, m.cover) : null;
     } catch { return null; }
+}
+
+// ─── Online chapters ─────────────────────────────────────────────────────────
+
+/**
+ * A manga from a site added to the library without downloading: chapters are
+ * read from the site (`remote`, no pages yet) and can be downloaded later, one
+ * by one or all — they fill in where they are. `coverFile` — the site's cover.
+ * chapters: [{ sourceId, title }]
+ */
+async function createOnlineManga({
+    title, chapters, coverFile: cover = null, collectionId = null, tags = [], tagTypes = {}, sourceUrl = '', notes = '',
+    source, reading = null, subscription = null,
+}) {
+    if (!source?.site || !source?.id) throw new Error('Нет источника');
+    const fileHash = crypto.createHash('sha256').update(`online:${source.site}:${source.id}`).digest('hex');
+    const existing = await Item.unscoped().findOne({ where: { fileHash, mimeType: MANGA_MIME }, raw: true });
+    if (existing) {
+        const err = new Error(existing.deletedAt ? `Эта манга лежит в корзине: «${existing.title}»` : `Эта манга уже в библиотеке: «${existing.title}»`);
+        err.code = 'DUPLICATE';
+        err.existingId = existing.id;
+        throw err;
+    }
+    const id = uuidv4();
+    const dir = itemDir(id);
+    fs.mkdirSync(path.join(dir, 'pages'), { recursive: true });
+    const manifest = {
+        version: 1, chapters: [], removed: [], source, reading, createdAt: Math.floor(Date.now() / 1000),
+        cover: null, siteCover: true, ...(subscription ? { subscription } : {}),
+    };
+    (chapters || []).forEach((c, i) => manifest.chapters.push({ id: `c${i + 1}`, title: c.title || '', src: String(c.sourceId), remote: true, pages: [] }));
+    try {
+        writeManifest(id, manifest);
+        let dims = { width: 0, height: 0 };
+        if (cover && fs.existsSync(cover)) {
+            await sharp(fs.readFileSync(cover), { animated: false }).rotate().flatten({ background: '#ffffff' }).jpeg({ quality: 90 }).toFile(path.join(dir, 'cover.jpg'));
+            dims = await makeThumb(path.join(dir, 'cover.jpg'), path.join(dir, 'thumb.jpg'));
+        }
+        const item = await sequelize.transaction(async (t) => {
+            const created = await Item.create({
+                id,
+                fileName: `${(title || 'manga').slice(0, 200)}.manga`,
+                title: title || 'Манга',
+                sourceUrl,
+                notes,
+                rating: 0,
+                mimeType: MANGA_MIME,
+                width: dims.width,
+                height: dims.height,
+                size: 0,
+                pageCount: 0,
+                collectionId: collectionId || null,
+                fileHash,
+                importedAt: Math.floor(Date.now() / 1000),
+                createdAt: Math.floor(Date.now() / 1000),
+                order: 0,
+            }, { transaction: t });
+            await attachTags(id, tags, tagTypes, t);
+            return created;
+        });
+        return item.toJSON();
+    } catch (e) {
+        fs.rmSync(dir, { recursive: true, force: true });
+        throw e;
+    }
+}
+
+// New chapters found on the site, at the end, to be read online. [{ id, title }]
+async function addRemoteChapters(id, list) {
+    const m = readManifest(id);
+    const have = new Set(m.chapters.map(c => c.src).filter(Boolean));
+    let n = m.chapters.reduce((x, c) => Math.max(x, Number(c.id.slice(1)) || 0), 0);
+    const added = [];
+    for (const c of list || []) {
+        if (have.has(String(c.id))) continue;
+        have.add(String(c.id));
+        const ch = { id: `c${++n}`, title: c.title || '', src: String(c.id), remote: true, pages: [] };
+        m.chapters.push(ch);
+        added.push(ch);
+    }
+    if (added.length) await commit(id, m);
+    return added;
+}
+
+// Chapters still on the site only: [{ id, src, title }]
+const remoteChapters = (id) => readManifest(id).chapters.filter(c => c.remote).map(c => ({ id: c.id, src: c.src, title: c.title }));
+
+// subscription: { on, checkedAt, unseen, error } — merged; null removes it.
+function setSubscription(id, patch) {
+    const m = readManifest(id);
+    if (patch === null) delete m.subscription;
+    else m.subscription = { ...(m.subscription || {}), ...patch };
+    writeManifest(id, m);   // no rev bump
+    return m.subscription || null;
 }
 
 module.exports = {
@@ -361,4 +467,5 @@ module.exports = {
     createManga, readManifest, isManga, bookOf, pageThumbFile,
     removePages, restorePages, purgeRemoved, reorderPages, setCover, renameChapter, setReading, addPages,
     pageFiles, resolvePage, coverFile, allPages, pageCountOf, makeThumb,
+    createOnlineManga, addRemoteChapters, remoteChapters, setSubscription, itemDir,
 };

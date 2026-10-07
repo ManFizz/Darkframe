@@ -319,3 +319,73 @@ test('save page: a library manga page and an online page become images with the 
         global.fetch = realFetch;
     }
 });
+
+test('in the library without downloading: online chapters, subscription, new chapters, download in place', async () => {
+    const realGet = sources.get;
+    let chapters = null;   // the site's chapter list, changed below
+    const site = {
+        ...fake,
+        async gallery(id) {
+            const g = await fake.gallery(id);
+            return { ...g, chapters: chapters || g.chapters };
+        },
+    };
+    sources.get = (id) => (id === 'fake' ? site : realGet(id));
+    stubNetwork();
+    const subs = require(S('services', 'manga', 'subscriptions'));
+    const progress = require(S('services', 'manga', 'progress'));
+    const { Item } = require(S('models', 'associations'));
+    try {
+        const r = await subs.addOnline({ source: 'fake', id: 'w1' });
+        assert.ok(r.item && r.subscribed);
+        const id = r.item.id;
+        let book = store.bookOf(id);
+        assert.deepEqual(book.chapters.map(c => [c.title, c.src, !!c.remote, c.pages.length]), [['One', 'c1', true, 0], ['Two', 'c2', true, 0]]);
+        assert.equal(book.subscription.on, true);
+        assert.ok(fs.existsSync(store.coverFile(id)), 'the site cover is the item image');
+        assert.equal((await Item.findByPk(id, { raw: true })).pageCount, 0);
+        // once only
+        assert.equal((await subs.addOnline({ source: 'fake', id: 'w1' })).existingId, id);
+
+        // the site publishes chapter 3 → it's added online, counted as new
+        chapters = [...(await fake.gallery('w1')).chapters, { id: 'c3', title: 'Three', pages: null }];
+        const res = await subs.checkOne(id, { download: false });
+        assert.deepEqual(res.added.map(c => c.id), ['c3']);
+        assert.deepEqual((await subs.checkOne(id, { download: false })).added, [], 'nothing new the second time');
+        book = store.bookOf(id);
+        assert.equal(book.subscription.unseen, 1);
+        let [tile] = await progress.attach([{ id, pageCount: 0 }]);
+        assert.equal(tile.mangaNew, 1);
+        assert.equal(tile.mangaRemote, 3);
+        assert.equal((await subs.list()).find(s => s.id === id).unseen, 1);
+
+        // opened → seen
+        subs.seen(id);
+        [tile] = await progress.attach([{ id, pageCount: 0 }]);
+        assert.equal(tile.mangaNew, 0);
+
+        // download chapter 2 only: it gets its pages where it is, the others stay online
+        const job = await finished((await subs.downloadRemote(id, ['c2'])).id);
+        assert.equal(job.status, 'done', job.error || '');
+        book = store.bookOf(id);
+        assert.deepEqual(book.chapters.map(c => [c.src, !!c.remote, c.pages.length]), [['c1', true, 0], ['c2', false, 2], ['c3', true, 0]]);
+        assert.ok(fs.existsSync(store.coverFile(id)), 'the site cover stays');
+        assert.equal((await Item.findByPk(id, { raw: true })).pageCount, 2);
+        // the rest
+        const all = await finished((await subs.downloadRemote(id)).id);
+        assert.equal(all.status, 'done', all.error || '');
+        book = store.bookOf(id);
+        assert.deepEqual(book.chapters.map(c => [c.src, !!c.remote, c.pages.length]), [['c1', false, 3], ['c2', false, 2], ['c3', false, 2]]);
+        assert.equal(await subs.downloadRemote(id), null, 'nothing left online');
+        [tile] = await progress.attach([{ id, pageCount: 7 }]);
+        assert.equal(tile.mangaRemote, undefined);
+
+        // unsubscribe
+        await subs.setOn(id, false);
+        assert.equal(store.bookOf(id).subscription, null);
+        assert.equal((await subs.list()).some(s => s.id === id), false);
+    } finally {
+        sources.get = realGet;
+        global.fetch = realFetch;
+    }
+});

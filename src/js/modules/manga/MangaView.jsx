@@ -36,6 +36,9 @@ const TAG_GROUPS = [
     ['mixed', 'Mixed'], ['other', 'Other'], ['cosplayer', 'Косплееры'], ['genre', 'Жанры'], ['theme', 'Темы'], ['format', 'Формат'], ['content', 'Контент'],
 ];
 
+// Sites where a manga comes out chapter by chapter: subscriptions.
+const multiSite = (source) => source === 'allhentai' || source === 'mangadex';
+
 const ago = (ms) => {
     const s = Math.round((Date.now() - ms) / 1000);
     if (s < 60) return 'только что';
@@ -81,6 +84,44 @@ const DownloadButton = ({ gallery, item, chapters = null, className = 'ftb-btn p
                     <div className="bulk-move-backdrop" onMouseDown={() => setOpen(false)} />
                     <div className="bulk-move-panel mo-dl-panel">
                         <CollectionTreeSelect value={null} onSelect={start} onClose={() => setOpen(false)} />
+                    </div>
+                </>
+            )}
+        </span>
+    );
+};
+
+// "В библиотеку" without downloading: chapters are read from the site, can be
+// downloaded later; sites with chapters get a subscription at once.
+const AddOnlineButton = ({ gallery, onAdded, className = 'ftb-btn', compact = false }) => {
+    const [open, setOpen] = useState(false);
+    const [busy, setBusy] = useState(false);
+    const add = async (collectionId) => {
+        setOpen(false);
+        if (collectionId) pushRecentCollection(collectionId);
+        setBusy(true);
+        try {
+            const r = await mangaApi.addOnline({ source: gallery.source, id: gallery.id, collectionId, subscribe: true });
+            if (r.duplicate) notify({ message: r.duplicate, type: 'info' });
+            else notify({ message: `В библиотеке (без скачивания)${r.subscribed ? ' · подписка на новые главы' : ''}`, type: 'success' });
+            onAdded?.(r.item?.id || r.existingId);
+        } catch (e) {
+            notify({ message: errText(e), type: 'warning' });
+        } finally {
+            setBusy(false);
+        }
+    };
+    return (
+        <span className="mo-dl" onClick={e => e.stopPropagation()}>
+            <button className={className} disabled={busy} onClick={() => setOpen(v => !v)}
+                    title="Добавить в библиотеку без скачивания: главы читаются с сайта, скачать можно потом">
+                <i className={`bi ${busy ? 'bi-arrow-repeat spin' : 'bi-bookmark-plus'}`} />{!compact && <span>В библиотеку</span>}
+            </button>
+            {open && (
+                <>
+                    <div className="bulk-move-backdrop" onMouseDown={() => setOpen(false)} />
+                    <div className="bulk-move-panel mo-dl-panel">
+                        <CollectionTreeSelect value={null} onSelect={add} onClose={() => setOpen(false)} />
                     </div>
                 </>
             )}
@@ -339,19 +380,45 @@ const GalleryPane = ({ target, onBack, onSearchTag }) => {
         setG(x => (x ? { ...x, downloading: ['queued', 'running', 'paused'].includes(job.status) ? job.status : null, inLibrary: job.status === 'done' ? job.itemId : x.inLibrary, job } : x));
     }), [target.source, target.id]);
 
-    // In the library already: chapters published since then.
+    // In the library already: chapters published since then, chapters not downloaded,
+    // the subscription.
     const [fresh, setFresh] = useState(null);
+    const [libBook, setLibBook] = useState(null);
+    const [libVersion, setLibVersion] = useState(0);
     useEffect(() => {
-        if (!g?.inLibrary || (g.chapters?.length || 0) < 2) { setFresh(null); return; }
+        if (!g?.inLibrary) { setFresh(null); setLibBook(null); return; }
         let cancelled = false;
-        mangaApi.newChapters(g.inLibrary).then(r => { if (!cancelled) setFresh(r.chapters); }).catch(() => {});
+        mangaApi.book(g.inLibrary).then(b => { if (!cancelled) setLibBook(b); }).catch(() => {});
+        if ((g.chapters?.length || 0) >= 2) mangaApi.newChapters(g.inLibrary).then(r => { if (!cancelled) setFresh(r.chapters); }).catch(() => {});
         return () => { cancelled = true; };
-    }, [g?.inLibrary, g?.chapters?.length]);
-    const downloadFresh = async () => {
+    }, [g?.inLibrary, g?.chapters?.length, libVersion]);
+    const libRemote = libBook ? libBook.chapters.filter(c => c.remote).length : 0;
+    const sub = libBook?.subscription?.on ? libBook.subscription : null;
+    const canSubscribe = g?.inLibrary && multiSite(target.source);
+    // New chapters: added to the library manga as online ones (read at once, download later).
+    const addFresh = async () => {
         try {
-            await mangaApi.download({ source: target.source, id: target.id, chapters: fresh.map(c => c.id), appendTo: g.inLibrary, title: g.title });
+            const r = await mangaApi.checkUpdates(g.inLibrary);
             setFresh(null);
-            notify({ message: `Новые главы (${fresh.length}) в очереди — допишутся в мангу из библиотеки`, type: 'success' });
+            setLibVersion(n => n + 1);
+            notify({ message: `Новые главы (${r.added.length}) в библиотеке${r.queued ? ' — в очереди загрузки' : ' — читаются онлайн'}`, type: 'success' });
+        } catch (e) {
+            notify({ message: errText(e), type: 'warning' });
+        }
+    };
+    const downloadRemote = async () => {
+        try {
+            await mangaApi.downloadRemote(g.inLibrary);
+            notify({ message: `Онлайн-главы (${libRemote}) в очереди — допишутся в мангу из библиотеки`, type: 'success' });
+        } catch (e) {
+            notify({ message: errText(e), type: 'warning' });
+        }
+    };
+    const toggleSub = async () => {
+        try {
+            await mangaApi.setSubscription(g.inLibrary, !sub);
+            setLibVersion(n => n + 1);
+            notify({ message: sub ? 'Подписка отменена' : 'Подписка оформлена — новые главы будут появляться сами', type: 'success' });
         } catch (e) {
             notify({ message: errText(e), type: 'warning' });
         }
@@ -418,20 +485,32 @@ const GalleryPane = ({ target, onBack, onSearchTag }) => {
                                 <span>{saved?.chapter ? `Продолжить${multi && saved.chapterTitle ? ` · ${saved.chapterTitle}` : ''} · с. ${(saved.page || 0) + 1}` : 'Читать онлайн'}</span>
                             </button>
                             {saved?.chapter && <button className="ftb-btn" disabled={!g} onClick={() => read({ chapter: g.chapters[0].id, page: 0 })}>С начала</button>}
-                            {g?.inLibrary ? (
-                                <button className="ftb-btn mo-inlib" onClick={() => readLibraryManga({ id: g.inLibrary, title })}>
+                            {g?.inLibrary ? (<>
+                                <button className="ftb-btn mo-inlib" onClick={() => readLibraryManga({ id: g.inLibrary, title, sourceUrl: g.url })}>
                                     <i className="bi bi-bookmark-check-fill" /> <span>В библиотеке · читать</span>
                                 </button>
-                            ) : g?.downloading ? (
+                                {libRemote > 0 && (
+                                    <button className="ftb-btn" onClick={downloadRemote} title="Главы в библиотеке, которые пока читаются с сайта">
+                                        <i className="bi bi-download" /> <span>Скачать {libRemote === libBook.chapters.length ? 'всё' : `онлайн-главы: ${libRemote}`}</span>
+                                    </button>
+                                )}
+                                {canSubscribe && (
+                                    <button className={`ftb-btn ${sub ? 'mo-sub-on' : ''}`} onClick={toggleSub}
+                                            title={sub ? 'Новые главы проверяются сами. Нажмите, чтобы отписаться' : 'Новые главы будут появляться в библиотеке сами'}>
+                                        <i className={`bi ${sub ? 'bi-bell-fill' : 'bi-bell'}`} /> <span>{sub ? 'Подписка' : 'Подписаться'}</span>
+                                    </button>
+                                )}
+                            </>) : g?.downloading ? (
                                 <button className="ftb-btn" onClick={() => mangaRequests.request({ view: 'downloads' })}>
                                     <i className="bi bi-arrow-down-circle" /> <span>{STATUS[g.downloading]?.label}{g.job?.total ? ` · ${g.job.done}/${g.job.total}` : ''}</span>
                                 </button>
-                            ) : g?.chapters.length > 0 && (
+                            ) : g?.chapters.length > 0 && (<>
                                 <DownloadButton gallery={g} chapters={picked.size ? [...picked] : null}
                                                 label={picked.size ? `Скачать выбранные (${picked.size})` : 'Скачать'} />
-                            )}
+                                <AddOnlineButton gallery={g} onAdded={(itemId) => itemId && setG(x => ({ ...x, inLibrary: itemId }))} />
+                            </>)}
                             {fresh?.length > 0 && (
-                                <button className="ftb-btn primary" onClick={downloadFresh} title="Дописать в мангу из библиотеки главы, которых в ней нет">
+                                <button className="ftb-btn primary" onClick={addFresh} title="Добавить в мангу из библиотеки главы, которых в ней нет (читаются онлайн, скачать можно потом)">
                                     <i className="bi bi-plus-circle" /> <span>Новые главы: {fresh.length}</span>
                                 </button>
                             )}
@@ -624,6 +703,137 @@ const RecentPane = ({ onOpenGallery, onRead }) => {
     );
 };
 
+// ─── Subscriptions ───────────────────────────────────────────────────────────
+const HOURS = [[0, 'вручную'], [1, 'каждый час'], [3, 'каждые 3 ч'], [6, 'каждые 6 ч'], [12, 'каждые 12 ч'], [24, 'раз в день']];
+
+// Live state of the subscriptions: the list, the schedule, a check in progress.
+export function useMangaSubs() {
+    const [subs, setSubs] = useState(null);
+    const [config, setConfig] = useState(null);
+    const [progress, setProgress] = useState(null);   // { done, total } while checking
+    const load = useCallback(() => {
+        mangaApi.subscriptions().then(setSubs).catch(() => setSubs([]));
+        mangaApi.subsConfig().then(c => { setConfig(c); if (c.running) setProgress(c.running); }).catch(() => {});
+    }, []);
+    useEffect(() => { load(); }, [load]);
+    useEffect(() => mangaApi.onSubs((p) => { setProgress(p.running ? { done: p.done, total: p.total } : null); if (!p.running) load(); }), [load]);
+    useEffect(() => {
+        let t = null;
+        const reload = () => { clearTimeout(t); t = setTimeout(load, 400); };
+        window.addEventListener('df:libraryReload', reload);
+        const off = LibraryService.onLibraryChanged?.(reload);
+        return () => { clearTimeout(t); window.removeEventListener('df:libraryReload', reload); off?.(); };
+    }, [load]);
+    return { subs, config, setConfig, progress, load };
+}
+
+const SubsPane = ({ state, onOpenGallery }) => {
+    const { subs, config, setConfig, progress, load } = state;
+    const [busyId, setBusyId] = useState(null);
+    useEffect(() => { load(); }, [load]);
+    const checkAll = async () => {
+        try {
+            const r = await mangaApi.checkUpdates();
+            if (r.busy) return;
+            const n = r.items.reduce((a, i) => a + i.added, 0);
+            notify(n
+                ? { message: `Новых глав: ${n} (${r.items.map(i => `«${i.title}» +${i.added}`).slice(0, 3).join(', ')}${r.items.length > 3 ? '…' : ''})`, type: 'success', duration: 8000 }
+                : { message: r.errors.length ? `Новых глав нет · не удалось проверить: ${r.errors.length}` : 'Новых глав нет', type: r.errors.length ? 'warning' : 'info' });
+        } catch (e) {
+            notify({ message: errText(e), type: 'warning' });
+        }
+    };
+    const checkOne = async (s) => {
+        setBusyId(s.id);
+        try {
+            const r = await mangaApi.checkUpdates(s.id);
+            notify(r.added.length ? { message: `«${s.title}»: новых глав ${r.added.length}`, type: 'success' } : { message: `«${s.title}»: новых глав нет`, type: 'info' });
+        } catch (e) {
+            notify({ message: `«${s.title}»: ${errText(e)}`, type: 'warning' });
+        } finally {
+            setBusyId(null);
+            load();
+        }
+    };
+    const unsubscribe = async (s) => {
+        await mangaApi.setSubscription(s.id, false).catch(e => notify({ message: errText(e), type: 'warning' }));
+        load();
+    };
+    const downloadRemote = async (s) => {
+        try {
+            await mangaApi.downloadRemote(s.id);
+            notify({ message: `«${s.title}»: онлайн-главы (${s.remote}) в очереди загрузки`, type: 'success' });
+        } catch (e) {
+            notify({ message: errText(e), type: 'warning' });
+        }
+    };
+    const setCfg = (patch) => mangaApi.setSubsConfig(patch).then(setConfig).catch(e => notify({ message: errText(e), type: 'warning' }));
+
+    return (
+        <div className="mo-pane">
+            <div className="folder-toolbar mo-toolbar">
+                <div className="mo-crumb"><i className="bi bi-bell" /> Подписки</div>
+                <button className="ftb-btn primary" disabled={!!progress || !subs?.length} onClick={checkAll} title="Спросить сайты о новых главах сейчас">
+                    <i className={`bi bi-arrow-repeat ${progress ? 'spin' : ''}`} />
+                    <span>{progress ? `Проверка… ${progress.done}/${progress.total}` : 'Проверить обновления'}</span>
+                </button>
+            </div>
+            <div className="mo-scroll">
+                {config && !isWeb && (
+                    <div className="mo-subs-config">
+                        <label>
+                            <span>Проверять</span>
+                            <select value={config.hours} onChange={e => setCfg({ hours: Number(e.target.value) })}>
+                                {HOURS.map(([h, label]) => <option key={h} value={h}>{label}</option>)}
+                            </select>
+                        </label>
+                        <label title="Без этого новые главы появляются в библиотеке онлайн: читаются сразу, скачать можно потом">
+                            <input type="checkbox" checked={config.autoDownload} onChange={e => setCfg({ autoDownload: e.target.checked })} />
+                            <span>Сразу скачивать новые главы</span>
+                        </label>
+                        {config.lastRun > 0 && <span className="mo-subs-last">последняя проверка: {ago(config.lastRun * 1000)}</span>}
+                    </div>
+                )}
+                {subs && !subs.length && (
+                    <div className="mo-empty">
+                        Подписок пока нет. Откройте мангу с AllHentai или MangaDex и нажмите «В библиотеку» (без скачивания) или «Подписаться» —
+                        новые главы будут появляться в библиотеке сами.
+                    </div>
+                )}
+                <div className="mo-subs">
+                    {(subs || []).map(s => (
+                        <div key={s.id} className={`mo-sub ${s.unseen ? 'fresh' : ''}`}>
+                            <div className="mo-sub-cover" onClick={() => readLibraryManga({ id: s.id, title: s.title })} title="Читать">
+                                <Cover src={s.thumbPath} />
+                                {s.unseen > 0 && <span className="mo-sub-new">+{s.unseen}</span>}
+                            </div>
+                            <div className="mo-sub-body">
+                                <div className="mo-sub-title" onClick={() => readLibraryManga({ id: s.id, title: s.title })}>{s.title}</div>
+                                <div className="mo-sub-meta">
+                                    <span><i className={`bi ${SOURCE_ICON[s.site] || 'bi-globe'}`} /> {s.site}</span>
+                                    <span>{s.chapters} гл.{s.remote ? ` · онлайн: ${s.remote}` : ''}</span>
+                                    {s.unseen > 0 && <span className="new">новых: {s.unseen}</span>}
+                                    <span>{s.checkedAt ? `проверено ${ago(s.checkedAt * 1000)}` : 'ещё не проверялась'}</span>
+                                </div>
+                                {s.error && <div className="mo-sub-error" title={s.error}><i className="bi bi-exclamation-triangle" /> {s.error}</div>}
+                            </div>
+                            <div className="mo-sub-actions">
+                                <button className="ftb-btn" title="Читать" onClick={() => readLibraryManga({ id: s.id, title: s.title })}><i className="bi bi-book" /></button>
+                                <button className="ftb-btn" title="Проверить эту" disabled={busyId === s.id || !!progress} onClick={() => checkOne(s)}>
+                                    <i className={`bi bi-arrow-repeat ${busyId === s.id ? 'spin' : ''}`} />
+                                </button>
+                                {s.remote > 0 && <button className="ftb-btn" title={`Скачать онлайн-главы (${s.remote})`} onClick={() => downloadRemote(s)}><i className="bi bi-download" /></button>}
+                                {s.site && s.galleryId && <button className="ftb-btn" title="Карточка на сайте" onClick={() => onOpenGallery({ source: s.site, id: s.galleryId, preview: { title: s.title } })}><i className="bi bi-globe2" /></button>}
+                                <button className="ftb-btn" title="Отписаться" onClick={() => unsubscribe(s)}><i className="bi bi-bell-slash" /></button>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </div>
+        </div>
+    );
+};
+
 // ─── Layout ──────────────────────────────────────────────────────────────────
 const MangaView = () => {
     const [sources, setSources] = useState([]);
@@ -633,6 +843,8 @@ const MangaView = () => {
     const [searchKey, setSearchKey] = useState(0);
     const jobs = useMangaDownloads();
     const active = jobs.filter(j => ['queued', 'running', 'paused'].includes(j.status)).length;
+    const subsState = useMangaSubs();
+    const unseen = (subsState.subs || []).reduce((n, s) => n + (s.unseen || 0), 0);
 
     useEffect(() => { mangaApi.sources().then(setSources).catch(e => notify({ message: errText(e), type: 'warning' })); }, []);
     useEffect(() => savePrefs({ view: view === 'gallery' ? 'search' : view, source: sourceId }), [view, sourceId]);
@@ -657,6 +869,7 @@ const MangaView = () => {
             if (!r) return;
             if (r.view === 'downloads') setView('downloads');
             else if (r.view === 'recent') setView('recent');
+            else if (r.view === 'subs') setView('subs');
             else if (r.open) openGallery({ ...r.open, from: view });
         };
         handle(mangaRequests.take());
@@ -703,6 +916,12 @@ const MangaView = () => {
                     <div className={`fsb-item ${view === 'recent' ? 'active' : ''}`} onClick={() => setView('recent')}>
                         <i className="bi bi-clock-history" /><span className="fsb-label">Продолжить чтение</span>
                     </div>
+                    <div className={`fsb-item ${view === 'subs' ? 'active' : ''}`} onClick={() => setView('subs')}>
+                        <i className="bi bi-bell" /><span className="fsb-label">Подписки</span>
+                        {subsState.progress ? <i className="bi bi-arrow-repeat spin mo-count-spin" />
+                            : unseen > 0 ? <span className="mo-count new" title="Новых глав">+{unseen}</span>
+                            : subsState.subs?.length > 0 && <span className="mo-count muted">{subsState.subs.length}</span>}
+                    </div>
                     <div className={`fsb-item ${view === 'downloads' ? 'active' : ''}`} onClick={() => setView('downloads')}>
                         <i className="bi bi-download" /><span className="fsb-label">Загрузки</span>
                         {active > 0 && <span className="mo-count">{active}</span>}
@@ -730,6 +949,8 @@ const MangaView = () => {
                     <GalleryPane key={`${gallery.source}:${gallery.id}`} target={gallery} onBack={back} onSearchTag={searchTag} />
                 ) : view === 'downloads' ? (
                     <DownloadsPane jobs={jobs} onOpenGallery={(g) => openGallery({ ...g, from: 'downloads' })} />
+                ) : view === 'subs' ? (
+                    <SubsPane state={subsState} onOpenGallery={(g) => openGallery({ ...g, from: 'subs' })} />
                 ) : view === 'recent' ? (
                     <RecentPane onOpenGallery={(g) => openGallery({ ...g, from: 'recent' })} onRead={quickRead} />
                 ) : !source ? (
