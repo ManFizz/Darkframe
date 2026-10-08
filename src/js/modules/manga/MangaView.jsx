@@ -130,11 +130,15 @@ const AddOnlineButton = ({ gallery, onAdded, className = 'ftb-btn', compact = fa
 };
 
 // ─── Search results ──────────────────────────────────────────────────────────
-const Card = React.memo(({ item, source, onOpen, onRead }) => (
+// "Открывали": from the online reading history.
+const seenTitle = (e) => `Открывали ${ago(e.at)}${e.chapter != null ? ` · ${e.chapters > 1 && e.chapterTitle ? `${e.chapterTitle}, ` : ''}стр. ${(e.page || 0) + 1}` : ''}`;
+
+const Card = React.memo(({ item, source, seen, onOpen, onRead }) => (
     <div className="mo-card" onClick={() => onOpen(item)} title={`${item.title}\nПКМ — сразу читать`}
          onContextMenu={e => { e.preventDefault(); onRead?.(item); }}>
         <Cover src={item.cover} />
         <div className="mo-card-badges">
+            {seen && <span className="mo-badge seen" title={seenTitle(seen)}><i className="bi bi-eye-fill" /></span>}
             {item.inLibrary && <span className="mo-badge lib" title="Уже в библиотеке"><i className="bi bi-bookmark-check-fill" /></span>}
             {item.downloading && <span className="mo-badge dl" title={STATUS[item.downloading]?.label}><i className="bi bi-arrow-down-circle-fill" /></span>}
         </div>
@@ -160,6 +164,9 @@ const SearchPane = ({ source, onOpenGallery, onRead }) => {
     const [sort, setSort] = useState(() => loadPrefs().sorts?.[source.id] || source.sorts?.[0]?.id || null);
     const [hideInLib, setHideInLib] = useState(() => !!loadPrefs().hideInLib);
     const [tagsOpen, setTagsOpen] = useState(false);
+    const [history, setHistory] = useState(onlineHistory.list);
+    useEffect(() => onlineHistory.subscribe(() => setHistory(onlineHistory.list())), []);
+    const seenById = useMemo(() => new Map(history.filter(e => e.source === source.id).map(e => [String(e.id), e])), [history, source.id]);
     const [logged, setLogged] = useState(source.loggedIn ?? null);
     const [jump, setJump] = useState('');
     const [res, setRes] = useState({ items: [], loading: false, error: null, hasMore: false, first: 1, page: 0, pages: null, next: null, total: null });
@@ -320,7 +327,7 @@ const SearchPane = ({ source, onOpenGallery, onRead }) => {
                         <button className="ftb-btn mo-prev-page" onClick={() => goPage(res.first - 1)}><i className="bi bi-chevron-up" /> <span>Страница {res.first - 1}</span></button>
                     )}
                     <div className="mo-grid">
-                        {shown.map(item => <Card key={item.id} item={item} source={source.id} onOpen={openCard} onRead={readCard} />)}
+                        {shown.map(item => <Card key={item.id} item={item} source={source.id} seen={seenById.get(String(item.id))} onOpen={openCard} onRead={readCard} />)}
                         {res.loading && Array.from({ length: res.items.length ? 6 : 18 }, (_, i) => <div key={`s${i}`} className="mo-card skel"><div className="mo-cover" /></div>)}
                     </div>
                     {!res.loading && !res.error && !res.items.length && <div className="mo-empty">Ничего не найдено</div>}

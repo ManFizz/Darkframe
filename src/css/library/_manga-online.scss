@@ -185,6 +185,7 @@
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
   &.lib { background: var(--df-accent); }
   &.dl { background: #2b8a3e; }
+  &.seen { background: rgba(20, 17, 28, 0.82); color: #e9e6f2; }
 }
 .mo-card-quick {
   position: absolute;
