@@ -4,6 +4,7 @@ const fs = require('fs');
 const os = require('os');
 const { net } = require('electron');
 const { importFile } = require('./services/importService');
+const { checkMedia } = require('./services/mediaCheck');
 const apiTokens = require('./apiTokens');
 
 const PORT = 45678;
@@ -36,22 +37,25 @@ function extFromContentType(contentType) {
     return CONTENT_TYPE_EXT[type] || null;
 }
 
-// Resolves with the response Content-Type so the caller can pick a correct extension.
+// Resolves with the response Content-Type (so the caller can pick a correct
+// extension) and the announced size — once the file is fully on disk.
 function downloadWithNet(url, destPath) {
     return new Promise((resolve, reject) => {
         const file = fs.createWriteStream(destPath);
         let settled = false;
         let contentType = null;
+        let expectedSize = null;
 
         const done = (err) => {
             if (settled) return;
             settled = true;
-            file.close();
             if (err) {
+                file.destroy();
                 fs.unlink(destPath, () => {});
                 reject(err);
             } else {
-                resolve(contentType);
+                // Only after the last bytes are flushed: reading earlier gets a cut file.
+                file.end(() => resolve({ contentType, expectedSize }));
             }
         };
 
@@ -69,6 +73,11 @@ function downloadWithNet(url, destPath) {
             }
             contentType = response.headers['content-type'];
             if (Array.isArray(contentType)) contentType = contentType[0];
+            const first = (h) => (Array.isArray(h) ? h[0] : h);
+            // Content-Length is the size on the wire: only comparable when not compressed.
+            if (!/gzip|br|deflate/i.test(first(response.headers['content-encoding']) || '')) {
+                expectedSize = Number(first(response.headers['content-length'])) || null;
+            }
             let received = 0;
             response.on('data', (chunk) => {
                 received += chunk.length;
@@ -89,16 +98,24 @@ function downloadWithNet(url, destPath) {
     });
 }
 
-async function downloadWithRetry(url, destPath, retries = 3) {
+// Up to 3 attempts, also when the file arrives broken (cut short, a picture with a
+// grey / green half). `extOf(contentType)` names the type for the check.
+async function downloadWithRetry(url, destPath, retries = 3, extOf = () => null) {
+    let problem = null;
     for (let i = 0; i < retries; i++) {
         try {
-            return await downloadWithNet(url, destPath);
+            const { contentType, expectedSize } = await downloadWithNet(url, destPath);
+            problem = await checkMedia(destPath, { expectedSize, ext: extOf(contentType) });
+            if (!problem) return contentType;
+            fs.rmSync(destPath, { force: true });
         } catch (e) {
-            console.warn(`[API] Download attempt ${i + 1} failed: ${e.message}`);
             if (i === retries - 1) throw e;
-            await new Promise(r => setTimeout(r, 1000 * (i + 1)));
+            problem = e.message;
         }
+        console.warn(`[API] Download attempt ${i + 1} failed: ${problem}`);
+        if (i < retries - 1) await new Promise(r => setTimeout(r, 1000 * (i + 1)));
     }
+    throw new Error(`File keeps arriving broken (${retries} attempts): ${problem}`);
 }
 
 function parseBody(req) {
@@ -170,7 +187,7 @@ async function handleAdd(req, res) {
     const tmpBase = path.join(os.tmpdir(), `jsgallery_${Date.now()}`);
     const tmpDownload = `${tmpBase}.download`;
 
-    const contentType = await downloadWithRetry(url, tmpDownload);
+    const contentType = await downloadWithRetry(url, tmpDownload, 3, (ct) => urlExtTrusted || extFromContentType(ct));
     const ext = urlExtTrusted || extFromContentType(contentType) || '.jpg';
     const tmpPath = `${tmpBase}${ext}`;
     fs.renameSync(tmpDownload, tmpPath);

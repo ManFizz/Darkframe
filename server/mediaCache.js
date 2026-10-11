@@ -47,11 +47,31 @@ function cachePathFor(url) {
     return path.join(CACHE_DIR, hash + ext);
 }
 
-async function downloadToCache(realUrl, cachePath) {
-    const res = await net.fetch(realUrl, { headers: { 'User-Agent': USER_AGENT } });
-    if (!res.ok) throw new Error(`upstream ${res.status}`);
+// A response cut short (fewer bytes than announced) is fetched again, up to 3 times:
+// otherwise the broken copy (a picture with a grey / green half) would be served
+// for the whole session.
+async function fetchWhole(realUrl, attempts = 3) {
+    let last = null;
+    for (let i = 1; i <= attempts; i++) {
+        try {
+            const res = await net.fetch(realUrl, { headers: { 'User-Agent': USER_AGENT } });
+            if (!res.ok) throw new Error(`upstream ${res.status}`);
+            const buf = Buffer.from(await res.arrayBuffer());
+            const encoded = /gzip|br|deflate/i.test(res.headers.get('content-encoding') || '');
+            const expected = encoded ? 0 : Number(res.headers.get('content-length')) || 0;
+            if (!expected || buf.length >= expected) return buf;
+            last = new Error(`short download ${buf.length}/${expected}`);
+        } catch (e) {
+            last = e;
+            if (/upstream 4\d\d/.test(e.message)) throw e;   // not there: no point retrying
+        }
+        if (i < attempts) await new Promise(r => setTimeout(r, 800 * i));
+    }
+    throw last;
+}
 
-    const buf = Buffer.from(await res.arrayBuffer());
+async function downloadToCache(realUrl, cachePath) {
+    const buf = await fetchWhole(realUrl);
     ensureDir();
     // Write atomically to avoid serving a half-written file to a parallel reader
     const tmp = cachePath + '.part';
