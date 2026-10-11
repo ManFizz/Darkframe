@@ -1,4 +1,5 @@
 import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
+import {confirmDeleteForever} from '@services/deleteForever';
 import CollectionTree, {SPECIAL} from './Collection/CollectionTree';
 import ImportButton from './Import/ImportButton';
 import MetadataPanel from './Metadata/MetadataPanel';
@@ -358,9 +359,19 @@ const LibraryView = () => {
     }, [refreshStats, reload, clear]);
 
     // Trash every selected item at once (one IPC call), with an Undo toast.
-    const bulkTrash = useCallback(async () => {
+    // `forever` (Shift + Delete): past the trash, after a confirmation.
+    const bulkTrash = useCallback(async (forever = false) => {
         if (!selectedItems.length || isTrash) return;
         const ids = selectedItems.map(f => f.id);
+        if (forever) {
+            if (!confirmDeleteForever(ids.length, selectedItems[0]?.title)) return;
+            await LibraryService.deleteItems(ids, true);
+            clear();
+            refreshStats();
+            await reload();
+            notify({ message: `Удалено навсегда: ${ids.length}`, type: 'info' });
+            return;
+        }
         await LibraryService.deleteItems(ids, false);
         clear();
         refreshStats();
@@ -397,7 +408,13 @@ const LibraryView = () => {
     }, [selectedItems, clear, loadHistory]);
 
     const handleUpdated = useCallback(async (idOrAction, data) => {
-        if (idOrAction === 'delete') {
+        if (idOrAction === 'deleteForever') {
+            // Shift + Delete: past the trash (confirmed where it was pressed).
+            await deleteItem(data, true);
+            refreshStats();
+            await reload();
+            notify({ message: 'Удалено навсегда', type: 'info' });
+        } else if (idOrAction === 'delete') {
             // In the trash view "delete" means gone for good; elsewhere it's a soft delete.
             await deleteItem(data, isTrash);
             refreshStats();
@@ -456,7 +473,7 @@ const LibraryView = () => {
         if (matches(e, 'common.selectAll'))  { e.preventDefault(); selectAll(); }
         else if (matches(e, 'lib.invert'))   { e.preventDefault(); invert(); }
         else if (e.key === 'Escape' && selected.size)   { clear(); }
-        else if (e.key === 'Delete' && selectedItems.length && !isTrash) { e.preventDefault(); bulkTrash(); }
+        else if (e.key === 'Delete' && selectedItems.length && !isTrash) { e.preventDefault(); bulkTrash(e.shiftKey); }
     }, [selectAll, invert, clear, selected.size, selectedItems.length, isTrash, bulkTrash]);
 
     const bulkOnDone = useCallback(async () => {

@@ -1,4 +1,5 @@
 import React, {useCallback, useEffect, useRef, useState} from 'react';
+import {confirmDeleteForever} from '@services/deleteForever';
 import LibraryService from '@services/LibraryService';
 import {libraryApi} from '@/Infrastructure/Ipc';
 import {isWeb} from '@/Infrastructure/electron';
@@ -257,8 +258,12 @@ const MetadataPanel = ({ file, onUpdated }) => {
                 )}
                 <button
                     className="btn btn-outline-danger btn-sm"
-                    title={file.deletedAt ? 'Удалить навсегда' : 'В корзину'}
-                    onClick={() => onUpdated?.('delete', file.id)}
+                    title={file.deletedAt ? 'Удалить навсегда' : 'В корзину · Shift — удалить навсегда'}
+                    onClick={(e) => {
+                        if (e.shiftKey && !file.deletedAt) {
+                            if (confirmDeleteForever(1, file.title)) onUpdated?.('deleteForever', file.id);
+                        } else onUpdated?.('delete', file.id);
+                    }}
                 >
                     <i className={`bi ${file.deletedAt ? 'bi-trash3' : 'bi-trash'}`} />
                 </button>

@@ -1,4 +1,5 @@
 import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
+import {confirmDeleteForever} from '@services/deleteForever';
 import Navigation from "./Navigation";
 import Tags from "./Tags";
 import Video from "./Video";
@@ -129,10 +130,11 @@ const Modal = ({ fileId, mainArray, modalUpdater, displayFiles, onUpdated, autoS
     }, [fileId, mainArray, modalUpdater]);
 
     // Переход к соседнему файлу и удаление текущего
-    const handleDelete = useCallback(() => {
+    // `forever`: Shift + Delete — past the trash (already confirmed by the caller).
+    const handleDelete = useCallback((forever = false) => {
         if (!file || !onUpdated) return;
         navigateToNext();
-        onUpdated('delete', file.id);
+        onUpdated(forever ? 'deleteForever' : 'delete', file.id);
     }, [file, navigateToNext, onUpdated]);
 
     // Delete key removes immediately — the trash + Undo toast make the old countdown
@@ -144,7 +146,9 @@ const Modal = ({ fileId, mainArray, modalUpdater, displayFiles, onUpdated, autoS
             if (document.querySelector('.img-editor')) return;   // don't delete while editing
             if (e.key === 'Delete') {
                 e.stopPropagation();
-                handleDelete();
+                if (e.shiftKey && !file?.deletedAt) {
+                    if (confirmDeleteForever(1, file?.title)) handleDelete(true);
+                } else handleDelete();
             }
         };
 
@@ -293,8 +297,8 @@ const Modal = ({ fileId, mainArray, modalUpdater, displayFiles, onUpdated, autoS
     }, [file, onUpdated]);
 
     const handlePanelUpdated = useCallback((idOrAction, data) => {
-        if (idOrAction === 'delete') {
-            handleDelete();
+        if (idOrAction === 'delete' || idOrAction === 'deleteForever') {
+            handleDelete(idOrAction === 'deleteForever');
             return;
         }
 

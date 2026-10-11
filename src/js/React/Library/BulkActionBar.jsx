@@ -1,4 +1,5 @@
 import React, {useState} from 'react';
+import {confirmDeleteForever} from '@services/deleteForever';
 import LibraryService from '@services/LibraryService';
 import {notify} from '@services/NotificationService';
 import {loadEditPreset} from '@services/imageEditPreset';
@@ -72,15 +73,18 @@ const BulkActionBar = ({ selectedItems, onDone, onChanged, onSlideshow, permanen
         onDone();
     };
 
-    const deleteAll = async () => {
+    // Shift + click: past the trash, like in the trash view.
+    const deleteAll = async (e) => {
+        const forever = permanent || !!e?.shiftKey;
         // Permanent still asks; the soft path is reversible via the Undo toast.
-        if (permanent && !confirm(`Удалить ${selectedItems.length} элементов навсегда?`)) return;
+        if (forever && !(permanent ? confirm(`Удалить ${selectedItems.length} элементов навсегда?`) : confirmDeleteForever(selectedItems.length, selectedItems[0]?.title))) return;
 
         const ids = selectedItems.map(f => f.id);
-        await LibraryService.deleteItems(ids, permanent);   // one IPC call
+        await LibraryService.deleteItems(ids, forever);   // one IPC call
         onDone();
 
-        if (!permanent) {
+        if (forever && !permanent) notify({ message: `Удалено навсегда: ${ids.length}`, type: 'info' });
+        if (!forever) {
             notify({
                 message: `Перемещено в корзину: ${ids.length}`,
                 type: 'info',
@@ -266,6 +270,7 @@ const BulkActionBar = ({ selectedItems, onDone, onChanged, onSlideshow, permanen
             <button
                 className={`btn btn-sm btn-outline-danger ${permanent ? '' : 'ms-auto'}`}
                 onClick={deleteAll}
+                title={permanent ? undefined : 'Shift + клик — удалить навсегда, минуя корзину'}
             >
                 <i className="bi bi-trash me-1" />
                 {permanent ? 'Удалить навсегда' : 'В корзину'}
