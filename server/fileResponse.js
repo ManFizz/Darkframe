@@ -33,7 +33,7 @@ function parseRange(header, size) {
 
 function fileResponse(file, rangeHeader, extraHeaders = {}) {
     const { size } = fs.statSync(file);
-    const base = { 'Content-Type': mimeOf(file), 'Accept-Ranges': 'bytes', ...extraHeaders };
+    const base = { 'Content-Type': mimeOf(file), 'Accept-Ranges': 'bytes', 'Access-Control-Allow-Origin': '*', ...extraHeaders };
     const range = rangeHeader ? parseRange(rangeHeader, size) : null;
 
     if (range === 'invalid') {

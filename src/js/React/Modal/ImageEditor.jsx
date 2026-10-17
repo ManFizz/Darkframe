@@ -99,8 +99,13 @@ const ImageEditor = ({ file, onCancel, onSaved }) => {
     useEffect(() => {
         const legacy = !!file.editedAt && !file.editParams;
         const im = new window.Image();
+        const src = legacy ? file.getUrl() : appUrl(`library://source/${file.id}?v=${file.editedAt || 0}`);
+        // CORS is needed so the off-screen edge-analysis canvas stays readable.
+        // file:// (legacy) resources can't be cors-fetched, so leave those alone
+        // and degrade snapping gracefully instead.
+        if (!/^file:/i.test(String(src))) im.crossOrigin = 'anonymous';
         im.onload = () => setImg(im);
-        im.src = legacy ? file.getUrl() : appUrl(`library://source/${file.id}?v=${file.editedAt || 0}`);
+        im.src = src;
     }, [file]);
 
     useLayoutEffect(() => {
@@ -186,58 +191,71 @@ const ImageEditor = ({ file, onCancel, onSaved }) => {
     // we don't rebuild the edge map on every tick; small angles snap close enough.
     useEffect(() => {
         if (!img || !snapOn) { colEdgeRef.current = null; rowEdgeRef.current = null; return; }
-        const quarter = ((rot90 % 4) + 4) % 4;
-        const rad = quarter * Math.PI / 2;
-        const swap = quarter % 2 === 1;
-        const RW = swap ? img.naturalHeight : img.naturalWidth;
-        const RH = swap ? img.naturalWidth : img.naturalHeight;
+        // Keep a tainted canvas (cross-origin / file:// source) from crashing the app:
+        // snapping degrades to no-op if the pixels can't be read.
+        try {
+            const quarter = ((rot90 % 4) + 4) % 4;
+            const rad = quarter * Math.PI / 2;
+            const swap = quarter % 2 === 1;
+            const RW = swap ? img.naturalHeight : img.naturalWidth;
+            const RH = swap ? img.naturalWidth : img.naturalHeight;
 
-        const maxSide = 1400;
-        const aScale = Math.min(maxSide / RW, maxSide / RH, 1);
-        const aw = Math.max(2, Math.round(RW * aScale));
-        const ah = Math.max(2, Math.round(RH * aScale));
+            const maxSide = 1400;
+            const aScale = Math.min(maxSide / RW, maxSide / RH, 1);
+            const aw = Math.max(2, Math.round(RW * aScale));
+            const ah = Math.max(2, Math.round(RH * aScale));
 
-        const oc = document.createElement('canvas');
-        oc.width = aw; oc.height = ah;
-        const octx = oc.getContext('2d', { willReadFrequently: true });
-        octx.fillStyle = '#000';
-        octx.fillRect(0, 0, aw, ah);
-        octx.save();
-        octx.translate(aw / 2, ah / 2);
-        octx.rotate(rad);
-        octx.scale(flipH ? -1 : 1, flipV ? -1 : 1);
-        const dw = img.naturalWidth * aScale, dh = img.naturalHeight * aScale;
-        octx.drawImage(img, -dw / 2, -dh / 2, dw, dh);
-        octx.restore();
+            const oc = document.createElement('canvas');
+            oc.width = aw; oc.height = ah;
+            const octx = oc.getContext('2d', { willReadFrequently: true });
+            octx.fillStyle = '#000';
+            octx.fillRect(0, 0, aw, ah);
+            octx.save();
+            octx.translate(aw / 2, ah / 2);
+            octx.rotate(rad);
+            octx.scale(flipH ? -1 : 1, flipV ? -1 : 1);
+            const dw = img.naturalWidth * aScale, dh = img.naturalHeight * aScale;
+            octx.drawImage(img, -dw / 2, -dh / 2, dw, dh);
+            octx.restore();
 
-        const data = octx.getImageData(0, 0, aw, ah).data;
-        const gray = new Float32Array(aw * ah);
-        for (let i = 0, p = 0; i < gray.length; i++, p += 4) {
-            gray[i] = 0.299 * data[p] + 0.587 * data[p + 1] + 0.114 * data[p + 2];
+            const data = octx.getImageData(0, 0, aw, ah).data;
+            const gray = new Float32Array(aw * ah);
+            for (let i = 0, p = 0; i < gray.length; i++, p += 4) {
+                gray[i] = 0.299 * data[p] + 0.587 * data[p + 1] + 0.114 * data[p + 2];
+            }
+            // Average gradient per column / row → favours long, straight boundaries.
+            const colEdge = new Float32Array(aw), rowEdge = new Float32Array(ah);
+            for (let x = 1; x < aw - 1; x++) {
+                let s = 0;
+                for (let y = 0; y < ah; y++) s += Math.abs(gray[y * aw + x + 1] - gray[y * aw + x - 1]);
+                colEdge[x] = s / ah;
+            }
+            for (let y = 1; y < ah - 1; y++) {
+                let s = 0;
+                for (let x = 0; x < aw; x++) s += Math.abs(gray[(y + 1) * aw + x] - gray[(y - 1) * aw + x]);
+                rowEdge[y] = s / aw;
+            }
+            colEdgeRef.current = colEdge;
+            rowEdgeRef.current = rowEdge;
+            // fine is intentionally excluded (perf) — analysis uses the last discrete geometry.
+        } catch (e) {
+            colEdgeRef.current = null;
+            rowEdgeRef.current = null;
+            if (e && /cross-origin|tainted|SecurityError/i.test(String(e.message || e))) {
+                // Expected for untainted reading: leave snapping disabled.
+            } else {
+                console.warn('[ImageEditor] edge analysis failed:', e?.message || e);
+            }
         }
-        // Average gradient per column / row → favours long, straight boundaries.
-        const colEdge = new Float32Array(aw), rowEdge = new Float32Array(ah);
-        for (let x = 1; x < aw - 1; x++) {
-            let s = 0;
-            for (let y = 0; y < ah; y++) s += Math.abs(gray[y * aw + x + 1] - gray[y * aw + x - 1]);
-            colEdge[x] = s / ah;
-        }
-        for (let y = 1; y < ah - 1; y++) {
-            let s = 0;
-            for (let x = 0; x < aw; x++) s += Math.abs(gray[(y + 1) * aw + x] - gray[(y - 1) * aw + x]);
-            rowEdge[y] = s / aw;
-        }
-        colEdgeRef.current = colEdge;
-        rowEdgeRef.current = rowEdge;
-        // fine is intentionally excluded (perf) — analysis uses the last discrete geometry.
     }, [img, snapOn, layout, rot90, flipH, flipV]);   // eslint-disable-line
 
-    const snapFrac = (frac, edgeArr) => {
+    const snapFrac = (frac, edgeArr, radius = SNAP_RADIUS) => {
         if (!edgeArr) return frac;
         const N = edgeArr.length;
+        const r = clamp(Math.round(Number(radius) || SNAP_RADIUS), 1, SNAP_RADIUS);
         let idx = clamp(Math.round(frac * (N - 1)), 0, N - 1);
         let best = idx, bestV = edgeArr[idx];
-        for (let d = 1; d <= SNAP_RADIUS; d++) {
+        for (let d = 1; d <= r; d++) {
             if (idx - d >= 0 && edgeArr[idx - d] > bestV) { bestV = edgeArr[idx - d]; best = idx - d; }
             if (idx + d < N  && edgeArr[idx + d] > bestV) { bestV = edgeArr[idx + d]; best = idx + d; }
         }
@@ -358,11 +376,14 @@ const ImageEditor = ({ file, onCancel, onSaved }) => {
         if (d.mode.includes('s')) b = clamp(b + dfy, t + MIN, 1);
 
         // Magnetic snap to strong edges (only on the moved sides, only when free-form).
+        // The search radius shrinks as the user zooms in, so coarse cropping is easy
+        // at 1x while precise crops stay precise at high zoom.
         if (d.snap && !d.aspect) {
-            if (d.mode.includes('w')) l = clamp(snapFrac(l, colEdgeRef.current), 0, r - MIN);
-            if (d.mode.includes('e')) r = clamp(snapFrac(r, colEdgeRef.current), l + MIN, 1);
-            if (d.mode.includes('n')) t = clamp(snapFrac(t, rowEdgeRef.current), 0, b - MIN);
-            if (d.mode.includes('s')) b = clamp(snapFrac(b, rowEdgeRef.current), t + MIN, 1);
+            const rad = d.snapRadius || SNAP_RADIUS;
+            if (d.mode.includes('w')) l = clamp(snapFrac(l, colEdgeRef.current, rad), 0, r - MIN);
+            if (d.mode.includes('e')) r = clamp(snapFrac(r, colEdgeRef.current, rad), l + MIN, 1);
+            if (d.mode.includes('n')) t = clamp(snapFrac(t, rowEdgeRef.current, rad), 0, b - MIN);
+            if (d.mode.includes('s')) b = clamp(snapFrac(b, rowEdgeRef.current, rad), t + MIN, 1);
         }
 
         let nx = l, ny = t, nw = r - l, nh = b - t;
@@ -388,7 +409,7 @@ const ImageEditor = ({ file, onCancel, onSaved }) => {
     const startCropDrag = useCallback((e, mode) => {
         e.preventDefault();
         e.stopPropagation();
-        dragRef.current = { mode, sx: e.clientX, sy: e.clientY, crop, aspect, snap: snapOn, boxW: view.boxW, boxH: view.boxH };
+        dragRef.current = { mode, sx: e.clientX, sy: e.clientY, crop, aspect, snap: snapOn, snapRadius: Math.max(1, Math.round(SNAP_RADIUS / Math.max(1, zoom))), boxW: view.boxW, boxH: view.boxH };
         window.addEventListener('pointermove', onPointerMove);
         window.addEventListener('pointerup', onPointerUp);
         window.addEventListener('pointercancel', onPointerUp);   // a touch the system took over
