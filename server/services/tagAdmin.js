@@ -138,12 +138,16 @@ async function setTagType({ ids, type }) {
     return { ok: true };
 }
 
+// The preview: the file picked by hand while it's still the model's and not in the
+// trash, else the best rated (newest) one.
 async function getModels() {
     const rows = await sequelize.query(`
         SELECT t.id, t.name, COUNT(i.id) AS count,
+          (SELECT i3.id FROM ItemTags it3 JOIN Items i3 ON i3.id = it3.itemId
+           WHERE it3.tagId = t.id AND i3.id = t.coverItemId AND i3.deletedAt IS NULL) AS pickedId,
           (SELECT i2.id FROM ItemTags it2 JOIN Items i2 ON i2.id = it2.itemId
            WHERE it2.tagId = t.id AND i2.deletedAt IS NULL
-           ORDER BY i2.rating DESC, i2.importedAt DESC, i2.id ASC LIMIT 1) AS coverId
+           ORDER BY i2.rating DESC, i2.importedAt DESC, i2.id ASC LIMIT 1) AS autoId
         FROM Tags t JOIN ItemTags it ON it.tagId = t.id
         JOIN Items i ON i.id = it.itemId AND i.deletedAt IS NULL
         WHERE COALESCE(t.userType, t.type) = :modelType
@@ -151,13 +155,39 @@ async function getModels() {
         { replacements: { modelType: MODEL_TYPE }, type: QueryTypes.SELECT });
     const Item = require('../models/Item');
     const { itemUrls } = require('./itemUrls');
-    const covers = await Item.findAll({ where: { id: rows.map(r => r.coverId) }, raw: true });
+    const out = rows.map(({ pickedId, autoId, ...r }) => ({ ...r, coverId: pickedId || autoId, customCover: !!pickedId }));
+    const covers = await Item.findAll({ where: { id: out.map(r => r.coverId).filter(Boolean) }, raw: true });
     const urls = new Map(covers.map(item => [item.id, itemUrls(item).thumbPath]));
-    return rows.map(r => ({ ...r, thumbUrl: urls.get(r.coverId) || '' }));
+    return out.map(r => ({ ...r, thumbUrl: urls.get(r.coverId) || '' }));
+}
+
+// A model's files to pick the preview from (best first).
+async function getModelFiles(tagId, { limit = 400 } = {}) {
+    const id = Number(tagId);
+    if (!Number.isSafeInteger(id) || id <= 0) throw new Error('Некорректный тег');
+    const rows = await sequelize.query(`
+        SELECT i.* FROM ItemTags it JOIN Items i ON i.id = it.itemId
+        WHERE it.tagId = :id AND i.deletedAt IS NULL
+        ORDER BY i.rating DESC, i.importedAt DESC, i.id ASC LIMIT :limit`,
+        { replacements: { id, limit: Math.min(1000, Number(limit) || 400) }, type: QueryTypes.SELECT });
+    const { itemUrls } = require('./itemUrls');
+    return rows.map(i => ({ id: i.id, title: i.title, mimeType: i.mimeType, rating: i.rating, thumbPath: itemUrls(i).thumbPath }));
+}
+
+// itemId — one of the model's files; null → back to the automatic preview.
+async function setModelCover({ id, itemId = null }) {
+    const tag = await Tag.findByPk(Number(id));
+    if (!tag) throw new Error('Тег не найден');
+    if (itemId != null) {
+        const ok = await ItemTag.findOne({ where: { tagId: tag.id, itemId: String(itemId) } });
+        if (!ok) throw new Error('Этот файл не относится к модели');
+    }
+    await tag.update({ coverItemId: itemId == null ? null : String(itemId) });
+    return { ok: true };
 }
 
 module.exports = {
-    setTagType, getModels,
+    setTagType, getModels, getModelFiles, setModelCover,
     resolveAlias, invalidateAliasCache,
     getAllTags, renameTag, mergeTags, deleteTag, setPinned, getPinned,
     getRules, addRule, deleteRule,

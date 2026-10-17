@@ -96,6 +96,12 @@ export const LibraryService = {
     // --- Tag manager ---
     getAllTags()               { return libraryApi.getAllTags(); },
     getModels()                { return libraryApi.getModels(); },
+    getModelFiles(id)          { return libraryApi.getModelFiles(id); },
+    async setModelCover(id, itemId) {
+        const result = await libraryApi.setModelCover({ id, itemId });
+        window.dispatchEvent(new Event('df:libraryReload'));
+        return result;
+    },
     async setTagType(ids, type) {
         const result = await libraryApi.setTagType({ ids, type });
         window.dispatchEvent(new Event('df:libraryReload'));

@@ -36,6 +36,34 @@ test('model categories survive remote updates and exclude trash and remote cache
     assert.equal((await admin.getModels()).length, 0);
 });
 
+test('a model preview picked by hand; back to automatic when that file is gone', async () => {
+    const admin = require(S('services', 'tagAdmin'));
+    const tag = await Tag.create({ name: 'cover_model', type: 0 });
+    const best = await addItem({ rating: 9 });
+    const mine = await addItem({ rating: 1 });
+    const other = await addItem();
+    await ItemTag.bulkCreate([{ itemId: best.id, tagId: tag.id }, { itemId: mine.id, tagId: tag.id }]);
+    await admin.setTagType({ ids: [tag.id], type: 100 });
+    const model = async () => (await admin.getModels()).find(m => m.id === tag.id);
+    assert.equal((await model()).coverId, best.id, 'automatic: the best rated');
+    assert.equal((await model()).customCover, false);
+
+    await admin.setModelCover({ id: tag.id, itemId: mine.id });
+    assert.equal((await model()).coverId, mine.id);
+    assert.equal((await model()).customCover, true);
+    await assert.rejects(admin.setModelCover({ id: tag.id, itemId: other.id }), /не относится/);
+    assert.deepEqual((await admin.getModelFiles(tag.id)).map(f => f.id), [best.id, mine.id]);
+
+    // the picked file goes to the trash → automatic again; back from the trash → picked again
+    await Item.update({ deletedAt: 5 }, { where: { id: mine.id } });
+    assert.equal((await model()).coverId, best.id);
+    await Item.unscoped().update({ deletedAt: null }, { where: { id: mine.id } });
+    assert.equal((await model()).coverId, mine.id);
+
+    await admin.setModelCover({ id: tag.id, itemId: null });
+    assert.equal((await model()).coverId, best.id);
+});
+
 test('a fresh database gets the full schema and lookup indexes', async () => {
     const qi = sequelize.getQueryInterface();
     const items = await qi.describeTable('Items');

@@ -4,6 +4,7 @@ import {notify} from '@services/NotificationService';
 import LibraryView from '../Library/LibraryView';
 import {appUrl} from '@/Infrastructure/electron';
 import {setOpenModel, useOpenModel} from './modelsState';
+import CoverPicker from './CoverPicker';
 
 /**
  * "Модели": every library tag of the category "Модель" as a card (cover — the
@@ -11,7 +12,7 @@ import {setOpenModel, useOpenModel} from './modelsState';
  * that tag, with the library's own search / sort in the top bar.
  *
  * A tag becomes a model by its category: right click on a tag anywhere → «Модель»,
- * or in the tag manager.
+ * or in the tag manager. The preview can be picked from the model's files.
  */
 const SORT_KEY = 'jsg_models_sort';
 const files = (n) => {
@@ -26,6 +27,7 @@ const ModelsView = () => {
     const [sort, setSort] = useState(() => { try { return localStorage.getItem(SORT_KEY) || 'name'; } catch { return 'name'; } });
     const [error, setError] = useState('');
     const [menu, setMenu] = useState(null);   // { model, x, y }
+    const [picking, setPicking] = useState(null);   // model whose preview is being chosen
 
     const load = useCallback(() => LibraryService.getModels()
         .then(rows => { setModels(rows); setError(''); })
@@ -74,10 +76,14 @@ const ModelsView = () => {
                     {cur.thumbUrl && <img className="models-detail-avatar" src={appUrl(cur.thumbUrl)} alt="" />}
                     <div className="models-detail-name">{cur.name}</div>
                     <span className="models-detail-count">{files(cur.count)}</span>
+                    <button className="ftb-btn models-detail-cover" onClick={() => setPicking(cur)} title="Выбрать превью модели из её файлов">
+                        <i className="bi bi-person-square" /> <span>Превью</span>
+                    </button>
                 </div>
                 <div className="models-detail-lib">
                     <LibraryView key={cur.id} model={cur} />
                 </div>
+                {picking && <CoverPicker model={models?.find(m => m.id === picking.id) || picking} onClose={() => setPicking(null)} />}
             </div>
         );
     }
@@ -103,6 +109,8 @@ const ModelsView = () => {
                             <div className="model-cover">
                                 {m.thumbUrl ? <img src={appUrl(m.thumbUrl)} alt="" loading="lazy" decoding="async" draggable={false} /> : <i className="bi bi-person" />}
                                 <span className="model-count">{m.count}</span>
+                                <span className="model-cover-edit" role="button" title="Выбрать превью"
+                                      onClick={e => { e.stopPropagation(); setPicking(m); }}><i className="bi bi-pencil" /></span>
                             </div>
                             <div className="model-name">{m.name}</div>
                         </button>
@@ -124,9 +132,11 @@ const ModelsView = () => {
                 <div className="tm-type-menu models-menu" style={{ left: menu.x, top: menu.y }} onMouseDown={e => e.stopPropagation()}>
                     <div className="tm-type-menu-head"><span className="tm-type-menu-name">{menu.model.name}</span><span className="tm-type-menu-now">{files(menu.model.count)}</span></div>
                     <button onClick={() => { setMenu(null); setOpenModel(menu.model); }}><i className="bi bi-images" /><span className="tm-type-menu-label">Открыть</span></button>
+                    <button onClick={() => { setMenu(null); setPicking(menu.model); }}><i className="bi bi-person-square" /><span className="tm-type-menu-label">Выбрать превью…</span></button>
                     <button onClick={() => unmodel(menu.model)}><i className="bi bi-person-dash" /><span className="tm-type-menu-label">Убрать из моделей</span></button>
                 </div>
             )}
+            {picking && <CoverPicker model={models?.find(m => m.id === picking.id) || picking} onClose={() => setPicking(null)} />}
         </main>
     );
 };

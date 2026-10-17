@@ -16,6 +16,7 @@ const Tag = sequelize.define('Tags', {
 		type: DataTypes.INTEGER
 	},
 	userType: { type: DataTypes.INTEGER, allowNull: true, defaultValue: null },
+	coverItemId: { type: DataTypes.UUID, allowNull: true, defaultValue: null },   // model preview picked by hand
 	remoteType: {
 		type: DataTypes.INTEGER
 	},

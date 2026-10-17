@@ -467,6 +467,8 @@ function register() {
     ipcMain.handle('library:getAllTags',   async ()               => tagAdmin.getAllTags());
     ipcMain.handle('library:setTagType', async (_, data) => tagAdmin.setTagType(data));
     ipcMain.handle('library:getModels', async () => tagAdmin.getModels());
+    ipcMain.handle('library:getModelFiles', async (_, { id }) => tagAdmin.getModelFiles(id));
+    ipcMain.handle('library:setModelCover', async (_, data) => tagAdmin.setModelCover(data || {}));
     ipcMain.handle('library:renameTag',    async (_, { id, newName }) => tagAdmin.renameTag(id, newName));
     ipcMain.handle('library:mergeTags',    async (_, { sourceId, targetId }) => tagAdmin.mergeTags(sourceId, targetId));
     ipcMain.handle('library:deleteTag',    async (_, { id })       => tagAdmin.deleteTag(id));

@@ -72,6 +72,10 @@ async function migrations() {
     if (!tagsDesc.userType) {
         await queryInterface.addColumn('Tags', 'userType', { type: DataTypes.INTEGER, allowNull: true, defaultValue: null });
     }
+    if (!tagsDesc.coverItemId) {
+        // A model's preview picked by hand (else: its best rated file).
+        await queryInterface.addColumn('Tags', 'coverItemId', { type: DataTypes.UUID, allowNull: true, defaultValue: null });
+    }
     if (!tagsDesc.pinned) {
         // User-pinned tags float to the top of pickers and filters.
         await queryInterface.addColumn('Tags', 'pinned', {
