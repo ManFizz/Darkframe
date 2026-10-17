@@ -465,6 +465,8 @@ function register() {
 
     // ─── Tag manager ──────────────────────────────────────────────────────────
     ipcMain.handle('library:getAllTags',   async ()               => tagAdmin.getAllTags());
+    ipcMain.handle('library:setTagType', async (_, data) => tagAdmin.setTagType(data));
+    ipcMain.handle('library:getModels', async () => tagAdmin.getModels());
     ipcMain.handle('library:renameTag',    async (_, { id, newName }) => tagAdmin.renameTag(id, newName));
     ipcMain.handle('library:mergeTags',    async (_, { sourceId, targetId }) => tagAdmin.mergeTags(sourceId, targetId));
     ipcMain.handle('library:deleteTag',    async (_, { id })       => tagAdmin.deleteTag(id));
@@ -686,13 +688,14 @@ function register() {
                     through: { attributes: [] },
                     attributes: [],
                 }],
-                attributes: ['id', 'name', 'type', 'pinned'],
+                attributes: ['id', 'name', 'type', 'userType', 'pinned'],
                 limit: 10,
                 order: [['pinned', 'DESC'], ['name', 'ASC']],   // pinned matches first
                 subQuery: false, // ← ускоряет запрос с include + limit
             });
 
-            return tags.map(t => ({ name: t.name, type: t.type, pinned: !!t.pinned, value: t.name, label: t.name }));
+            // The category set by hand wins over the site's.
+            return tags.map(t => ({ name: t.name, type: t.userType ?? t.type, pinned: !!t.pinned, value: t.name, label: t.name }));
         } catch (e) {
             console.error('[searchTags] error:', e.message);
             return [];

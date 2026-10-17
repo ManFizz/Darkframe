@@ -1,6 +1,7 @@
 import React, {useEffect, useRef, useState} from 'react';
 import {libraryApi} from '@/Infrastructure/Ipc';
 import {recordTagUse, useTagPrefs} from '@services/tagPrefs';
+import {useTagTypeMenu} from './TagTypeMenu';
 
 const FREQUENT_LIMIT = 12;
 
@@ -142,6 +143,7 @@ const TagDropdown = ({ currentTags, onAdd, onClose }) => {
 };
 
 const TagEditor = ({ tags, onChange }) => {
+    const {onTagContextMenu, tagTypeMenu} = useTagTypeMenu();
     const [open, setOpen] = useState(false);
     const wrapperRef      = useRef(null);
 
@@ -164,9 +166,10 @@ const TagEditor = ({ tags, onChange }) => {
 
     return (
         <div className="tag-editor-eagle" ref={wrapperRef}>
+            {tagTypeMenu}
             <div className="tag-editor-eagle-tags">
                 {tags.map(tag => (
-                    <span key={tag} className="tag-chip">
+                    <span key={tag} className="tag-chip" onContextMenu={e => onTagContextMenu(e, tag)}>
                         {tag}
                         <i className="bi bi-x" onClick={() => removeTag(tag)} />
                     </span>

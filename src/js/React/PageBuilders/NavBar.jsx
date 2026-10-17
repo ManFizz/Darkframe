@@ -15,6 +15,7 @@ import BooruSearchBar from '@modules/r34/BooruSearchBar';
 import {collectionRequests, folderRequests, mangaRequests, useCommands} from '@services/commands';
 import {openManga} from '@modules/manga/openManga';
 import {isWeb} from '@/Infrastructure/electron';
+import {useOpenModel} from '../Models/modelsState';
 import {installApp, toggleFullscreen, usePwa} from '@services/pwa';
 
 const touch = typeof window !== 'undefined' && !!window.matchMedia?.('(pointer: coarse)').matches;
@@ -27,10 +28,10 @@ import {useConfigVersion} from '@services/liveConfig';
 
 // Tabs grouped into islands: the library, the booru sites, local folders + manga.
 const NAV_TYPE_ICON = {
-    [SOURCE_TYPES.LIBRARY]: 'bi-collection', [SOURCE_TYPES.FOLDER]: 'bi-folder2', [SOURCE_TYPES.MANGA]: 'bi-book',
+    [SOURCE_TYPES.LIBRARY]: 'bi-collection', [SOURCE_TYPES.MODELS]: 'bi-people', [SOURCE_TYPES.FOLDER]: 'bi-folder2', [SOURCE_TYPES.MANGA]: 'bi-book',
 };
 const NAV_ICON = { 'R34 Favs': 'bi-heart' };
-const sectionOf = (btn) => (btn.type === SOURCE_TYPES.LIBRARY ? 'library'
+const sectionOf = (btn) => ([SOURCE_TYPES.LIBRARY, SOURCE_TYPES.MODELS].includes(btn.type) ? 'library'
     : btn.type === SOURCE_TYPES.FOLDER || btn.type === SOURCE_TYPES.MANGA ? 'local' : 'boorus');
 const SECTION_TITLE = { library: 'Библиотека', boorus: 'Сайты', local: 'Папки и манга' };
 
@@ -42,9 +43,13 @@ const NavBar = () => {
     const libraryCtx = useLibraryContext();
     const pwa = usePwa();
 
-    const isLibrary = state.currentSource === SOURCE_TYPES.LIBRARY;
+    // An open model is a library view: same search, sort and tags in the bar.
+    const openModel = useOpenModel();
+    const isLibrary = state.currentSource === SOURCE_TYPES.LIBRARY
+        || (state.currentSource === SOURCE_TYPES.MODELS && !!openModel);
     const isFolder  = state.currentSource === SOURCE_TYPES.FOLDER;
     const isManga   = state.currentSource === SOURCE_TYPES.MANGA;
+    const isModelList = state.currentSource === SOURCE_TYPES.MODELS && !openModel;   // own search in the view
     const [showPanel, setShowPanel] = useState(false);
     const [panelTab, setPanelTab] = useState('manage');
     const [panelTool, setPanelTool] = useState(null);
@@ -57,6 +62,8 @@ const NavBar = () => {
     const navButtons = [
         { label: 'Library',  type: SOURCE_TYPES.LIBRARY },
         ...ModuleRegistry.getNavItems(),
+        // Last in the list (tabs are remembered by position), shown in the library island.
+        { label: 'Модели', type: SOURCE_TYPES.MODELS },
     ];
 
     const [activeNav, setActiveNav] = useState(0);
@@ -207,7 +214,7 @@ const NavBar = () => {
 
                 {isLibrary && libraryCtx ? (
                     <LibraryNavControls ctx={libraryCtx} />
-                ) : isFolder || isManga ? (
+                ) : isFolder || isManga || isModelList ? (
                     <div className="navbar-spacer" />
                 ) : (
                     <BooruSearchBar sourceType={state.currentSource} />
@@ -217,7 +224,7 @@ const NavBar = () => {
                 <div className="navbar-actions">
                     {isLibrary && libraryCtx ? (
                         <LibraryNavSort ctx={libraryCtx} />
-                    ) : isFolder ? null : isManga ? (
+                    ) : isFolder || isModelList ? null : isManga ? (
                         <button
                             className={`btn navbar-settings-btn ${state.safeMode ? 'on' : ''}`}
                             onClick={() => setSafeMode(!state.safeMode)}

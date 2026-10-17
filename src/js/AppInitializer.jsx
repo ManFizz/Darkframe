@@ -13,6 +13,7 @@ import ModuleRegistry from './ModuleRegistry';
 import '@/modules';
 
 import LibraryView from "./React/Library/LibraryView";
+import ModelsView from './React/Models/ModelsView';
 import {SOURCE_TYPES} from "./Constants";
 
 import {AppController, galleryReducer, initialState} from "@controllers/AppInitializerController";
@@ -142,11 +143,12 @@ const Main = () => {
     }, []);
 
     const isLibrary = state.currentSource === SOURCE_TYPES.LIBRARY;
+    const isModels = state.currentSource === SOURCE_TYPES.MODELS;
     const isFolder  = state.currentSource === SOURCE_TYPES.FOLDER;
     const isManga   = state.currentSource === SOURCE_TYPES.MANGA;
     // Library, Folders and Manga are self-contained views (own sidebar, grid and
     // viewer); the booru sources share the generic gallery + pagination below.
-    const isGeneric = !isLibrary && !isFolder && !isManga;
+    const isGeneric = !isLibrary && !isModels && !isFolder && !isManga;
     const booruView = useBooruQuery().view;   // 'saved' page has no pagination
     const isBooru = BOORU_TYPES.includes(state.currentSource);
     const [infinite] = useViewPref('booruInfinite');
@@ -227,6 +229,8 @@ const Main = () => {
                     <div className="container-fluid p-0">
                         {isLibrary ? (
                             <LibraryView />
+                        ) : isModels ? (
+                            <ModelsView />
                         ) : isFolder ? (
                             <FolderView />
                         ) : isManga ? (

@@ -95,6 +95,12 @@ export const LibraryService = {
 
     // --- Tag manager ---
     getAllTags()               { return libraryApi.getAllTags(); },
+    getModels()                { return libraryApi.getModels(); },
+    async setTagType(ids, type) {
+        const result = await libraryApi.setTagType({ ids, type });
+        window.dispatchEvent(new Event('df:libraryReload'));
+        return result;
+    },
     renameTag(id, newName)     { return libraryApi.renameTag({ id, newName }); },
     mergeTags(sourceId, targetId) { return libraryApi.mergeTags({ sourceId, targetId }); },
     deleteTag(id)              { return libraryApi.deleteTag({ id }); },

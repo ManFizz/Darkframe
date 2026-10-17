@@ -69,6 +69,9 @@ async function migrations() {
         await queryInterface.addIndex('Items', ['fileHash'], { name: 'items_fileHash_idx' });
     }
     const tagsDesc = await queryInterface.describeTable('Tags');
+    if (!tagsDesc.userType) {
+        await queryInterface.addColumn('Tags', 'userType', { type: DataTypes.INTEGER, allowNull: true, defaultValue: null });
+    }
     if (!tagsDesc.pinned) {
         // User-pinned tags float to the top of pickers and filters.
         await queryInterface.addColumn('Tags', 'pinned', {

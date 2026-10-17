@@ -17,6 +17,25 @@ const addItem = (over = {}) => Item.create({
     id: uuid(), fileName: 'a.jpg', mimeType: 'image/jpeg', order: 0, ...over,
 });
 
+test('model categories survive remote updates and exclude trash and remote cache', async () => {
+    const admin = require(S('services', 'tagAdmin'));
+    const tag = await Tag.create({ name: 'test_model', type: 0 });
+    const live = await addItem();
+    const trash = await addItem({ deletedAt: 1 });
+    await ItemTag.bulkCreate([{ itemId: live.id, tagId: tag.id }, { itemId: trash.id, tagId: tag.id }]);
+    await admin.setTagType({ ids: [tag.id], type: 100 });
+    await require(S('services', 'tagService')).saveTags([{ name: tag.name, type: 4, remoteType: 2 }]);
+    await Tag.create({ name: 'cached_model', type: 100 });
+    const models = await admin.getModels();
+    assert.equal(models.length, 1);
+    assert.equal(models[0].count, 1);
+    assert.equal(models[0].coverId, live.id);
+    assert.equal((await admin.getAllTags()).find(t => t.id === tag.id).type, 100);
+    await assert.rejects(admin.setTagType({ ids: [tag.id], type: 999 }));
+    await admin.setTagType({ ids: [tag.id], type: null });
+    assert.equal((await admin.getModels()).length, 0);
+});
+
 test('a fresh database gets the full schema and lookup indexes', async () => {
     const qi = sequelize.getQueryInterface();
     const items = await qi.describeTable('Items');

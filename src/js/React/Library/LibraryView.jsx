@@ -43,8 +43,9 @@ const SECTION_LABELS = {
 };
 const sectionLabel = (s) => SECTION_LABELS[s] || `Секция ${s}`;
 
-const LibraryView = () => {
+const LibraryView = ({ model = null }) => {
     const [selectedCollection, setSelectedCollection] = useState(() => {
+        if (model) return SPECIAL.ALL;
         const requested = collectionRequests.take();   // Ctrl+K from another tab
         if (requested) {
             if (requested !== SPECIAL.VISUAL) setViewPref('lastCollection', requested);
@@ -53,11 +54,12 @@ const LibraryView = () => {
         const { restoreSession, lastCollection } = getViewPrefs();
         return (restoreSession && lastCollection) || SPECIAL.NONE;
     });
-    useEffect(() => collectionRequests.subscribe((id) => {
+    // (a model's page in the Models tab leaves "go to collection" to the library)
+    useEffect(() => (model ? undefined : collectionRequests.subscribe((id) => {
         if (id === SPECIAL.VISUAL) setModalFileId(null);   // results replace the viewer
         setSelectedCollection(id);
         if (id !== SPECIAL.VISUAL) setViewPref('lastCollection', id);   // results aren't a place to return to
-    }), []);
+    })), []);   // eslint-disable-line react-hooks/exhaustive-deps
     const { filtered, filters, update, patch, setLibraryItems, refreshStats, statsVersion } = useLibraryContext();
     const [ratingDividers] = useViewPref('ratingDividers');
     const [dateDividers] = useViewPref('dateDividers');
@@ -113,7 +115,7 @@ const LibraryView = () => {
     const isVisual = selectedCollection === SPECIAL.VISUAL;
     const visual = useVisualSearch();
     const smartCol = LibraryService.getCollections().find(c => c.id === selectedCollection && c.isSmart);
-    const smartFilterJson = isVisual
+    const smartFilterJson = model ? JSON.stringify({ tags: [{ name: model.name, exclude: false }] }) : isVisual
         ? JSON.stringify({ ids: visual.results.map(r => r.id) })
         : smartCol ? (smartCol.filter || '{}') : null;
     // Where "close" on the results goes back to.
@@ -496,7 +498,7 @@ const LibraryView = () => {
                 onUpdated={isHistory ? undefined : handleUpdated}
                 autoSlideshow={slideSet?.token || false}
             />
-            <div className="library-sidebar" onDragOver={e => e.stopPropagation()}>
+            {!model && <div className="library-sidebar" onDragOver={e => e.stopPropagation()}>
                 <CollectionTree
                     selectedId={selectedCollection}
                     onSelect={handleCollectionSelect}
@@ -539,10 +541,10 @@ const LibraryView = () => {
                         onImported={() => { reload(); refreshStats(); }}
                     />
                 )}
-            </div>
+            </div>}
 
             <div className="library-main">
-            {mobile && (
+            {mobile && !model && (
                 <button className="lib-drawer-btn" onClick={() => setDrawer(true)}>
                     <i className="bi bi-list" />
                     <span>{isTrash ? 'Корзина' : isHistory ? 'История' : currentCollectionName || (selectedCollection === SPECIAL.UNCATEGORIZED ? 'Без коллекции' : 'Все файлы')}</span>

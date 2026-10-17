@@ -16,6 +16,7 @@ export const SOURCE_TYPES = {
     REALBOORU: 7,
     DANBOORU: 8,
     MANGA: 9,
+    MODELS: 10,
 };
 export const SORT_ORDER = {ASC: 1, DESC: -1};
 export const SORT_TYPE = {NAME: 0, TIME: 1, PRIORITY: 2, ID: 3};

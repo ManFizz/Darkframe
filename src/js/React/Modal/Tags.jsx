@@ -1,7 +1,9 @@
 import React, {useCallback, useEffect, useMemo, useState} from "react";
 import {ensureTags, getAllTags, getTagOrder, subscribe} from "@controllers/TagsController";
+import {useTagTypeMenu} from '../Library/Metadata/TagTypeMenu';
 
 const Tags = ({ file }) => {
+    const {onTagContextMenu, tagTypeMenu} = useTagTypeMenu();
     const [version, setVersion] = useState(0);
     const [activeTag, setActiveTag] = useState(null);
 
@@ -51,6 +53,7 @@ const Tags = ({ file }) => {
 
     return (
         <div className="col-7 text-center tags">
+            {tagTypeMenu}
             {visibleTags.map(({ name, metadata }) => {
                 const cls = metadata
                     ? `tag-type-${metadata.type ? metadata.type : 0}`
@@ -63,6 +66,7 @@ const Tags = ({ file }) => {
                         key={name}
                         className={`badge m-1 ${cls} tag ${isActive ? "tag-active" : ""}`}
                         onClick={() => handleClick(name)}
+                        onContextMenu={e => onTagContextMenu(e, name)}
                     >
                         {name}
                     </span>

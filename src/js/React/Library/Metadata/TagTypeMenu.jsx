@@ -1,9 +1,17 @@
 import React, {useEffect, useLayoutEffect, useRef, useState} from 'react';
 import {createPortal} from 'react-dom';
 import LibraryService from '@services/LibraryService';
-import {TAG_TYPES} from '@/shared/tagTypes';
+import {TAG_TYPE_CHOICES, tagTypeLabel} from '@/shared/tagTypes';
 import {notify} from '@services/NotificationService';
 
+/**
+ * Right click on a tag → its category: "Модель", "Автор", "Персонаж"… The choice
+ * is the user's (Tags.userType) and wins over the site's; "Как на сайте" drops it.
+ *
+ *   const { onTagContextMenu, tagTypeMenu } = useTagTypeMenu();
+ *   <span onContextMenu={e => onTagContextMenu(e, name)}>…</span>
+ *   {tagTypeMenu}
+ */
 export function useTagTypeMenu() {
     const [menu, setMenu] = useState(null);
     return {
@@ -16,7 +24,7 @@ export function useTagTypeMenu() {
     };
 }
 
-function TagTypeMenu({menu, onClose}) {
+function TagTypeMenu({ menu, onClose }) {
     const ref = useRef(null);
     const [tag, setTag] = useState(null);
     const [error, setError] = useState('');
@@ -27,10 +35,11 @@ function TagTypeMenu({menu, onClose}) {
             if (!active) return;
             const found = tags.find(t => t.name === menu.name);
             if (found) setTag(found);
-            else setError('Сначала добавьте файл с этим тегом в библиотеку');
+            else setError('Тега нет в библиотеке — сначала добавьте файл с ним');
         }).catch(e => { if (active) setError(e.message); });
         return () => { active = false; };
     }, [menu.name]);
+    // Stays on screen near the pointer.
     useLayoutEffect(() => {
         const el = ref.current;
         const box = el.getBoundingClientRect();
@@ -53,15 +62,37 @@ function TagTypeMenu({menu, onClose}) {
         setBusy(true);
         try {
             await LibraryService.setTagType([tag.id], type);
-            notify({ message: `Тип тега «${tag.name}» изменён`, type: 'success' });
+            notify({ message: type == null ? `«${tag.name}»: тип как на сайте` : `«${tag.name}» — ${tagTypeLabel(type).toLowerCase()}`, type: 'success' });
             onClose();
         } catch (e) { setError(e.message); setBusy(false); }
     };
-    return createPortal(<div ref={ref} className="tm-type-menu" role="menu" aria-label="Изменить тип тега" style={{left: menu.x, top: menu.y}} onClick={e => e.stopPropagation()} onContextMenu={e => e.preventDefault()}>
-        <div className="tm-type-menu-title">Тип «{menu.name}»</div>
-        {error && <div role="alert" className="tm-type-menu-title">{error}</div>}
-        {!tag && !error && <div className="tm-type-menu-title">Загрузка…</div>}
-        <button role="menuitem" disabled={!tag || busy} onClick={() => choose(null)}>Как на сайте / не задан</button>
-        {Object.entries(TAG_TYPES).map(([value, label]) => <button role="menuitemradio" aria-checked={String(tag?.type) === value} disabled={!tag || busy} key={value} className={String(tag?.type) === value ? 'active' : ''} onClick={() => choose(Number(value))}>{label}</button>)}
-    </div>, document.body);
+    const manual = tag?.userType != null;
+    return createPortal(
+        <div ref={ref} className="tm-type-menu" role="menu" aria-label="Тип тега" style={{ left: menu.x, top: menu.y }}
+             onClick={e => e.stopPropagation()} onContextMenu={e => e.preventDefault()}>
+            <div className="tm-type-menu-head">
+                <span className="tm-type-menu-name" title={menu.name}>{menu.name}</span>
+                {tag && <span className="tm-type-menu-now">{tagTypeLabel(tag.type)}{manual ? ' · вручную' : ''}</span>}
+            </div>
+            {error && <div role="alert" className="tm-type-menu-note err">{error}</div>}
+            {!tag && !error && <div className="tm-type-menu-note"><i className="bi bi-arrow-repeat spin" /> Загрузка…</div>}
+            {TAG_TYPE_CHOICES.map(({ id, label }) => {
+                const on = tag?.type === id;
+                return (
+                    <button role="menuitemradio" aria-checked={on} disabled={!tag || busy} key={id} className={on ? 'active' : ''} onClick={() => choose(id)}>
+                        <span className={`tag-dot tag-type-${id}`} />
+                        <span className="tm-type-menu-label">{label}</span>
+                        {on && <i className="bi bi-check2" />}
+                    </button>
+                );
+            })}
+            {manual && (
+                <button role="menuitem" disabled={busy} className="tm-type-menu-reset" onClick={() => choose(null)}>
+                    <i className="bi bi-arrow-counterclockwise" />
+                    <span className="tm-type-menu-label">Как на сайте</span>
+                </button>
+            )}
+        </div>,
+        document.body,
+    );
 }

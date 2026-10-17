@@ -166,5 +166,7 @@
   @each $i, $color in (0: primary, 1: secondary, 2: info, 3: success, 4: danger, 5: warning, 6: dark) {
     &.tag-type-#{$i} { background: rgb(var(--bs-#{$color}-rgb)); }
   }
+  &.tag-type-100 { background: #fd7e14; }       // model
+  &.tag-type-none { background: transparent; box-shadow: inset 0 0 0 1px var(--bs-secondary); }
 }
 

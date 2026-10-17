@@ -15,6 +15,7 @@ const Tag = sequelize.define('Tags', {
 	type: {
 		type: DataTypes.INTEGER
 	},
+	userType: { type: DataTypes.INTEGER, allowNull: true, defaultValue: null },
 	remoteType: {
 		type: DataTypes.INTEGER
 	},

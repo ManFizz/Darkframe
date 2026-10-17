@@ -222,6 +222,8 @@ export const libraryApi = {
     reorderCollections: (data) => invoke('library:reorderCollections', data),
     // Tag manager
     getAllTags:        ()     => invoke('library:getAllTags'),
+    setTagType:        (data) => invoke('library:setTagType', data),
+    getModels:         ()     => invoke('library:getModels'),
     renameTag:         (data) => invoke('library:renameTag', data),
     mergeTags:         (data) => invoke('library:mergeTags', data),
     deleteTag:         (data) => invoke('library:deleteTag', data),
