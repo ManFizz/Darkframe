@@ -274,8 +274,6 @@ const NavBar = () => {
                         isLibrary && { id: 'slideshow', icon: 'bi-play-circle', label: 'Слайд-шоу', hint: 'S',
                             run: () => window.dispatchEvent(new CustomEvent('df:slideshow')) },
                         isLibrary && { id: 'tags', icon: 'bi-tags', label: 'Управление тегами', run: () => setShowTags(true) },
-                        !isLibrary && !isFolder && !isManga && !isModelList && { id: 'safe', icon: state.safeMode ? 'bi-eye' : 'bi-eye-slash',
-                            label: state.safeMode ? 'Выключить безопасный режим' : 'Безопасный режим', run: () => setSafeMode(!state.safeMode) },
                         { id: 'palette', icon: 'bi-search', label: 'Команды и переходы', hint: 'Ctrl+K',
                             run: () => window.dispatchEvent(new CustomEvent('df:openPalette')) },
                         !(isWeb && touch) && { id: 'hotkeys', icon: 'bi-keyboard', label: 'Горячие клавиши', hint: '?', run: openHotkeysHelp },
