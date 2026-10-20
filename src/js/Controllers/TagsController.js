@@ -64,11 +64,18 @@ export function subscribe(callback) {
 	};
 }
 
+const askedForType = new Set();   // names fetched for their kind this session
+
 export function ensureTags(tags = [], sourceType = SOURCE_TYPES.R34) {
 	if (!Array.isArray(tags)) return;
 
 	tags.forEach(tag => {
-		if (!tag || tagsMap.has(tag) || pendingTags.has(tag)) return;
+		if (!tag || pendingTags.has(tag)) return;
+		// Known with a kind: nothing to do. Known without one (seen in a post's tag
+		// list): asked once per session.
+		const known = tagsMap.get(tag);
+		if (known && (known.type != null || askedForType.has(tag))) return;
+		if (known) askedForType.add(tag);
 		pendingTags.set(tag, sourceType);
 	});
 
@@ -96,7 +103,7 @@ async function processQueue() {
 		if (Array.isArray(dbTags)) {
 			dbTags.forEach(tag => {
 				setTagToCache(tag);
-				foundInDb.add(tag.name);
+				if (tag.type != null) foundInDb.add(tag.name);   // without a kind: ask the site
 			});
 		}
 	} catch (e) {
@@ -105,21 +112,41 @@ async function processQueue() {
 
 	const missing = batch.filter(([name]) => !foundInDb.has(name));
 
-	const results = await Promise.all(
-		missing.map(([name, sourceType]) =>
-			fetchTagInfo({ name, sourceType })
-		)
-	);
-
-	updateTags(results.filter(Boolean));
-
-	isFetching = false;
+	// A failing batch must not stop the queue for good.
+	try {
+		const results = await Promise.all(
+			missing.map(([name, sourceType]) =>
+				fetchTagInfo({ name, sourceType })
+			)
+		);
+		updateTags(results.filter(Boolean));
+	} catch (e) {
+		console.warn("Tag info batch failed:", e);
+	} finally {
+		isFetching = false;
+	}
 
 	triggerUpdate();
 
 	if (pendingTags.size > 0) {
 		setTimeout(processQueue, 200);
 	}
+}
+
+/**
+ * Kinds of these tags straight from the site's tag API (R34), past the queue:
+ * for pages that need them now (the favourite tags page). → [{ name, type }]
+ */
+export async function fetchTagKinds(names = [], sourceType = SOURCE_TYPES.R34) {
+	const out = [];
+	for (const name of names) {
+		const known = tagsMap.get(name);
+		if (known?.type != null) { out.push({ name, type: known.type }); continue; }
+		const tag = await fetchTagInfo({ name, sourceType });
+		if (tag) { updateTags([tag]); out.push({ name: tag.name, type: tag.type }); }
+	}
+	if (out.length) triggerUpdate();
+	return out;
 }
 
 /* ---------------- ENCODE ---------------- */
@@ -201,7 +228,7 @@ export function updateTags(newTags = []) {
 			markDirty(tag);
 			hasChanges = true;
 		} else {
-			if (!existing.type && tag.type) {
+			if (existing.type == null && tag.type != null) {   // 0 (general) is a kind too
 				existing.type = tag.type;
 				hasChanges = true;
 				markDirty(existing);

@@ -1,5 +1,6 @@
 import React, {useEffect, useRef, useState} from 'react';
-import {currentR34Source, fetchPreview} from './R34Controller';
+import {currentR34Source} from './R34Controller';
+import {loadPreview, previewCache as cache} from './previewQueue';
 import {buildQueryString, runSearch, setQuery, setView} from './booruQuery';
 import {
     queryOf, removeSearch, reorderSearches, restoreSearch, tagsOf, updateSearch, useSavedSearches,
@@ -9,40 +10,7 @@ import {notify} from '@services/NotificationService';
 import {cachedMediaUrl} from '@/Infrastructure/MediaCache';
 import {FILE_TYPES} from '@/Constants';
 
-const STRIP = 12;
 const SORT_LABEL = { score: 'лучшие', random: 'случайные' };
-
-// ─── Preview loading: session cache + a small queue (boorus rate-limit bursts) ─
-const cache = new Map();          // `${source}|${query}` → { total, items, error, at }
-const waiting = [];
-let running = 0;
-const MAX_PARALLEL = 2;
-
-function pump() {
-    while (running < MAX_PARALLEL && waiting.length) {
-        const job = waiting.shift();
-        running++;
-        job().finally(() => { running--; setTimeout(pump, 250); });
-    }
-}
-
-function loadPreview(key, query, force = false) {
-    if (!force && cache.has(key)) return Promise.resolve(cache.get(key));
-    return new Promise((resolve) => {
-        waiting.push(async () => {
-            let res;
-            try {
-                const { total, items } = await fetchPreview(query, STRIP);
-                res = { total, items, at: Date.now() };
-            } catch (e) {
-                res = { total: null, items: [], error: e.message || 'Ошибка загрузки', at: Date.now() };
-            }
-            cache.set(key, res);
-            resolve(res);
-        });
-        pump();
-    });
-}
 
 const fmt = (n) => (n == null ? '—' : n.toLocaleString('ru-RU'));
 

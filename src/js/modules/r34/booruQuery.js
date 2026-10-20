@@ -11,7 +11,7 @@ import {AppController} from '@controllers/AppInitializerController';
 const HISTORY_KEY = 'jsg_booru_history';
 const HISTORY_LIMIT = 12;
 
-// view: 'search' (results grid) | 'saved' (saved searches page)
+// view: 'search' (results grid) | 'saved' (saved searches page) | 'favtags' (favourite tags page)
 const state = { tags: [], minScore: 0, sort: 'new', rating: 'any', view: 'search' };
 const listeners = new Set();
 const emit = () => listeners.forEach(fn => fn({ ...state, tags: [...state.tags] }));

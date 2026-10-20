@@ -188,6 +188,7 @@ const SectionR34 = ({ currentSource }) => {
             run: () => runSearch({ tags: [f.tag] }),
         })),
         { id: 'booru:saved-page', group: 'Сохранённые поиски', icon: 'bi-grid-3x2-gap', title: 'Страница сохранённых поисков', run: () => setView('saved') },
+        { id: 'booru:favtags-page', group: 'Избранные теги', icon: 'bi-star', title: 'Страница избранных тегов', keywords: 'избранное теги', run: () => setView('favtags') },
     ]);
     useCommandProvider('booru-search', (query) => {
         const tags = query.trim().toLowerCase().split(/\s+/).filter(Boolean);
@@ -238,9 +239,14 @@ const SectionR34 = ({ currentSource }) => {
             <Block title="Избранные теги"
                    extra={favs.length > 0 && (editing
                        ? <span className="bsb-hint">выбери теги для удаления</span>
-                       : <button className="bsb-link" onClick={() => setEditing(true)} title="Удалить избранные теги">
-                             <i className="bi bi-pencil" /> изменить
-                         </button>)}>
+                       : <span className="bsb-extra">
+                             <button className="bsb-link" onClick={() => setEditing(true)} title="Удалить избранные теги">
+                                 <i className="bi bi-pencil" />
+                             </button>
+                             <button className={`bsb-link ${q.view === 'favtags' ? 'active' : ''}`} onClick={() => setView('favtags')} title="Страница избранных тегов: свежие посты по каждому">
+                                 все <i className="bi bi-arrow-right" />
+                             </button>
+                         </span>)}>
                 <div className={`bsb-chips bsb-favs ${editing ? 'editing' : ''} ${drag ? 'dragging' : ''}`}
                      onDragOver={e => { if (drag) e.preventDefault(); }}
                      onDrop={onDrop}>

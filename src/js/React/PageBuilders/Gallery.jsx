@@ -5,6 +5,7 @@ import {getHistory, runSearch, setQuery, useBooruQuery, useSearchStatus} from "@
 import {currentR34Source} from "@modules/r34/R34Controller";
 import useFavoriteTags from "@hooks/useFavoriteTags";
 import SavedSearchesPage from "@modules/r34/SavedSearchesPage";
+import FavTagsPage from '@modules/r34/FavTagsPage';
 import {postKey} from "@modules/r34/libraryLinks";
 import {blockedBy} from "@modules/r34/blacklist";
 import {ipcRenderer} from "@/Infrastructure/electron";
@@ -119,6 +120,7 @@ const Gallery = ({ modalFileId, modalUpdater, displayArray, typeView, loadNextPa
     const { view } = useBooruQuery();
 
     if (view === 'saved') return <SavedSearchesPage source={currentR34Source?.remoteType} />;
+    if (view === 'favtags') return <FavTagsPage source={currentR34Source?.remoteType} />;
     if (!displayArray.length) return <EmptyState />;
 
     return (

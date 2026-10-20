@@ -265,7 +265,7 @@ const Main = () => {
                         />
                     )}
 
-                    {isGeneric && booruView !== 'saved' && !(isBooru && infinite) && (
+                    {isGeneric && booruView === 'search' && !(isBooru && infinite) && (
                         <CustomPagination
                             anchorPage={currentPage}
                             lastLoadedPage={maxPage}
