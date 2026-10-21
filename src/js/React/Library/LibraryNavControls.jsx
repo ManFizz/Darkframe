@@ -333,11 +333,7 @@ export const LibraryNavSort = ({ ctx }) => {
 
     return (
         <div className="d-flex btn-group">
-            {/* Slideshow of what the gallery shows (LibraryView listens). */}
-            <button className="btn btn-outline-secondary" title="Слайд-шоу (S в просмотрщике)"
-                    onClick={() => window.dispatchEvent(new CustomEvent('df:slideshow'))}>
-                <i className="bi bi-play-circle" />
-            </button>
+            {/* (the slideshow is in the "⋯" menu of the top bar) */}
             <AdvancedFilter filters={filters} patch={patch} />
             <RatingFilter filters={filters} update={update} />
 

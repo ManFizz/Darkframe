@@ -16,6 +16,7 @@ import {collectionRequests, folderRequests, mangaRequests, useCommands} from '@s
 import {openManga} from '@modules/manga/openManga';
 import {isWeb} from '@/Infrastructure/electron';
 import {useOpenModel} from '../Models/modelsState';
+import {MoreMenu, SiteSwitcher} from './NavMenus';
 import {installApp, toggleFullscreen, usePwa} from '@services/pwa';
 
 const touch = typeof window !== 'undefined' && !!window.matchMedia?.('(pointer: coarse)').matches;
@@ -88,6 +89,7 @@ const NavBar = () => {
         if (!btn) return;
         setActiveNav(idx);
         setViewPref('lastNav', idx);
+        if (sectionOf(btn) === 'boorus') setViewPref('lastBooru', idx);
         setCurrentSource(btn.type);
         if (btn.action) btn.action();
     };
@@ -186,7 +188,12 @@ const NavBar = () => {
         <header className="navbar navbar-expand-lg sticky-top navbar-glass">
             <div className="container-fluid">
                 <div className="navbar-nav flex-row nav-sections">
-                    {navSections.map(sec => (
+                    {navSections.map(sec => (sec.id === 'boorus' && sec.items.length > 1 ? (
+                        <div key={sec.id} className={`nav-island nav-island--${sec.id}`}>
+                            <SiteSwitcher items={sec.items} activeIdx={activeNav} lastIdx={getViewPrefs().lastBooru}
+                                          onGo={handleNavigation} icon={(btn) => NAV_ICON[btn.label] || NAV_TYPE_ICON[btn.type] || 'bi-globe2'} />
+                        </div>
+                    ) : (
                         <div key={sec.id} className={`nav-island nav-island--${sec.id}`} title={sec.title}>
                             {sec.items.map(({ btn, idx }) => (
                                 <React.Fragment key={btn.label}>
@@ -209,7 +216,7 @@ const NavBar = () => {
                                 </React.Fragment>
                             ))}
                         </div>
-                    ))}
+                    )))}
                 </div>
 
                 {isLibrary && libraryCtx ? (
@@ -251,15 +258,6 @@ const NavBar = () => {
                         </>
                     )}
 
-                    {isLibrary && (
-                        <button
-                            className="btn navbar-settings-btn"
-                            onClick={() => setShowTags(true)}
-                            title="Управление тегами"
-                        >
-                            <i className="bi bi-tags-fill" />
-                        </button>
-                    )}
                     {pwa.installable && (
                         <button className="btn navbar-settings-btn on" onClick={() => installApp()} title="Установить как приложение">
                             <i className="bi bi-download" />
@@ -270,15 +268,18 @@ const NavBar = () => {
                         <button className="btn navbar-settings-btn" onClick={toggleFullscreen} title={pwa.fullscreen ? 'Выйти из полноэкранного режима' : 'Во весь экран'}>
                             <i className={`bi ${pwa.fullscreen ? 'bi-fullscreen-exit' : 'bi-arrows-fullscreen'}`} />
                         </button>
-                    )) : (
-                        <button
-                            className="btn navbar-settings-btn"
-                            onClick={openHotkeysHelp}
-                            title="Горячие клавиши (?)"
-                        >
-                            <i className="bi bi-keyboard" />
-                        </button>
-                    )}
+                    )) : null}
+                    {/* Used now and then: one menu instead of a button each. */}
+                    <MoreMenu items={[
+                        isLibrary && { id: 'slideshow', icon: 'bi-play-circle', label: 'Слайд-шоу', hint: 'S',
+                            run: () => window.dispatchEvent(new CustomEvent('df:slideshow')) },
+                        isLibrary && { id: 'tags', icon: 'bi-tags', label: 'Управление тегами', run: () => setShowTags(true) },
+                        !isLibrary && !isFolder && !isManga && !isModelList && { id: 'safe', icon: state.safeMode ? 'bi-eye' : 'bi-eye-slash',
+                            label: state.safeMode ? 'Выключить безопасный режим' : 'Безопасный режим', run: () => setSafeMode(!state.safeMode) },
+                        { id: 'palette', icon: 'bi-search', label: 'Команды и переходы', hint: 'Ctrl+K',
+                            run: () => window.dispatchEvent(new CustomEvent('df:openPalette')) },
+                        !(isWeb && touch) && { id: 'hotkeys', icon: 'bi-keyboard', label: 'Горячие клавиши', hint: '?', run: openHotkeysHelp },
+                    ]} />
                     <button
                         className="btn navbar-settings-btn"
                         onClick={() => openPanel(isLibrary ? 'manage' : 'settings')}

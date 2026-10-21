@@ -28,8 +28,11 @@ const CommandPalette = () => {
                 setActive(0);
             }
         };
+        // …or from a menu (the top bar's "⋯").
+        const onOpen = () => { setOpen(true); setQuery(''); setActive(0); };
         document.addEventListener('keydown', onKey, true);
-        return () => document.removeEventListener('keydown', onKey, true);
+        window.addEventListener('df:openPalette', onOpen);
+        return () => { document.removeEventListener('keydown', onKey, true); window.removeEventListener('df:openPalette', onOpen); };
     }, []);
 
     const items = useMemo(() => {
