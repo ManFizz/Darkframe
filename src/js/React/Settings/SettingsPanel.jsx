@@ -9,15 +9,18 @@ const SECRET_RE = /key|password|token/i;
 
 // Human labels + descriptions. Unknown keys fall back to the raw key, no desc.
 // Remote-section toggles, split out of the generic "settings" into their own card.
-const MODULE_KEYS = ['EnableR34', 'EnableGelbooru', 'EnableR34Favs', 'EnableDanbooru', 'EnableManga'];
+const MODULE_KEYS = ['ShowAdult', 'EnableR34', 'EnableGelbooru', 'EnableR34Favs', 'EnableDanbooru', 'EnableManga'];
+// Sections that are 18+ only: shown (with their keys) once ShowAdult is on.
+const ADULT_KEYS = ['EnableR34', 'EnableGelbooru', 'EnableR34Favs', 'EnableDanbooru'];
 
 const META = {
     modules: {
+        ShowAdult:      { label: 'Показывать 18+ контент', desc: 'Сайты для взрослых: Rule34, Gelbooru, Danbooru, а в манге — nhentai, e-hentai, AllHentai. Выключено — их вкладки и настройки скрыты. Ваша библиотека не меняется' },
         EnableR34:      { label: 'Rule34',   desc: 'Показывать раздел rule34.xxx' },
         EnableGelbooru: { label: 'Gelbooru', desc: 'Показывать раздел gelbooru.com' },
         EnableR34Favs:  { label: 'R34 Favs', desc: 'Показывать раздел избранного rule34.xxx' },
         EnableDanbooru: { label: 'Danbooru', desc: 'Показывать раздел danbooru.donmai.us' },
-        EnableManga:    { label: 'Манга',    desc: 'Раздел онлайн-манги: nhentai, e-hentai, AllHentai, MangaDex' },
+        EnableManga:    { label: 'Манга',    desc: 'Раздел онлайн-манги: MangaDex (и nhentai, e-hentai, AllHentai при включённом 18+)' },
     },
     settings: {
         SafeView:         { label: 'Безопасный просмотр',     desc: 'Скрывать чувствительный контент по умолчанию' },
@@ -162,7 +165,7 @@ const SettingsPanel = ({ onClose }) => {
         configApi.get()
             .then(({ settings, private: p }) => {
                 // Sections added later still get a switch in older settings files.
-                setSettings({ EnableDanbooru: false, EnableManga: true, CloseToTray: false, ...settings });
+                setSettings({ ShowAdult: false, EnableDanbooru: false, EnableManga: true, CloseToTray: false, ...settings });
                 // Keys added after a user's data/private.js was created still get a field.
                 setPriv({ GelbooruApiKey: '', GelbooruUserId: '', DanbooruLogin: '', DanbooruApiKey: '', ...p });
             })
@@ -187,9 +190,10 @@ const SettingsPanel = ({ onClose }) => {
 
     // Hide a section's credentials while that section is disabled. rule34's key/id
     // back both the R34 and R34 Favs sections, so either one keeps them visible.
-    const r34On = !!(settings?.EnableR34 || settings?.EnableR34Favs);
-    const gelOn = !!settings?.EnableGelbooru;
-    const danOn = !!settings?.EnableDanbooru;
+    const adultOn = settings?.ShowAdult === true;
+    const r34On = adultOn && !!(settings?.EnableR34 || settings?.EnableR34Favs);
+    const gelOn = adultOn && !!settings?.EnableGelbooru;
+    const danOn = adultOn && !!settings?.EnableDanbooru;
     const privateKeys = priv
         ? Object.keys(priv).filter(k =>
             !((k === 'R34ApiKey' || k === 'R34UserId') && !r34On) &&
@@ -213,7 +217,7 @@ const SettingsPanel = ({ onClose }) => {
                         <Section
                             icon="bi-grid" title="Разделы"
                             value={settings} meta={META.modules}
-                            keys={MODULE_KEYS.filter(k => k in settings)}
+                            keys={MODULE_KEYS.filter(k => k in settings && (adultOn || !ADULT_KEYS.includes(k)))}
                             onChange={setSettings}
                         />
                         <Section

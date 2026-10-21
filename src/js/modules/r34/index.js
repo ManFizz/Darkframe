@@ -2,6 +2,7 @@ import ModuleRegistry from '@/ModuleRegistry';
 import {SOURCE_TYPES} from '@/Constants';
 import Settings from '@data/settings';
 import {updateR34Source} from './R34Controller';
+import {showAdult} from '@/shared/adult';
 import {DisplayRemoteFavoriteR34, StopR34Loading} from './R34FavoriteController';
 import SectionR34 from './SectionR34';
 
@@ -9,6 +10,7 @@ import SectionR34 from './SectionR34';
 // settings shows or hides its tab right away.
 function navItems() {
     const items = [];
+    if (!showAdult(Settings)) return items;   // 18+ off: no booru tabs at all
     if (Settings.EnableR34)      items.push({label: 'R34',      type: SOURCE_TYPES.R34});
     if (Settings.EnableGelbooru) items.push({label: 'Gelbooru', type: SOURCE_TYPES.GELBOORU});
     if (Settings.EnableR34Favs)  items.push({label: 'R34 Favs', type: SOURCE_TYPES.R34, action: DisplayRemoteFavoriteR34});

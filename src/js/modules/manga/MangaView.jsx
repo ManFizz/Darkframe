@@ -12,6 +12,9 @@ import {errText, loginTo, readOnline} from './onlineReader';
 import SearchBar, {pushRecent, sameFilter} from './SearchBar';
 import TagBrowser from './TagBrowser';
 import {useMangaDownloads} from './useMangaDownloads';
+import Settings from '@data/settings';
+import {useConfigVersion} from '@services/liveConfig';
+import {isAdultMangaSource, showAdult} from '@/shared/adult';
 
 /**
  * Online manga: search on the sources, a gallery card, reading without saving,
@@ -656,6 +659,9 @@ const DownloadsPane = ({ jobs, onOpenGallery }) => {
 const RecentPane = ({ onOpenGallery, onRead }) => {
     const [lib, setLib] = useState(null);
     const [online, setOnline] = useState(onlineHistory.list);
+    // 18+ off: what was read on those sites isn't listed either.
+    useConfigVersion();
+    const visibleOnline = showAdult(Settings) ? online : online.filter(e => !isAdultMangaSource(e.source));
     useEffect(() => { mangaApi.recent(40).then(setLib).catch(() => setLib([])); }, []);
     useEffect(() => onlineHistory.subscribe(() => setOnline(onlineHistory.list())), []);
 
@@ -663,7 +669,7 @@ const RecentPane = ({ onOpenGallery, onRead }) => {
         <div className="mo-pane">
             <div className="folder-toolbar mo-toolbar">
                 <div className="mo-crumb"><i className="bi bi-clock-history" /> Продолжить чтение</div>
-                {online.length > 0 && (
+                {visibleOnline.length > 0 && (
                     <button className="ftb-btn" onClick={() => { if (window.confirm('Очистить историю онлайн-чтения?')) onlineHistory.clear(); }}>
                         <i className="bi bi-trash3" /> <span>Очистить онлайн-историю</span>
                     </button>
@@ -686,9 +692,9 @@ const RecentPane = ({ onOpenGallery, onRead }) => {
                     ))}
                 </div>
                 <div className="mo-section-head"><span>Онлайн</span></div>
-                {!online.length && <div className="mo-empty small">Здесь появится то, что вы читали онлайн</div>}
+                {!visibleOnline.length && <div className="mo-empty small">Здесь появится то, что вы читали онлайн</div>}
                 <div className="mo-grid">
-                    {online.map(e => (
+                    {visibleOnline.map(e => (
                         <div key={e.key} className="mo-card" onClick={() => onOpenGallery({ source: e.source, id: e.id, preview: { title: e.title, cover: e.cover } })}
                              onContextMenu={ev => { ev.preventDefault(); onRead({ source: e.source, id: e.id }); }} title={`${e.title}
 ПКМ — продолжить чтение`}>
@@ -843,9 +849,13 @@ const SubsPane = ({ state, onOpenGallery }) => {
 
 // ─── Layout ──────────────────────────────────────────────────────────────────
 const MangaView = () => {
-    const [sources, setSources] = useState([]);
+    const [allSources, setSources] = useState([]);
+    // 18+ off: only the sites without adult content (MangaDex).
+    useConfigVersion();
+    const adult = showAdult(Settings);
+    const sources = adult ? allSources : allSources.filter(s => !s.adult);
     const [view, setView] = useState(() => loadPrefs().view || 'search');
-    const [sourceId, setSourceId] = useState(() => loadPrefs().source || 'nhentai');
+    const [sourceId, setSourceId] = useState(() => loadPrefs().source || 'mangadex');
     const [gallery, setGallery] = useState(null);       // { source, id, preview }
     const [searchKey, setSearchKey] = useState(0);
     const jobs = useMangaDownloads();
@@ -857,7 +867,14 @@ const MangaView = () => {
     useEffect(() => savePrefs({ view: view === 'gallery' ? 'search' : view, source: sourceId }), [view, sourceId]);
 
     const source = sources.find(s => s.id === sourceId) || sources[0];
-    const openGallery = useCallback((g) => { setGallery(g); setView('gallery'); }, []);
+    const openGallery = useCallback((g) => {
+        if (!showAdult(Settings) && isAdultMangaSource(g?.source)) {
+            notify({ message: 'Этот сайт скрыт: включите «Показывать 18+ контент» в настройках', type: 'info' });
+            return;
+        }
+        setGallery(g);
+        setView('gallery');
+    }, []);
     const openFromSearch = useCallback((g) => openGallery({ ...g, from: 'search' }), [openGallery]);
     // Right click on a card: straight into the reader.
     const quickRead = useCallback(async ({ source: src, id }) => {
