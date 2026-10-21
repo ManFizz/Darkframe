@@ -11,3 +11,5 @@ data/backup
 /downloads/
 /cache/
 /scripts/custom/
+/userscripts/dist
+/userscripts/sites/private

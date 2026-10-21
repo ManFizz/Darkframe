@@ -13,6 +13,7 @@
     "build": "npm run bundle && electron .",
     "view": "electron .",
     "test": "node tools/run-tests.js",
+    "userscripts": "node userscripts/build.js",
     "smoke": "node tools/smoke.js",
     "check:fresh": "node tools/fresh-check.js"
   },
