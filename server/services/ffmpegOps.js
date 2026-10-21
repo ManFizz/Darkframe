@@ -201,7 +201,27 @@ async function remuxToMp4(src, dst, { onProgress } = {}) {
     return dst;
 }
 
+/**
+ * A video without sound + its sound track, each a separate file (Reddit's v.redd.it
+ * serves them as two DASH streams) → one MP4. The streams are copied as they are.
+ */
+async function muxAudioVideo(videoSrc, audioSrc, dst) {
+    const tmp = `${dst}.part.mp4`;
+    try {
+        await run(ffmpeg()
+            .input(videoSrc)
+            .input(audioSrc)
+            .outputOptions(['-map', '0:v:0', '-map', '1:a:0', '-c', 'copy', '-movflags', '+faststart', '-y'])
+            .output(tmp));
+        fs.renameSync(tmp, dst);
+    } catch (e) {
+        fs.rmSync(tmp, { force: true });
+        throw e;
+    }
+    return dst;
+}
+
 module.exports = {
-    THUMB_SIZE, isUrl, timemarkToSec, probe, remuxToMp4,
+    THUMB_SIZE, isUrl, timemarkToSec, probe, remuxToMp4, muxAudioVideo,
     trimFile, captureFrame, thumbAt, storyboard, hashFile, replaceFile,
 };

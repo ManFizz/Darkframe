@@ -170,9 +170,52 @@ function authorize(req, res, scope) {
     return true;
 }
 
+// Same, but any one of `scopes` will do.
+function authorizeAny(req, res, scopes) {
+    const token = extractToken(req);
+    if (scopes.some(s => apiTokens.verify(token, s))) return true;
+    respond(res, 401, { error: 'unauthorized', requiredScope: scopes.join(' | ') });
+    return false;
+}
+
+// `createdAt` from a client: unix seconds (milliseconds are recognised too) or an ISO
+// date. Anything unusable → undefined, and the file's own date is kept.
+function parseCreatedAt(v) {
+    if (v === undefined || v === null || v === '') return undefined;
+    let n = typeof v === 'number' ? v : (/^\d+(\.\d+)?$/.test(String(v).trim()) ? Number(v) : Date.parse(v) / 1000);
+    if (!Number.isFinite(n) || n <= 0) return undefined;
+    if (n > 1e12) n /= 1000;   // milliseconds
+    return Math.floor(n);
+}
+
+// The sound track of a video that comes without one (v.redd.it): the first of the
+// candidate links that downloads is muxed into `videoPath`. Returns the path of the
+// file to import — the muxed one, or the silent video when no candidate worked.
+async function addAudioTrack(videoPath, audioUrls, tmpBase, cleanup) {
+    for (const audioUrl of audioUrls) {
+        const audioPath = `${tmpBase}.audio.download`;
+        const muxed     = `${tmpBase}.muxed.mp4`;
+        cleanup.push(audioPath, muxed);
+        try {
+            await downloadWithRetry(audioUrl, audioPath, 2, () => '.mp4');
+            await require('./services/ffmpegOps').muxAudioVideo(videoPath, audioPath, muxed);
+            return { filePath: muxed, audio: true };
+        } catch (e) {
+            console.warn(`[API] Audio track ${audioUrl} not used: ${e.message}`);
+            fs.rmSync(audioPath, { force: true });
+        }
+    }
+    return { filePath: videoPath, audio: false };
+}
+
+// Body: { url, sourceUrl?, tags?, collectionId?, title?, notes?, createdAt?, audioUrl? }
+// `audioUrl` — a link (or a list of links to try in order) to a separate sound track.
 async function handleAdd(req, res) {
     const body = await parseBody(req);
     const { url, sourceUrl, tags = [], collectionId = null, title, notes } = body;
+    const createdAt = parseCreatedAt(body.createdAt);
+    const audioUrls = (Array.isArray(body.audioUrl) ? body.audioUrl : [body.audioUrl])
+        .filter(u => typeof u === 'string' && /^https?:\/\//i.test(u));
 
     if (!url) { respond(res, 400, { error: 'url is required' }); return; }
 
@@ -191,17 +234,25 @@ async function handleAdd(req, res) {
     const ext = urlExtTrusted || extFromContentType(contentType) || '.jpg';
     const tmpPath = `${tmpBase}${ext}`;
     fs.renameSync(tmpDownload, tmpPath);
+    const cleanup = [tmpPath];
 
-    const result = await importFile({
-        origin:       'api',
-        filePath:     tmpPath,
-        collectionId,
-        tags,
-        sourceUrl:    sourceUrl || url,
-        overrides:    { title: title || path.basename(urlPath, urlExt) || 'media', notes: notes || '' },
-    });
-
-    try { fs.unlinkSync(tmpPath); } catch {}
+    let result, audio = null;
+    try {
+        let filePath = tmpPath;
+        if (audioUrls.length && /^\.(mp4|mov|webm|mkv)$/.test(ext)) {
+            ({ filePath, audio } = await addAudioTrack(tmpPath, audioUrls, tmpBase, cleanup));
+        }
+        result = await importFile({
+            origin:       'api',
+            filePath,
+            collectionId,
+            tags,
+            sourceUrl:    sourceUrl || url,
+            overrides:    { title: title || path.basename(urlPath, urlExt) || 'media', notes: notes || '', createdAt },
+        });
+    } finally {
+        for (const f of cleanup) fs.rmSync(f, { force: true });
+    }
 
     if (result.skipped) {
         respond(res, 409, {
@@ -212,12 +263,13 @@ async function handleAdd(req, res) {
         return;
     }
 
-    respond(res, 200, { ok: true, id: result.item.id });
+    respond(res, 200, { ok: true, id: result.item.id, ...(audio === null ? {} : { audio }) });
 }
 
 async function handleAddBase64(req, res) {
     const body = await parseBody(req);
     const { base64, mimeType, sourceUrl, title } = body;
+    const createdAt = parseCreatedAt(body.createdAt);
 
     if (!base64) { respond(res, 400, { error: 'base64 required' }); return; }
 
@@ -236,7 +288,7 @@ async function handleAddBase64(req, res) {
         collectionId: null,
         tags:         [],
         sourceUrl:    sourceUrl || '',
-        overrides:    { title: title || '' },
+        overrides:    { title: title || '', createdAt },
     });
 
     try { fs.unlinkSync(tmpPath); } catch {}
@@ -264,6 +316,7 @@ async function handleAddStream(req, res) {
         title = '', tags = [], notes = '',
         sourceUrl = '', collectionId = null, mimeType = '',
     } = meta;
+    const createdAt = parseCreatedAt(meta.createdAt);
 
     // Extension: explicit mime from the client, then the request Content-Type,
     // then a video default (this path is video-oriented).
@@ -318,7 +371,7 @@ async function handleAddStream(req, res) {
         collectionId,
         tags:         Array.isArray(tags) ? tags : [],
         sourceUrl:    sourceUrl || '',
-        overrides:    { title: title || 'media', notes: notes || '' },
+        overrides:    { title: title || 'media', notes: notes || '', createdAt },
     });
 
     try { fs.unlinkSync(tmpPath); } catch {}
@@ -333,6 +386,17 @@ async function handleAddStream(req, res) {
     }
 
     respond(res, 200, { ok: true, id: result.item.id });
+}
+
+// Which of these source links are already in the library (trashed items included)?
+// Body: { sourceUrls: [...] } → { ok, present: [...] } — the given links, as given.
+// Reddit post links match by post id, whatever the host / slug / trailing slash.
+async function handleHas(req, res) {
+    const { sourceUrls } = await parseBody(req);
+    if (!Array.isArray(sourceUrls)) { respond(res, 400, { error: 'sourceUrls (array) required' }); return; }
+    if (sourceUrls.length > 1000) { respond(res, 400, { error: 'at most 1000 sourceUrls per request' }); return; }
+    const present = await require('./services/sourceMatch').findPresentSources(sourceUrls);
+    respond(res, 200, { ok: true, present });
 }
 
 async function handleRim(req, res) {
@@ -394,6 +458,17 @@ async function handleManga(req, res) {
     respond(res, 200, { ok: true, source: m.source, id: m.id, job: { id: job.id, status: job.status } });
 }
 
+// The browser userscript, built fresh from userscripts/ (its @updateURL points
+// here, so Violentmonkey picks up edits on its next update check). No token: it's
+// code, nothing private.
+function handleUserscript(res) {
+    const buildPath = path.join(__dirname, '..', 'userscripts', 'build.js');
+    delete require.cache[require.resolve(buildPath)];
+    const text = require(buildPath).build();
+    res.writeHead(200, { 'Content-Type': 'text/javascript; charset=utf-8', 'Cache-Control': 'no-store' });
+    res.end(text);
+}
+
 async function handleRequest(req, res) {
     try {
         if (req.method === 'OPTIONS') { respond(res, 204, {}); return; }
@@ -401,13 +476,16 @@ async function handleRequest(req, res) {
         // Open handshake endpoint: no token needed, and it advertises whether auth is on
         // so a userscript can tell the user to configure a token.
         if (req.method === 'GET'  && req.url === '/api/ping') {
-            respond(res, 200, { ok: true, version: '1.2', requireAuth: apiTokens.getConfig().requireAuth });
+            respond(res, 200, { ok: true, version: '1.3', requireAuth: apiTokens.getConfig().requireAuth });
             return;
         }
+
+        if (req.method === 'GET' && /^\/userscripts\/darkframe\.(user|meta)\.js(\?|$)/.test(req.url)) { handleUserscript(res); return; }
 
         if (req.method === 'POST' && req.url === '/api/add')                 { if (authorize(req, res, 'import'))      await handleAdd(req, res);        return; }
         if (req.method === 'POST' && req.url === '/api/addBase64')           { if (authorize(req, res, 'import'))      await handleAddBase64(req, res);  return; }
         if (req.method === 'POST' && req.url.startsWith('/api/addStream'))   { if (authorize(req, res, 'import'))      await handleAddStream(req, res);  return; }
+        if (req.method === 'POST' && req.url === '/api/has')                 { if (authorizeAny(req, res, ['read', 'import'])) await handleHas(req, res); return; }
         if (req.method === 'POST' && req.url === '/api/manga')        { if (authorize(req, res, 'import'))      await handleManga(req, res);      return; }
         if (req.method === 'GET'  && req.url.startsWith('/api/rim?')) { if (authorize(req, res, 'rim'))         await handleRim(req, res);        return; }
         if (req.method === 'GET'  && req.url === '/api/collections')  { if (authorize(req, res, 'read'))        await handleCollections(res);     return; }
@@ -437,4 +515,4 @@ function stopApiServer() {
     server = null;
 }
 
-module.exports = { startApiServer, stopApiServer, PORT };
+module.exports = { startApiServer, stopApiServer, PORT, handleRequest, parseCreatedAt };

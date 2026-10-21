@@ -14,6 +14,7 @@ const { getActive } = require('../libraryRegistry');
 const { generateImageThumb, generateVideoThumb, getVideoDuration } = require('./thumbService');
 const { resolveAlias } = require('./tagAdmin');
 const { beginImport } = require('./libraryEvents');
+const { TAG_TYPES } = require('../../src/js/shared/tagTypes');
 
 const LIBRARY_REMOTE_TYPE = SOURCE_TYPES.LIBRARY;
 
@@ -45,21 +46,40 @@ function getFileHash(filePath) {
     });
 }
 
-async function ensureTag(name, transaction) {
+// `type` — the tag's category as the source site gives it (e.g. 1 "Автор" for a
+// creator). It only fills a tag that has none yet; the user's own choice
+// (userType) is never touched.
+async function ensureTag(name, transaction, type = null) {
     // Apply permanent rename rules (e.g. "dots" → "dot") at the single point where
     // tags are created/associated.
     const resolved = await resolveAlias(name);
-    const [tag] = await Tag.findOrCreate({
+    const [tag, created] = await Tag.findOrCreate({
         where: { name: resolved },
         defaults: {
             name: resolved,
             remoteType: LIBRARY_REMOTE_TYPE,
-            type: null,
+            type,
             count: null,
         },
         transaction,
     });
+    if (!created && type != null && tag.type == null) await tag.update({ type }, { transaction });
     return tag;
+}
+
+// Tags as callers send them: names, or { name, type } with a site category.
+// → [{ name, type }] with blank names and unknown categories dropped.
+function normalizeTags(tags) {
+    if (!Array.isArray(tags)) return [];
+    const out = [];
+    for (const t of tags) {
+        const name = String((t && typeof t === 'object' ? t.name : t) ?? '').trim().slice(0, 255);
+        if (!name) continue;
+        const raw = t && typeof t === 'object' ? t.type : null;
+        const type = Number.isInteger(raw) && Object.prototype.hasOwnProperty.call(TAG_TYPES, raw) ? raw : null;
+        out.push({ name, type });
+    }
+    return out;
 }
 
 function ensureDir(dirPath) {
@@ -119,6 +139,7 @@ async function importFile({ job = null, quiet = false, origin = 'app', ...args }
 async function importFileImpl({ filePath, collectionId = null, tags = [], sourceUrl = '', overrides = {}, allowDuplicate = false }) {
     const safeCollectionId =
         collectionId === 'ALL' || collectionId === 'UNCATEGORIZED' ? null : collectionId || null;
+    tags = normalizeTags(tags);
 
     const fileHash = await getFileHash(filePath);
 
@@ -192,7 +213,9 @@ async function importFileImpl({ filePath, collectionId = null, tags = [], source
             collectionId: safeCollectionId,
             fileHash,
             importedAt: overrides.importedAt ?? Math.floor(Date.now() / 1000),
-            createdAt:  Math.floor(stat.birthtimeMs / 1000),
+            // When the file was made: the source's own date when the caller knows it
+            // (a post's publication time), else the file's.
+            createdAt:  overrides.createdAt ?? Math.floor(stat.birthtimeMs / 1000),
             order:      0,
         }, { transaction: t });
 
@@ -202,8 +225,8 @@ async function importFileImpl({ filePath, collectionId = null, tags = [], source
             // The same tag twice (another case, another group on the site, two
             // names renamed to one) is attached once.
             const tagIds = new Set();
-            for (const name of tags) {
-                tagIds.add((await ensureTag(name, t)).id);
+            for (const { name, type } of tags) {
+                tagIds.add((await ensureTag(name, t, type)).id);
             }
             await ItemTag.bulkCreate(
                 [...tagIds].map(tagId => ({ itemId: id, tagId })),
@@ -307,4 +330,4 @@ async function importDirectory({ dirPath, collectionId, tags = [], sourceUrl = '
     return importFiles({ filePaths, collectionId, tags, sourceUrl });
 }
 
-module.exports = { importFiles, importFile, itemsPath, ensureTag, hashExistingItems, importDirectory, SUPPORTED_EXTENSIONS };
+module.exports = { importFiles, importFile, itemsPath, ensureTag, normalizeTags, hashExistingItems, importDirectory, SUPPORTED_EXTENSIONS };
