@@ -16,7 +16,12 @@ function qrSvg(text) {
 }
 
 function register() {
-    ipcMain.handle('remote:status', () => remote.status());
+    // + routeWarning: a VPN / TUN adapter that swallows the replies to the phone.
+    ipcMain.handle('remote:status', async () => {
+        const st = remote.status();
+        const routeWarning = st.running ? await require('../remote/routeCheck').check(devices.lanAddresses()).catch(() => null) : null;
+        return { ...st, routeWarning };
+    });
 
     ipcMain.handle('remote:setSettings', async (_, { enabled, port }) => {
         const before = devices.settings();

@@ -144,12 +144,13 @@ function lanAddresses() {
         for (const a of addrs || []) {
             if (a.family !== 'IPv4' || a.internal) continue;
             if (/^169\.254\./.test(a.address)) continue;
-            const virtual = /vEthernet|VirtualBox|VMware|WSL|Hyper-V|docker|vbox|Loopback/i.test(name);
+            // Virtual machines and VPN / proxy tunnels: a phone can't reach the PC there.
+            const virtual = /vEthernet|VirtualBox|VMware|WSL|Hyper-V|docker|vbox|Loopback|TUN|TAP|VPN|WireGuard|Tailscale|ZeroTier|Hamachi|Radmin|Karing|Clash|sing-?box|OpenVPN|Nord|Proton/i.test(name);
             out.push({ name, address: a.address, virtual });
         }
     }
     // Typical home networks first, virtual adapters last.
-    const rank = (a) => (a.virtual ? 2 : /^(192\.168|10\.|172\.(1[6-9]|2\d|3[01]))\./.test(a.address) ? 0 : 1);
+    const rank = (a) => (a.virtual ? 3 : /^192\.168\./.test(a.address) ? 0 : /^(10\.|172\.(1[6-9]|2\d|3[01]))\./.test(a.address) ? 1 : 2);
     return out.sort((a, b) => rank(a) - rank(b));
 }
 

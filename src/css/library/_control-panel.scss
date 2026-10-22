@@ -577,3 +577,11 @@
   code { padding: 1px 5px; border-radius: 5px; background: var(--bs-secondary-bg); word-break: break-all; }
   .cp-linkbtn { margin-left: 6px; font-size: 12px; }
 }
+.rm-warn {
+  display: flex; gap: 10px; align-items: flex-start; margin: 10px 0; padding: 10px 14px; border-radius: 12px;
+  background: color-mix(in srgb, var(--bs-warning) 12%, transparent); border: 1px solid color-mix(in srgb, var(--bs-warning) 45%, transparent);
+  font-size: 13px;
+  > .bi { color: var(--bs-warning); font-size: 18px; margin-top: 1px; }
+  > div { display: flex; flex-direction: column; gap: 3px; }
+  span { color: var(--bs-secondary-color); }
+}

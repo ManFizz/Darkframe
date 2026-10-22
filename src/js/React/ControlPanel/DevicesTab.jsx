@@ -180,6 +180,19 @@ const DevicesTab = () => {
                 </div>
             )}
 
+            {st?.routeWarning && (
+                <div className="rm-warn">
+                    <i className="bi bi-exclamation-triangle-fill" />
+                    <div>
+                        <b>Телефон может не подключиться: «{st.routeWarning.adapter}» перехватывает домашнюю сеть.</b>
+                        <span>
+                            Ответы на {st.routeWarning.count} адрес(ов) домашней сети уходят в этот VPN / прокси-туннель вместо «{st.routeWarning.lanAdapter}» —
+                            если среди них адрес телефона, он не дождётся ответа. Полностью закройте эту программу (или выключите в ней режим TUN),
+                            либо включите в ней обход локальной сети («Bypass LAN», исключение 192.168.0.0/16).
+                        </span>
+                    </div>
+                </div>
+            )}
             {st?.running && <AppInstallHelp urls={st.urls} />}
 
             {st && (
