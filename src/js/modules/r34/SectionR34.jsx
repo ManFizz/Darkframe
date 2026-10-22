@@ -87,12 +87,33 @@ const Segmented = ({ options, value, onChange }) => (
     </div>
 );
 
-const Block = ({ title, extra, children }) => (
-    <div className="bsb-block">
-        <div className="bsb-title"><span>{title}</span>{extra}</div>
-        {children}
-    </div>
-);
+// Folded blocks of the sidebar (by title), remembered.
+const FOLDED_KEY = 'jsg_booru_blocks_folded';
+const readFolded = () => { try { return new Set(JSON.parse(localStorage.getItem(FOLDED_KEY) || '[]')); } catch { return new Set(); } };
+
+// A sidebar block; the title folds it (`count` — shown while folded).
+const Block = ({ title, extra, children, count = null }) => {
+    const [folded, setFolded] = useState(() => readFolded().has(title));
+    const toggle = () => {
+        const all = readFolded();
+        if (folded) all.delete(title); else all.add(title);
+        try { localStorage.setItem(FOLDED_KEY, JSON.stringify([...all])); } catch { /* ignore */ }
+        setFolded(!folded);
+    };
+    return (
+        <div className={`bsb-block ${folded ? 'folded' : ''}`}>
+            <div className="bsb-title">
+                <span className="bsb-fold" role="button" tabIndex={0} onClick={toggle} title={folded ? 'Развернуть' : 'Свернуть'}
+                      onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(); } }}>
+                    <i className="bi bi-chevron-down bsb-fold-caret" />{title}
+                    {folded && count != null && <span className="bsb-fold-count">{count}</span>}
+                </span>
+                {!folded && extra}
+            </div>
+            {!folded && children}
+        </div>
+    );
+};
 
 // Search sidebar for the booru sources: result summary, sort / score / rating
 // modifiers, saved tags and recent searches. The tag input itself lives in the top bar.
@@ -142,6 +163,15 @@ const SectionR34 = ({ currentSource }) => {
     const favs = drag
         ? [...new Set(drag.order)].map(name => savedFavs.find(f => f.tag === name)).filter(Boolean)
         : savedFavs;
+    // A long list: find a tag in it (dragging shows the whole list).
+    const [favFilter, setFavFilter] = useState('');
+    const fq = favFilter.trim().toLowerCase();
+    const shownFavs = fq && !drag ? favs.filter(f => f.tag.includes(fq)) : favs;
+    // One tag out of the favourites, with an undo.
+    const removeOne = (tag) => {
+        removeFavTag(tag, currentSource);
+        notify({ message: `«${tag}» убран из избранного`, type: 'info', duration: 6000, action: { label: 'Вернуть', onClick: () => addFavTag(tag, currentSource) } });
+    };
 
     const onDragStart = (e, tag) => {
         e.dataTransfer.effectAllowed = 'move';
@@ -236,7 +266,7 @@ const SectionR34 = ({ currentSource }) => {
                 <Segmented options={RATINGS} value={q.rating} onChange={v => change({ rating: v })} />
             </Block>
 
-            <Block title="Избранные теги"
+            <Block title="Избранные теги" count={favs.length || null}
                    extra={favs.length > 0 && (editing
                        ? <span className="bsb-hint">выбери теги для удаления</span>
                        : <span className="bsb-extra">
@@ -247,10 +277,14 @@ const SectionR34 = ({ currentSource }) => {
                                  все <i className="bi bi-arrow-right" />
                              </button>
                          </span>)}>
+                {savedFavs.length > 12 && !editing && (
+                    <input className="bsb-fav-filter" placeholder={`Найти среди ${savedFavs.length}…`} value={favFilter}
+                           onChange={e => setFavFilter(e.target.value)} onKeyDown={e => { if (e.key === 'Escape') setFavFilter(''); }} />
+                )}
                 <div className={`bsb-chips bsb-favs ${editing ? 'editing' : ''} ${drag ? 'dragging' : ''}`}
                      onDragOver={e => { if (drag) e.preventDefault(); }}
                      onDrop={onDrop}>
-                    {favs.map(f => {
+                    {shownFavs.map(f => {
                         const st = tagState(f.tag);
                         const isMarked = marked.has(f.tag);
                         if (editing) {
@@ -276,11 +310,16 @@ const SectionR34 = ({ currentSource }) => {
                                   onDragOver={e => onDragOverTag(e, f.tag)}
                                   onDragEnd={onDragEnd}
                                   onClick={() => cycleTag(f.tag)}
-                                  title={`${f.tag}\n${st === 'include' ? 'В запросе — нажми, чтобы исключить' : st === 'exclude' ? 'Исключён — нажми, чтобы убрать' : 'Нажми, чтобы добавить в запрос'} · перетащи, чтобы переставить`}>
+                                  onContextMenu={e => { e.preventDefault(); removeOne(f.tag); }}
+                                  title={`${f.tag}\n${st === 'include' ? 'В запросе — нажми, чтобы исключить' : st === 'exclude' ? 'Исключён — нажми, чтобы убрать' : 'Нажми, чтобы добавить в запрос'} · ПКМ или × — убрать из избранного · перетащи, чтобы переставить`}>
                                 <i className="bi bi-grip-vertical bsb-grip" />
                                 {st === 'include' && <i className="bi bi-plus-circle-fill bsb-state" />}
                                 {st === 'exclude' && <i className="bi bi-dash-circle-fill bsb-state" />}
                                 <span className="bsb-tag-name">{f.tag}</span>
+                                <button className="bsb-tag-x" title="Убрать из избранного"
+                                        onClick={e => { e.stopPropagation(); removeOne(f.tag); }}>
+                                    <i className="bi bi-x" />
+                                </button>
                             </span>
                         );
                     })}

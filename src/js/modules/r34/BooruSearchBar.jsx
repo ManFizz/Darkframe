@@ -6,6 +6,7 @@ import TagsService from '@services/TagsService';
 import {queryKey, setView} from './booruQuery';
 import {saveSearch, useSavedSearches} from './savedSearches';
 import {notify} from '@services/NotificationService';
+import useFavoriteTags from '@hooks/useFavoriteTags';
 
 // Autocomplete payloads differ per booru: r34 → { label: "cat (123)", value, type:
 // "general" }, gelbooru → { name, count, type: 0 }. Normalise to { name, count, kind }.
@@ -48,6 +49,18 @@ const SaveButton = ({ sourceType, q }) => {
 };
 
 const BooruSearchBar = ({ sourceType }) => {
+    // Right click on a tag (a chip or a suggestion): into the favourites / out of them.
+    const { favoriteTags, addFavTag, removeFavTag } = useFavoriteTags();
+    const isFav = (name) => favoriteTags.some(f => f.tag === name && f.remote_type === sourceType);
+    const toggleFav = (name) => {
+        if (isFav(name)) {
+            removeFavTag(name, sourceType);
+            notify({ message: `«${name}» убран из избранного`, type: 'info', action: { label: 'Вернуть', onClick: () => addFavTag(name, sourceType) } });
+        } else {
+            addFavTag(name, sourceType);
+            notify({ message: `«${name}» в избранном`, type: 'success' });
+        }
+    };
     const q = useBooruQuery();
     const status = useSearchStatus();
     const [text, setText] = useState('');
@@ -133,9 +146,11 @@ const BooruSearchBar = ({ sourceType }) => {
                     const name = t.replace(/^-/, '');
                     const kind = kindOf(name);
                     return (
-                        <span key={t} className={`bs-chip kind-${kind} ${excluded ? 'excluded' : ''}`}
-                              title={excluded ? 'Исключён — нажми, чтобы включить' : 'Нажми, чтобы исключить'}
-                              onClick={e => { e.stopPropagation(); toggleExclude(t); }}>
+                        <span key={t} className={`bs-chip kind-${kind} ${excluded ? 'excluded' : ''} ${isFav(name) ? 'fav' : ''}`}
+                              title={`${excluded ? 'Исключён — нажми, чтобы включить' : 'Нажми, чтобы исключить'} · ПКМ — ${isFav(name) ? 'убрать из избранного' : 'в избранное'}`}
+                              onClick={e => { e.stopPropagation(); toggleExclude(t); }}
+                              onContextMenu={e => { e.preventDefault(); e.stopPropagation(); toggleFav(name); }}>
+                            {isFav(name) && <i className="bi bi-star-fill bs-chip-fav" />}
                             {excluded && <i className="bi bi-dash-circle" />}
                             {name}
                             <button onClick={e => { e.stopPropagation(); removeTag(t); }} title="Убрать">
@@ -165,13 +180,16 @@ const BooruSearchBar = ({ sourceType }) => {
                         <div key={s.name}
                              className={`bs-opt ${i === cursor ? 'cursor' : ''}`}
                              onMouseMove={() => setCursor(i)}
-                             onMouseDown={e => { e.preventDefault(); commit(s.name); }}>
+                             onMouseDown={e => { e.preventDefault(); if (e.button === 0) commit(s.name); }}
+                             onContextMenu={e => { e.preventDefault(); toggleFav(s.name); }}
+                             title={`ПКМ — ${isFav(s.name) ? 'убрать из избранного' : 'в избранное'}`}>
                             <span className={`bs-dot kind-${s.kind}`} />
                             <span className="bs-opt-name">{s.name}</span>
+                            {isFav(s.name) && <i className="bi bi-star-fill bs-opt-fav" />}
                             {s.count > 0 && <span className="bs-opt-count">{fmtCount(s.count)}</span>}
                         </div>
                     ))}
-                    <div className="bs-drop-hint"><kbd>Tab</kbd> выбрать · <kbd>Enter</kbd> искать · «-» исключить</div>
+                    <div className="bs-drop-hint"><kbd>Tab</kbd> выбрать · <kbd>Enter</kbd> искать · «-» исключить · ПКМ — в избранное</div>
                 </div>
             )}
         </div>
