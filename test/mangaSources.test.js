@@ -397,3 +397,27 @@ test('in the library without downloading: online chapters, subscription, new cha
         global.fetch = realFetch;
     }
 });
+
+test('Hentai2Read: book links (not artist pages), cards from the page data, reader slugs remembered', () => {
+    const h2r = require(S('services', 'manga', 'sources', 'hentai2read'));
+    assert.equal(h2r.matchUrl('https://hentai2read.com/original/73135-some-title'), '73135');
+    assert.equal(h2r.matchUrl('https://hentai2read.com/doujinshi/12-x/'), '12');
+    assert.equal(h2r.matchUrl('https://hentai2read.com/reader/73135-some-title/116563/page-1'), '73135');
+    assert.equal(h2r.matchUrl('https://hentai2read.com/artist/11841-someone'), null);
+    assert.equal(h2r.matchUrl('https://hentai2read.com/browse/page-2'), null);
+    assert.deepEqual(sources.matchUrl('https://hentai2read.com/original/5-x'), { source: 'hentai2read', id: '5' });
+
+    const books = {
+        data: [{ id: 5, title: 'One', url: '/original/5-one', cover: 'https://cdn.test/5.jpg', typeLabel: 'Original', chapters: 3, pageCount: 40, rating: 4.5, tags: [[18, 'Adult', 'adult', 1], [2, 'Anal', 'anal', 1]] }],
+        page: 1, lastPage: 7, total: 250,
+    };
+    const list = h2r._parse.listOf(books, 1);
+    assert.equal(list.hasMore, true);
+    assert.equal(list.pages, 7);
+    assert.deepEqual(list.items[0], {
+        id: '5', title: 'One', cover: 'https://cdn.test/5.jpg', pages: 40, chapters: 3, category: 'Original', rating: 4.5,
+        url: 'https://hentai2read.com/original/5-one', tags: ['Adult', 'Anal'],
+    });
+    assert.equal(h2r._parse.slugs.get('5'), '5-one', 'the reader link needs the slug');
+    assert.ok(require(S('..', 'src', 'js', 'shared', 'adult')).isAdultMangaSource('hentai2read'));
+});

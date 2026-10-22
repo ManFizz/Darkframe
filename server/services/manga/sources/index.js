@@ -11,6 +11,7 @@ const list = [
     require('./nhentai'),
     require('./ehentai'),
     require('./allhentai'),
+    require('./hentai2read'),
     require('./mangadex'),
 ];
 const byId = new Map(list.map(s => [s.id, s]));

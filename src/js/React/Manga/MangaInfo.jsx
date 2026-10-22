@@ -6,7 +6,7 @@ import {openPageEditor, readLibraryManga} from '@services/mangaLibrary';
 import {openManga} from '@modules/manga/openManga';
 
 // Sites where a manga comes out chapter by chapter (others: one gallery, done).
-const CHAPTERED = new Set(['allhentai', 'mangadex']);
+const CHAPTERED = new Set(['allhentai', 'mangadex', 'hentai2read']);
 
 const errText = (e) => String(e?.message || e).replace(/^Error invoking remote method '[^']+': (Error: )?/, '');
 

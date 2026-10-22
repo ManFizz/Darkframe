@@ -89,7 +89,7 @@ function broadcast(channel, payload) {
 async function setOn(id, on) {
     const m = store.readManifest(id);
     if (on) {
-        if (m.source?.kind !== 'online' || !chaptered(m.source.site)) throw new Error('Подписка — только для манги с сайтов с главами (AllHentai, MangaDex)');
+        if (m.source?.kind !== 'online' || !chaptered(m.source.site)) throw new Error('Подписка — только для манги с сайтов с главами (AllHentai, Hentai2Read, MangaDex)');
         store.setSubscription(id, { on: true, unseen: m.subscription?.unseen || 0 });
     } else {
         store.setSubscription(id, null);

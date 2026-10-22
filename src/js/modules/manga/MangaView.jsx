@@ -24,7 +24,7 @@ const PREFS_KEY = 'jsg_manga_view';
 const loadPrefs = () => { try { return JSON.parse(localStorage.getItem(PREFS_KEY) || '{}') || {}; } catch { return {}; } };
 const savePrefs = (p) => { try { localStorage.setItem(PREFS_KEY, JSON.stringify({ ...loadPrefs(), ...p })); } catch { /* ignore */ } };
 
-const SOURCE_ICON = { nhentai: 'bi-book-half', ehentai: 'bi-journals', allhentai: 'bi-bookmark-heart', mangadex: 'bi-book' };
+const SOURCE_ICON = { nhentai: 'bi-book-half', ehentai: 'bi-journals', allhentai: 'bi-bookmark-heart', hentai2read: 'bi-book-fill', mangadex: 'bi-book' };
 const STATUS = {
     queued: { label: 'В очереди', icon: 'bi-hourglass-split' },
     running: { label: 'Загрузка', icon: 'bi-arrow-down-circle' },
@@ -40,7 +40,7 @@ const TAG_GROUPS = [
 ];
 
 // Sites where a manga comes out chapter by chapter: subscriptions.
-const multiSite = (source) => source === 'allhentai' || source === 'mangadex';
+const multiSite = (source) => source === 'allhentai' || source === 'mangadex' || source === 'hentai2read';
 
 const ago = (ms) => {
     const s = Math.round((Date.now() - ms) / 1000);
