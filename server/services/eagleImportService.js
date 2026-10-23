@@ -1,4 +1,3 @@
-// server/services/eagleImportService.js
 const fs = require('fs');
 const path = require('path');
 const { parse } = require('csv-parse/sync');
@@ -11,7 +10,7 @@ function parseEagleCsv(csvPath) {
         columns: true,
         skip_empty_lines: true,
         trim: true,
-        bom: true, // на случай UTF-8 BOM
+        bom: true,   // Eagle may write a UTF-8 BOM
     });
 
     return records.map(row => ({
@@ -46,7 +45,6 @@ async function importFromEagleCsv({ csvPath, collectionId = null, webContents })
     for (let i = 0; i < rows.length; i++) {
         const row = rows[i];
 
-        // Шлём прогресс на фронт
         webContents?.send('library:importProgress', {
             current: i + 1,
             total,

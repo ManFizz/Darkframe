@@ -41,8 +41,8 @@ function keyOfUrl(url) {
 const describe = () => list.map(s => ({
     id: s.id, name: s.name, home: s.home, sorts: s.sorts, login: !!s.login, searchHint: s.searchHint || '',
     tagGroups: s.tagGroups || [],
-    cursor: !!s.cursor,
-    suggestMin: s.suggestMin || 1,   // tag suggestions start from this many letters               // pages go by "next" links only (no page numbers)
+    cursor: !!s.cursor,              // pages go by "next" links only (no page numbers)
+    suggestMin: s.suggestMin || 1,   // tag suggestions start from this many letters
     loggedIn: s.loggedIn ?? null,
     adult: require('../../../../src/js/shared/adult').isAdultMangaSource(s.id),   // hidden while 18+ is off
 }));

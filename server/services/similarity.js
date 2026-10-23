@@ -153,8 +153,8 @@ const toRow = (it, extra = {}) => ({
 /**
  * Copies and look-alikes of one item (the viewer's side panel): exact copies by file
  * hash, near-duplicates by perceptual hash (computed on the spot when missing).
- * Other items are only compared if their hash already exists — "Найти похожие" in
- * the control panel fills the rest.
+ * Other items are only compared if their hash already exists (the control panel's
+ * near-duplicate search fills the rest).
  */
 async function relationsOf(id, maxDistance = 12) {
     const item = await Item.findByPk(id);

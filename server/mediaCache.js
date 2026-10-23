@@ -1,15 +1,10 @@
 /**
  * Transparent media cache for remote (http/https) images and videos.
  *
- * The renderer rewrites remote URLs to `mediacache://media/?u=<encoded-url>`.
- * This handler downloads each unique URL exactly once to a temp folder and
- * serves all subsequent requests from disk — so the thumbnail, the modal image
- * and neighbour preloads all share a single download instead of re-fetching
- * (Chromium partitions its HTTP cache by request mode, which caused the same
- * file_url to be downloaded once in CORS mode and again in no-cors mode).
- *
- * The entire cache folder is wiped on app start and on quit, so nothing
- * persists between sessions.
+ * The renderer rewrites remote URLs to `mediacache://media/?u=<encoded-url>`; each
+ * URL is downloaded once to a temp folder and served from disk, so the thumbnail,
+ * the viewer and neighbour preloads share one download (Chromium's HTTP cache is
+ * split by request mode and would fetch it twice). Wiped on start and on quit.
  */
 
 const { app, net, protocol } = require('electron');
@@ -126,12 +121,9 @@ function registerProtocol() {
 }
 
 /**
- * Wipe the cache folder.
- *
- * On Windows files that are still memory-mapped by the renderer (<video>,
- * <img>) or by in-flight streams can't be deleted, yielding EPERM/ENOTEMPTY.
- * `maxRetries`/`retryDelay` make Node retry those locks. Any leftover is wiped
- * on next startup (when no handles exist), so a failure here is harmless and logged quietly.
+ * Wipe the cache folder. On Windows files still held by the renderer (<video>, <img>)
+ * can't be deleted (EPERM / ENOTEMPTY): retried a few times, and whatever is left
+ * goes on the next start.
  */
 function clearCache() {
     try {

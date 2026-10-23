@@ -193,7 +193,7 @@ function register() {
                 itemCount: count,
                 childCount: childIds.length,
                 previews: await collectionPreviews(col.id, childIds.map(c => c.id)),
-                isCollection: true, // маркер
+                isCollection: true,   // a collection tile among the items
             });
         }
 
@@ -255,9 +255,8 @@ function register() {
     const updateOne = async (id, data) => {
         const { tags, ...fields } = data;
 
-        // One transaction keeps all writes for a single save on one connection, and
-        // tags are created sequentially — parallel findOrCreate INSERTs were racing
-        // each other into SQLITE_BUSY, especially when a paste added many tags at once.
+        // One transaction keeps a save's writes on one connection; tags are created
+        // one by one (parallel findOrCreate INSERTs end in SQLITE_BUSY).
         await sequelize.transaction(async (t) => {
             await moveToEndOnCollectionChange(id, fields, t);
 
@@ -686,7 +685,7 @@ function register() {
                 attributes: ['id', 'name', 'type', 'userType', 'pinned'],
                 limit: 10,
                 order: [['pinned', 'DESC'], ['name', 'ASC']],   // pinned matches first
-                subQuery: false, // ← ускоряет запрос с include + limit
+                subQuery: false,   // much faster with include + limit
             });
 
             // The category set by hand wins over the site's.
@@ -793,7 +792,6 @@ function register() {
             const displayPath = path.join(itemDir, 'display.jpg');
             if (fs.existsSync(displayPath)) { skipped++; continue; }
 
-            // Find original file
             let originalPath = null;
             try {
                 const files = fs.readdirSync(itemDir);

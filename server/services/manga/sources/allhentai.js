@@ -251,11 +251,9 @@ const realPages = (pages, b) => pages
     .filter(p => !/\/static\//.test(p.url))
     .map(p => ({ ...p, url: p.url.startsWith('/') ? b + p.url : p.url }));
 
-// Why a chapter shows no pages: structure only (counts, hosts, whether the site
-// sees a user) — no page text, no ids.
-// What a reader page without the usual page list is made of — structure only:
-// address paths, script file names, variable names, element ids / counts, the
-// site's own notice boxes. No page text, no titles, no ids of anything.
+// Why a chapter shows no pages (for the site log): the page's structure only —
+// address paths, script names, variable names, element ids / counts, the site's
+// notice boxes. No page text, titles or ids.
 const PAGE_PROBE = String.raw`(() => {
     const host = (u) => { try { const x = new URL(u, location.href); return x.host + '/' + (x.pathname.split('/')[1] || ''); } catch { return '?'; } };
     const imgs = {};

@@ -124,6 +124,6 @@ module.exports = {
     suggest,
     search,
     gallery,
-    // Images need nothing special.
+    // Images: a same-site Referer is all the CDN wants.
     imageRequest: (url) => ({ url, referer: `${BASE}/` }),
 };

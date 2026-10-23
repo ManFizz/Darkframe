@@ -137,7 +137,7 @@ function revoke(id) {
     return list();
 }
 
-// Addresses of this computer in the home network (IPv4, not loopback / virtual).
+// IPv4 addresses of this computer (no loopback), home network first, virtual ones marked.
 function lanAddresses() {
     const out = [];
     for (const [name, addrs] of Object.entries(os.networkInterfaces())) {

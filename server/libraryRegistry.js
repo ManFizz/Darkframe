@@ -5,9 +5,8 @@
  *   - dbPath:    absolute path to `library.db` (SQLite)
  *   - itemsPath: absolute path to the items folder
  *
- * On first run (no registry exists), we migrate the legacy layout — the
- * `data/data.db` from the project root + `Settings.LibraryPath/items` — as
- * "Default (Legacy)" so existing users don't lose anything.
+ * On first run (no registry yet) the legacy layout — `data/data.db` in the project
+ * root + `Settings.LibraryPath/items` — becomes the library "Default".
  */
 
 const fs   = require('fs');

@@ -20,9 +20,9 @@ const THUMB_SIZE = 400;
 // Files inside an item folder:
 //   original.<ext> — what the library shows
 //   source.<ext>   — pristine copy kept from the first edit (full revert)
-//   base.<ext>     — edit starting point for items edited the old, cumulative way
-//                    (their current look becomes the baseline so it isn't lost)
-// Every edit is now applied to base/source from scratch using the full saved
+//   base.<ext>     — starting point of items edited before parameters were stored
+//                    (their look at that time is the baseline)
+// Every edit is applied to base / source from scratch with the full saved
 // parameters, so repeated edits never compound JPEG loss.
 
 const MIME_BY_EXT = {
@@ -40,8 +40,8 @@ const findOriginal = (dir) => findIn(dir, /^original\./i);
 const findSource   = (dir) => findIn(dir, /^source\./i);
 const findBase     = (dir) => findIn(dir, /^base\./i);
 
-// Build thumb + read dimensions straight from the edited buffer, so we never re-open
-// the original by path (which is what left a lingering handle on the file).
+// Thumb + dimensions straight from the edited buffer: re-opening the original by
+// path would leave a handle on it (Windows).
 async function writeThumbAndSize(buf, thumbPath) {
     await sharp(buf)
         .resize(THUMB_SIZE, THUMB_SIZE, { fit: 'inside', withoutEnlargement: true })

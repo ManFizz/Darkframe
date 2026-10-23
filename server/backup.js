@@ -16,22 +16,18 @@ function backupDatabase() {
 	const backupFolder = path.resolve(__dirname, backupFolderPath);
 	const backupFilePath = path.join(backupFolder, backupFileName);
 
-	// Создание папки для бэкапа, если она не существует
 	if (!fs.existsSync(backupFolder)) {
 		fs.mkdirSync(backupFolder);
 	}
 
-	// Функция для вычисления хеша файла
 	function calculateFileHash(filePath) {
 		const hash = crypto.createHash('sha256');
 		const fileData = fs.readFileSync(filePath);
 		return hash.update(fileData).digest('hex');
 	}
 
-	// Получение хеша текущего файла
 	const currentFileHash = calculateFileHash(sourceFile);
 
-	// Получение хеша последнего бэкапа (если он существует)
 	let lastBackupHash = null;
 	const lastBackupFiles = fs.readdirSync(backupFolder);
 	if (lastBackupFiles.length > 0) {
@@ -39,11 +35,10 @@ function backupDatabase() {
 		lastBackupHash = calculateFileHash(lastBackupFile);
 	}
 
-	// Сравнение хешей текущего файла и последнего бэкапа
+	// Unchanged since the last backup: no new copy.
 	if (lastBackupHash === currentFileHash) {
 		console.log('Текущий файл не отличается от последнего бэкапа. Создание нового бэкапа не требуется.');
 	} else {
-		// Копирование файла в папку для бэкапа
 		fs.copyFile(sourceFile, backupFilePath, (err) => {
 			if (err) {
 				console.error('Ошибка при создании бэкапа:', err);
@@ -52,7 +47,7 @@ function backupDatabase() {
 			console.log('Бэкап успешно создан:', backupFilePath);
 
 			if(needDelete) {
-				// Удаление старых бэкапов (больше месяца)
+				// Backups older than a month go.
 				if (fs.existsSync(backupFolder)) {
 					const monthAgo = new Date();
 					monthAgo.setMonth(monthAgo.getMonth() - 1);
@@ -66,7 +61,7 @@ function backupDatabase() {
 						}
 					});
 
-					// Удаление лишних бэкапов (больше 20)
+					// At most 20 backups are kept.
 					const backupFiles = fs.readdirSync(backupFolder);
 					if (backupFiles.length > 20) {
 						const sortedFiles = backupFiles

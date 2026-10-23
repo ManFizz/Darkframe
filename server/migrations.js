@@ -59,8 +59,8 @@ async function migrations() {
         });
     }
 
-    // fileHash used to be UNIQUE (dedup on import). Duplicates are now allowed on
-    // purpose, so drop the unique index and keep a plain one for fast grouping.
+    // Duplicates are allowed: fileHash gets a plain index (for grouping) instead of
+    // the unique one of older databases.
     const itemIndexes = await queryInterface.showIndex('Items');
     if (itemIndexes.find(i => i.name === 'items_fileHash_unique')) {
         await queryInterface.removeIndex('Items', 'items_fileHash_unique');
@@ -134,16 +134,16 @@ async function migrations() {
     await require('./models/MangaState').sync();
     await require('./models/MangaDownload').sync();
 
-    // Lookup indexes. Tags also holds the remote (r34 / gelbooru) tag cache — well over
-    // a million rows — so "pinned" / per-tag lookups without an index were full scans
-    // that stalled every other query at startup (one SQLite connection).
+    // Lookup indexes. Tags also holds the remote tag cache (over a million rows):
+    // without them pinned / per-tag lookups are full scans that block the single
+    // SQLite connection.
     await sequelize.query('CREATE INDEX IF NOT EXISTS tags_pinned_idx ON Tags (pinned)');
     await sequelize.query('CREATE INDEX IF NOT EXISTS itemtags_tagId_idx ON ItemTags (tagId)');
     await sequelize.query('CREATE INDEX IF NOT EXISTS items_collectionId_idx ON Items (collectionId)');
     await sequelize.query('CREATE INDEX IF NOT EXISTS items_deletedAt_idx ON Items (deletedAt)');
 
-    // Saved booru tags: older versions could store the same tag twice, which broke
-    // the drag-to-reorder list (duplicate keys). Keep the first copy, then forbid dupes.
+    // Saved booru tags: one row per tag and source (older databases may hold
+    // duplicates — the first copy stays).
     await require('./models/FavoriteTag').sync();
     await sequelize.query(`DELETE FROM FavoriteTags WHERE id NOT IN
         (SELECT MIN(id) FROM FavoriteTags GROUP BY tag, remote_type)`);

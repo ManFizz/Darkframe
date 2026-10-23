@@ -45,7 +45,7 @@ async function attachState(items, ids) {
     });
 }
 
-// "Продолжить чтение": started, not finished, most recent first.
+// "Continue reading": started, not finished, most recent first.
 async function recent(limit = 30) {
     const states = await MangaState.findAll({ where: { finished: false }, order: [['readAt', 'DESC']], limit: limit * 2, raw: true });
     if (!states.length) return [];

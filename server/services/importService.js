@@ -46,7 +46,7 @@ function getFileHash(filePath) {
     });
 }
 
-// `type` — the tag's category as the source site gives it (e.g. 1 "Автор" for a
+// `type` — the tag's category as the source site gives it (e.g. 1 = artist for a
 // creator). It only fills a tag that has none yet; the user's own choice
 // (userType) is never touched.
 async function ensureTag(name, transaction, type = null) {
@@ -143,9 +143,8 @@ async function importFileImpl({ filePath, collectionId = null, tags = [], source
 
     const fileHash = await getFileHash(filePath);
 
-    // When the user hasn't opted into duplicates, a matching hash either restores a
-    // trashed copy or is reported back as a skipped duplicate. With allowDuplicate
-    // we skip this check entirely and add a fresh copy (fileHash is no longer unique).
+    // A matching hash is reported back as a skipped duplicate (or a trashed copy);
+    // with allowDuplicate a fresh copy is added (fileHash isn't unique).
     if (!allowDuplicate) {
         const existing = await Item.unscoped().findOne({
             where: { fileHash },
@@ -245,10 +244,8 @@ async function importFiles({ filePaths, collectionId, tags, sourceUrl, allowDupl
     const skipped = [];
     const errors  = [];
 
-    // Import oldest file first so the newest ends up last. We order the batch by each
-    // file's mtime and stamp importedAt in that order — newest = now, older ones a few
-    // seconds earlier — so "sort by date" reflects the real file age within one import
-    // (all imports still cluster at ~now, i.e. newer than everything imported before).
+    // Oldest file first, importedAt stamped in mtime order (newest = now, older ones a
+    // few seconds earlier): sorting by date keeps the files' real order within an import.
     const ordered = filePaths.map(fp => {
         let mtime = 0;
         try { mtime = fs.statSync(fp).mtimeMs; } catch { /* unreadable — treat as oldest */ }

@@ -14,9 +14,8 @@ let server = null;
 const MAX_BODY_BYTES     = 64 * 1024 * 1024;         // JSON body (base64 media)
 const MAX_DOWNLOAD_BYTES = 2 * 1024 * 1024 * 1024;   // remote media download
 
-// Map the response Content-Type to a file extension. Needed for media served
-// behind extensionless / query-string URLs (e.g. hulkporn's /video.php?video=…),
-// where the URL path tells us nothing about the real format.
+// Content-Type → file extension, for media behind extensionless / query-string
+// URLs (…/video.php?video=…) whose path says nothing about the format.
 const CONTENT_TYPE_EXT = {
     'image/jpeg': '.jpg',  'image/jpg':  '.jpg',
     'image/png':  '.png',  'image/webp': '.webp',
@@ -273,8 +272,7 @@ async function handleAddBase64(req, res) {
 
     if (!base64) { respond(res, 400, { error: 'base64 required' }); return; }
 
-    // Resolve extension from a *supported* mime type only — a missing or unknown
-    // mimeType used to throw (TypeError → 500); now it's a clean 400.
+    // Only a supported mime type gives an extension; anything else is a 400.
     const ext = extFromContentType(mimeType);
     if (!ext) { respond(res, 400, { error: 'valid mimeType required' }); return; }
 
@@ -301,12 +299,9 @@ async function handleAddBase64(req, res) {
     respond(res, 200, { ok: true, id: result.item.id });
 }
 
-// Accepts the raw media bytes as the request body (no base64 bloat) and the
-// metadata as a URL-encoded JSON `meta` query param (unicode-safe, unlike HTTP
-// headers). Used when the *browser* already downloaded the file in an authorized
-// context — e.g. TikTok, whose signed CDN URLs expire and need site cookies/Referer
-// the server can't reproduce. We just stream the bytes to disk and hand off to
-// the normal import pipeline.
+// Raw media bytes as the body, metadata as a URL-encoded JSON `meta` query param
+// (unicode-safe, unlike headers). For files the browser downloaded itself: signed
+// CDN links that expire or need the site's cookies.
 async function handleAddStream(req, res) {
     const params = new URL('http://localhost' + req.url).searchParams;
     let meta = {};
@@ -448,8 +443,7 @@ async function handleCreateCollection(req, res) {
     respond(res, 200, { ok: true, collection: col.toJSON() });
 }
 
-// A gallery page of a manga source (nhentai, e-hentai, AllHentai, MangaDex) →
-// the manga download queue. Body: { url, collectionId? }
+// A gallery page of a manga source → the manga download queue. Body: { url, collectionId? }
 async function handleManga(req, res) {
     const { url, collectionId = null } = await parseBody(req);
     const m = require('./services/manga/sources').matchUrl(String(url || ''));

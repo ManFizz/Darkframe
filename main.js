@@ -13,11 +13,9 @@ const { startApiServer, stopApiServer } = require('./server/apiServer');
 app.commandLine.appendSwitch('disable-quic');
 app.commandLine.appendSwitch('disable-http2');
 
-// TLS-certificate errors are ignored ONLY for these content hosts (and their CDNs /
-// subdomains), which are the sources that need it. Everything else keeps strict TLS,
-// so a MITM on, say, a bank or update server is no longer silently accepted.
-// Matching by target host works even behind a TLS-intercepting proxy, since the SNI
-// host is still the real destination.
+// TLS certificate errors are ignored only for these content hosts (and their
+// subdomains), which need it; everything else keeps strict TLS. Matching by host
+// works behind a TLS-intercepting proxy too: the SNI host is the real destination.
 const TLS_BYPASS_HOSTS = ['rule34.xxx', 'realbooru.com', 'gelbooru.com'];
 const isTlsBypassHost = (host) =>
     !!host && TLS_BYPASS_HOSTS.some(h => host === h || host.endsWith('.' + h));
@@ -248,8 +246,7 @@ app.whenReady().then(async () => {
     registerMangaImageProtocol();
     require('./server/controllers/fsController').registerProtocol();
 
-    // Fresh media cache each session, then register the caching protocol
-    mediaCache.clearCache();
+        mediaCache.clearCache();
     mediaCache.registerProtocol();
 
     setupIpcHandlers();

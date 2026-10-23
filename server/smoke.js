@@ -10,7 +10,7 @@ const { app } = require('electron');
 const SETTLE_MS  = 3000;
 const TIMEOUT_MS = 60000;
 
-// Electron's own security advisories are expected in this app (nodeIntegration etc.).
+// Electron's own security advisories (e.g. CSP 'unsafe-inline' styles) are not app errors.
 const IGNORED = [/Electron Security Warning/i];
 
 function runSmokeCheck(win) {

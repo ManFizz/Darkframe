@@ -1,6 +1,4 @@
-// server/services/jsonImportService.js
-//
-// Flexible JSON import — designed to be produced by browser extensions later.
+// Flexible JSON import (e.g. produced by browser extensions).
 //
 // Accepted top-level shapes:
 //   [ item, item, ... ]

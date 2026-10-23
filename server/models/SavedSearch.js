@@ -5,7 +5,7 @@ const sequelize = require('../database');
 // source, shown on its own page with a strip of the latest matching posts.
 const SavedSearch = sequelize.define('SavedSearches', {
     id:        { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
-    source:    { type: DataTypes.INTEGER, allowNull: false },          // SOURCE_TYPES (r34 / gelbooru)
+    source:    { type: DataTypes.INTEGER, allowNull: false },          // SOURCE_TYPES of the booru
     // Normalised query: space-joined tags ("-tag" = excluded) + modifiers. `key`
     // is the canonical form used to tell whether a query is already saved.
     tags:      { type: DataTypes.TEXT, allowNull: false, defaultValue: '' },

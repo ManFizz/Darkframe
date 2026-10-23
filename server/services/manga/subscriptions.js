@@ -4,9 +4,9 @@ const sources = require('./sources');
 
 /**
  * Subscriptions to library manga from sites with chapters: every few hours (and
- * by the "Проверить обновления" button) the site is asked for chapters the manga
- * doesn't have; they're added right away as online chapters (readable at once,
- * downloadable later) or, if so set, downloaded. Tiles show "новое: N" until the
+ * on the "check for updates" button) the site is asked for chapters the manga
+ * doesn't have; they're added at once as online chapters (readable now,
+ * downloadable later) or, if so set, downloaded. Tiles show "+N" until the
  * manga is opened.
  *
  * The subscription lives in the manga's manifest: { on, checkedAt, unseen, error }.
