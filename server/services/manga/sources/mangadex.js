@@ -24,7 +24,6 @@ const coverOf = (m) => {
     return rel?.attributes?.fileName ? `https://uploads.mangadex.org/covers/${m.id}/${rel.attributes.fileName}.256.jpg` : null;
 };
 
-// ─── Tags (one list for the whole site) and authors ────────────────────────────
 let allTags = null;
 async function tagList() {
     if (allTags) return allTags;

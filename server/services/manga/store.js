@@ -169,8 +169,6 @@ async function attachTags(id, tags, tagTypes, t) {
     }
 }
 
-// ─── Reading ─────────────────────────────────────────────────────────────────
-
 const pageUrl = (id, file, v) => `library://page/${id}/${file.split('/').map(encodeURIComponent).join('/')}${v ? `?v=${v}` : ''}`;
 const pthumbUrl = (id, file, v) => `library://pthumb/${id}/${file.split('/').map(encodeURIComponent).join('/')}${v ? `?v=${v}` : ''}`;
 
@@ -208,8 +206,6 @@ async function pageThumbFile(id, file) {
         .resize(220, 660, { fit: 'inside', withoutEnlargement: true }).jpeg({ quality: 72 }).toFile(dst);
     return dst;
 }
-
-// ─── Editing ─────────────────────────────────────────────────────────────────
 
 // Bump the revision (cache-busts page / thumb URLs) and keep the Item row in step.
 async function commit(id, m, { cover = false } = {}) {
@@ -367,8 +363,6 @@ function coverFile(id) {
         return m.cover ? pagePath(id, m.cover) : null;
     } catch { return null; }
 }
-
-// ─── Online chapters ─────────────────────────────────────────────────────────
 
 /**
  * A manga from a site added to the library without downloading: chapters are

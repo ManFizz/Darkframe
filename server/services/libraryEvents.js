@@ -18,7 +18,6 @@ function broadcast(channel, payload) {
     try { require('../remote/server').emit(channel, payload); } catch { /* tests */ }
 }
 
-// ─── Item changes ─────────────────────────────────────────────────────────────
 // Coalesced: a batch import or a bulk move fires one event, not one per row.
 // The first change goes out quickly; during a steady stream at most one per second.
 
@@ -83,7 +82,6 @@ function installItemHooks() {
     Item.addHook('afterBulkDestroy', 'libraryEvents', (options) => afterCommit(options, () => itemsChanged()));
 }
 
-// ─── Import activity ──────────────────────────────────────────────────────────
 // One aggregate counter across every import source running at once. Totals reset
 // when everything has finished, so the next import starts again from 0 / N.
 

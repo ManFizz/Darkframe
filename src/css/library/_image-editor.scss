@@ -1,4 +1,3 @@
-// ─── In-modal image editor (rotate / crop) ───────────────────────────────────
 .img-editor {
   position: absolute;
   inset: 0;
@@ -119,7 +118,6 @@
   }
 }
 
-// ─── Toolbar ──────────────────────────────────────────────────────────────────
 .img-editor-toolbar {
   flex-shrink: 0;
   display: flex;
@@ -165,7 +163,6 @@
   }
 }
 
-// ─── Floating colour / export panels (bottom-right of the stage) ───────────────
 .ie-panel {
   position: absolute;
   right: 16px;

@@ -32,7 +32,6 @@ const Video = ({ file, mainArray = [], modalUpdater, canEdit = false, onEdited, 
     const [busy, setBusy] = useState(null);   // { label, percent } while an edit runs
     const [resume, setResume] = useState(null);   // { position } offered to the user
 
-    // ─── Resume position ────────────────────────────────────────────────────────
     // `track` always describes the file currently playing; the file-change cleanup
     // below saves it before it's replaced (the old <video> is already gone by then).
     const track       = useRef({ mk: null, time: 0, dur: 0 });

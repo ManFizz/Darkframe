@@ -1,4 +1,3 @@
-// ─── Manga reader ────────────────────────────────────────────────────────────
 .rd {
   position: fixed;
   inset: 0;
@@ -310,7 +309,6 @@
 .rd-count-all { font-weight: 400; opacity: 0.6; }
 .rd-jump { width: 70px; height: 28px; border-radius: 7px; border: 1px solid var(--df-accent); background: transparent; color: inherit; text-align: center; }
 
-// ─── Page editor ─────────────────────────────────────────────────────────────
 .pe-overlay {
   position: fixed;
   inset: 0;
@@ -387,7 +385,6 @@
 .pe-removed-toggle { border: none; background: none; color: var(--bs-secondary); font-weight: 700; font-size: 13px; padding: 0; margin-bottom: 8px; cursor: pointer; }
 .pe-removed-actions { display: flex; gap: 8px; margin-bottom: 10px; }
 
-// ─── Library tiles of manga ──────────────────────────────────────────────────
 .thumb-manga {
   position: absolute;
   left: 8px;
@@ -434,7 +431,6 @@
   &.done span { background: #3fb950; }
 }
 
-// ─── Side panel block / viewer cover / "make manga" popover ─────────────────
 .mi { margin-bottom: 12px; padding: 10px; border-radius: 12px; background: var(--df-accent-soft); border: 1px solid var(--df-accent-dim); }
 .mi-facts { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 8px; font-size: 12.5px; .bi { color: var(--df-accent); margin-right: 3px; } .done .bi { color: #3fb950; } .new { color: #e5484d; font-weight: 700; .bi { color: inherit; } } }
 .mi-main { display: flex; gap: 6px; margin-bottom: 6px; .btn-primary { flex: 1; } }

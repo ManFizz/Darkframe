@@ -87,7 +87,6 @@ const VideoControls = ({
     const pct = (t) => (dur ? clamp(t / dur, 0, 1) * 100 : 0);
     const abActive = startRec !== null && endRec !== null;
 
-    // ─── Pull volume / rate / buffered off the element, apply saved prefs ───────
     useEffect(() => {
         if (!video) return;
 
@@ -117,7 +116,6 @@ const VideoControls = ({
         };
     }, [video]);
 
-    // ─── Smooth progress: drive the fill/thumb from rAF, not the 4Hz timeupdate ─
     useEffect(() => {
         if (!video || collapsed) return;
         let raf;
@@ -132,7 +130,6 @@ const VideoControls = ({
         return () => cancelAnimationFrame(raf);
     }, [video, collapsed]);
 
-    // ─── Actions (all read straight off the element to stay closure-safe) ───────
     const togglePlay = useCallback(() => {
         if (video) (video.paused || video.ended) ? video.play().catch(() => {}) : video.pause();
     }, [video]);
@@ -191,7 +188,6 @@ const VideoControls = ({
         });
     }, []);
 
-    // ─── A–B loop: click cycles set-A → set-B → clear ──────────────────────────
     const handleAB = useCallback(() => {
         const t = video?.currentTime ?? 0;
         if (startRec === null)      setStartRec(t);
@@ -206,7 +202,6 @@ const VideoControls = ({
         return () => video.removeEventListener('timeupdate', onTime);
     }, [video, abActive, startRec, endRec]);
 
-    // ─── Seek bar drag ─────────────────────────────────────────────────────────
     const onSeekDown = useCallback(() => {
         if (!video) return;
         wasPlaying.current = !video.paused;
@@ -217,7 +212,6 @@ const VideoControls = ({
         if (video && wasPlaying.current) video.play().catch(() => {});
     }, [video]);
 
-    // ─── Auto-hide the bar after a moment of stillness while playing ────────────
     const hideTimerRef = useRef(null);
     const isPausedRef = useRef(isPaused);
     useEffect(() => { isPausedRef.current = isPaused; }, [isPaused]);
@@ -237,7 +231,6 @@ const VideoControls = ({
         return () => { clearTimeout(hideTimerRef.current); document.removeEventListener('mousemove', reveal); };
     }, [isPaused, collapsed, reveal]);
 
-    // ─── Close the speed / tools menus on outside click ─────────────────────────
     useEffect(() => {
         if (!speedOpen) return;
         const onDown = (e) => { if (speedRef.current && !speedRef.current.contains(e.target)) setSpeedOpen(false); };
@@ -265,7 +258,6 @@ const VideoControls = ({
         tools.revert();
     }, [tools]);
 
-    // ─── Keyboard shortcuts ────────────────────────────────────────────────────
     useEffect(() => {
         const typing = () => {
             const el = document.activeElement;

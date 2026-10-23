@@ -36,7 +36,6 @@ let server = null;
 let state = { running: false, port: null, error: null };
 const clients = new Set();   // SSE: { res, device }
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
 function cookies(req) {
     const out = {};
     String(req.headers.cookie || '').split(';').forEach(p => {
@@ -82,7 +81,6 @@ function fakeEvent(device) {
     };
 }
 
-// ─── Events (server-sent) ─────────────────────────────────────────────────────
 function emit(channel, payload, deviceId = null) {
     if (!clients.size) return;
     const byBase = new Map();
@@ -104,7 +102,6 @@ function events(req, res, device) {
     req.on('close', () => { clearInterval(ping); clients.delete(client); });
 }
 
-// ─── The app ──────────────────────────────────────────────────────────────────
 function serveFile(res, rel) {
     const file = path.resolve(DIST, rel);
     if (!file.startsWith(DIST + path.sep) || !fs.existsSync(file) || !fs.statSync(file).isFile()) return false;
@@ -138,7 +135,6 @@ async function bootJs(device) {
     return `window.__DF_WEB__ = ${JSON.stringify(boot).replace(/</g, '\\u003c')};`;
 }
 
-// ─── Home screen app ──────────────────────────────────────────────────────────
 // What makes the page an app on the phone: the manifest, icons, iOS tags, and a
 // service worker that shows a page of its own when the computer can't be reached.
 // None of it is private, so it's served before the device check (browsers fetch
@@ -262,7 +258,6 @@ async function pair(req, res, url) {
 <button class="btn" type="submit">Подключить</button></form>`));
 }
 
-// ─── Protocol files ───────────────────────────────────────────────────────────
 async function protocolFile(req, res, scheme, rest) {
     const fn = protocols.get(scheme);
     if (!fn || scheme === 'fsthumb') return send(res, 404, 'not found');
@@ -276,7 +271,6 @@ async function protocolFile(req, res, scheme, rest) {
     Readable.fromWeb(r.body).on('error', () => res.destroy()).pipe(res);
 }
 
-// ─── Upload: a file from the device into the library ──────────────────────────
 async function upload(req, res, url, device) {
     const name = path.basename(String(url.searchParams.get('name') || 'upload')).replace(/[<>:"/\\|?*\u0000-\u001f]/g, '_').slice(0, 150) || 'upload';
     const collectionId = url.searchParams.get('collectionId') || null;
@@ -310,7 +304,6 @@ async function upload(req, res, url, device) {
     void device;
 }
 
-// ─── Router ───────────────────────────────────────────────────────────────────
 async function route(req, res) {
     const url = new URL(req.url, 'http://local');
     const p = decodeURIComponent(url.pathname);
@@ -361,7 +354,6 @@ async function route(req, res) {
     send(res, 404, 'not found');
 }
 
-// ─── Start / stop ─────────────────────────────────────────────────────────────
 function start(port = devices.settings().port) {
     return new Promise((resolve) => {
         stop();

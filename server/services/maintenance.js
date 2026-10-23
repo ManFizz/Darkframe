@@ -38,7 +38,6 @@ function dirSize(dir) {
     return total;
 }
 
-// ─── Integrity ────────────────────────────────────────────────────────────────
 // Two kinds of rot: DB rows whose original file is gone, and item folders on disk
 // with no matching DB row (orphans left by a crash / manual meddling).
 async function checkIntegrity() {
@@ -98,7 +97,6 @@ async function removeOrphanFolders(names = []) {
     return { ok: true, count };
 }
 
-// ─── Missing thumbnails / dimensions ──────────────────────────────────────────
 const isVideo = (mime) => (mime || '').startsWith('video/');
 
 async function generateMissingMedia(onProgress) {

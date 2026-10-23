@@ -10,7 +10,6 @@ import AdvancedFilterFields, {ADVANCED_RESET} from './Filters/AdvancedFilterFiel
 import {useTagPrefs} from '@services/tagPrefs';
 import {runVisualSearch} from '@services/visualSearch';
 
-// ─── Tag filter input with live suggestions ───────────────────────────────────
 // Reuses the same libraryApi.searchTags source the metadata TagEditor uses, so
 // the navbar filter offers the very tags that actually exist in the library.
 export const TagFilterInput = ({ filters, addTag, removeTag, toggleTagExclude }) => {
@@ -218,7 +217,6 @@ export const LibraryNavControls = ({ ctx }) => {
     );
 };
 
-// ─── Rating range filter ──────────────────────────────────────────────────────
 const ratingLabel = (min, max) => {
     if (min <= RATING_MIN && max >= RATING_MAX) return 'Рейтинг';
     if (min === 0 && max === 0)                 return 'Без оценки';
@@ -287,7 +285,6 @@ const RatingFilter = ({ filters, update }) => {
     );
 };
 
-// ─── Advanced conditions popover (type, size, resolution, dates, …) ─────────
 const AdvancedFilter = ({ filters, patch }) => {
     const [open, setOpen] = useState(false);
     const ref = useRef(null);

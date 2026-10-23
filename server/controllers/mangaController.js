@@ -20,7 +20,6 @@ const created = (label, items) => {
 };
 
 function register() {
-    // ─── Reading ─────────────────────────────────────────────────────────────
     ipcMain.handle('manga:book', async (_, { id }) => ({ ...store.bookOf(id), state: await progress.get(id) }));
     ipcMain.handle('manga:saveProgress', (_, { id, ...pos }) => progress.save(id, pos));
     ipcMain.handle('manga:resetProgress', (_, { id }) => progress.reset(id));
@@ -33,7 +32,6 @@ function register() {
         return res;
     });
 
-    // ─── Page editing ───────────────────────────────────────────────────────
     ipcMain.handle('manga:removePages', (_, { id, files }) => store.removePages(id, files || []));
     ipcMain.handle('manga:restorePages', (_, { id, stored }) => store.restorePages(id, stored || []));
     ipcMain.handle('manga:purgeRemoved', (_, { id }) => store.purgeRemoved(id));
@@ -50,7 +48,6 @@ function register() {
         return store.addPages(id, filePaths.sort(store.naturalSort), { chapter, newChapterTitle });
     });
 
-    // ─── Creating ───────────────────────────────────────────────────────────
     ipcMain.handle('manga:fromItems', async (_, { ids, title, collectionId, trashOriginals = false }) => {
         // The originals go to the trash in the same step, so one Ctrl+Z undoes both.
         const snap = trashOriginals ? await journal.capture(ids, ['deletedAt'], false) : null;
@@ -93,7 +90,6 @@ function register() {
     });
     ipcMain.handle('manga:importArchives', (_, { files, collectionId = null }) => importArchives(files || [], collectionId));
 
-    // ─── Out ────────────────────────────────────────────────────────────────
     ipcMain.handle('manga:exportCbz', async (event, { id }) => {
         const row = await Item.unscoped().findByPk(id, { raw: true });
         const { canceled, filePath } = await dialog.showSaveDialog(winOf(event), {

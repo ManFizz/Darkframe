@@ -106,7 +106,6 @@ test('advancedCount / toSmartFilter keep only filter fields', () => {
     assert.deepEqual(smart.types, ['image']);
 });
 
-// ─── Smart collections 2.0: rule trees ────────────────────────────────────────
 const { matchRules, normalizeRules, rulesNeedHistory } = require('../src/js/shared/filterPredicate');
 
 test('rules: all / any groups and nesting', () => {

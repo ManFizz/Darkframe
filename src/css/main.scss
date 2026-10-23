@@ -1,6 +1,5 @@
 @use 'variables';
 
-// ─── Theme: one accent, dark / light ──────────────────────────────────────────
 // The accent is a single source colour: --df-accent (+ its "r, g, b" triple). The
 // runtime theme service overrides both on :root when the user picks another colour;
 // every shade below is derived from them with color-mix, so nothing else needs
@@ -265,7 +264,6 @@ $tag-colors: (
 .card {
   border-color: transparent !important;
 }
-// ─── Gallery pagination ────────────────────────────────────────────────────────
 
 .custom-pagination {
   // Pages between the anchor (currentPage) and the last loaded page (maxPage):
@@ -290,7 +288,6 @@ $tag-colors: (
 }
 
 
-// ─── Scrollbars: thin, rounded, themed ───────────────────────────────────────
 // A track that disappears into the surface, a pill thumb that brightens on hover
 // and takes the accent while dragged.
 // (The standard scrollbar-width / -color would switch these off in Chromium, so

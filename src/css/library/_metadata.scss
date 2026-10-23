@@ -1,4 +1,3 @@
-// ─── Metadata Panel ───────────────────────────────────────────────────────────
 
 .metadata-panel {
   position: fixed;
@@ -120,8 +119,6 @@
   .btn-primary { flex: 1; }
 }
 
-// ─── Rating ───────────────────────────────────────────────────────────────────
-
 .rating-stars {
   display: flex;
   align-items: center;
@@ -168,7 +165,6 @@
 .metadata-tail { gap: 8px; padding-top: 4px; border-top: 1px dashed var(--bs-border-color); }
 
 
-// ─── Copies / look-alikes of the open item ───────────────────────────────────
 .rel-block { display: flex; flex-direction: column; gap: 10px; margin-bottom: 12px; }
 .rel-group {
   padding: 8px 10px 10px;
@@ -230,7 +226,6 @@
   &:hover { border-color: var(--df-accent-dim); color: var(--df-accent); background: var(--df-accent-soft); }
 }
 
-// ─── Suggested tags (local tagger) ───────────────────────────────────────────
 .st-ask {
   margin-top: 6px;
   border: none;

@@ -162,7 +162,6 @@ function register() {
         return Object.fromEntries((ids || []).map(id => [id, lib.get(sources.keyOf(source, id)) || null]));
     });
 
-    // ─── Downloads ──────────────────────────────────────────────────────────
     ipcMain.handle('manga:download', (_, opts) => downloads.enqueue(opts));
     ipcMain.handle('manga:downloadUrl', async (_, { url, collectionId = null }) => {
         const m = sources.matchUrl(String(url || '').trim());
@@ -174,7 +173,6 @@ function register() {
     ipcMain.handle('manga:downloadAction', (_, { id, action }) => downloads.action(id, action));
     ipcMain.handle('manga:clearDownloads', () => downloads.clearFinished());
 
-    // ─── In the library without downloading, subscriptions ──────────────────
     ipcMain.handle('manga:addOnline', (_, opts) => subscriptions.addOnline(opts || {}));
     // Chapters still online → the download queue (all, or `chapters`: site chapter ids).
     ipcMain.handle('manga:downloadRemote', (_, { itemId, chapters = null }) => subscriptions.downloadRemote(itemId, chapters));
@@ -187,7 +185,6 @@ function register() {
     ipcMain.handle('manga:subsConfig', () => subscriptions.config());
     ipcMain.handle('manga:setSubsConfig', (_, patch) => subscriptions.setConfig(patch || {}));
 
-    // ─── Site window ────────────────────────────────────────────────────────
     ipcMain.handle('manga:login', async (event, { source }) => {
         const src = sources.get(source);
         const url = typeof src.loginUrl === 'function' ? await src.loginUrl() : (src.loginUrl || src.home);

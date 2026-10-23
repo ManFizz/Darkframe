@@ -23,7 +23,6 @@ const FILTER_DEFAULTS = {
     rules:              null,
 };
 
-// ─── Rule conditions ──────────────────────────────────────────────────────────
 // { field, cmp, value }. `viewed` needs a context with the last-view time per item
 // (ctx.lastViewed: Map id → unix seconds) — only smart collections (server) have it.
 const RULE_FIELDS = ['tag', 'title', 'source', 'rating', 'type', 'size', 'duration',

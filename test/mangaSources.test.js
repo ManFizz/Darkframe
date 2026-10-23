@@ -92,7 +92,6 @@ test('AllHentai: card, chapters in reading order, reader pages without eval', ()
     assert.equal(allhentai._parse.parseLiteral('[alert(1)]'), null);
 });
 
-// ─── Cache + downloads with a fake source ──────────────────────────────────────
 const colors = new Map();   // url → colour, so every page is a different image
 let requests = 0;
 let failFirst = new Set();

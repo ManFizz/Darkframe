@@ -7,7 +7,6 @@ const TagAlias = require('../models/TagAlias');
 
 const norm = (s) => String(s || '').trim().toLowerCase();
 
-// ─── Alias cache (from → to), used by ensureTag on every tag add ──────────────
 let aliasMap = null;
 
 async function ensureCache() {
@@ -27,7 +26,6 @@ async function resolveAlias(name) {
     return cur;
 }
 
-// ─── Tag listing with live-item usage counts ──────────────────────────────────
 async function getAllTags() {
     // Library tags only: anything linked to an item (trashed ones too, count 0) or
     // pinned. Tags also stores the remote-source tag cache (1M+ rows) — never list it.
@@ -48,7 +46,6 @@ async function getAllTags() {
     return rows.map(r => ({ ...r, pinned: !!r.pinned }));
 }
 
-// ─── Pinned tags ──────────────────────────────────────────────────────────────
 async function setPinned(id, pinned) {
     await Tag.update({ pinned: !!pinned }, { where: { id } });
     return { ok: true };
@@ -103,7 +100,6 @@ async function deleteTag(id) {
     return { ok: true };
 }
 
-// ─── Rules ────────────────────────────────────────────────────────────────────
 async function getRules() {
     return TagAlias.findAll({ order: [['from', 'ASC']], raw: true });
 }

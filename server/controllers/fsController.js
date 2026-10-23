@@ -10,7 +10,6 @@ const crypto = require('crypto');
 const ops = require('../services/ffmpegOps');
 const { getActive } = require('../libraryRegistry');
 
-// ─── Seek-bar storyboards (library + folder videos), cached on disk ───────────
 const sbDir = () => path.join(app.getPath('userData'), 'cache', 'storyboards');
 const sbJobs = new Map();
 

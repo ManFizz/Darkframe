@@ -1,4 +1,3 @@
-// ─── Manga tab: sources, search, gallery card, downloads ─────────────────────
 .mo-layout { --mo-card: 168px; }
 
 .mo-keep { flex: 1; min-height: 0; display: flex; flex-direction: column; &.hidden { display: none; } }
@@ -437,7 +436,6 @@
   .mo-cover.big { width: 180px; }
 }
 
-// ─── Search with filter chips + autocomplete ─────────────────────────────────
 .mo-sbar { position: relative; flex: 1; min-width: 260px; }
 .mo-sbar .mo-search {
   height: auto;
@@ -513,7 +511,6 @@
 .mo-ac-empty { padding: 10px; font-size: 12.5px; color: var(--bs-secondary); }
 .safe-view .mo-ac-cover { filter: blur(8px); }
 
-// ─── Results + tag panel side by side ────────────────────────────────────────
 .mo-body { flex: 1; min-height: 0; display: flex; }
 .mo-body > .mo-scroll { flex: 1; min-width: 0; }
 
@@ -572,7 +569,6 @@
 }
 .mo-tb-more { width: 100%; margin-top: 6px; }
 
-// ─── Pages ───────────────────────────────────────────────────────────────────
 .mo-pager {
   display: flex;
   flex-wrap: wrap;

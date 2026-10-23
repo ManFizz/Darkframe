@@ -203,7 +203,6 @@ const ReaderView = ({ book, onClose }) => {
         onError: () => markLoad(p.url, 'err'),
     });
 
-    // ─── Vertical (webtoon) mode ──────────────────────────────────────────────
     const imgRefs = useRef([]);
     const scrollToPage = useCallback((i, smooth = false) => {
         const el = imgRefs.current[i];
@@ -240,7 +239,6 @@ const ReaderView = ({ book, onClose }) => {
         return () => cancelAnimationFrame(raf);
     }, [auto, vertical, prefs.autoSpeed]);
 
-    // ─── Keyboard ─────────────────────────────────────────────────────────────
     useEffect(() => {
         const onKey = (e) => {
             // Text fields keep their keys; the page slider / checkboxes / whatever had
@@ -309,7 +307,6 @@ const ReaderView = ({ book, onClose }) => {
     // The button that opened the reader (or a tab radio) keeps focus otherwise.
     useEffect(() => { document.activeElement?.blur?.(); }, []);
 
-    // ─── Paged: wheel turns the page once the current one is scrolled through ──
     const onWheel = (e) => {
         if (e.ctrlKey) {
             e.preventDefault();

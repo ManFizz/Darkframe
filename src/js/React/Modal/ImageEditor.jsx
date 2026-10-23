@@ -92,7 +92,6 @@ const ImageEditor = ({ file, onCancel, onSaved }) => {
     const previewFilter = cssFilter(color, `#${gammaId}`);
     const gammaExp = 1 / colorFactors(color).g;
 
-    // ─── Load image + measure the stage ────────────────────────────────────────
     // Edit from the pristine source (library://source → base/source/original). Items
     // edited the old cumulative way (no stored params) start from their current look,
     // which the server then keeps as their baseline.
@@ -142,7 +141,6 @@ const ImageEditor = ({ file, onCancel, onSaved }) => {
         return { bf, drawScale, boxW, boxH, origin };
     }, [layout, stageSize, zoom, offset]);
 
-    // ─── Draw the canvas (viewport-sized; whole image drawn, clipped) ───────────
     useLayoutEffect(() => {
         if (!img || !layout || !view || !canvasRef.current) return;
         const canvas = canvasRef.current;
@@ -186,7 +184,6 @@ const ImageEditor = ({ file, onCancel, onSaved }) => {
         }
     }, [img, layout, view, flipH, flipV, gridOn, stageSize, previewFilter, gammaExp]);
 
-    // ─── Edge analysis for magnetic snapping ───────────────────────────────────
     // Uses the discrete (90°) orientation only — the straighten slider is ignored so
     // we don't rebuild the edge map on every tick; small angles snap close enough.
     useEffect(() => {
@@ -262,7 +259,6 @@ const ImageEditor = ({ file, onCancel, onSaved }) => {
         return bestV >= SNAP_THRESHOLD ? best / (N - 1) : frac;
     };
 
-    // ─── Loupe: follow the cursor over the stage ───────────────────────────────
     useEffect(() => {
         if (!loupeOn) { setLoupePos(null); return; }
         const onMove = (e) => {
@@ -341,7 +337,6 @@ const ImageEditor = ({ file, onCancel, onSaved }) => {
         ctx.stroke();
     }, [loupePos, view, img, layout, crop, flipH, flipV, previewFilter, gammaExp]);
 
-    // ─── Aspect / rotate / flip ────────────────────────────────────────────────
     const axisSwapped = (((rot90 % 2) + 2) % 2) === 1;
     const rotateLeft  = () => { setCrop(rotateCropCCW); setRot90(r => r - 1); setAspect(null); setZoom(1); setOffset({ x: 0, y: 0 }); };
     const rotateRight = () => { setCrop(rotateCropCW);  setRot90(r => r + 1); setAspect(null); setZoom(1); setOffset({ x: 0, y: 0 }); };
@@ -356,7 +351,6 @@ const ImageEditor = ({ file, onCancel, onSaved }) => {
         setCrop({ x: (1 - wf) / 2, y: (1 - hf) / 2, w: wf, h: hf });
     }, [view]);
 
-    // ─── Crop drag / resize ─────────────────────────────────────────────────────
     const onPointerMove = useCallback((e) => {
         const d = dragRef.current;
         if (!d) return;
@@ -415,7 +409,6 @@ const ImageEditor = ({ file, onCancel, onSaved }) => {
         window.addEventListener('pointercancel', onPointerUp);   // a touch the system took over
     }, [crop, aspect, snapOn, view, onPointerMove, onPointerUp]);
 
-    // ─── Pan (drag background) + zoom (wheel) ───────────────────────────────────
     const onPanMove = useCallback((e) => {
         const p = panRef.current;
         if (!p) return;
@@ -459,7 +452,6 @@ const ImageEditor = ({ file, onCancel, onSaved }) => {
         return () => el.removeEventListener('wheel', onWheel);
     }, [onWheel]);
 
-    // ─── Cleanup + Escape ──────────────────────────────────────────────────────
     useEffect(() => () => {
         window.removeEventListener('pointermove', onPointerMove);
         window.removeEventListener('pointerup', onPointerUp);
@@ -473,7 +465,6 @@ const ImageEditor = ({ file, onCancel, onSaved }) => {
         return () => document.removeEventListener('keydown', onKey);
     }, [onCancel]);
 
-    // ─── Save / revert ─────────────────────────────────────────────────────────
     const handleSave = async () => {
         setSaving(true);
         try {

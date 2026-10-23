@@ -132,7 +132,6 @@ const AddOnlineButton = ({ gallery, onAdded, className = 'ftb-btn', compact = fa
     );
 };
 
-// ─── Search results ──────────────────────────────────────────────────────────
 // "Открывали": from the online reading history.
 const seenTitle = (e) => `Открывали ${ago(e.at)}${e.chapter != null ? ` · ${e.chapters > 1 && e.chapterTitle ? `${e.chapterTitle}, ` : ''}стр. ${(e.page || 0) + 1}` : ''}`;
 
@@ -363,7 +362,6 @@ const SearchPane = ({ source, onOpenGallery, onRead }) => {
     );
 };
 
-// ─── Gallery card ────────────────────────────────────────────────────────────
 const GalleryPane = ({ target, onBack, onSearchTag }) => {
     const [g, setG] = useState(null);
     const [error, setError] = useState(null);
@@ -596,7 +594,6 @@ const GalleryPane = ({ target, onBack, onSearchTag }) => {
     );
 };
 
-// ─── Downloads ───────────────────────────────────────────────────────────────
 const DownloadsPane = ({ jobs, onOpenGallery }) => {
     const act = (id, action) => mangaApi.downloadAction(id, action).catch(e => notify({ message: errText(e), type: 'warning' }));
     const finished = jobs.filter(j => j.status === 'done' || j.status === 'canceled').length;
@@ -655,7 +652,6 @@ const DownloadsPane = ({ jobs, onOpenGallery }) => {
     );
 };
 
-// ─── Continue reading ────────────────────────────────────────────────────────
 const RecentPane = ({ onOpenGallery, onRead }) => {
     const [lib, setLib] = useState(null);
     const [online, setOnline] = useState(onlineHistory.list);
@@ -716,7 +712,6 @@ const RecentPane = ({ onOpenGallery, onRead }) => {
     );
 };
 
-// ─── Subscriptions ───────────────────────────────────────────────────────────
 const HOURS = [[0, 'вручную'], [1, 'каждый час'], [3, 'каждые 3 ч'], [6, 'каждые 6 ч'], [12, 'каждые 12 ч'], [24, 'раз в день']];
 
 // Live state of the subscriptions: the list, the schedule, a check in progress.
@@ -847,7 +842,6 @@ const SubsPane = ({ state, onOpenGallery }) => {
     );
 };
 
-// ─── Layout ──────────────────────────────────────────────────────────────────
 const MangaView = () => {
     const [allSources, setSources] = useState([]);
     // 18+ off: only the sites without adult content (MangaDex).

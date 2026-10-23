@@ -92,7 +92,6 @@ function removeModel() {
     return status();
 }
 
-// ─── Inference ──────────────────────────────────────────────────────────────
 let session = null;
 let tags = null;   // [{ name, category }]
 

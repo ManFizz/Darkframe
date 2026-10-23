@@ -53,8 +53,6 @@ async function fromFolder(dir, { mode = 'auto', collectionId = null, tags = [] }
     return created;
 }
 
-// ─── Archives ───────────────────────────────────────────────────────────────
-
 // Streams the archive to a temp folder (no whole-archive buffers in memory).
 function extractZip(file, outDir) {
     return new Promise((resolve, reject) => {
@@ -145,8 +143,6 @@ async function fromArchive(file, { collectionId = null, tags = [] } = {}) {
     }
 }
 
-// ─── From library images ─────────────────────────────────────────────────────
-
 function originalOf(id) {
     const dir = path.join(require('../importService').itemsPath(), id);
     try {
@@ -177,8 +173,6 @@ async function fromItems(ids, { title, collectionId, trashOriginals = false } = 
     }
     return { item, used: ordered.map(r => r.id) };
 }
-
-// ─── Export ─────────────────────────────────────────────────────────────────
 
 const xmlEsc = (s) => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 

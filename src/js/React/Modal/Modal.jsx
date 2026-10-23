@@ -309,7 +309,6 @@ const Modal = ({ fileId, mainArray, modalUpdater, displayFiles, onUpdated, autoS
         onUpdated?.(idOrAction, data);
     }, [handleDelete, navigateToNext, onUpdated, file]);
 
-    // ─── Wheel-zoom / drag-pan for images while just viewing ───────────────────
     const canZoom = file?.type === FILE_TYPES.IMAGE && !(Settings.LongView && isLong);
 
     const onWheel = useCallback((e) => {

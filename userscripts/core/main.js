@@ -102,7 +102,6 @@ function main() {
         } catch (e) { setStatus(`Коллекция не создана: ${e.message}`); }
     }
 
-    // ─── items on the page ──────────────────────────────────────────────────────
     function refresh() {
         try { site.decorate?.(); } catch (e) { console.warn(`[DF-${site.id}] decorate`, e); }
         if (!page || !ui) return;
@@ -175,7 +174,6 @@ function main() {
         else { it.box.classList.add('dfr-rel'); it.box.append(btn); }
     }
 
-    // ─── runs ───────────────────────────────────────────────────────────────────
     async function start(kind) {
         if (busy || !page) return;
         busy = true;
@@ -206,7 +204,6 @@ function main() {
         }
     }
 
-    // ─── the page (sites are single-page apps: keep asking what this page is) ───
     function onPage() {
         let next;
         try { next = site.page(location); } catch (e) { console.warn(`[DF-${site.id}] page`, e); next = null; }

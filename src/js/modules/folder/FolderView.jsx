@@ -250,7 +250,6 @@ const FolderView = () => {
         ...folders.slice(0, 40).map(f => ({ id: `fs:sub:${f.path}`, group: 'Подпапки', icon: 'bi-folder2', title: f.name, run: () => openFolder(f.path) })),
     ]);
 
-    // ─── File operations ────────────────────────────────────────────────────
     const afterOp = useCallback(() => { setSelected(new Set()); fb.refresh(); }, [fb.refresh]);
 
     const renameEntry = useCallback((entryPath, isDir) => {

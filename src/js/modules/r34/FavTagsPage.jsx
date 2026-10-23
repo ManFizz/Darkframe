@@ -46,7 +46,6 @@ const queryFor = (tag, f) => ({
     minScore: f.minScore || 0, sort: f.sort || 'new', rating: f.rating || 'any',
 });
 
-// ─── One tag ──────────────────────────────────────────────────────────────────
 const TagCard = ({ tag, kind, filter, source, refreshToken, onRemove, showKind }) => {
     const q = queryFor(tag, filter);
     const query = buildQueryString(q);
@@ -124,7 +123,6 @@ const TagCard = ({ tag, kind, filter, source, refreshToken, onRemove, showKind }
     );
 };
 
-// ─── The shared filter ────────────────────────────────────────────────────────
 const FilterBar = ({ filter, setFilter, source }) => {
     const [ex, setEx] = useState('');
     const addExclude = () => {
@@ -184,7 +182,6 @@ const FilterBar = ({ filter, setFilter, source }) => {
     );
 };
 
-// ─── Page ─────────────────────────────────────────────────────────────────────
 const FavTagsPage = ({ source }) => {
     const { favoriteTags, addFavTag, removeFavTag } = useFavoriteTags();
     const [filter, setFilterRaw] = usePerSource(FILTER_KEY, source, DEFAULT_FILTER);

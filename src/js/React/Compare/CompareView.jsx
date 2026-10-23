@@ -3,7 +3,6 @@ import {createPortal} from 'react-dom';
 import LibraryService from '@services/LibraryService';
 import {notify} from '@services/NotificationService';
 
-// ─── Tiny event bus: anything can open the comparison ─────────────────────────
 let opener = null;
 
 /**

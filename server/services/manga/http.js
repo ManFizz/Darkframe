@@ -94,7 +94,6 @@ async function buffer(url, opts) {
     return { buf: Buffer.from(await res.arrayBuffer()), type: res.headers.get('content-type') || '' };
 }
 
-// ─── HTML helpers ───────────────────────────────────────────────────────────
 const ENT = { amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", nbsp: ' ', laquo: '«', raquo: '»', mdash: '—', ndash: '–', hellip: '…' };
 function decode(s) {
     return String(s ?? '')

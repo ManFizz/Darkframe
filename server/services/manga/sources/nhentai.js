@@ -54,7 +54,6 @@ async function search({ query = '', page = 1, sort = 'date', filters = [] } = {}
     return { items, page, pages: data.num_pages || null, hasMore: page < (data.num_pages || 0), total: data.total ?? null, next: page + 1 };
 }
 
-// ─── Tags: groups, browsing, autocomplete ──────────────────────────────────────
 const TAG_GROUPS = [
     { type: 'tag', label: 'Теги', browse: true },
     { type: 'parody', label: 'Пародии', browse: true },

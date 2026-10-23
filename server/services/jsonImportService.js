@@ -39,8 +39,6 @@ const CONTENT_TYPE_EXT = {
     'image/gif': '.gif',  'video/mp4': '.mp4', 'video/webm': '.webm',
 };
 
-// ─── parsing helpers ───────────────────────────────────────────────────────────
-
 function parseFile(jsonPath) {
     const content = fs.readFileSync(jsonPath, 'utf-8').replace(/^﻿/, '');
     const data = JSON.parse(content);
@@ -95,8 +93,6 @@ function writeBase64Temp(base64, mimeType) {
     return tmp;
 }
 
-// ─── collection resolver (find-or-create by name / path, cached per run) ────────
-
 function makeCollectionResolver() {
     const cache = new Map(); // `${parentId||'root'}::${nameLower}` -> id
 
@@ -123,8 +119,6 @@ function makeCollectionResolver() {
         return parentId;
     };
 }
-
-// ─── main ───────────────────────────────────────────────────────────────────────
 
 async function importFromJson({ jsonPath, collectionId = null, webContents }) {
     const { items, defaultCollection } = parseFile(jsonPath);

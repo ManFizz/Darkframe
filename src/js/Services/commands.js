@@ -40,7 +40,6 @@ export function useCommandProvider(key, build) {
     }, [key]);
 }
 
-// ─── Cross-view requests ──────────────────────────────────────────────────────
 function channel() {
     let pending = null;
     const listeners = new Set();

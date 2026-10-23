@@ -279,7 +279,6 @@
   i, .modal-nav-counter { pointer-events: none !important; }
 }
 
-// ─── Slideshow HUD ────────────────────────────────────────────────────────────
 .ss-hud {
   position: fixed;
   top: calc(var(--df-modal-top) + 12px);
@@ -395,8 +394,6 @@
   z-index: 3;
 }
 
-// ─── Modal + metadata panel ───────────────────────────────────────────────────
-
 .modal-view.with-panel {
   flex-direction: row;
   align-items: stretch;
@@ -427,7 +424,6 @@
   }
 }
 
-// ─── Redesign: framed stage + glass panel (direction B) ───────────────────────
 .modal-view {
   .modal-content-wrapper {
     display: flex;
@@ -496,7 +492,6 @@ html:fullscreen {
   }
 }
 
-// ─── Remote (booru) side panel ────────────────────────────────────────────────
 .remote-panel {
   .remote-panel-title {
     font-size: 14px;
@@ -548,8 +543,6 @@ html:fullscreen {
   // Source link behaves like a full-width action button.
   .metadata-section > a.btn { text-decoration: none; }
 }
-
-// ─── Delete countdown ─────────────────────────────────────────────────────────
 
 $delete-delay: 1500ms;
 
@@ -622,7 +615,6 @@ html[data-bs-theme="light"] .modal-view {
 // The dialog sets white text for the stage; the panel follows its own theme.
 .modal-panel-wrapper { color: var(--bs-body-color); }
 
-// ─── Filmstrip ────────────────────────────────────────────────────────────────
 $strip-h: 84px;
 
 .modal-view.with-strip {
@@ -748,7 +740,6 @@ $strip-h: 84px;
 .fs-track > :first-child { margin-left: auto; }
 .fs-track > :last-child { margin-right: auto; }
 
-// ─── Animated GIF / WebP player ──────────────────────────────────────────────
 .modal-view .anim-canvas {
   max-width: 100%;
   max-height: 100%;

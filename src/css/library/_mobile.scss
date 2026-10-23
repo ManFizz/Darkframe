@@ -1,4 +1,3 @@
-// ─── Phone layout ────────────────────────────────────────────────────────────
 // Only for the app opened in a phone's browser over the network (html.df-web) on
 // a narrow screen; the desktop window keeps its layout at any width.
 
@@ -33,7 +32,6 @@
   .library-nav-controls { flex: 1 1 100%; max-width: none; flex-wrap: wrap; order: 5; }
   .navbar-spacer { display: none; }
 
-  // ── Library: collections in a drawer, the grid gets the screen ─────────────
   .library-layout { position: relative; }
   .library-sidebar {
     position: fixed;
@@ -98,7 +96,6 @@
   .thumb-check { opacity: 0; }
   .thumb.selection-active .thumb-check, .thumb.thumb-selected .thumb-check { opacity: 1; }
 
-  // ── Viewer: full screen; the info panel slides up under the picture ────────
   .modal-view {
     top: 0;
     height: 100dvh;
@@ -176,12 +173,10 @@
   .vc-btn { min-width: 40px; min-height: 40px; }
   .vc-preview, .vc-tooltip { display: none; }
 
-  // ── Control panel and other dialogs: whole screen ──────────────────────────
   .settings-overlay { padding: 0; }
   .settings-modal { width: 100vw; max-width: none; height: 100dvh; max-height: none; border-radius: 0; }
   .cp-tabs, .cp-subtabs { overflow-x: auto; flex-wrap: nowrap; scrollbar-width: none; }
 
-  // ── Manga tab ──────────────────────────────────────────────────────────────
   .mo-layout { flex-direction: column; --mo-card: 108px; }
   .mo-layout > .fsb {
     width: auto;
@@ -212,7 +207,6 @@
   .mo-job { flex-wrap: wrap; }
   .mo-pager { gap: 8px; }
 
-  // ── Manga reader ───────────────────────────────────────────────────────────
   .rd-top { flex-wrap: wrap; padding: max(6px, env(safe-area-inset-top)) 6px 6px; }
   .rd-seg span, .rd-btn-text { display: none; }
   .rd-title { flex: 1 1 100%; order: -1; }

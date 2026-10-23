@@ -14,7 +14,6 @@ const SORT_LABEL = { score: 'лучшие', random: 'случайные' };
 
 const fmt = (n) => (n == null ? '—' : n.toLocaleString('ru-RU'));
 
-// ─── One saved search ─────────────────────────────────────────────────────────
 const SearchCard = ({ row, dragging, onDragStart, onDragOver, onDragEnd, refreshToken }) => {
     const query = buildQueryString({ ...queryOf(row) });
     const key = `${row.source}|${query}`;
@@ -139,7 +138,6 @@ const SearchCard = ({ row, dragging, onDragStart, onDragOver, onDragEnd, refresh
     );
 };
 
-// ─── Page ─────────────────────────────────────────────────────────────────────
 const SavedSearchesPage = ({ source }) => {
     const saved = useSavedSearches(source);
     const [drag, setDrag] = useState(null);   // { id, order: [ids] }

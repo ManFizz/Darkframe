@@ -149,8 +149,6 @@ export async function fetchTagKinds(names = [], sourceType = SOURCE_TYPES.R34) {
 	return out;
 }
 
-/* ---------------- ENCODE ---------------- */
-
 function encodeTag(tag) {
 	return tag
 		.trim()

@@ -7,7 +7,6 @@ const path = require('path');
 
 const US = path.join(__dirname, '..', 'userscripts');
 
-// ─── GM stubs ───────────────────────────────────────────────────────────────
 const values = new Map();
 global.GM_getValue = (k, d) => (values.has(k) ? JSON.parse(values.get(k)) : d);
 global.GM_setValue = (k, v) => values.set(k, JSON.stringify(v));

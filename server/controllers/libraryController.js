@@ -424,7 +424,6 @@ function register() {
     // New output settings (format / quality / max side), keeping the item's edits.
     ipcMain.handle('library:recompressImage', async (_, { id, output }) => recompressImage(id, output));
 
-    // ─── Video editing (trim / revert) ─────────────────────────────────────────
     ipcMain.handle('library:trimVideo', async (event, { id, start, end, mode, backup }) => {
         return videoEdit.trimVideo(id, { start, end, mode, backup }, (percent) => {
             if (!event.sender.isDestroyed()) event.sender.send('library:videoEditProgress', { id, percent });
@@ -437,7 +436,6 @@ function register() {
 
     ipcMain.handle('library:setVideoThumb', async (_, { id, time }) => videoEdit.setVideoThumb(id, time));
 
-    // ─── Resume positions for long videos ─────────────────────────────────────
     ipcMain.handle('library:getVideoPosition',  async (_, p) => videoPositions.getPosition(p || {}));
     ipcMain.handle('library:saveVideoPosition', async (_, p) => videoPositions.savePosition(p || {}));
 
@@ -463,7 +461,6 @@ function register() {
         return { ok: true, removed: trashed.length };
     });
 
-    // ─── Tag manager ──────────────────────────────────────────────────────────
     ipcMain.handle('library:getAllTags',   async ()               => tagAdmin.getAllTags());
     ipcMain.handle('library:setTagType', async (_, data) => tagAdmin.setTagType(data));
     ipcMain.handle('library:getModels', async () => tagAdmin.getModels());
@@ -478,7 +475,6 @@ function register() {
     ipcMain.handle('library:addTagRule',   async (_, data)         => tagAdmin.addRule(data));
     ipcMain.handle('library:deleteTagRule', async (_, { id })      => tagAdmin.deleteRule(id));
 
-    // ─── Smart collections ──────────────────────────────────────────────────────
     ipcMain.handle('library:getSmartItems', async (_, { filter }) => getSmartItems(filter || {}));
 
     ipcMain.handle('library:createSmartCollection', async (_, { name, filter }) => {
@@ -557,7 +553,6 @@ function register() {
 
     ipcMain.handle('library:findDuplicates', async () => findDuplicates());
 
-    // ─── Near-duplicates (perceptual hash) ────────────────────────────────────
     ipcMain.handle('library:phashStatus', async () => similarity.phashStatus());
     ipcMain.handle('library:computePhashes', async (event) => similarity.computeMissing((p) => {
         if (!event.sender.isDestroyed()) event.sender.send('library:phashProgress', p);
@@ -592,14 +587,12 @@ function register() {
         if (!event.sender.isDestroyed()) event.sender.send('library:similarProgress', pct);
     }));
 
-    // ─── View history / recently viewed (per section) ────────────────────────
     ipcMain.handle('library:recordView',        async (_, p)  => viewHistory.recordView(p || {}));
     ipcMain.handle('library:getHistory',        async (_, p)  => viewHistory.getHistory(p || {}));
     ipcMain.handle('library:getHistorySections', async ()     => viewHistory.getHistorySections());
     ipcMain.handle('library:clearHistory',      async (_, p)  => viewHistory.clearHistory(p || {}));
     ipcMain.handle('library:removeHistory',     async (_, p)  => viewHistory.removeHistory(p || {}));
 
-    // ─── Maintenance (Панель управления → Управление) ─────────────────────────
     ipcMain.handle('library:checkIntegrity', async () => maintenance.checkIntegrity());
 
     ipcMain.handle('library:cleanupIntegrity', async (_, { missingIds = [], orphanNames = [] }) => {

@@ -18,7 +18,6 @@ const NS_TYPE = { artist: 1, group: 1, parody: 3, character: 4, language: 5, rec
 
 const SORTS = [{ id: 'date', label: 'Новые' }];
 
-// ─── Search results (extended layout: table.itg.glte) ─────────────────────────
 function parseSearch(html) {
     const items = [];
     const rows = html.split(/<tr>(?=<td class="gl1e")/).slice(1);
@@ -65,7 +64,6 @@ async function search({ query = '', page = 1, next = null, filters = [] } = {}) 
     return { items: r.items, page, hasMore: !!r.next, next: r.next, total: r.total };
 }
 
-// ─── Tags ─────────────────────────────────────────────────────────────────────
 // E-Hentai has no tag lists — namespaces are searched by name (tagsuggest).
 const TAG_GROUPS = [
     { type: 'category', label: 'Категории', browse: true },
@@ -98,7 +96,6 @@ async function suggest(text, { type = null, limit = 25 } = {}) {
     return [...cats, ...tags].filter(t => !type || t.type === type).slice(0, limit);
 }
 
-// ─── Gallery ────────────────────────────────────────────────────────────────
 async function gdata(gid, token) {
     const res = await http.json(API, {
         method: 'POST',

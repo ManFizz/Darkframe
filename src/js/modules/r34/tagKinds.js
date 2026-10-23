@@ -31,8 +31,6 @@ export function fmtCount(n) {
     return String(n);
 }
 
-// ─── Category lookup for arbitrary tag names (local tag DB, cached per session) ─
-
 const kindCache = new Map();   // name → kind ('unknown' once looked up without a hit)
 
 export function useTagKinds(names) {

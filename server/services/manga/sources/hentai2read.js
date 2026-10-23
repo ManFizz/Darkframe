@@ -32,7 +32,6 @@ const TYPE = { artist: 1, group: 1, parody: 3, character: 4, language: 5, catego
 // Kinds searched by tag id (with / without); the others have a page of their own.
 const SEARCHABLE = new Set(['content', 'category', 'tag']);
 
-// ─── Page data ────────────────────────────────────────────────────────────────
 // Cloudflare stops the app's plain requests on most pages (it tells them from a
 // browser by their headers) but lets a real page through: then the page is loaded
 // in a hidden window of the manga session, where the check passes by itself, and
@@ -124,7 +123,6 @@ const listOf = (books, page) => ({
     next: page + 1,
 });
 
-// ─── Tags ─────────────────────────────────────────────────────────────────────
 let tagCache = null;   // { at, list }
 async function tagList() {
     if (tagCache && Date.now() - tagCache.at < 6 * 3600 * 1000) return tagCache.list;
@@ -163,7 +161,6 @@ async function suggest(text, { type = null, limit = 20 } = {}) {
     return out;
 }
 
-// ─── Lists and search ─────────────────────────────────────────────────────────
 async function search({ query = '', page = 1, sort = 'latest', filters = [] } = {}) {
     const s = SORTS.find(x => x.id === sort) || SORTS[0];
     const q = query.trim();
@@ -194,7 +191,6 @@ async function search({ query = '', page = 1, sort = 'latest', filters = [] } = 
     return listOf(j.props.books, page);
 }
 
-// ─── A book ───────────────────────────────────────────────────────────────────
 async function gallery(id) {
     const j = await pageData(`/original/${encodeURIComponent(id)}`);
     const b = j.props.book;

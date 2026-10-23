@@ -34,7 +34,6 @@ const SORTS = [
 const TYPE = { genre: 0, tag: 0, category: 5, person: 1, author: 1 };
 const PAGE = 50;
 
-// ─── Filters: genres / categories (fixed lists), tags, parodies, people (by id) ──
 const ELEMENT_TYPE = { tag: 40, parody: 11 };
 let lists = null;   // { genre: [{ id, name }], category: [...] }, from the advanced search page
 let listsAt = 0;

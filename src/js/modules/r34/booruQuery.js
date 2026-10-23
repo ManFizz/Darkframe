@@ -71,7 +71,6 @@ export function buildQueryString(q = state) {
     return parts.join(' ');
 }
 
-// ─── History ──────────────────────────────────────────────────────────────────
 function loadHistory() {
     try { return JSON.parse(localStorage.getItem(HISTORY_KEY) || '{}'); } catch { return {}; }
 }

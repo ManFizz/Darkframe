@@ -1,4 +1,3 @@
-// ─── Folder tile (shared: Folders browser + library collections) ─────────────
 // A back plate with a tab, preview "papers" fanned out of it and a translucent
 // front pocket. Colour comes from --ft-color: classic yellow for folders on
 // disk, the accent for library collections.
@@ -152,8 +151,6 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
-
-// ─── Folders browser layout ──────────────────────────────────────────────────
 
 .folder-layout {
   display: flex;
@@ -585,7 +582,6 @@
   &.error > .bi { color: var(--bs-danger); opacity: 0.85; }
 }
 
-// ─── Folder file panel (viewer side panel for files on disk) ─────────────────
 .folder-panel, .rp {
   .fp-title {
     font-size: 14px;
@@ -736,7 +732,6 @@
   }
 }
 
-// ─── Folders: selection + context menu ───────────────────────────────────────
 .ftfile { position: relative; }
 
 .ftfile-check {
@@ -831,7 +826,6 @@
   width: 320px;
 }
 
-// ─── File operations ─────────────────────────────────────────────────────────
 .folder-selbar {
   .fsel-sep { width: 1px; height: 20px; margin: 0 2px; background: var(--df-accent-dim); }
   .fsel-hint { font-size: 11.5px; color: var(--bs-secondary); margin-left: 4px; white-space: nowrap; }
@@ -875,7 +869,6 @@
 .fsd-error { font-size: 12.5px; color: var(--bs-danger); }
 .fsd-actions { display: flex; justify-content: flex-end; gap: 8px; }
 
-// ─── Already in the library / copies in the folder ──────────────────────────
 .ftfile-lib, .ftfile-dup {
   position: absolute;
   z-index: 2;
