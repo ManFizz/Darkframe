@@ -324,17 +324,16 @@ const AdvancedFilter = ({ filters, patch }) => {
     );
 };
 
-// Сортировка в navbar для library
+// The library's filter / order controls on the right of the top bar.
 export const LibraryNavSort = ({ ctx }) => {
     const { filters, update, patch } = ctx;
 
     return (
         <div className="d-flex btn-group">
-            {/* (the slideshow is in the "⋯" menu of the top bar) */}
             <AdvancedFilter filters={filters} patch={patch} />
             <RatingFilter filters={filters} update={update} />
 
-            {/* Порядок: что, в какую сторону, случайный, группы */}
+            {/* Order: what by, which way, random, groups */}
             <SortMenu filters={filters} patch={patch} />
 
             <NotificationBell />

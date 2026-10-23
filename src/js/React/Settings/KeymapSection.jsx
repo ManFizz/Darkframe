@@ -8,7 +8,7 @@ const Caps = ({ binding }) => (
     <span className="km-caps">{keyCaps(binding).map((k, i) => <kbd key={i}>{k}</kbd>)}</span>
 );
 
-// Settings → «Горячие клавиши»: click a shortcut and press the new one. A key that
+// Settings → Hotkeys: click a shortcut and press the new one. A key that
 // already belongs to another action moves over (the other action loses it).
 const KeymapSection = () => {
     const { bindingsOf } = useKeymap();

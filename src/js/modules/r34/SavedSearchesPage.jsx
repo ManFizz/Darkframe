@@ -42,7 +42,7 @@ const SearchCard = ({ row, dragging, onDragStart, onDragOver, onDragEnd, refresh
         return () => io.disconnect();
     }, [key]);   // eslint-disable-line react-hooks/exhaustive-deps
 
-    // "Обновить все" on the page.
+    // "Refresh all" on the page.
     useEffect(() => { if (refreshToken) load(true); }, [refreshToken]);   // eslint-disable-line react-hooks/exhaustive-deps
 
     const total = preview?.total ?? null;

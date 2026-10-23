@@ -67,7 +67,6 @@ export const LibraryService = {
         await libraryApi.reorderCollections({ updates });
         await this.loadCollections();
     },
-    // --- Items ---
 
     async getItems({ collectionId, trash = false } = {}) {
         if (trash)
@@ -93,7 +92,6 @@ export const LibraryService = {
         return libraryApi.updateSmartFilter({ id, filter });
     },
 
-    // --- Tag manager ---
     getAllTags()               { return libraryApi.getAllTags(); },
     getModels()                { return libraryApi.getModels(); },
     getModelFiles(id)          { return libraryApi.getModelFiles(id); },
@@ -180,7 +178,6 @@ export const LibraryService = {
         return libraryApi.generateMissingMedia();
     },
 
-    // --- View history ---
     async recordView(payload) {
         return libraryApi.recordView(payload);
     },
@@ -258,7 +255,6 @@ export const LibraryService = {
         }
         return libraryApi.importJsonDialog({ collectionId });
     },
-    // --- Pub/Sub ---
 
     subscribe(cb) {
         listeners.add(cb);

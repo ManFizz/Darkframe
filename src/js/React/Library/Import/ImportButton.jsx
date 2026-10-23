@@ -10,8 +10,8 @@ const ImportButton = ({ collectionId, collectionName, onImported }) => {
     const [url, setUrl] = useState('');
     const [urlImporting, setUrlImporting] = useState(false);
     const [urlProgress, setUrlProgress] = useState(null);
-    // The secondary import paths (link/folder/json/csv) are hidden until asked for —
-    // "Добавить файлы" is the one action people reach for 95% of the time.
+    // The secondary import paths (link / folder / JSON / CSV) stay hidden until asked
+    // for: adding files is what people reach for almost every time.
     const [expanded, setExpanded] = useState(false);
     const fileInput = useRef(null);
     const [uploading, setUploading] = useState(null);   // { done, total } — phone uploads
@@ -149,9 +149,8 @@ const ImportButton = ({ collectionId, collectionName, onImported }) => {
             });
         }
 
-        // Duplicates aren't dropped silently anymore: ask once (per import) whether to
-        // add them anyway. Non-blocking — the unique files are already in by now, and
-        // this single toast lets the user opt the duplicates in with one click.
+        // Duplicates: one toast per import offers to add them anyway (the unique
+        // files are already in).
         const dupes = skipped.filter(s => s.reason === 'duplicate' && s.filePath);
         if (dupes.length) {
             notify({

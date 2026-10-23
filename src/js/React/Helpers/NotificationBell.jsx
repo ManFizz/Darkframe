@@ -21,7 +21,7 @@ const NotificationBell = () => {
         });
     }, [isOpen]);
 
-    // Закрываем при клике вне
+    // Closes on a click outside.
     useEffect(() => {
         const handler = (e) => {
             if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {

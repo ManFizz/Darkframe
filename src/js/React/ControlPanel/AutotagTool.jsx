@@ -6,7 +6,7 @@ import {autotagItems} from '@services/autotagRun';
 
 const fmtMB = (b) => `${Math.round(b / 1024 ** 2)} МБ`;
 
-// Control panel → Управление → Автотеги: the local tagger model (download /
+// Control panel → Manage → Auto tags: the local tagger model (download /
 // remove), how sure it must be, and "tag everything that has no tags".
 const AutotagTool = () => {
     const [st, setSt] = useState(null);

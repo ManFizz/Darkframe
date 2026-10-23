@@ -5,7 +5,7 @@ import {readLibraryManga} from '@services/mangaLibrary';
 
 const errText = (e) => String(e?.message || e).replace(/^Error invoking remote method '[^']+': (Error: )?/, '');
 
-// "Собрать мангу" for selected library images (in the shown order) or for files
+// "Make a manga" of selected library images (in the shown order) or of files
 // picked in the Folders browser (`files`).
 const MakeMangaButton = ({ items, files, defaultTitle, collectionId, onDone, className = 'btn btn-sm btn-outline-secondary' }) => {
     const [open, setOpen] = useState(false);

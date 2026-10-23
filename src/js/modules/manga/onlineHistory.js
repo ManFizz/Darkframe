@@ -1,6 +1,6 @@
 /**
- * Online manga read without saving: where reading stopped and the reader settings
- * of each gallery (per viewer, localStorage). Library manga keep theirs in the DB.
+ * Online manga read without saving: where reading stopped in each gallery (per
+ * viewer, localStorage). Library manga keep it in the DB.
  */
 const KEY = 'jsg_manga_online';
 const MAX = 300;

@@ -2,8 +2,8 @@ import ModuleRegistry from '@/ModuleRegistry';
 import {SOURCE_TYPES} from '@/Constants';
 import Settings from '@data/settings';
 
-// Online manga (nhentai, e-hentai, AllHentai, MangaDex): a self-contained view
-// (MangaView), rendered by the app shell. On unless switched off in the settings.
+// Online manga: a self-contained view (MangaView), rendered by the app shell.
+// On unless switched off in the settings.
 ModuleRegistry.register({
     sourceTypes: [SOURCE_TYPES.MANGA],
 

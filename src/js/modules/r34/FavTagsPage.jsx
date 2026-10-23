@@ -10,7 +10,7 @@ import {cachedMediaUrl} from '@/Infrastructure/MediaCache';
 import {FILE_TYPES, SOURCE_TYPES} from '@/Constants';
 
 /**
- * "Избранные теги": every favourite tag of the site as a card with its newest
+ * The favourite tags page: every favourite tag of the site as a card with its newest
  * posts — like the saved searches page. One filter applies to all of them
  * (score from, rating, order, tags to leave out), and the cards can be grouped by
  * the tag's kind (artist, character, …) with groups folded away like the date

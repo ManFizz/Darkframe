@@ -7,7 +7,7 @@ export function useItemReorder(items, onReordered, selectedIds) {
     const saveTimeout = useRef(null);
 
     const onDragStart = useCallback((e, id) => {
-        // Если тащат выделенный элемент и выделено несколько — тащим всех выделенных
+        // Dragging one of several selected items drags them all.
         const ids = (selectedIds?.has(id) && selectedIds.size > 1)
             ? new Set(selectedIds)
             : new Set([id]);
@@ -30,16 +30,13 @@ export function useItemReorder(items, onReordered, selectedIds) {
         if (!draggedIds.size || draggedIds.has(targetId)) return;
         if (!e.dataTransfer.getData('jsg/reorder')) return;
 
-        // Извлекаем перетаскиваемые элементы в оригинальном порядке
+        // The dragged block keeps its order and goes in at the target's place.
         const draggedItems = items.filter(f => draggedIds.has(f.uniqueId));
-        // Остаток без перетаскиваемых
         const remaining = items.filter(f => !draggedIds.has(f.uniqueId));
 
-        // Позиция таргета в остатке
         const toIdx = remaining.findIndex(f => f.uniqueId === targetId);
         if (toIdx === -1) return;
 
-        // Вставляем блок на место таргета
         remaining.splice(toIdx, 0, ...draggedItems);
 
         setDraggedIds(new Set());

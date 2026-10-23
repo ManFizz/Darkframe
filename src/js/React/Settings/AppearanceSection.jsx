@@ -8,7 +8,7 @@ const MODES = [
     { id: 'system', label: 'Как в ОС',  icon: 'bi-circle-half' },
 ];
 
-// Colour mode + accent. Applied instantly (no "save & relaunch" needed).
+// Colour mode + accent, applied at once.
 const AppearanceSection = () => {
     const [theme, setTheme] = useTheme();
     const [ratingDividers, setRatingDividers] = useViewPref('ratingDividers');

@@ -274,7 +274,7 @@ const VideoControls = ({
                 return;
             }
 
-            // Remappable ones first (Settings → «Горячие клавиши»).
+            // Remappable ones first (Settings → Hotkeys).
             if (matches(e, 'video.mute'))       { toggleMute(); return; }
             if (matches(e, 'video.fullscreen')) { e.preventDefault(); toggleFullscreen(); return; }
             if (matches(e, 'video.pip'))        { togglePip(); return; }

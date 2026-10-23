@@ -3,8 +3,8 @@ import {SORTS, dirLabel, newSeed, sortOf} from '@/shared/librarySort';
 import {useViewPref} from '@services/viewPrefs';
 
 /**
- * "Порядок" of the library gallery: what to sort by (grouped list with icons),
- * which way (said in words — "сначала новые"), random with "перемешать", group
+ * The library gallery's order: what to sort by (grouped list with icons), which
+ * way (said in words — "newest first"), random with "shuffle", group
  * headers for rating / dates / file types, and an option to remember the order
  * separately for each collection.
  *

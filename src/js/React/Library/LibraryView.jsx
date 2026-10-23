@@ -251,7 +251,7 @@ const LibraryView = ({ model = null }) => {
     // In the history view it's driven by loadHistory() instead of the item DB.
     const [orderedItems, setOrderedItems] = useState([]);
     useEffect(() => { if (!isHistory) setOrderedItems(filtered); }, [filtered, isHistory]);
-    // The top-bar play button shows the selection if there is one, else everything.
+    // The slideshow (top bar's ⋯ menu) shows the selection if there is one, else everything.
     useEffect(() => { slideshowListRef.current = selectedItems.length > 1 ? selectedItems : orderedItems; });
 
     // Load recently-viewed for the chosen section, newest first. Snapshots are rebuilt

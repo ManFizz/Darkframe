@@ -17,8 +17,7 @@ function usePopover() {
 
 /**
  * The booru sites as one tab: it shows the site that's open (or the last one
- * used), a click on it opens that site, the arrow lists the others. Four tabs of
- * look-alike globe icons become one that says which site it is.
+ * used), a click on it opens that site, the arrow lists the others.
  *
  * items: [{ btn: { label, type }, idx }]; icon(btn) → bootstrap icon class.
  */

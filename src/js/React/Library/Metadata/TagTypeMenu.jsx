@@ -5,8 +5,8 @@ import {TAG_TYPE_CHOICES, tagTypeLabel} from '@/shared/tagTypes';
 import {notify} from '@services/NotificationService';
 
 /**
- * Right click on a tag → its category: "Модель", "Автор", "Персонаж"… The choice
- * is the user's (Tags.userType) and wins over the site's; "Как на сайте" drops it.
+ * Right click on a tag → its category: model, artist, character… The choice is
+ * the user's (Tags.userType) and wins over the site's; "as on the site" drops it.
  *
  *   const { onTagContextMenu, tagTypeMenu } = useTagTypeMenu();
  *   <span onContextMenu={e => onTagContextMenu(e, name)}>…</span>

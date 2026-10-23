@@ -12,8 +12,8 @@ function normalizeUrl(url) {
 }
 
 const Image = ({ file }) => {
-    // Когда thumbUrl уже является готовой превьюшкой (отдельный full-res contentUrl),
-    // canvas-даунскейл не нужен — рисуем нативный <img> с lazy-загрузкой.
+    // thumbUrl already is a small preview (the full-size file is contentUrl):
+    // no canvas downscale, a plain lazy <img>.
     const isPregenerated = file.getUrl() !== file.thumbUrl;
 
     if (isPregenerated) {

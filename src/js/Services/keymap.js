@@ -2,7 +2,7 @@ import {useEffect, useState} from 'react';
 
 /**
  * Remappable keyboard shortcuts. Each action has default bindings; the user can
- * reassign them in Settings → «Горячие клавиши» (stored per viewer). Handlers ask
+ * reassign them in Settings → Hotkeys (stored per viewer). Handlers ask
  * `matches(e, 'viewer.slideshow')` instead of testing key codes themselves.
  *
  * A binding is "Ctrl+Shift+KeyN" style: modifiers in a fixed order + KeyboardEvent.code

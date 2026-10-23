@@ -62,7 +62,7 @@ const Cover = ({ src, className = '' }) => {
     );
 };
 
-// "Скачать" with a collection picker; `chapters` — selected chapter ids or null (all).
+// "Download" with a collection picker; `chapters` — selected chapter ids or null (all).
 const DownloadButton = ({ gallery, item, chapters = null, className = 'ftb-btn primary', label = 'Скачать', compact = false }) => {
     const [open, setOpen] = useState(false);
     const target = gallery || item;
@@ -94,7 +94,7 @@ const DownloadButton = ({ gallery, item, chapters = null, className = 'ftb-btn p
     );
 };
 
-// "В библиотеку" without downloading: chapters are read from the site, can be
+// "Add to library" without downloading: chapters are read from the site, can be
 // downloaded later; sites with chapters get a subscription at once.
 const AddOnlineButton = ({ gallery, onAdded, className = 'ftb-btn', compact = false }) => {
     const [open, setOpen] = useState(false);
@@ -132,7 +132,7 @@ const AddOnlineButton = ({ gallery, onAdded, className = 'ftb-btn', compact = fa
     );
 };
 
-// "Открывали": from the online reading history.
+// "Opened before" badge: from the online reading history.
 const seenTitle = (e) => `Открывали ${ago(e.at)}${e.chapter != null ? ` · ${e.chapters > 1 && e.chapterTitle ? `${e.chapterTitle}, ` : ''}стр. ${(e.page || 0) + 1}` : ''}`;
 
 const Card = React.memo(({ item, source, seen, onOpen, onRead }) => (
@@ -881,7 +881,7 @@ const MangaView = () => {
     }, []);
     const back = useCallback(() => setView(v => (v === 'gallery' ? (gallery?.from || 'search') : v)), [gallery]);
 
-    // Requests from elsewhere: "Загрузки" in a notice, a gallery link, …
+    // Requests from elsewhere: "downloads" in a notice, a gallery link, …
     useEffect(() => {
         const handle = (r) => {
             if (!r) return;
@@ -957,7 +957,7 @@ const MangaView = () => {
             </aside>
 
             <div className="folder-main">
-                {/* The search stays mounted under the card: results and scroll survive "Назад". */}
+                {/* The search stays mounted under the card: results and scroll survive "back". */}
                 {source && (
                     <div className={`mo-keep ${view === 'search' ? '' : 'hidden'}`}>
                         <SearchPane key={`${source.id}:${searchKey}`} source={source} onOpenGallery={openFromSearch} onRead={quickRead} />

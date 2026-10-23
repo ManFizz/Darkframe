@@ -1,8 +1,8 @@
 /**
  * Library sorting: every way to order the gallery, with what each direction means
- * in words ("сначала новые"), and a stable tie-break so equal items don't jump
+ * in words ("newest first"), and a stable tie-break so equal items don't jump
  * around between renders. "Random" is a seeded shuffle: the same seed gives the
- * same order (browsing, the viewer, the slideshow agree), "Перемешать" picks a new one.
+ * same order (browsing, the viewer, the slideshow agree); "shuffle" picks a new one.
  */
 const ASC = 1, DESC = -1;
 

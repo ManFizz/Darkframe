@@ -152,16 +152,16 @@ export async function fetchTagKinds(names = [], sourceType = SOURCE_TYPES.R34) {
 function encodeTag(tag) {
 	return tag
 		.trim()
-		.replace(/\s+/g, "_")          // space → _
-		.replace(/'/g, "%27")          // ' → %27
-		.replace(/"/g, "%22")          // " → %22
-		.replace(/:/g, "%3A")          // : → %3A
-		.replace(/\(/g, "%28")         // ( → %28
-		.replace(/\)/g, "%29")         // ) → %29
-		.replace(/\[/g, "%5B")         // [ → %5B
-		.replace(/\]/g, "%5D")         // ] → %5D
-		.replace(/&/g, "%26")          // & → %26
-		.replace(/\+/g, "%2B");       // + → %2B
+		.replace(/\s+/g, "_")
+		.replace(/'/g, "%27")
+		.replace(/"/g, "%22")
+		.replace(/:/g, "%3A")
+		.replace(/\(/g, "%28")
+		.replace(/\)/g, "%29")
+		.replace(/\[/g, "%5B")
+		.replace(/\]/g, "%5D")
+		.replace(/&/g, "%26")
+		.replace(/\+/g, "%2B");
 }
 
 
@@ -195,8 +195,8 @@ async function fetchTagInfo({ name, sourceType }) {
 			return null;
 		}
 
-		// Not cached here: updateTags() caches it and marks it dirty so it gets saved
-		// to the DB. Caching first made updateTags see it as already known → never saved.
+		// Not cached here: updateTags() caches it and marks it dirty, so it is saved
+		// to the DB (a cached tag would count as known and never be saved).
 		return tag;
 
 	} catch (e) {

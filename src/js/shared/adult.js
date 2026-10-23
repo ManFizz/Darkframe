@@ -1,4 +1,4 @@
-// 18+ sources: hidden while the setting "Показывать 18+ контент" (ShowAdult) is
+// 18+ sources: hidden while the setting "show 18+ content" (ShowAdult) is
 // off — the booru tabs and these online manga sites. The user's own library is
 // never touched by it.
 const ADULT_MANGA_SOURCES = new Set(['nhentai', 'ehentai', 'allhentai', 'hentai2read']);

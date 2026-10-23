@@ -12,6 +12,7 @@
  *   onProgress?({ chapter, page, position, total }),
  *   savePage?(page, { page, chapter, chapterTitle }) → { item } | { skipped }
  *   actions?: [{ id, label, icon, run }],
+ *   onClose?(),
  * }
  */
 let opener = null;
@@ -28,7 +29,7 @@ export function registerReader(fn) {
     return () => { if (opener === fn) opener = null; };
 }
 
-// Global reader preferences (per viewer); mode / direction are also kept per book.
+// Reader preferences (per viewer, the same for every book).
 const KEY = 'jsg_reader';
 const DEFAULTS = {
     mode: 'paged',          // paged | double | vertical

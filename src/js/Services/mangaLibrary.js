@@ -13,7 +13,7 @@ const errText = (e) => String(e?.message || e).replace(/^Error invoking remote m
 const toChapters = (book) => book.chapters.map(c => ({ id: c.id, title: c.title, pages: c.remote ? null : c.pages, src: c.src, remote: !!c.remote }));
 
 // Pages of a chapter not loaded yet are guessed from the ones known (for the
-// position across the whole manga: tile bars, "прочитано").
+// position across the whole manga: tile bars, "finished").
 function positionOf(chapters, counts, pos) {
     const known = chapters.map(c => counts.get(c.id) ?? c.pages?.length).filter(n => n > 0);
     const guess = known.length ? Math.round(known.reduce((a, b) => a + b, 0) / known.length) : 20;

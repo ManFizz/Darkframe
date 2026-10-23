@@ -20,7 +20,7 @@ const fmtDuration = (sec) => {
     return `${m} мин`;
 };
 
-// "2026-09" → "сен 26"
+// "2026-09" → short month + year (Russian month names)
 const MONTHS = ['янв', 'фев', 'мар', 'апр', 'май', 'июн', 'июл', 'авг', 'сен', 'окт', 'ноя', 'дек'];
 const fmtMonth = (m) => {
     const [y, mo] = (m || '').split('-');

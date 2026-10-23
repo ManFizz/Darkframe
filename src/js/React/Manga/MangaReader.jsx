@@ -190,7 +190,7 @@ const ReaderView = ({ book, onClose }) => {
     }, [atEnd, pages, spreadIdx, spreads, ch, goChapter]);
 
     // Pages still loading (online ones can take a while): a placeholder with the
-    // page number instead of an empty screen, and "Повторить" if one fails.
+    // page number instead of an empty screen, and "retry" if one fails.
     const [loadState, setLoadState] = useState(() => new Map());   // url → 'ok' | 'err'
     const [reloadKey, setReloadKey] = useState(() => new Map());   // url → n (remount to retry)
     const markLoad = useCallback((url, st) => setLoadState(m => (m.get(url) === st ? m : new Map(m).set(url, st))), []);

@@ -76,10 +76,8 @@ const Thumb = (({ file, isModal, modalUpdater, isSelected, onOpen, onToggleSelec
     const hasOverlay = file.type === FILE_TYPES.IMAGE || file.type === FILE_TYPES.VIDEO;
     const isRemovedInFavs = !isFav(file) && getCurrentSource() === SOURCE_TYPES.FAVORITE;
 
-    // Favouriting only makes sense from external modules; inside the library the
-    // rating handles it (the library grid is the one that passes `onOpen`). We
-    // still show the heart on already-favourited items in the standalone Favorites
-    // view so they can be un-favourited there.
+    // The heart is for posts of other sources (the library grid passes `onOpen` and
+    // uses ratings); in the Favorites view it stays on favourited items to remove them.
     const showHeart = hasOverlay && !onOpen && (file.remoteType !== SOURCE_TYPES.LIBRARY || isFav(file));
 
     const selectable = hasOverlay && !!onToggleSelect;

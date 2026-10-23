@@ -90,10 +90,9 @@ const GroupDivider = ({ grouping, value, count, collapsed, onToggle }) => (
     </div>
 );
 
-// The library can hold thousands of items; rendering them all at once is what made
-// big collections crawl. We render a growing window instead — the first chunk, then
-// more as the sentinel scrolls into view. The full `items` array still drives reorder
-// (below), so drag-and-drop keeps working across the whole list.
+// Thousands of items would render slowly: a growing window is rendered instead (the
+// first chunk, then more as the sentinel scrolls into view). The full `items` array
+// still drives reordering, so drag and drop works across the whole list.
 const INITIAL = 150;
 const CHUNK   = 150;
 

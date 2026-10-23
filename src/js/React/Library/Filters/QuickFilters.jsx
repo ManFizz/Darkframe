@@ -7,7 +7,7 @@ const CUSTOM_KEY    = 'jsg_quick_filters';
 const COLLAPSED_KEY = 'jsg_quick_filters_collapsed';
 
 // A preset is a partial filter ("patch"). Chips apply on top of the current view and
-// combine with AND; media types are the exception and union ("Видео" + "GIF").
+// combine with AND; media types are the exception and union (video + GIF).
 const BUILT_IN = [
     { id: 'video',   label: 'Видео',          icon: 'bi-film',          patch: { types: ['video'] } },
     { id: 'gif',     label: 'GIF',            icon: 'bi-filetype-gif',  patch: { types: ['gif'] } },

@@ -18,7 +18,7 @@ const FILTER_DEFAULTS = {
     importedTo:         null,     // unix seconds, inclusive
     noTags:             false,
     noCollection:       false,
-    // Smart collections 2.0: a tree of "all / any" groups of conditions, AND-ed with
+    // Smart collections: a tree of "all / any" groups of conditions, AND-ed with
     // the flat fields above. { op: 'all'|'any', items: [condition | group] }
     rules:              null,
 };

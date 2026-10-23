@@ -123,8 +123,8 @@ const SectionR34 = ({ currentSource }) => {
     const { favoriteTags, addFavTag, removeFavTag, reorderFavTags } = useFavoriteTags();
     const [newTag, setNewTag] = useState('');
     const [customScore, setCustomScore] = useState('');
-    // Saved tags are removed only in an explicit edit mode: mark → "Удалить (N)",
-    // with an undo toast. In normal mode a click just drives the search.
+    // A click on a saved tag drives the search; × or a right click removes it (with
+    // undo). Several at once: edit mode, mark → "delete (N)".
     const [editing, setEditing] = useState(false);
     const [marked, setMarked] = useState(() => new Set());
 

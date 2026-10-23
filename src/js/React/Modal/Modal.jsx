@@ -28,8 +28,8 @@ import {isMobileView, swipeHandlers} from '@services/mobile';
 
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(v, hi));
 
-// autoSlideshow — start the slideshow as soon as the viewer opens (a "play" button
-// outside the viewer: selection / whole collection).
+// autoSlideshow — start the slideshow as soon as the viewer opens (started from
+// outside the viewer: the selection / the whole collection).
 const Modal = ({ fileId, mainArray, modalUpdater, displayFiles, onUpdated, autoSlideshow = false }) => {
     const [isLong, setIsLong]             = useState(false);
     const [degree, setDegree]             = useState(0);
@@ -117,7 +117,7 @@ const Modal = ({ fileId, mainArray, modalUpdater, displayFiles, onUpdated, autoS
         };
     }, [file, ss]);
 
-    // Переход к соседнему файлу (используется при удалении и смене коллекции)
+    // Step to a neighbour (after a delete or a move to another collection).
     const navigateToNext = useCallback(() => {
         const currentIndex = mainArray.findIndex(f => f.uniqueId === fileId);
         const next = mainArray[currentIndex + 1] || mainArray[currentIndex - 1];
@@ -129,7 +129,7 @@ const Modal = ({ fileId, mainArray, modalUpdater, displayFiles, onUpdated, autoS
         }
     }, [fileId, mainArray, modalUpdater]);
 
-    // Переход к соседнему файлу и удаление текущего
+    // Step to a neighbour and delete the current file.
     // `forever`: Shift + Delete — past the trash (already confirmed by the caller).
     const handleDelete = useCallback((forever = false) => {
         if (!file || !onUpdated) return;
@@ -137,8 +137,8 @@ const Modal = ({ fileId, mainArray, modalUpdater, displayFiles, onUpdated, autoS
         onUpdated(forever ? 'deleteForever' : 'delete', file.id);
     }, [file, navigateToNext, onUpdated]);
 
-    // Delete key removes immediately — the trash + Undo toast make the old countdown
-    // pointless. (capture phase so it runs before Navigation's key handling)
+    // Delete removes at once (the trash + Undo toast bring it back); capture phase,
+    // so it runs before Navigation's keys.
     useEffect(() => {
         if (!isLibrary || !onUpdated) return;
 
@@ -157,8 +157,8 @@ const Modal = ({ fileId, mainArray, modalUpdater, displayFiles, onUpdated, autoS
     }, [isLibrary, onUpdated, handleDelete]);
 
     // Number keys rate a library item: 1–9 set the rating, 0 sets 10, and pressing
-    // the current rating again clears it. Works for both images and videos — the
-    // video player no longer steals digits for percentage seeking.
+    // the current rating again clears it. Images and videos alike (the video player
+    // leaves digits alone).
     useEffect(() => {
         if (!hasMetaPanel || !file ||
             (file.type !== FILE_TYPES.IMAGE && file.type !== FILE_TYPES.VIDEO)) return;
@@ -462,7 +462,7 @@ const Modal = ({ fileId, mainArray, modalUpdater, displayFiles, onUpdated, autoS
                                 : <RemotePanel file={file} />}
                     </div>
                 )}
-                {/* Library keeps its old bottom-tags look when its panel is hidden. */}
+                {/* With the panel hidden, library tags show at the bottom. */}
                 {hasMetaPanel && !panelOpen && !ss.active && <Tags file={file} />}
 
                 {editing && (

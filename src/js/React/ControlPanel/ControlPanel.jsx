@@ -14,8 +14,8 @@ const TABS = [
     { id: 'settings', label: 'Настройки',  icon: 'bi-gear-fill' },
 ];
 
-// Unified "Панель управления": Управление (maintenance — duplicate finder),
-// Статистика (dashboard) and Настройки, each an in-place tab of one modal.
+// The control panel: maintenance tools, stats, API access, devices and settings,
+// each a tab of one modal.
 const ControlPanel = ({ onClose, initialTab = 'manage', initialTool = null }) => {
     const [tab, setTab] = useState(initialTab);
 

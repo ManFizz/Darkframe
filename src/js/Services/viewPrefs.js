@@ -1,14 +1,13 @@
 import {useEffect, useState} from 'react';
 
-// Per-viewer gallery preferences. Unlike data/settings they apply instantly —
-// no save & relaunch — so they live in localStorage.
+// Per-viewer gallery preferences (this device only), kept in localStorage.
 const KEY = 'jsg_view_prefs';
 
 const DEFAULTS = {
     ratingDividers: true,   // group the gallery under "★ N" headers when sorted by rating
     collapsedRatings: [],   // rating groups folded by clicking their header
     dateDividers: true,     // month headers when sorted by date
-    typeDividers: true,     // "Изображения / GIF / Видео / Манга" headers when sorted by type
+    typeDividers: true,     // "Images / GIF / Video / Manga" headers when sorted by type
     collapsedTypes: [],
     librarySort: null,      // { sortBy, order } — the last chosen order
     sortPerCollection: false,   // remember the order separately for each collection

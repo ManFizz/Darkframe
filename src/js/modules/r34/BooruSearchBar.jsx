@@ -21,8 +21,8 @@ function normalizeSuggestion(s) {
     return { name, count, kind: tagKind(s.type ?? known?.type) };
 }
 
-// Bookmark: remembers the whole query (tags + modifiers). Once saved it no longer
-// removes anything — removal lives on the saved-searches page, behind a confirm.
+// Bookmark: remembers the whole query (tags + modifiers). On a saved query it opens
+// the saved-searches page; removing is done there, behind a confirm.
 const SaveButton = ({ sourceType, q }) => {
     const saved = useSavedSearches(sourceType);
     const key = queryKey(q);

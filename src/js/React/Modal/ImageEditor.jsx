@@ -93,8 +93,8 @@ const ImageEditor = ({ file, onCancel, onSaved }) => {
     const gammaExp = 1 / colorFactors(color).g;
 
     // Edit from the pristine source (library://source → base/source/original). Items
-    // edited the old cumulative way (no stored params) start from their current look,
-    // which the server then keeps as their baseline.
+    // edited before parameters were stored start from their current look (the server
+    // keeps it as their baseline).
     useEffect(() => {
         const legacy = !!file.editedAt && !file.editParams;
         const im = new window.Image();
@@ -239,7 +239,7 @@ const ImageEditor = ({ file, onCancel, onSaved }) => {
             colEdgeRef.current = null;
             rowEdgeRef.current = null;
             if (e && /cross-origin|tainted|SecurityError/i.test(String(e.message || e))) {
-                // Expected for untainted reading: leave snapping disabled.
+                // Expected with a cross-origin source: snapping stays off.
             } else {
                 console.warn('[ImageEditor] edge analysis failed:', e?.message || e);
             }
@@ -345,7 +345,7 @@ const ImageEditor = ({ file, onCancel, onSaved }) => {
 
     const applyAspect = useCallback((ratio) => {
         setAspect(ratio);
-        if (!ratio || !view) return;                    // "Свободно": keep current selection
+        if (!ratio || !view) return;                    // free aspect: keep the current selection
         let wf = 1, hf = (view.boxW / ratio) / view.boxH;
         if (hf > 1) { hf = 1; wf = (view.boxH * ratio) / view.boxW; }
         setCrop({ x: (1 - wf) / 2, y: (1 - hf) / 2, w: wf, h: hf });

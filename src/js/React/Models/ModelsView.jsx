@@ -7,11 +7,11 @@ import {setOpenModel, useOpenModel} from './modelsState';
 import CoverPicker from './CoverPicker';
 
 /**
- * "Модели": every library tag of the category "Модель" as a card (cover — the
+ * The Models tab: every library tag of the category "model" as a card (cover — the
  * best rated file with it, how many files). A card opens the library filtered by
  * that tag, with the library's own search / sort in the top bar.
  *
- * A tag becomes a model by its category: right click on a tag anywhere → «Модель»,
+ * A tag becomes a model by its category: right click on a tag anywhere → "model",
  * or in the tag manager. The preview can be picked from the model's files.
  */
 const SORT_KEY = 'jsg_models_sort';

@@ -7,12 +7,12 @@ import KeymapSection from './KeymapSection';
 
 const SECRET_RE = /key|password|token/i;
 
-// Human labels + descriptions. Unknown keys fall back to the raw key, no desc.
-// Remote-section toggles, split out of the generic "settings" into their own card.
+// Section toggles: a card of their own, apart from the other settings.
 const MODULE_KEYS = ['ShowAdult', 'EnableR34', 'EnableGelbooru', 'EnableR34Favs', 'EnableDanbooru', 'EnableManga'];
 // Sections that are 18+ only: shown (with their keys) once ShowAdult is on.
 const ADULT_KEYS = ['EnableR34', 'EnableGelbooru', 'EnableR34Favs', 'EnableDanbooru'];
 
+// Labels + descriptions; an unknown key shows as is, without a description.
 const META = {
     modules: {
         ShowAdult:      { label: 'Показывать 18+ контент', desc: 'Сайты для взрослых: Rule34, Gelbooru, Danbooru, а в манге — nhentai, e-hentai, AllHentai. Выключено — их вкладки и настройки скрыты. Ваша библиотека не меняется' },

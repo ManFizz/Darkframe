@@ -384,8 +384,7 @@ const CollectionTree = ({ selectedId, onSelect, onMediaMoved, onFilesTrashed }) 
     const { total, uncategorized, favoritesId, favoritesCount, trashCount } = useLibraryStats(statsVersion);
 
     const handleDropMedia = useCallback(async (fileIds, collectionId) => {
-        // One transaction for the whole selection — firing N parallel updateItem
-        // calls raced each other into SQLITE_BUSY on the single SQLite connection.
+        // One transaction for the whole selection (parallel updates end in SQLITE_BUSY).
         await LibraryService.bulkUpdateItems(fileIds.map(id => ({ id, data: { collectionId } })));
         refreshStats();
         onMediaMoved?.(fileIds, collectionId);

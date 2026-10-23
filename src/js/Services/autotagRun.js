@@ -2,7 +2,7 @@ import {autotagApi} from '@/Infrastructure/Ipc';
 import {ipcRenderer} from '@/Infrastructure/electron';
 import {notify} from './NotificationService';
 
-// Opens Control panel → Управление → Автотеги (NavBar listens).
+// Opens Control panel → Manage → Auto tags (NavBar listens).
 export const openAutotagSettings = () =>
     window.dispatchEvent(new CustomEvent('df:openPanel', { detail: { tab: 'manage', tool: 'autotag' } }));
 

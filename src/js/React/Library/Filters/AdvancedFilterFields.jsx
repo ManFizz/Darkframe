@@ -10,7 +10,7 @@ const fmtNum = (v) => (v == null ? '' : String(Math.round(v * 100) / 100));
 const NumInput = ({ value, onChange, placeholder, step = 1, min = 0 }) => {
     const [text, setText] = useState(fmtNum(value));
 
-    // Follow external changes (e.g. "Сбросить"), but not the echo of our own typing —
+    // Follow external changes (e.g. a reset), but not the echo of our own typing —
     // values round-trip through bytes, so compare with a small tolerance.
     useEffect(() => {
         const parsed = text === '' ? null : Number(text);

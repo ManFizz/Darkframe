@@ -58,8 +58,6 @@ const NavBar = () => {
 
     const openPanel = (tab = 'manage', tool = null) => { setPanelTab(tab); setPanelTool(tool); setShowPanel(true); };
 
-    // Favourites now live in the library sidebar (next to "Все файлы"), so the
-    // top-level button is gone.
     const navButtons = [
         { label: 'Library',  type: SOURCE_TYPES.LIBRARY },
         ...ModuleRegistry.getNavItems(),
@@ -177,7 +175,7 @@ const NavBar = () => {
         return [...nav, ...special, ...cols, ...pins, ...manga, ...(isWeb ? panel.filter(c => !PC_ONLY.includes(c.id)) : panel), ...look];
     });
 
-    // Reopen the tab that was open last time (setting "Открывать там, где закрыл").
+    // Reopen the tab that was open last time (setting "reopen where I left off").
     useEffect(() => {
         const { restoreSession, lastNav } = getViewPrefs();
         if (restoreSession && lastNav > 0 && lastNav < navButtons.length) handleNavigation(lastNav);

@@ -27,8 +27,8 @@ function useIpcProgress(channel, onValue) {
 }
 
 // Two finders in one tab:
-//   Точные  — byte-identical files (content hash); the oldest copy is kept by default
-//   Похожие — perceptual hash: re-compressed / resized / lightly edited copies; the
+//   exact   — byte-identical files (content hash); the oldest copy is kept by default
+//   similar — perceptual hash: re-compressed / resized / lightly edited copies; the
 //             best-quality copy (most pixels, then biggest file) is kept by default
 const DuplicatesTab = () => {
     const [mode, setMode] = useState('exact');

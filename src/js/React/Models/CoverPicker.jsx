@@ -5,8 +5,8 @@ import {notify} from '@services/NotificationService';
 import {appUrl} from '@/Infrastructure/electron';
 
 /**
- * The preview of a model: one of its files, picked from a grid. "Автоматически"
- * goes back to the best rated file (the default).
+ * The preview of a model: one of its files, picked from a grid. "Automatic" goes
+ * back to the best rated file (the default).
  */
 const CoverPicker = ({ model, onClose }) => {
     const [files, setFiles] = useState(null);

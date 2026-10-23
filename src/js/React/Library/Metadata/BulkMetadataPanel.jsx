@@ -4,7 +4,7 @@ import TagEditor from './TagEditor';
 import RatingStars from './RatingStars';
 import CollectionPicker from '../Collection/CollectionPicker';
 
-// null = mixed (разные значения у выделенных файлов)
+// The value all selected files share; null = mixed.
 function commonVal(items, getter) {
     const vals = [...new Set(items.map(getter))];
     return vals.length === 1 ? vals[0] : null;
@@ -29,7 +29,7 @@ const BulkMetadataPanel = ({ items, onUpdated }) => {
     const commonSource  = useMemo(() => commonVal(items, f => f.sourceUrl ?? ''), [items]);
     const commonNotes   = useMemo(() => commonVal(items, f => f.notes   ?? ''), [items]);
 
-    // Локальный стейт текстовых полей — сбрасываем при смене выделения
+    // Text fields are local state, reset when the selection changes.
     const itemsKey = items.map(f => f.id).join(',');
     const [title,  setTitle]  = useState(commonTitle  ?? '');
     const [source, setSource] = useState(commonSource ?? '');
