@@ -39,9 +39,8 @@
     box-shadow: 0 0 30px rgba(0,0,0,0.5);
   }
 
-  // "Long" images are taller than the viewport and the modal scrolls. Instead of
-  // the old orange frame, a soft fade + bouncing chevron at the bottom signal
-  // "there's more below, scroll".
+  // "Long" images are taller than the viewport and the modal scrolls: a soft fade
+  // + a bouncing chevron at the bottom say "there's more below".
   &.long {
     img {
       width: 700px;
@@ -126,8 +125,8 @@
   }
 }
 
-// The media area is always present now (so toggling the panel doesn't remount the
-// video). Base styles cover the no-panel case; ".with-panel" adds the stage look.
+// The media area is always present (toggling the panel doesn't remount the video).
+// Base styles cover the no-panel case; ".with-panel" adds the stage look.
 .modal-media-area {
   flex: 1;
   min-height: 0;
@@ -139,11 +138,9 @@
   overflow: hidden;
 }
 
-// Without a side panel (r34 / folders) the modal is a column: the media area
-// shares its height with the <Tags> row below it. The media kept its viewport-sized
-// cap (94.8vh) while the area was shorter, so it overflowed and got clipped by
-// `overflow: hidden`. Let the wrapper fill the area and size the media against it.
-// (".long" keeps its own scrolling layout, so it's excluded.)
+// Without a side panel (boorus / folders) the modal is a column: the media area
+// shares its height with the <Tags> row below, so the wrapper fills the area and
+// the media is sized against it, not the viewport (".long" has its own layout).
 .modal-view:not(.long) .modal-media-area {
   .modal-content-wrapper {
     flex: 1;
@@ -185,7 +182,7 @@
     margin: 0;
     font-size: 19px;
     border-radius: 50%;
-    filter: none;   // sits on the glass pill now, not over bare media
+    filter: none;   // sits on the glass pill
     transition: background 0.15s ease, color 0.15s ease, transform 0.1s ease;
 
     &:hover { background: rgba(255, 255, 255, 0.14); }
@@ -411,11 +408,9 @@
       radial-gradient(closest-side at 50% 42%, rgba(var(--df-accent-rgb), 0.10), transparent 78%);
   }
 
-  // The panel eats 288px on the right, so the media area is the *left* region and
-  // anything smaller than it drifts left of the screen centre. Reserve the same
-  // 288px on the left: the clear area is now symmetric and the media sits dead-centre
-  // on the viewport. Media is capped to that clear width so it never slides under
-  // the panel. (Skipped in ".long" mode, which has its own left-aligned layout.)
+  // The panel takes 288px on the right; the same 288px are reserved on the left, so
+  // the media sits in the middle of the screen and never slides under the panel
+  // (not in ".long" mode, which has its own left-aligned layout).
   &:not(.long) .modal-media-area { padding-left: variables.$modal-panel-width; }
 
   &:not(.long) .modal-media-area img,
@@ -465,7 +460,7 @@ html:fullscreen {
   border-left: 1px solid var(--df-glass-border, rgba(255, 255, 255, 0.08));
   box-shadow: -18px 0 40px rgba(0, 0, 0, 0.35);
 
-  // Переопределяем fixed-позиционирование MetadataPanel внутри модалки
+  // MetadataPanel's fixed positioning, overridden inside the viewer
   .metadata-panel {
     position: relative;
     top: auto;
@@ -501,7 +496,7 @@ html:fullscreen {
     word-break: break-word;
   }
 
-  // The "Теги" row carries a count badge and a copy-all button on the right.
+  // The tags row carries a count badge and a copy-all button on the right.
   .remote-tags-label {
     display: flex;
     align-items: center;

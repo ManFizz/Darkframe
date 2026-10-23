@@ -44,7 +44,7 @@ async function pasteImport({ collectionId = null } = {}) {
     if (files.length) {
         const media = [];
         for (const p of files) {
-            if (fs.statSync(p).isDirectory()) continue;   // folders: use "Импорт папки"
+            if (fs.statSync(p).isDirectory()) continue;   // folders: the folder import is for those
             if (SUPPORTED_EXTENSIONS.has(path.extname(p).toLowerCase())) media.push(p);
         }
         if (!media.length) return { kind: 'files', results: [], skipped: [], errors: [{ error: 'Среди скопированных файлов нет картинок и видео' }] };

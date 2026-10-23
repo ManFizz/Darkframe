@@ -2,7 +2,7 @@ const path = require('path');
 const { app, Menu, Notification, Tray, nativeImage } = require('electron');
 
 /**
- * System tray: the app can live there (setting "Сворачивать в трей при закрытии"),
+ * System tray: the app can live there (setting "minimize to tray on close"),
  * paste the clipboard into the library without opening the window, and tells
  * about files the watched folders picked up while the window is hidden.
  */

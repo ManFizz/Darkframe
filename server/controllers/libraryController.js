@@ -26,7 +26,7 @@ const videoPositions = require('../services/videoPositions');
 const viewHistory = require('../services/viewHistory');
 
 // When an item's collection changes, drop it at the end of the destination's order
-// so the just-moved item is easy to find (last relative to "Порядок"). Mutates
+// so the just-moved item is easy to find (last in the custom order). Mutates
 // `fields.order` in place; a no-op when the collection isn't changing.
 async function moveToEndOnCollectionChange(id, fields, t) {
     if (!('collectionId' in fields)) return;

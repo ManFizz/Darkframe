@@ -2,8 +2,8 @@
  * Static checks over the source tree:
  *  - every relative require()/import resolves to a file whose name matches the
  *    on-disk case exactly. Windows resolves './models/tag' to Tag.js, but Node then
- *    caches it under a second key and loads the module twice (a real bug we had);
- *    on a case-sensitive FS it would not resolve at all.
+ *    caches it under a second key and loads the module twice; on a case-sensitive
+ *    FS it would not resolve at all.
  *  - every server module can actually be loaded (missing deps, typos, cycles).
  */
 const sandbox = require('./helpers/sandbox');   // fake electron for the load check
