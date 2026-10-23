@@ -246,7 +246,7 @@ app.whenReady().then(async () => {
     registerMangaImageProtocol();
     require('./server/controllers/fsController').registerProtocol();
 
-        mediaCache.clearCache();
+    mediaCache.clearCache();
     mediaCache.registerProtocol();
 
     setupIpcHandlers();
