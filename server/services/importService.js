@@ -120,6 +120,7 @@ async function importFile({ job = null, quiet = false, origin = 'app', ...args }
         // A skipped duplicate points at the original (the twin is temporary).
         if (res.skipped && args.originalPath) res.filePath = args.originalPath;
         if (!res.skipped) {
+            if (origin === 'api') { try { require('./tray').imported('расширение'); } catch { /* no tray (tests) */ } }
             try {
                 // lazy: autoRules itself uses this module's ensureTag
                 res.rulesApplied = await require('./autoRules').applyOnImport(res.item.id, { origin });

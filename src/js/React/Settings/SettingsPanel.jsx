@@ -29,7 +29,8 @@ const META = {
         LongView:         { label: 'Режим длинных картинок',  desc: 'Особый показ очень высоких изображений в модалке' },
         HttpProxy:        { label: 'Использовать прокси',      desc: 'Проксировать запросы к удалённым источникам' },
         LibraryPath:      { label: 'Путь библиотеки (legacy)', desc: 'Папка старой библиотеки по умолчанию' },
-        CloseToTray:      { label: 'Сворачивать в трей при закрытии', desc: 'Крестик прячет окно в трей: отслеживаемые папки и API продолжают работать. Выход — через меню значка' },
+        CloseToTray:      { label: 'Сворачивать в трей при закрытии', desc: 'Крестик прячет окно в трей: расширения, телефон и отслеживаемые папки продолжают работать. Через 10 минут скрытое окно выгружается из памяти. Выход — через меню значка' },
+        StartWithWindows: { label: 'Запускать вместе с Windows', desc: 'Darkframe стартует свёрнутым в трей, без окна: расширения и отслеживаемые папки работают сразу' },
     },
     private: {
         startPath:   { label: 'Стартовая папка',  desc: 'С какой папки открывается файловый источник' },
@@ -165,7 +166,7 @@ const SettingsPanel = ({ onClose }) => {
         configApi.get()
             .then(({ settings, private: p }) => {
                 // Sections added later still get a switch in older settings files.
-                setSettings({ ShowAdult: false, EnableDanbooru: false, EnableManga: true, CloseToTray: false, ...settings });
+                setSettings({ ShowAdult: false, EnableDanbooru: false, EnableManga: true, CloseToTray: false, StartWithWindows: false, ...settings });
                 // Keys added after a user's data/private.js was created still get a field.
                 setPriv({ GelbooruApiKey: '', GelbooruUserId: '', DanbooruLogin: '', DanbooruApiKey: '', ...p });
             })

@@ -165,6 +165,7 @@ async function checkAll({ ids = null, reason = 'manual' } = {}) {
     if (items.length) broadcast('library:changed', { reload: true, counts: false });
     const res = { items, errors, checked: subs.length, reason };
     broadcast('manga:updates', res);
+    try { require('../tray').mangaUpdates(items); } catch { /* no tray (tests) */ }
     return res;
 }
 

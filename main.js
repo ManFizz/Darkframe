@@ -1,3 +1,6 @@
+// Config lives in ./data; a start from the login item has another working folder.
+if (require('path').resolve(process.cwd()) !== __dirname) process.chdir(__dirname);
+
 const { app, BrowserWindow, session } = require('electron');
 const { backupDatabase } = require('./server/backup');
 const { setupIpcHandlers } = require('./server/ipcManager');
@@ -30,7 +33,23 @@ const SMOKE = process.env.DARKFRAME_SMOKE === '1';
 // in use): no API server (its port belongs to the real instance), no DB backup.
 const SANDBOX = SMOKE || process.env.DARKFRAME_SANDBOX === '1';
 
+// A second launch hands over to the running instance (it owns the API port and the tray).
+const primary = SANDBOX || app.requestSingleInstanceLock();
+if (!primary) app.quit();
+
+// --hidden (autostart): live in the tray, create the window on first open.
+const START_HIDDEN = !SMOKE && process.argv.includes('--hidden');
+
 let win;
+let creating = null;
+
+// The window is created on demand and may be destroyed while the app idles in the tray.
+function ensureWindow() {
+    if (win && !win.isDestroyed()) return Promise.resolve(win);
+    creating ??= createWindow().finally(() => { creating = null; });
+    return creating;
+}
+
 async function createWindow() {
     win = new BrowserWindow({
         width: 700,
@@ -59,11 +78,15 @@ async function createWindow() {
     // Never spawn extra windows for foreign URLs (e.g. a link in remote content).
     win.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
 
+    win.webContents.on('will-navigate', (e) => e.preventDefault());
+    if (!SMOKE) require('./server/services/tray').attach(win);
+
     await win.loadFile('dist/index.html');
 
     if (openDevTools) {
         win.webContents.openDevTools();
     }
+    return win;
 }
 
 function setupContentSecurityPolicy() {
@@ -242,6 +265,7 @@ protocol.registerSchemesAsPrivileged([
 if (process.platform === 'win32') app.setAppUserModelId('Darkframe');
 
 app.whenReady().then(async () => {
+    if (!primary) return;
     registerLibraryProtocol();
     registerMangaImageProtocol();
     require('./server/controllers/fsController').registerProtocol();
@@ -270,21 +294,25 @@ app.whenReady().then(async () => {
         }
     });
 
-    await createWindow();
+    session.defaultSession.on('will-download', (e) => e.preventDefault());
 
-    win.webContents.on('will-navigate', (e) => e.preventDefault());
-
-    win.webContents.session.on('will-download', (e) => e.preventDefault());
-
-    app.on('open-file', (event, filePath) => {
+    app.on('open-file', async (event, filePath) => {
         event.preventDefault();
-        win.webContents.send('file-dropped', [filePath]);
+        (await ensureWindow()).webContents.send('file-dropped', [filePath]);
     });
+
+    app.on('second-instance', () => {
+        if (!SMOKE) require('./server/services/tray').show();
+    });
+
+    if (!SMOKE) {
+        require('./server/services/tray').init({ get: () => (win && !win.isDestroyed() ? win : null), ensure: ensureWindow });
+        require('./server/services/autostart').apply();
+    }
+    if (!START_HIDDEN) await ensureWindow();
 
     if (SMOKE) require('./server/smoke').runSmokeCheck(win);
     else if (!SANDBOX) startApiServer();
-
-    if (!SMOKE) require('./server/services/tray').init(win);
 
     if (!SMOKE) require('./server/services/watchFolders').start()
         .catch(e => console.warn('[watch] start failed:', e.message));
@@ -305,7 +333,14 @@ app.whenReady().then(async () => {
     }
 });
 
+// The tray keeps the app alive after its window was unloaded on purpose.
 app.on('window-all-closed', () => {
+    if (require('./server/services/tray').keepAlive()) return;
+    app.quit();
+});
+
+app.on('will-quit', () => {
+    if (!primary) return;
     stopApiServer();
     require('./server/remote/server').stop();
     require('./server/services/watchFolders').stop();
@@ -313,5 +348,4 @@ app.on('window-all-closed', () => {
     // Best-effort; the renderer may still hold file handles, so leftovers are
     // wiped on next launch (mediaCache.clearCache runs at whenReady).
     mediaCache.clearCache();
-    app.quit();
 });

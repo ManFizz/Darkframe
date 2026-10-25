@@ -32,6 +32,7 @@ function register() {
         // see liveConfig.js); nothing needs a restart.
         if (settings) Object.assign(require('../../data/settings'), settings);
         if (priv) Object.assign(require('../../data/private'), priv);
+        if (settings) require('../services/autostart').apply();
         return { ok: true };
     });
 }
@@ -44,6 +45,7 @@ function setSetting(key, value) {
     cur[key] = value;
     fs.writeFileSync(SETTINGS_OVERRIDE, JSON.stringify(cur, null, 2), 'utf8');
     require('../../data/settings')[key] = value;
+    if (key === 'StartWithWindows') require('../services/autostart').apply();
 }
 
 module.exports = { register, setSetting };

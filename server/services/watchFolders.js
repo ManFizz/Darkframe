@@ -77,7 +77,7 @@ function enqueue(folder, file) {
             });
             if (!res.skipped) {
                 bump(folder.id, { imported: (status.get(folder.id)?.imported || 0) + 1, error: null });
-                try { require('./tray').watchedImported(path.basename(folder.path) || folder.path); } catch { /* no tray (tests) */ }
+                try { require('./tray').imported(`из «${path.basename(folder.path) || folder.path}»`); } catch { /* no tray (tests) */ }
             }
         } catch (e) {
             console.warn('[watch] import failed:', file, e.message);
