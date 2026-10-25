@@ -6,6 +6,7 @@ import MediaGenTool from './MediaGenTool';
 import AutoRulesTool from './AutoRulesTool';
 import WatchFoldersTool from './WatchFoldersTool';
 import AutotagTool from './AutotagTool';
+import FolderAuditTool from './FolderAuditTool';
 
 const TOOLS = [
     { id: 'dupes',     label: 'Дубликаты',       icon: 'bi-images' },
@@ -14,6 +15,7 @@ const TOOLS = [
     { id: 'rules',     label: 'Правила импорта',  icon: 'bi-magic' },
     { id: 'watch',     label: 'Папки-источники',  icon: 'bi-folder-check' },
     { id: 'autotag',   label: 'Автотеги',         icon: 'bi-stars' },
+    { id: 'audit',     label: 'Проверка папки',   icon: 'bi-folder-symlink' },
 ];
 
 // The management tab groups the maintenance tools behind a sub-tab bar; each tool
@@ -24,7 +26,7 @@ const ManagementTab = ({ initialTool }) => {
     return (
         <>
             <div className="cp-subtabs">
-                {TOOLS.filter(t => !isWeb || (t.id !== 'watch' && t.id !== 'autotag')).map(t => (
+                {TOOLS.filter(t => !isWeb || (t.id !== 'watch' && t.id !== 'autotag' && t.id !== 'audit')).map(t => (
                     <button
                         key={t.id}
                         className={`cp-subtab ${tool === t.id ? 'active' : ''}`}
@@ -42,6 +44,7 @@ const ManagementTab = ({ initialTool }) => {
             {tool === 'rules'     && <AutoRulesTool />}
             {tool === 'watch'     && <WatchFoldersTool />}
             {tool === 'autotag'   && <AutotagTool />}
+            {tool === 'audit'     && <FolderAuditTool />}
         </>
     );
 };

@@ -38,6 +38,8 @@ export const fsApi = {
     move:   (paths, dest) => invoke('fs:move', { paths, dest }),
     trash:  (paths)       => invoke('fs:trash', { paths }),
     libraryCheck: (files) => invoke('fs:libraryCheck', { files }),
+    auditPick: ()    => invoke('fs:auditPick'),
+    audit:     (dir) => invoke('fs:audit', { dir }),
 };
 
 // Drag payload for files dragged out of the Folders grid.

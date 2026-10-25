@@ -108,6 +108,24 @@ function register() {
     }));
     ipcMain.on('fs:libraryCheckCancel', () => folderCheck.cancel());
 
+    // Settings tool: files of a chosen folder that aren't in the library.
+    ipcMain.handle('fs:auditPick', async (event) => {
+        const { dialog, BrowserWindow } = require('electron');
+        const { canceled, filePaths } = await dialog.showOpenDialog(BrowserWindow.fromWebContents(event.sender), {
+            title: 'Папка для проверки', properties: ['openDirectory'],
+        });
+        return canceled || !filePaths.length ? null : filePaths[0];
+    });
+    ipcMain.handle('fs:audit', async (event, { dir }) => {
+        try {
+            const report = await require('../services/folderAudit').auditFolder(dir, (p) => {
+                if (!event.sender.isDestroyed()) event.sender.send('fs:auditProgress', p);
+            });
+            return report ? { ok: true, ...report } : { ok: false, canceled: true };
+        } catch (e) { return { ok: false, error: e.message }; }
+    });
+    ipcMain.on('fs:auditCancel', () => folderCheck.cancel());
+
     // File operations. Delete = recycle bin only (shell.trashItem).
     const fsOps = require('../services/fsOps');
     ipcMain.handle('fs:rename', (_, { from, name }) => fsOps.rename(from, name));
