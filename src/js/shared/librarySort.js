@@ -51,8 +51,20 @@ function shuffleKey(seed, id) {
 
 const newSeed = () => (Math.random() * 0xffffffff) >>> 0;
 
-/** Comparator for the gallery: sortBy, order (1 / -1), seed for random. */
+const isFolder = (f) => !!(f.isCollection || f._meta?.isCollection);
+
+/** Comparator for the gallery: sortBy, order (1 / -1), seed for random. Sub-collection tiles always come first, by name. */
 function comparator(sortBy, order = ASC, seed = 1) {
+    const items = itemComparator(sortBy, order, seed);
+    const byName = (a, b) => (collator ? collator.compare(String(a.title || ''), String(b.title || '')) : String(a.title || '').localeCompare(String(b.title || '')));
+    return (a, b) => {
+        const fa = isFolder(a), fb = isFolder(b);
+        if (fa !== fb) return fa ? -1 : 1;
+        return fa ? byName(a, b) || String(a.id).localeCompare(String(b.id)) : items(a, b);
+    };
+}
+
+function itemComparator(sortBy, order, seed) {
     const s = sortOf(sortBy);
     // Equal values: newest first, then by id — the same order on every render.
     const tie = (a, b) => ((b.importedAt || 0) - (a.importedAt || 0)) || String(a.id).localeCompare(String(b.id));

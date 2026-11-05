@@ -1,7 +1,6 @@
 import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {confirmDeleteForever} from '@services/deleteForever';
 import Navigation from "./Navigation";
-import Tags from "./Tags";
 import Video from "./Video";
 import MetadataPanel from "../Library/Metadata/MetadataPanel";
 import RemotePanel from "./RemotePanel";
@@ -462,8 +461,6 @@ const Modal = ({ fileId, mainArray, modalUpdater, displayFiles, onUpdated, autoS
                                 : <RemotePanel file={file} />}
                     </div>
                 )}
-                {/* With the panel hidden, library tags show at the bottom. */}
-                {hasMetaPanel && !panelOpen && !ss.active && <Tags file={file} />}
 
                 {editing && (
                     <ImageEditor

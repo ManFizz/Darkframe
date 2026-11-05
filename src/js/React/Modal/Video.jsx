@@ -205,7 +205,10 @@ const Video = ({ file, mainArray = [], modalUpdater, canEdit = false, onEdited, 
 
     // Single click toggles play, double click toggles fullscreen. The short timer
     // stops a double click from also firing the single-click play/pause.
-    const handleClick = useCallback(() => {
+    // A tap on a touch screen only brings the controls back (VideoControls) —
+    // pausing there is what the play button is for.
+    const handleClick = useCallback((e) => {
+        if (e.nativeEvent?.pointerType === 'touch') return;
         if (clickTimer.current) return;
         clickTimer.current = setTimeout(() => {
             clickTimer.current = null;

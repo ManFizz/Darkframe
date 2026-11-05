@@ -49,3 +49,13 @@ test('random: the same seed gives the same shuffle, another seed another one', (
     assert.notDeepEqual(a, c);
     assert.notDeepEqual(a, ids(list), 'actually shuffled');
 });
+
+test('sub-collection tiles stay first whatever the sort and direction', () => {
+    const { comparator } = require('../src/js/shared/librarySort');
+    const folder = (id, title) => ({ id, title, _meta: { isCollection: true }, importedAt: 1 });
+    const items = [{ id: 'a', title: 'A', importedAt: 5 }, folder('f2', 'Бета'), { id: 'b', title: 'B', importedAt: 9 }, folder('f1', 'Альфа')];
+    for (const [by, dir] of [['importedAt', 1], ['importedAt', -1], ['title', -1], ['random', 1]]) {
+        const ids = [...items].sort(comparator(by, dir, 7)).map(f => f.id);
+        assert.deepEqual(ids.slice(0, 2), ['f1', 'f2'], `${by} ${dir}`);
+    }
+});

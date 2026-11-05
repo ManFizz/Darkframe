@@ -228,7 +228,12 @@ const VideoControls = ({
         if (collapsed) return;
         reveal();
         document.addEventListener('mousemove', reveal);
-        return () => { clearTimeout(hideTimerRef.current); document.removeEventListener('mousemove', reveal); };
+        document.addEventListener('pointerdown', reveal);   // taps: no mouse to move
+        return () => {
+            clearTimeout(hideTimerRef.current);
+            document.removeEventListener('mousemove', reveal);
+            document.removeEventListener('pointerdown', reveal);
+        };
     }, [isPaused, collapsed, reveal]);
 
     useEffect(() => {

@@ -348,6 +348,15 @@ const LibraryView = ({ model = null }) => {
         return findName(tree);
     }, [selectedCollection, tree, favoritesId]);
 
+    // Inside a real collection: one step up (the parent, else the top level).
+    const backTarget = useMemo(() => {
+        if (isTrash || isHistory || isVisual || smartFilterJson || Object.values(SPECIAL).includes(selectedCollection)) return null;
+        const col = LibraryService.getCollections().find(c => c.id === selectedCollection);
+        if (!col) return null;
+        const parent = col.parentId && LibraryService.getCollections().find(c => c.id === col.parentId);
+        return parent ? { id: parent.id, label: parent.name } : { id: SPECIAL.NONE, label: 'Коллекции' };
+    }, [selectedCollection, tree, isTrash, isHistory, isVisual, smartFilterJson]);
+
     const handleReordered = useCallback((reordered) => {
         setOrderedItems(reordered);
     }, []);
@@ -550,6 +559,14 @@ const LibraryView = ({ model = null }) => {
                     <span>{isTrash ? 'Корзина' : isHistory ? 'История' : currentCollectionName || (selectedCollection === SPECIAL.UNCATEGORIZED ? 'Без коллекции' : 'Все файлы')}</span>
                     <span className="lib-drawer-count">{orderedItems.length}</span>
                 </button>
+            )}
+            {backTarget && (
+                <div className="collection-back">
+                    <button className="btn btn-sm btn-outline-secondary" onClick={() => handleCollectionSelect(backTarget.id)}>
+                        <i className="bi bi-arrow-left" />{backTarget.label}
+                    </button>
+                    <span className="collection-back-name">{currentCollectionName}</span>
+                </div>
             )}
             {isTrash && (
                 <div className="trash-toolbar">

@@ -321,6 +321,19 @@
   .collection-smart-delete:hover { color: var(--bs-danger); background: var(--bs-secondary-bg); }
 }
 
+// Inside a collection: back to the parent (or the top level).
+.collection-back {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-bottom: 1px solid var(--bs-border-color);
+  font-size: 13px;
+  flex-shrink: 0;
+  .btn { display: inline-flex; align-items: center; gap: 4px; }
+  .collection-back-name { color: var(--bs-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+}
+
 // Trash view toolbar (empty-trash action).
 .trash-toolbar {
   display: flex;
