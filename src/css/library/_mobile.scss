@@ -140,8 +140,51 @@
     }
   }
   .modal-nav-container { height: 100dvh; }
-  // Arrows: swipes do it on a phone.
-  .modal-nav-container .arrow { display: none; }
+  // Arrows: swipes do it on a phone; small edge arrows show it can be done.
+  .modal-nav-container .arrow {
+    font-size: 30px;
+    width: 40px;
+    height: 56px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 12px;
+    background: rgba(0, 0, 0, 0.35);
+    opacity: 0.7;
+    &:hover { transform: translateY(-50%); }
+  }
+  .modal-nav-container .arrow-left { left: 4px; }
+  .modal-nav-container .arrow-right { right: 4px; }
+  .modal-nav-container .modal-nav-more {
+    position: absolute;
+    top: calc(max(8px, env(safe-area-inset-top)) + 54px);
+    left: 8px;
+    min-width: 230px;
+    padding: 6px;
+    display: flex;
+    flex-direction: column;
+    background: rgba(20, 17, 28, 0.96);
+    backdrop-filter: blur(10px);
+    border: 1px solid var(--df-glass-border, rgba(255, 255, 255, 0.08));
+    border-radius: 14px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    pointer-events: auto;
+    button {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 10px;
+      border: none;
+      border-radius: 10px;
+      background: none;
+      color: #fff;
+      font-size: 15px;
+      text-align: left;
+      .bi { font-size: 18px; width: 22px; text-align: center; }
+      &.active { color: var(--df-accent, var(--bs-primary)); }
+      &:active { background: rgba(255, 255, 255, 0.1); }
+    }
+  }
   .modal-nav-container .modal-nav-counter {
     top: max(18px, calc(env(safe-area-inset-top) + 10px));
     left: auto;

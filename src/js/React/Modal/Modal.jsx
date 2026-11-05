@@ -444,9 +444,7 @@ const Modal = ({ fileId, mainArray, modalUpdater, displayFiles, onUpdated, autoS
                 <div className="modal-media-area" ref={contentRef} onPointerDown={onMediaPointerDown}
                      {...swipeHandlers((dir) => {
                          // Swipe left → next, right → previous (not while zoomed in).
-                         const i = mainArray.findIndex(f => f.uniqueId === file.uniqueId);
-                         const next = mainArray[i - dir];
-                         if (next) modalUpdater(next);
+                         document.dispatchEvent(new CustomEvent('df:modalShift', { detail: -dir }));
                      }, { enabled: zoom <= 1 && !editing })}>
                     <div className="modal-content-wrapper">
                         {editing ? null : mediaContent}
