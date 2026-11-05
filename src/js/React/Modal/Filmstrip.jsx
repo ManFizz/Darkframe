@@ -16,10 +16,13 @@ const Filmstrip = ({ items, current, onPick, onHide }) => {
     const shown = media.slice(from, index + RADIUS + 1);
     const trackRef = useRef(null);
 
-    // Keep the current thumbnail centred.
+    // Keep the current thumbnail centred: it glides while paging, but the strip
+    // opens already in place.
+    const placed = useRef(false);
     useEffect(() => {
         const el = trackRef.current?.querySelector('.fs-item.current');
-        el?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+        el?.scrollIntoView({ behavior: placed.current ? 'smooth' : 'instant', block: 'nearest', inline: 'center' });
+        if (el) placed.current = true;
     }, [current?.uniqueId]);
 
     if (index < 0 || media.length < 2) return null;
