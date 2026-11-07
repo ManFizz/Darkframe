@@ -1,10 +1,21 @@
-import {useCallback, useRef, useState} from 'react';
+import {useCallback, useState} from 'react';
 import {libraryApi} from '@/Infrastructure/Ipc';
+
+let saveTimer = null;
+
+// Saves a new order shortly after the last change. The items take their new positions
+// right away, so a re-sort (a rating changed, say) doesn't bring the old order back.
+export function saveItemOrder(items) {
+    items.forEach((f, i) => { f.order = i; });
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(() => {
+        libraryApi.reorderItems(items.map(f => f.id));
+    }, 500);
+}
 
 export function useItemReorder(items, onReordered, selectedIds) {
     const [draggedIds, setDraggedIds] = useState(new Set());
     const [overId, setOverId] = useState(null);
-    const saveTimeout = useRef(null);
 
     const onDragStart = useCallback((e, id) => {
         // Dragging one of several selected items drags them all.
@@ -44,10 +55,7 @@ export function useItemReorder(items, onReordered, selectedIds) {
 
         onReordered(remaining);
 
-        clearTimeout(saveTimeout.current);
-        saveTimeout.current = setTimeout(() => {
-            libraryApi.reorderItems(remaining.map(f => f.id));
-        }, 500);
+        saveItemOrder(remaining);
     }, [draggedIds, items, onReordered]);
 
     const onDragEnd = useCallback(() => {

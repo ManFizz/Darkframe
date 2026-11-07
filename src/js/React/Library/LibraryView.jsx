@@ -25,6 +25,7 @@ import {libraryApi} from '@/Infrastructure/Ipc';
 import {isWeb} from '@/Infrastructure/electron';
 import {useMobile} from '@services/mobile';
 import {newSeed, sortOf} from '@/shared/librarySort';
+import {saveItemOrder} from '@/Hooks/library/useItemReorder';
 import {openManga} from '@modules/manga/openManga';
 import {readLibraryManga} from '@services/mangaLibrary';
 import {undoLast, redoLast} from '@services/undo';
@@ -357,8 +358,17 @@ const LibraryView = ({ model = null }) => {
         return parent ? { id: parent.id, label: parent.name } : { id: SPECIAL.NONE, label: 'Коллекции' };
     }, [selectedCollection, tree, isTrash, isHistory, isVisual, smartFilterJson]);
 
+    // Positions are written in ascending order, so only this sort can show them as dragged.
+    const customOrder = filters.sortBy === 'order' && filters.order === 1;
+
     const handleReordered = useCallback((reordered) => {
         setOrderedItems(reordered);
+    }, []);
+
+    // The viewer's strip: same as dragging in the gallery.
+    const handleStripReorder = useCallback((reordered) => {
+        setOrderedItems(reordered);
+        saveItemOrder(reordered);
     }, []);
 
     const handleEmptyTrash = useCallback(async () => {
@@ -505,6 +515,7 @@ const LibraryView = ({ model = null }) => {
                 }}
                 displayFiles={slideSet ? slideSet.items : orderedItems}
                 onUpdated={isHistory ? undefined : handleUpdated}
+                onReorder={slideSet || isHistory || isTrash || !customOrder ? undefined : handleStripReorder}
                 autoSlideshow={slideSet?.token || false}
             />
             {!model && <div className="library-sidebar" onDragOver={e => e.stopPropagation()}>
@@ -653,6 +664,7 @@ const LibraryView = ({ model = null }) => {
                         typeView={2}
                         scrollRef={galleryScrollRef}
                         reorderable={!isHistory}
+                        sortable={customOrder}
                         groupBy={isHistory ? null
                             : ratingDividers && filters.sortBy === 'rating' ? 'rating'
                             : dateDividers && sortOf(filters.sortBy).month ? `month:${filters.sortBy}`

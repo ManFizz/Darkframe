@@ -96,7 +96,7 @@ const GroupDivider = ({ grouping, value, count, collapsed, onToggle }) => (
 const INITIAL = 150;
 const CHUNK   = 150;
 
-const LibraryGallery = ({ items, onReordered, isSelected, selectedIds, selectionActive, modalUpdater, onToggleSelect, typeView = 2, onFileOpen, scrollRef, resetKey, reorderable = true, groupBy = null }) => {
+const LibraryGallery = ({ items, onReordered, isSelected, selectedIds, selectionActive, modalUpdater, onToggleSelect, typeView = 2, onFileOpen, scrollRef, resetKey, reorderable = true, sortable = true, groupBy = null }) => {
     const grouping = useMemo(() => groupingFor(groupBy), [groupBy]);
     const { isDragging, overId, onDragStart, onDragOver, onDrop, onDragEnd } =
         useItemReorder(items, onReordered, selectedIds);
@@ -196,11 +196,11 @@ const LibraryGallery = ({ items, onReordered, isSelected, selectedIds, selection
                             e.dataTransfer.setData('jsg/fileIds', JSON.stringify(draggedFileIds));
                         }
                         e.dataTransfer.setData('jsg/fileId', file.id);
-                        e.dataTransfer.setData('jsg/reorder', 'true');
+                        if (sortable) e.dataTransfer.setData('jsg/reorder', 'true');
                         onDragStart(e, file.uniqueId);
                     }) : undefined}
-                    onDragOver={reorderable ? (e => onDragOver(e, file.uniqueId)) : undefined}
-                    onDrop={reorderable ? (e => onDrop(e, file.uniqueId)) : undefined}
+                    onDragOver={reorderable && sortable ? (e => onDragOver(e, file.uniqueId)) : undefined}
+                    onDrop={reorderable && sortable ? (e => onDrop(e, file.uniqueId)) : undefined}
                     onDragEnd={reorderable ? onDragEnd : undefined}
                 >
                     <Thumb

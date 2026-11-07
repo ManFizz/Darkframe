@@ -29,7 +29,7 @@ const clamp = (v, lo, hi) => Math.max(lo, Math.min(v, hi));
 
 // autoSlideshow — start the slideshow as soon as the viewer opens (started from
 // outside the viewer: the selection / the whole collection).
-const Modal = ({ fileId, mainArray, modalUpdater, displayFiles, onUpdated, autoSlideshow = false }) => {
+const Modal = ({ fileId, mainArray, modalUpdater, displayFiles, onUpdated, onReorder, autoSlideshow = false }) => {
     const [isLong, setIsLong]             = useState(false);
     const [degree, setDegree]             = useState(0);
     // Phone: the picture gets the whole screen; the info panel opens on request.
@@ -431,7 +431,7 @@ const Modal = ({ fileId, mainArray, modalUpdater, displayFiles, onUpdated, autoS
                 )}
 
                 {ss.active && !editing && <SlideshowHud ss={ss} file={file} />}
-                {showStrip && <Filmstrip items={mainArray} current={file} onPick={modalUpdater} onHide={() => setStripPref(false)} />}
+                {showStrip && <Filmstrip items={mainArray} current={file} onPick={modalUpdater} onHide={() => setStripPref(false)} onReorder={onReorder} />}
                 {!stripPref && !ss.active && !editing && mainArray.length > 1 && (
                     <button className="fs-show" onClick={() => setStripPref(true)} title="Показать ленту миниатюр (T)">
                         <i className="bi bi-chevron-up" />
