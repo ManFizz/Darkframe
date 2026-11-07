@@ -1,8 +1,9 @@
-import React, {useCallback, useEffect, useState} from 'react';
+import React, {useCallback, useEffect, useMemo, useState} from 'react';
 import {openCompare} from '../Compare/CompareView';
 import LibraryService from '@services/LibraryService';
 import {notify} from '@services/NotificationService';
 import {appUrl, ipcRenderer} from '@/Infrastructure/electron';
+import {DEFAULT_FILTERS, collectionOptions, filterGroups, fullyMarked, planMarks, summarize} from '@/shared/duplicateFilters';
 
 const fmtSize = (bytes) => {
     if (!bytes) return '0 B';
@@ -16,6 +17,14 @@ const fmtDate = (t) => (t ? new Date(t * 1000).toLocaleDateString('ru-RU') : '�
 const similarityOf = (d) => Math.round(((64 - d) / 64) * 100);
 
 const DEFAULT_DISTANCE = 8;   // bits of 64 → ~88% similar
+
+const MB = 1024 * 1024;
+const SIZE_STEPS = [
+    { value: 0, label: 'Любой размер' },
+    { value: MB, label: 'От 1 МБ' },
+    { value: 10 * MB, label: 'От 10 МБ' },
+    { value: 100 * MB, label: 'От 100 МБ' },
+];
 
 // Listen to a main-process progress channel while mounted.
 function useIpcProgress(channel, onValue) {
@@ -43,16 +52,16 @@ const DuplicatesTab = () => {
     const [status, setStatus] = useState(null);        // { total, missing }
     const [hashing, setHashing] = useState(null);      // { done, total } while computing
     const [distance, setDistance] = useState(DEFAULT_DISTANCE);
+    const [filters, setFilters] = useState(DEFAULT_FILTERS);
+    const setFilter = useCallback((key, value) => setFilters(prev => ({ ...prev, [key]: value })), []);
 
     useIpcProgress('library:phashProgress', useCallback(p => setHashing(p), []));
     useIpcProgress('library:similarProgress', useCallback(p => setScanPct(p), []));
 
     const applyResult = useCallback((res) => {
         setData(res);
-        // Keep the first item of each group (oldest / best), pre-select the rest.
-        const preselect = new Set();
-        for (const g of res.groups) g.items.slice(1).forEach(it => preselect.add(it.id));
-        setSelected(preselect);
+        // Nothing is marked until asked: the marks decide what goes to the trash.
+        setSelected(new Set());
     }, []);
 
     const scan = useCallback(async () => {
@@ -112,11 +121,45 @@ const DuplicatesTab = () => {
         });
     }, []);
 
+    const similar = mode === 'similar';
+    const hashesReady = status && status.missing === 0;
+
+    // Type applies to exact copies only (the similar search is images only), resolution
+    // to similar ones only (exact copies share it). A collection emptied by a cleanup
+    // falls back to "all".
+    const collections = useMemo(() => collectionOptions(data?.groups || []), [data]);
+    const collection = collections.some(c => c.id === filters.collection) ? filters.collection : 'all';
+    const groups = useMemo(() => filterGroups(data?.groups || [], {
+        ...filters,
+        collection,
+        type: similar ? 'all' : filters.type,
+        differentResolution: similar && filters.differentResolution,
+    }), [data, filters, collection, similar]);
+    const shown = useMemo(() => summarize(groups), [groups]);
+
+    // Hidden groups keep their marks but never go to the trash.
+    const marked = useMemo(() => groups.flatMap(g => g.items.filter(it => selected.has(it.id)).map(it => it.id)), [groups, selected]);
+
+    const emptied = useMemo(() => fullyMarked(groups, selected), [groups, selected]);
+    const chosen = collections.find(c => c.id === collection);
+
+    const applyMarks = useCallback(({ mark = [], unmark = [] }) => {
+        setSelected(prev => {
+            const next = new Set(prev);
+            unmark.forEach(id => next.delete(id));
+            mark.forEach(id => next.add(id));
+            return next;
+        });
+    }, []);
+    const clearMarks = useCallback((list) => {
+        applyMarks({ unmark: list.flatMap(g => g.items.map(it => it.id)) });
+    }, [applyMarks]);
+
     const trashSelected = useCallback(async () => {
-        if (!selected.size || busy) return;
+        if (!marked.length || busy) return;
         setBusy(true);
         try {
-            const ids = [...selected];
+            const ids = marked;
             await LibraryService.deleteItems(ids, false);
             notify({ message: `В корзину отправлено: ${ids.length}`, type: 'success' });
             await scan();
@@ -125,10 +168,7 @@ const DuplicatesTab = () => {
         } finally {
             setBusy(false);
         }
-    }, [selected, busy, scan]);
-
-    const similar = mode === 'similar';
-    const hashesReady = status && status.missing === 0;
+    }, [marked, busy, scan]);
 
     return (
         <div className="settings-body cp-manage">
@@ -212,13 +252,70 @@ const DuplicatesTab = () => {
 
             {data && data.totalGroups > 0 && (
                 <>
-                    <div className="cp-dup-summary">
-                        Групп: <b>{data.totalGroups}</b> · файлов: <b>{data.totalItems}</b> ·
-                        можно освободить до <b>{fmtSize(data.reclaimable)}</b>
+                    <div className="cp-dup-filters">
+                        <label className="form-check form-switch cp-dup-switch" title="Скрыть группы, где все копии лежат в одной коллекции">
+                            <input
+                                className="form-check-input" type="checkbox"
+                                checked={filters.acrossCollections}
+                                onChange={e => setFilter('acrossCollections', e.target.checked)}
+                            />
+                            <span>В разных коллекциях</span>
+                        </label>
+                        {similar && (
+                            <label className="form-check form-switch cp-dup-switch" title="Только группы, где есть копия с другим разрешением">
+                                <input
+                                    className="form-check-input" type="checkbox"
+                                    checked={filters.differentResolution}
+                                    onChange={e => setFilter('differentResolution', e.target.checked)}
+                                />
+                                <span>Разное разрешение</span>
+                            </label>
+                        )}
+                        <select
+                            className="form-select form-select-sm" aria-label="Коллекция"
+                            value={collection}
+                            onChange={e => setFilter('collection', e.target.value)}
+                        >
+                            <option value="all">Все коллекции</option>
+                            {collections.map(c => <option key={c.id} value={c.id}>{c.name} ({c.groups})</option>)}
+                        </select>
+                        {!similar && (
+                            <select
+                                className="form-select form-select-sm" aria-label="Тип файлов"
+                                value={filters.type}
+                                onChange={e => setFilter('type', e.target.value)}
+                            >
+                                <option value="all">Все типы</option>
+                                <option value="image">Картинки</option>
+                                <option value="gif">GIF</option>
+                                <option value="video">Видео</option>
+                            </select>
+                        )}
+                        <select
+                            className="form-select form-select-sm" aria-label="Размер файла"
+                            value={filters.minSize}
+                            onChange={e => setFilter('minSize', Number(e.target.value))}
+                        >
+                            {SIZE_STEPS.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
+                        </select>
                     </div>
 
+                    <div className="cp-dup-summary">
+                        Групп: <b>{shown.totalGroups}</b>
+                        {shown.totalGroups !== data.totalGroups && <> из {data.totalGroups}</>} · файлов: <b>{shown.totalItems}</b> ·
+                        можно освободить до <b>{fmtSize(shown.reclaimable)}</b>
+                    </div>
+
+                    {!groups.length && (
+                        <div className="cp-empty">
+                            <i className="bi bi-funnel" />
+                            <span>С такими фильтрами групп нет</span>
+                            <button className="cp-linkbtn" onClick={() => setFilters(DEFAULT_FILTERS)}>Сбросить фильтры</button>
+                        </div>
+                    )}
+
                     <div className="cp-dup-groups">
-                        {data.groups.map(group => (
+                        {groups.map(group => (
                             <div key={group.hash} className="cp-dup-group">
                                 <div className="cp-dup-group-head">
                                     <span>
@@ -231,25 +328,28 @@ const DuplicatesTab = () => {
                                             })), { onDone: scan })}>
                                         <i className="bi bi-layout-split" /> Сравнить
                                     </button>
+                                    {group.items.some(it => selected.has(it.id)) && (
+                                        <button className="cp-linkbtn" onClick={() => clearMarks([group])}>Снять</button>
+                                    )}
                                     <button className="cp-linkbtn" onClick={() => keepFirst(group)}>
                                         {similar ? 'Оставить только лучшую' : 'Оставить только старую'}
                                     </button>
                                 </div>
                                 <div className="cp-dup-items">
                                     {group.items.map((it, i) => {
-                                        const marked = selected.has(it.id);
+                                        const isMarked = selected.has(it.id);
                                         return (
                                             <div
                                                 key={it.id}
-                                                className={`cp-dup-item ${marked ? 'marked' : ''}`}
+                                                className={`cp-dup-item ${isMarked ? 'marked' : ''}`}
                                                 onClick={() => toggle(it.id)}
                                                 title={it.title}
                                             >
                                                 <img src={it.thumbPath} alt={it.title} loading="lazy" draggable={false} />
                                                 <div className="cp-dup-item-overlay">
-                                                    <i className={`bi ${marked ? 'bi-trash3-fill' : 'bi-check-circle'}`} />
+                                                    <i className={`bi ${isMarked ? 'bi-trash3-fill' : 'bi-check-circle'}`} />
                                                 </div>
-                                                {i === 0 && !marked && (
+                                                {i === 0 && !isMarked && (
                                                     <span className="cp-dup-badge">{similar ? 'лучшая' : 'старая'}</span>
                                                 )}
                                                 <div className="cp-dup-item-meta">
@@ -272,14 +372,36 @@ const DuplicatesTab = () => {
                     </div>
 
                     <div className="cp-dup-actions">
-                        <span className="cp-dup-selcount">Отмечено в корзину: <b>{selected.size}</b></span>
+                        <button className="btn btn-outline-secondary btn-sm" disabled={!groups.length} onClick={() => applyMarks(planMarks(groups))}>
+                            Отметить лишние
+                        </button>
+                        {chosen && (
+                            <button
+                                className="btn btn-outline-secondary btn-sm cp-dup-chosen"
+                                title={`Отметить копии из «${chosen.name}». Если вся группа лежит там, одна копия останется.`}
+                                disabled={!groups.length}
+                                onClick={() => applyMarks(planMarks(groups, collection))}
+                            >
+                                Отметить в «{chosen.name}»
+                            </button>
+                        )}
+                        <button className="btn btn-outline-secondary btn-sm" disabled={!marked.length} onClick={() => clearMarks(groups)}>
+                            Снять все
+                        </button>
+                        <span className="cp-dup-spacer" />
+                        {emptied > 0 && (
+                            <span className="cp-dup-warn" title="В этих группах отмечены все копии">
+                                <i className="bi bi-exclamation-triangle-fill me-1" />Без копии останется групп: {emptied}
+                            </span>
+                        )}
+                        <span className="cp-dup-selcount">Отмечено в корзину: <b>{marked.length}</b></span>
                         <button
                             className="btn btn-danger btn-sm"
                             onClick={trashSelected}
-                            disabled={!selected.size || busy}
+                            disabled={!marked.length || busy}
                         >
                             <i className="bi bi-trash me-1" />
-                            {busy ? 'Удаляю…' : `В корзину (${selected.size})`}
+                            {busy ? 'Удаляю…' : `В корзину (${marked.length})`}
                         </button>
                     </div>
                 </>

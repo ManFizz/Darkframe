@@ -37,24 +37,28 @@
 // Sub-tabs inside the management tab (duplicates / integrity / previews…).
 .cp-subtabs {
   display: flex;
+  flex-wrap: wrap;
   gap: 4px;
   padding: 8px 16px 0;
   flex-shrink: 0;
 }
 .cp-subtab {
   display: flex;
+  flex-shrink: 0;
   align-items: center;
-  padding: 5px 12px;
-  border: 1px solid var(--bs-border-color);
+  padding: 3px 9px;
+  border: 1px solid color-mix(in srgb, var(--bs-body-color) 28%, transparent);
   border-radius: 999px;
   background: none;
-  color: var(--bs-secondary);
+  color: var(--bs-body-color);
   font-size: 12px;
   font-weight: 600;
+  line-height: 1.4;
+  white-space: nowrap;
   cursor: pointer;
   transition: all 0.15s;
 
-  &:hover { color: var(--bs-body-color); }
+  &:hover { background: color-mix(in srgb, var(--bs-body-color) 10%, transparent); }
   &.active {
     color: #fff;
     background: var(--df-accent, var(--bs-primary));
@@ -296,6 +300,27 @@
   b { min-width: 48px; color: var(--bs-body-color); font-variant-numeric: tabular-nums; }
 }
 
+.cp-dup-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 14px;
+  margin-bottom: 10px;
+  font-size: 13px;
+
+  .form-select { width: auto; max-width: 220px; }
+}
+.cp-dup-switch {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 0;
+  margin: 0;
+  padding-left: 0;
+  cursor: pointer;
+  user-select: none;
+  .form-check-input { float: none; margin: 0; cursor: pointer; }
+}
 .cp-dup-summary {
   font-size: 13px;
   color: var(--bs-secondary);
@@ -410,15 +435,27 @@
 
 .cp-dup-actions {
   position: sticky;
-  bottom: 0;
+  // Down over the scroll area's bottom padding (.settings-body), or the items
+  // show through under the bar.
+  bottom: -16px;
+  z-index: 6;
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  justify-content: flex-end;
-  gap: 12px;
-  padding: 10px 0 2px;
-  margin-top: 6px;
-  background: linear-gradient(transparent, var(--bs-body-bg) 30%);
+  gap: 8px;
+  padding: 10px 0 12px;
+  margin: 6px 0 -16px;
+  border-top: 1px solid var(--bs-border-color);
+  background: var(--bs-body-bg);
 }
+.cp-dup-actions .btn-outline-secondary:not(:hover) {
+  --bs-btn-color: var(--bs-body-color);
+  --bs-btn-border-color: color-mix(in srgb, var(--bs-body-color) 28%, transparent);
+  --bs-btn-disabled-color: var(--bs-secondary);
+}
+.cp-dup-spacer { flex: 1; }
+.cp-dup-chosen { max-width: 240px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cp-dup-warn { font-size: 12px; color: var(--bs-warning); }
 .cp-dup-selcount { font-size: 13px; color: var(--bs-secondary); b { color: var(--bs-body-color); } }
 .cp-dup-group-head { gap: 12px; > span:first-child { margin-right: auto; } .cp-linkbtn .bi { margin-right: 3px; } }
 
