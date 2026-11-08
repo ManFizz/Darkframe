@@ -1,4 +1,4 @@
-import React, {createContext, useCallback, useEffect, useMemo, useReducer, useState} from 'react';
+import React, {createContext, useCallback, useEffect, useMemo, useReducer, useRef, useState} from 'react';
 import ReactDOM from 'react-dom/client';
 
 import NavBar from "./React/PageBuilders/NavBar.jsx";
@@ -35,16 +35,19 @@ import PageEditor from './React/Manga/PageEditor';
 import FolderView from './modules/folder/FolderView';
 import MangaView from './modules/manga/MangaView';
 import {MangaDownloadsWatcher} from './modules/manga/useMangaDownloads';
-import {useBooruQuery} from './modules/r34/booruQuery';
+import {useBooruQuery, useSearchStatus} from './modules/r34/booruQuery';
+import Settings from '@data/settings';
 import {blockedBy, setHiddenCount, useBlacklist} from './modules/r34/blacklist';
 import {setViewedHiddenCount, useHideViewed, useViewedKeys, viewedKeyOf} from './modules/r34/hideViewed';
 import {useLibraryLinks} from './modules/r34/libraryLinks';
 import BooruBulkBar from './modules/r34/BooruBulkBar';
 import DropToCollection, {startPostDrag} from './React/Library/Collection/DropToCollection';
 import useSelection from './Hooks/gallery/useSelection';
-import {BOORU_TYPES, CanMoreMedia} from './modules/r34/R34Controller';
+import {BOORU_TYPES, CanMoreMedia, LoadMoreMedia} from './modules/r34/R34Controller';
 import {useViewPref} from '@services/viewPrefs';
 import {matches} from '@services/keymap';
+
+const AUTOFILL = 15;   // pages fetched in a row to fill the shown pages when posts are hidden
 
 // Colour mode + accent before the first paint.
 initTheme();
@@ -116,13 +119,6 @@ const Main = () => {
         state.safeMode,
     ]);
 
-    const { currentPage, maxPage, pages, goToPage, loadNextPage } = usePagination({
-        mainArray: state.mainArray,
-        currentSource: state.currentSource,
-        updateDisplayArray: contextValue.setDisplayArray,
-        modalFile: state.modalFileId,
-    });
-
     useEffect(() => {
         AppController.setGallery = contextValue.setMainArray;
         AppController.addToGallery = contextValue.addToGallery;
@@ -181,6 +177,32 @@ const Main = () => {
         () => (hidingViewed ? state.mainArray.filter(isViewed).length : 0),
         [state.mainArray, hidingViewed, isViewed]);
     useEffect(() => setViewedHiddenCount(viewedHidden), [viewedHidden]);
+
+    // Pages are cut from what's left after hiding.
+    const { currentPage, maxPage, pages, goToPage, loadNextPage } = usePagination({
+        mainArray: visibleMain,
+        displayArray: state.displayArray,
+        currentSource: state.currentSource,
+        updateDisplayArray: contextValue.setDisplayArray,
+        modalFile: state.modalFileId,
+        resetKey: state.mainArray[0]?.uniqueId,
+    });
+
+    // Too few posts left to fill the shown pages: fetch more from the site until they
+    // are full (at most AUTOFILL pages per search / per shown page, in case nearly
+    // everything is hidden — whether a post is viewed is known only after it loads).
+    const searchStatus = useSearchStatus();
+    const autoFill = useRef(0);
+    const need = maxPage * Settings.MaxThumbsPerPage;
+    useEffect(() => { autoFill.current = 0; }, [state.mainArray[0]?.uniqueId, need]);
+    useEffect(() => {
+        if (!isBooru || !filtering || booruView !== 'search') return;
+        if (searchStatus.loading || state.modalFileId !== null || !state.mainArray.length) return;
+        if (visibleMain.length >= need) return;
+        if (!CanMoreMedia() || autoFill.current >= AUTOFILL) return;
+        autoFill.current += 1;
+        LoadMoreMedia();
+    }, [isBooru, filtering, booruView, searchStatus.loading, state.modalFileId, state.mainArray.length, visibleMain.length, need]);
 
     const inLibrary = useLibraryLinks();
 
