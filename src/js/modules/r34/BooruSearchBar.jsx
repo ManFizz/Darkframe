@@ -1,12 +1,13 @@
 import React, {useEffect, useRef, useState} from 'react';
 import {fetchTagSuggestions, getAllTags} from '@controllers/TagsController';
-import {addTag, normTag, removeTag, runSearch, toggleExclude, useBooruQuery, useSearchStatus} from './booruQuery';
+import {addTag, removeTag, runSearch, toggleExclude, useBooruQuery, useSearchStatus} from './booruQuery';
 import {tagKind, fmtCount, useTagKinds} from './tagKinds';
 import TagsService from '@services/TagsService';
 import {queryKey, setView} from './booruQuery';
 import {saveSearch, useSavedSearches} from './savedSearches';
 import {notify} from '@services/NotificationService';
 import useFavoriteTags from '@hooks/useFavoriteTags';
+import {rankTags} from '@/shared/tagRank';
 
 // Autocomplete payloads differ per booru: r34 → { label: "cat (123)", value, type:
 // "general" }, gelbooru → { name, count, type: 0 }. Normalise to { name, count, kind }.
@@ -86,7 +87,8 @@ const BooruSearchBar = ({ sourceType }) => {
         const timer = setTimeout(async () => {
             const list = await fetchTagSuggestions(word, sourceType).catch(() => []);
             if (lastQuery.current !== word) return;
-            const norm = list.map(normalizeSuggestion).filter(s => s.name).slice(0, 10);
+            // The closest names first: "overwa" → overwatch before ashe_(overwatch).
+            const norm = rankTags(list.map(normalizeSuggestion).filter(s => s.name), word, { keep: true }).slice(0, 10);
             // r34's autocomplete has no categories — colour them from the local tag DB.
             const unknown = norm.filter(s => s.kind === 'unknown').map(s => s.name);
             if (unknown.length) {
@@ -102,9 +104,16 @@ const BooruSearchBar = ({ sourceType }) => {
         return () => clearTimeout(timer);
     }, [text, sourceType]);
 
+    // Every word of `str` becomes a chip ("-video overwatch" → -video, overwatch).
+    const addWords = (str) => str.split(/\s+/).filter(w => w && w !== '-').forEach(w => addTag(w));
+
+    // The picked suggestion replaces the last word; the words before it are tags too.
     const commit = (name) => {
         if (!name) return;
-        addTag(name, { exclude: text.startsWith('-') });
+        const words = text.trim().split(/\s+/);
+        const last = words.pop() || '';
+        addWords(words.join(' '));
+        addTag(name, { exclude: last.startsWith('-') });
         setText('');
         setItems([]);
         setOpen(false);
@@ -120,21 +129,47 @@ const BooruSearchBar = ({ sourceType }) => {
             e.preventDefault();
             if (open && cursor >= 0 && items[cursor]) { commit(items[cursor].name); return; }
             if (text.trim()) {                       // typed words → chips, then search
-                text.trim().split(/\s+/).forEach(w => addTag(w));
+                addWords(text);
                 setText('');
                 setOpen(false);
             }
             runSearch();
             return;
         }
+        // Backspace in an empty field: the last chip turns back into text, minus a letter.
         if (e.key === 'Backspace' && !text && q.tags.length) {
-            removeTag(q.tags[q.tags.length - 1]);
+            e.preventDefault();
+            const last = q.tags[q.tags.length - 1];
+            removeTag(last);
+            setText(last.slice(0, -1));
             return;
         }
         if (e.key === ' ' && text.trim()) {          // space finishes a tag
             e.preventDefault();
-            commit(normTag(text.replace(/^-/, '')));
+            addWords(text);
+            setText('');
+            setItems([]);
+            setOpen(false);
         }
+    };
+
+    // Typed or pasted text with spaces: each finished word is a tag. On a paste every
+    // word is finished; while typing, the one at the end is still being written.
+    const onChange = (value, pasted = false) => {
+        if (!/\s/.test(value)) { setText(value); return; }
+        const words = value.split(/\s+/);
+        const rest = pasted || /\s$/.test(value) ? '' : words.pop();
+        addWords(words.join(' '));
+        setText(rest);
+        if (!rest) { setItems([]); setOpen(false); }
+    };
+
+    const onPaste = (e) => {
+        const pasted = e.clipboardData.getData('text');
+        if (!/\s/.test(pasted.trim())) return;      // one word: as usual
+        e.preventDefault();
+        const el = e.currentTarget;
+        onChange(text.slice(0, el.selectionStart) + pasted + text.slice(el.selectionEnd), true);
     };
 
     return (
@@ -164,7 +199,8 @@ const BooruSearchBar = ({ sourceType }) => {
                     value={text}
                     placeholder={q.tags.length ? '' : 'Теги через пробел, «-тег» — исключить…'}
                     spellCheck={false}
-                    onChange={e => setText(e.target.value)}
+                    onChange={e => onChange(e.target.value)}
+                    onPaste={onPaste}
                     onFocus={() => items.length && setOpen(true)}
                     onKeyDown={onKeyDown}
                 />

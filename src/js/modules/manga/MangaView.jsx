@@ -902,10 +902,13 @@ const MangaView = () => {
         return () => document.removeEventListener('keydown', onKey);
     }, [view, back]);
 
-    // A tag of a gallery card → a new search on that site with just this tag.
+    // A tag of a gallery card → added to that site's current search (same tag again
+    // just flips include / exclude), and the search runs.
     const searchTag = (f) => {
         const p = loadPrefs();
-        savePrefs({ queries: { ...(p.queries || {}), [gallery.source]: '' }, filters: { ...(p.filters || {}), [gallery.source]: [f] } });
+        const cur = p.filters?.[gallery.source] || [];
+        const next = [...cur.filter(x => !sameFilter(x, f)), f];
+        savePrefs({ filters: { ...(p.filters || {}), [gallery.source]: next } });
         setSourceId(gallery.source);
         setSearchKey(k => k + 1);
         setView('search');

@@ -18,6 +18,7 @@ const tagAdmin = require('../services/tagAdmin');
 const { getSmartItems } = require('../services/smartItems');
 const { getDashboard } = require('../services/dashboard');
 const { findDuplicates } = require('../services/duplicates');
+const { rankTags, allowedTypos } = require('../../src/js/shared/tagRank');
 const similarity = require('../services/similarity');
 const maintenance = require('../services/maintenance');
 const { itemUrls } = require('../services/itemUrls');
@@ -670,26 +671,40 @@ function register() {
     });
 
     ipcMain.handle('library:searchTags', async (_, { query }) => {
-        if (!query || query.length < 1) return [];
+        const q = String(query || '').trim().toLowerCase().replace(/\s+/g, '_');
+        if (!q) return [];
+
+        // Tags on at least one file outside the trash, with how many files they're on.
+        // "_" stays a one-letter wildcard, so it finds both "big_breasts" and "big breasts".
+        const like = (part) => `%${part.replace(/[!%]/g, c => '!' + c)}%`;
+        const find = (patterns) => sequelize.query(
+            `SELECT t.id, t.name, t.type, t.userType, t.pinned, COUNT(*) AS count
+               FROM Tags t
+               JOIN ItemTags it ON it.tagId = t.id
+               JOIN Items i ON i.id = it.itemId AND i.deletedAt IS NULL
+              WHERE ${patterns.map(() => "t.name LIKE ? ESCAPE '!'").join(' OR ')}
+              GROUP BY t.id
+              ORDER BY t.pinned DESC, count DESC
+              LIMIT 400`,
+            { replacements: patterns.map(like), type: sequelize.QueryTypes.SELECT },
+        );
 
         try {
-            const tags = await Tag.findAll({
-                where: { name: { [Op.like]: `%${query.toLowerCase()}%` } },
-                include: [{
-                    model: Item,
-                    as: 'items',
-                    required: true,
-                    through: { attributes: [] },
-                    attributes: [],
-                }],
-                attributes: ['id', 'name', 'type', 'userType', 'pinned'],
-                limit: 10,
-                order: [['pinned', 'DESC'], ['name', 'ASC']],   // pinned matches first
-                subQuery: false,   // much faster with include + limit
-            });
+            let rows = await find([q]);
+            // Few hits: maybe a typo. It sits in one half of the word, so the other
+            // half still matches; rankTags then keeps only the close ones.
+            if (rows.length < 10 && allowedTypos(q.length)) {
+                const half = Math.ceil(q.length / 2);
+                const seen = new Set(rows.map(r => r.id));
+                const more = await find([q.slice(0, half), q.slice(q.length - half)]);
+                rows = rows.concat(more.filter(r => !seen.has(r.id)));
+            }
 
             // The category set by hand wins over the site's.
-            return tags.map(t => ({ name: t.name, type: t.userType ?? t.type, pinned: !!t.pinned, value: t.name, label: t.name }));
+            return rankTags(rows, q).slice(0, 20).map(t => ({
+                name: t.name, type: t.userType ?? t.type, pinned: !!t.pinned, count: Number(t.count) || 0,
+                value: t.name, label: t.name,
+            }));
         } catch (e) {
             console.error('[searchTags] error:', e.message);
             return [];
