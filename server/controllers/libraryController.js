@@ -590,6 +590,7 @@ function register() {
     ipcMain.handle('library:recordView',        async (_, p)  => viewHistory.recordView(p || {}));
     ipcMain.handle('library:getHistory',        async (_, p)  => viewHistory.getHistory(p || {}));
     ipcMain.handle('library:getHistorySections', async ()     => viewHistory.getHistorySections());
+    ipcMain.handle('library:viewedKeys',        async (_, p)  => viewHistory.viewedKeys(p || {}));
     ipcMain.handle('library:clearHistory',      async (_, p)  => viewHistory.clearHistory(p || {}));
     ipcMain.handle('library:removeHistory',     async (_, p)  => viewHistory.removeHistory(p || {}));
 

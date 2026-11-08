@@ -1,6 +1,7 @@
 import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import PrivateData from '@data/private';
-import {DRAG_PATHS, fsApi, fsThumbUrl} from '@/Infrastructure/Ipc';
+import {DRAG_PATHS, fsApi, fsThumbUrl, libraryApi} from '@/Infrastructure/Ipc';
+import {SOURCE_TYPES} from '@/Constants';
 import FsDialog from './FsDialog';
 import {mangaApi} from '@/Infrastructure/Ipc';
 import {readLibraryManga} from '@services/mangaLibrary';
@@ -56,7 +57,7 @@ export const filesWord = (n) => `${n} ${plural(n, 'файл', 'файла', 'ф�
 
 const cmpName = (a, b) => a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' });
 
-const FileTile = React.memo(({ file, onOpen, selected, selecting, onToggle, onDragStart, lib }) => {
+const FileTile = React.memo(({ file, onOpen, selected, selecting, onToggle, onDragStart, lib, seen }) => {
     const [loaded, setLoaded] = useState(false);
     const [broken, setBroken] = useState(false);
     const t = file.thumb;
@@ -95,7 +96,10 @@ const FileTile = React.memo(({ file, onOpen, selected, selecting, onToggle, onDr
                     </span>
                 )}
             </div>
-            <div className="ftfile-name">{file.name}</div>
+            <div className="ftfile-name">
+                {seen && <i className="bi bi-eye ftfile-seen" title="Уже открывали в просмотрщике" />}
+                {file.name}
+            </div>
             <div className="ftfile-meta">{fmtSize(file.size)}</div>
         </div>
     );
@@ -123,6 +127,7 @@ const FolderView = () => {
     const [dialog, setDialog] = useState(null);                  // FsDialog props
     const [libInfo, setLibInfo] = useState({});                  // path → { inLibrary, copies }
     const [libCheck, setLibCheck] = useState(null);              // { done, total } while checking
+    const [seen, setSeen] = useState(() => new Set());           // paths opened in the viewer before
     const anchorRef = useRef(null);
     const scrollMemo = useRef(new Map());                        // path → { top, visible }
     const scrollRef = useRef(null);
@@ -168,7 +173,8 @@ const FolderView = () => {
         const inLib = (f) => !!libInfo[f.path]?.inLibrary;
         const list = listing.files.filter(f =>
             (prefs.kind === 'all' || f.kind === prefs.kind) && (!q || f.name.toLowerCase().includes(q))
-            && (prefs.lib === 'all' || (prefs.lib === 'in' ? inLib(f) : !inLib(f))));
+            && (prefs.lib === 'all' || (prefs.lib === 'in' ? inLib(f) : !inLib(f)))
+            && (!prefs.unseen || !seen.has(f.path)));
         const by = {
             name:  cmpName,
             mtime: (a, b) => a.mtime - b.mtime,
@@ -176,7 +182,7 @@ const FolderView = () => {
             type:  (a, b) => a.ext.localeCompare(b.ext) || cmpName(a, b),
         }[prefs.sortBy] || cmpName;
         return list.sort((a, b) => by(a, b) * prefs.sortDir);
-    }, [listing, q, prefs.kind, prefs.sortBy, prefs.sortDir, prefs.lib, libInfo]);
+    }, [listing, q, prefs.kind, prefs.sortBy, prefs.sortDir, prefs.lib, prefs.unseen, libInfo, seen]);
 
     const thumbs = useMemo(() => files.map(f => f.thumb), [files]);
 
@@ -195,6 +201,18 @@ const FolderView = () => {
             .finally(() => { if (!cancelled) setLibCheck(null); ipcRenderer.removeListener('fs:libraryCheckProgress', onProgress); });
         return () => { cancelled = true; ipcRenderer.send('fs:libraryCheckCancel'); ipcRenderer.removeListener('fs:libraryCheckProgress', onProgress); };
     }, [listing, libVersion]);
+    // What was opened in the viewer, from the view history. Re-read when the viewer
+    // closes, not while it's open: hiding files under it would break its paging.
+    useEffect(() => {
+        if (modalId || !listing?.files?.length) { if (!listing?.files?.length) setSeen(new Set()); return; }
+        let cancelled = false;
+        libraryApi.viewedKeys({ section: SOURCE_TYPES.FOLDER, keys: listing.files.map(f => f.path) })
+            .then(keys => { if (!cancelled) setSeen(new Set(keys || [])); })
+            .catch(() => {});
+        return () => { cancelled = true; };
+    }, [listing, modalId]);
+    const unseenCount = useMemo(() => (listing?.files || []).filter(f => !seen.has(f.path)).length, [listing, seen]);
+
     const libCounts = useMemo(() => {
         const inLib = (listing?.files || []).filter(f => libInfo[f.path]?.inLibrary).length;
         return { in: inLib, new: (listing?.files?.length || 0) - inLib };
@@ -475,6 +493,12 @@ const FolderView = () => {
                                 {o.count != null && <span className="ff-count">{libCheck ? '…' : o.count}</span>}
                             </button>
                         ))}
+                        <button className={`ff-kind ${prefs.unseen ? 'active' : ''}`}
+                                title="Скрыть файлы, которые уже открывали в просмотрщике (по истории просмотров)"
+                                onClick={() => setFolderPrefs({ unseen: !prefs.unseen })}>
+                            <i className={`bi ${prefs.unseen ? 'bi-eye-slash-fill' : 'bi-eye-slash'}`} /> Не просмотренные
+                            <span className="ff-count">{unseenCount}</span>
+                        </button>
                         {libCheck && (
                             <span className="ff-libcheck" title="Сверяю файлы с библиотекой">
                                 <i className="bi bi-arrow-repeat spin" /> {libCheck.done}/{libCheck.total}
@@ -570,10 +594,10 @@ const FolderView = () => {
                         </div>
                     ) : total === 0 ? (
                         <div className="folder-empty">
-                            <i className={`bi ${q || prefs.kind !== 'all' || prefs.lib !== 'all' ? 'bi-funnel' : 'bi-folder2-open'}`} />
-                            <div className="fe-title">{q || prefs.kind !== 'all' || prefs.lib !== 'all' ? 'Ничего не подходит под фильтр' : 'Здесь нет медиафайлов'}</div>
-                            {(q || prefs.kind !== 'all' || prefs.lib !== 'all') && (
-                                <button className="btn btn-sm btn-outline-secondary" onClick={() => { setQuery(''); setFolderPrefs({ kind: 'all', lib: 'all' }); }}>
+                            <i className={`bi ${q || prefs.kind !== 'all' || prefs.lib !== 'all' || prefs.unseen ? 'bi-funnel' : 'bi-folder2-open'}`} />
+                            <div className="fe-title">{q || prefs.kind !== 'all' || prefs.lib !== 'all' || prefs.unseen ? 'Ничего не подходит под фильтр' : 'Здесь нет медиафайлов'}</div>
+                            {(q || prefs.kind !== 'all' || prefs.lib !== 'all' || prefs.unseen) && (
+                                <button className="btn btn-sm btn-outline-secondary" onClick={() => { setQuery(''); setFolderPrefs({ kind: 'all', lib: 'all', unseen: false }); }}>
                                     Сбросить фильтр
                                 </button>
                             )}
@@ -596,7 +620,7 @@ const FolderView = () => {
                                 />
                             ))}
                             {files.slice(0, Math.max(0, visible - folders.length)).map(f => (
-                                <FileTile key={f.path} file={f} onOpen={openFile} lib={libInfo[f.path]}
+                                <FileTile key={f.path} file={f} onOpen={openFile} lib={libInfo[f.path]} seen={seen.has(f.path)}
                                           selected={selected.has(f.path)} selecting={selected.size > 0}
                                           onToggle={toggleSelect} onDragStart={onDragFile} />
                             ))}

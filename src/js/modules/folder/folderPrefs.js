@@ -13,6 +13,7 @@ const DEFAULTS = {
     sortDir: 1,              // 1 asc, -1 desc
     kind: 'all',             // all | image | video | gif
     lib: 'all',              // all | new | in — by presence in the library
+    unseen: false,           // hide files already opened in the viewer
     tile: 190,               // tile width, px
 };
 

@@ -1260,6 +1260,18 @@
   .bsb-fold-caret { transform: rotate(-90deg); }
   .bsb-title { margin-bottom: 0; }
 }
+.bsb-switch {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  font-size: 12.5px;
+  cursor: pointer;
+  .form-check-input { margin: 0; flex-shrink: 0; cursor: pointer; }
+}
+.bsb-switch-count { margin-left: auto; font-size: 11px; color: var(--bs-secondary); white-space: nowrap; }
+
 .bsb-fold-count {
   padding: 0 6px; border-radius: 999px; background: var(--bs-secondary-bg);
   font-size: 10px; letter-spacing: 0; color: var(--bs-secondary-color);

@@ -11,6 +11,21 @@ import {queryOf, useSavedSearches} from './savedSearches';
 import {setView} from './booruQuery';
 import {addToBlacklist, removeFromBlacklist, setShowHidden, useBlacklist} from './blacklist';
 import {useCommandProvider, useCommands} from '@services/commands';
+import {setHideViewed, useHideViewed} from './hideViewed';
+
+// Posts already opened in the viewer (by the view history) drop out of the results.
+const ViewedBlock = ({ source }) => {
+    const { on, hiddenCount } = useHideViewed(source);
+    return (
+        <Block title="Просмотренные">
+            <label className="form-check form-switch bsb-switch" title="Посты, которые уже открывали в просмотрщике, не показываются (по истории просмотров)">
+                <input className="form-check-input" type="checkbox" checked={on} onChange={e => setHideViewed(source, e.target.checked)} />
+                <span>Скрыть просмотренные</span>
+                {on && hiddenCount > 0 && <span className="bsb-switch-count">скрыто {hiddenCount}</span>}
+            </label>
+        </Block>
+    );
+};
 
 // Tags whose posts are hidden from results on this source (client-side).
 const BlacklistBlock = ({ source }) => {
@@ -373,6 +388,7 @@ const SectionR34 = ({ currentSource }) => {
                 )}
             </Block>
 
+            <ViewedBlock source={currentSource} />
             <BlacklistBlock source={currentSource} />
 
             {history.length > 0 && (

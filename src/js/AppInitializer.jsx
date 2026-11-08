@@ -37,6 +37,7 @@ import MangaView from './modules/manga/MangaView';
 import {MangaDownloadsWatcher} from './modules/manga/useMangaDownloads';
 import {useBooruQuery} from './modules/r34/booruQuery';
 import {blockedBy, setHiddenCount, useBlacklist} from './modules/r34/blacklist';
+import {setViewedHiddenCount, useHideViewed, useViewedKeys, viewedKeyOf} from './modules/r34/hideViewed';
 import {useLibraryLinks} from './modules/r34/libraryLinks';
 import BooruBulkBar from './modules/r34/BooruBulkBar';
 import DropToCollection, {startPostDrag} from './React/Library/Collection/DropToCollection';
@@ -157,16 +158,29 @@ const Main = () => {
     // "show hidden" is on — then they stay, marked).
     const { list: blacklist, showHidden } = useBlacklist(state.currentSource);
     const hiding = isBooru && blacklist.length > 0;
+    // Posts already opened in the viewer, when "hide viewed" is on for this source.
+    // While the viewer is open the list stays as it was (see useViewedKeys).
+    const { on: hideViewedOn } = useHideViewed(state.currentSource);
+    const hidingViewed = isBooru && hideViewedOn;
+    const viewed = useViewedKeys(state.mainArray, hidingViewed, state.modalFileId !== null);
+    const isViewed = useCallback((f) => viewed.has(viewedKeyOf(f)), [viewed]);
+    const keep = useCallback((f) => !(hiding && !showHidden && blockedBy(f, blacklist)) && !(hidingViewed && isViewed(f)),
+        [hiding, showHidden, blacklist, hidingViewed, isViewed]);
+    const filtering = (hiding && !showHidden) || hidingViewed;
     const visibleMain = useMemo(
-        () => (hiding && !showHidden ? state.mainArray.filter(f => !blockedBy(f, blacklist)) : state.mainArray),
-        [state.mainArray, hiding, showHidden, blacklist]);
+        () => (filtering ? state.mainArray.filter(keep) : state.mainArray),
+        [state.mainArray, filtering, keep]);
     const visibleDisplay = useMemo(
-        () => (hiding && !showHidden ? state.displayArray.filter(f => !blockedBy(f, blacklist)) : state.displayArray),
-        [state.displayArray, hiding, showHidden, blacklist]);
+        () => (filtering ? state.displayArray.filter(keep) : state.displayArray),
+        [state.displayArray, filtering, keep]);
     const hiddenCount = useMemo(
         () => (hiding ? state.mainArray.filter(f => blockedBy(f, blacklist)).length : 0),
         [state.mainArray, hiding, blacklist]);
     useEffect(() => setHiddenCount(hiddenCount), [hiddenCount]);
+    const viewedHidden = useMemo(
+        () => (hidingViewed ? state.mainArray.filter(isViewed).length : 0),
+        [state.mainArray, hidingViewed, isViewed]);
+    useEffect(() => setViewedHiddenCount(viewedHidden), [viewedHidden]);
 
     const inLibrary = useLibraryLinks();
 

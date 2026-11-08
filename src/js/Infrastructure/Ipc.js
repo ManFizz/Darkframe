@@ -219,6 +219,7 @@ export const libraryApi = {
     recordView:        (data) => invoke('library:recordView', data),
     getHistory:        (params) => invoke('library:getHistory', params),
     getHistorySections: ()    => invoke('library:getHistorySections'),
+    viewedKeys:        (params) => invoke('library:viewedKeys', params),
     clearHistory:      (params) => invoke('library:clearHistory', params),
     removeHistory:     (data) => invoke('library:removeHistory', data),
     reorderCollections: (data) => invoke('library:reorderCollections', data),
