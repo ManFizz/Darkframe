@@ -1,5 +1,6 @@
 {
-  "name": "js-gallery",
+  "name": "darkframe",
+  "productName": "Darkframe",
   "version": "0.2.0",
   "main": "main.js",
   "engines": {

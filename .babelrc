@@ -1,5 +1,5 @@
 {
-  "targets": { "electron": "42" },
+  "targets": { "electron": "44" },
   "presets": [
     "@babel/preset-env",
     ["@babel/preset-react", { "runtime": "classic" }]

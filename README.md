@@ -16,8 +16,8 @@
 ## Установка с нуля
 
 ```bash
-git clone https://github.com/ManFizz/Gallery.git
-cd Gallery
+git clone https://github.com/ManFizz/Darkframe.git
+cd Darkframe
 npm ci
 npm run build
 ```

@@ -2,6 +2,13 @@
 if (require('path').resolve(process.cwd()) !== __dirname) process.chdir(__dirname);
 
 const { app, BrowserWindow, session } = require('electron');
+// The data folder keeps the name it was created with (%APPDATA%\js-gallery: the
+// library registry, API tokens, models, the window's storage), whatever the app is
+// called now. Set before anything below reads userData; an explicit
+// --user-data-dir (smoke checks, sandboxes) still wins.
+if (!app.commandLine.hasSwitch('user-data-dir')) {
+    app.setPath('userData', require('path').join(app.getPath('appData'), 'js-gallery'));
+}
 const { setupIpcHandlers } = require('./server/ipcManager');
 const { protocol } = require('electron');
 const { fileResponse } = require('./server/fileResponse');
