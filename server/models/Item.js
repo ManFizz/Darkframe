@@ -34,6 +34,11 @@ const Item = sequelize.define('Item', {
     // 64-bit perceptual hash (hex) for the near-duplicate finder.
     // NULL = not computed yet, '' = couldn't be hashed. Reset on every image edit.
     phash:          { type: DataTypes.STRING(16), allowNull: true, defaultValue: null },
+    // pHash of the mirror image, so mirrored copies are found too. Same NULL/'' rules.
+    phashMirror:    { type: DataTypes.STRING(16), allowNull: true, defaultValue: null },
+    // Video only: fingerprint for similar videos — "<duration>|<frame pHash>,…" (a few
+    // frames across the video; '-' for a blank frame). NULL = not yet, '' = failed.
+    vhash:          { type: DataTypes.TEXT, allowNull: true, defaultValue: null },
     // Video only: second of the frame chosen as the gallery thumbnail (NULL = default 10%).
     thumbAt:        { type: DataTypes.FLOAT, allowNull: true, defaultValue: null },
     // Manga only (mimeType application/x-darkframe-manga): number of pages.

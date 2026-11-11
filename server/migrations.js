@@ -28,6 +28,19 @@ async function migrations() {
             defaultValue: null,
         });
     }
+    if (!tableDesc.phashMirror) {
+        await queryInterface.addColumn('Items', 'phashMirror', { type: DataTypes.STRING(16), allowNull: true, defaultValue: null });
+    }
+    if (!tableDesc.vhash) {
+        await queryInterface.addColumn('Items', 'vhash', { type: DataTypes.TEXT, allowNull: true, defaultValue: null });
+    }
+    // Content vectors of images (services/embeddings), keyed to the file they were
+    // computed from (fileHash): an edited file simply counts as not computed.
+    await sequelize.query(`CREATE TABLE IF NOT EXISTS ItemEmbeddings (
+        itemId TEXT PRIMARY KEY,
+        fileHash TEXT,
+        vec BLOB NOT NULL
+    )`);
     if (!tableDesc.editParams) {
         // Full image-edit parameters (JSON), re-applied from the source on each save.
         await queryInterface.addColumn('Items', 'editParams', {

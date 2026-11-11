@@ -39,6 +39,7 @@ async function refreshMeta(original, dir, thumbTime) {
         height:   meta.height,
         size:     fs.statSync(original).size,
         fileHash: await ops.hashFile(original),
+        vhash:    null,   // recompute the similar-video fingerprint
     };
 }
 

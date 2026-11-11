@@ -248,6 +248,7 @@ async function finishEdit(id, item, itemDir, originalPath, origExt, outExt, outB
         editedAt,
         editParams: JSON.stringify(params),
         phash: null,   // content changed → recompute for the near-duplicate finder
+        phashMirror: null,
     }, { where: { id } });
 
     return { ok: true, width: size.width, height: size.height, editedAt, size: outBuf.length };
@@ -295,6 +296,7 @@ async function revertImage(id) {
         editedAt: null,
         editParams: null,
         phash: null,
+        phashMirror: null,
     }, { where: { id } });
 
     return { ok: true, width: size.width, height: size.height };

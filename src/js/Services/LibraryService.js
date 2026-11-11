@@ -164,7 +164,13 @@ export const LibraryService = {
     // Near-duplicates (perceptual hash)
     async phashStatus()             { return libraryApi.phashStatus(); },
     async computePhashes()          { return libraryApi.computePhashes(); },
-    async findSimilar(maxDistance)  { return libraryApi.findSimilar({ maxDistance }); },
+    async findSimilar(maxDistance, mirror = true) { return libraryApi.findSimilar({ maxDistance, mirror }); },
+    async fingerprintStatus()       { return libraryApi.fingerprintStatus(); },
+    async computeVideoHashes()      { return libraryApi.computeVideoHashes(); },
+    async computeEmbeddings()       { return libraryApi.computeEmbeddings(); },
+    async cancelFingerprints(kind)  { return libraryApi.cancelFingerprints(kind); },
+    async findSimilarVideos(maxDistance) { return libraryApi.findSimilarVideos({ maxDistance }); },
+    async findByContent(threshold, verify) { return libraryApi.findByContent({ threshold, verify }); },
 
     async checkIntegrity() {
         return libraryApi.checkIntegrity();

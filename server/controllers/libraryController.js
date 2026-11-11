@@ -583,9 +583,28 @@ function register() {
     });
 
     ipcMain.handle('library:itemRelations', async (_, { id }) => similarity.relationsOf(id));
-    ipcMain.handle('library:findSimilar', async (event, { maxDistance }) => similarity.findSimilar(maxDistance, (pct) => {
+    ipcMain.handle('library:findSimilar', async (event, { maxDistance, mirror = true }) => similarity.findSimilar(maxDistance, (pct) => {
         if (!event.sender.isDestroyed()) event.sender.send('library:similarProgress', pct);
-    }));
+    }, { mirror }));
+
+    // More fingerprints for the duplicate finder: similar videos (frame hashes) and
+    // images alike by content (vectors from the tagger model, optional keypoint check).
+    const embeddings = require('../services/embeddings');
+    ipcMain.handle('library:fingerprintStatus', async () => {
+        const [images, videos, content] = await Promise.all([similarity.phashStatus(), similarity.videoStatus(), embeddings.status()]);
+        return {
+            images: { ...images, running: similarity.isRunning('images') },
+            videos: { ...videos, running: similarity.isRunning('videos') },
+            content: { ...content, running: similarity.isRunning('content') },
+        };
+    });
+    ipcMain.handle('library:computeVideoHashes', async (event) => similarity.computeVideoMissing(sendTo(event, 'library:fingerprintProgress:videos')));
+    ipcMain.handle('library:computeEmbeddings', async (event) => embeddings.computeMissing(sendTo(event, 'library:fingerprintProgress:content')));
+    ipcMain.handle('library:cancelFingerprints', async (_, { kind }) => similarity.cancelJob(kind));
+    ipcMain.handle('library:findSimilarVideos', async (event, { maxDistance }) =>
+        similarity.findSimilarVideos(maxDistance, sendTo(event, 'library:similarProgress')));
+    ipcMain.handle('library:findByContent', async (event, { threshold, verify }) =>
+        embeddings.findByContent(threshold, { verify }, sendTo(event, 'library:contentProgress')));
 
     ipcMain.handle('library:recordView',        async (_, p)  => viewHistory.recordView(p || {}));
     ipcMain.handle('library:getHistory',        async (_, p)  => viewHistory.getHistory(p || {}));

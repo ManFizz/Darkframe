@@ -7,11 +7,16 @@ let opener = null;
 
 /**
  * Compare two library items side by side.
- *   items: [a, b] — { id, title, url, width, height, size, mimeType, importedAt, collectionName }
+ *   items: [a, b] — { id, title, url, thumb?, width, height, size, mimeType, importedAt, collectionName }
+ *   pool: optional — all the items to pick the pair from (a group of duplicates);
+ *         each side then gets a strip to pick its item, and trashing one keeps the
+ *         compare open on what's left
  *   onDone(): called after one of them was moved to the trash (to refresh lists)
+ *   onKeep(keepIt, dropIt): optional — "keep left/right" only reports the choice
+ *         (the caller marks it for the trash) instead of trashing right away
  */
-export function openCompare(items, { onDone } = {}) {
-    if (opener && items?.length === 2) opener({ items, onDone });
+export function openCompare(items, { onDone, pool, onKeep } = {}) {
+    if (opener && items?.length === 2) opener({ items, onDone, onKeep, pool: pool?.length > 2 ? pool : null });
 }
 
 // Library ThumbFile → compare item.
@@ -114,7 +119,22 @@ const CompareView = () => {
 
     const tf = { transform: `translate(${view.x}px, ${view.y}px) scale(${view.z})` };
 
+    // A pool: go on with the kept one against the next of the rest.
+    const goOn = (keepIt, dropIt) => {
+        const rest = state.pool?.filter(it => it.id !== dropIt.id);
+        const next = rest?.find(it => it.id !== keepIt.id);
+        if (next) {
+            const items = state.items[0].id === keepIt.id ? [keepIt, next] : [next, keepIt];
+            setState(s => ({ ...s, items, pool: rest.length > 2 ? rest : null }));
+        } else close();
+    };
+
     const keep = async (keepIt, dropIt) => {
+        if (state.onKeep) {   // only marking — the caller trashes later
+            state.onKeep(keepIt, dropIt);
+            goOn(keepIt, dropIt);
+            return;
+        }
         setBusy(true);
         try {
             await LibraryService.deleteItem(dropIt.id, false);
@@ -125,16 +145,36 @@ const CompareView = () => {
                 action: { label: 'Вернуть', onClick: async () => { await LibraryService.restoreItem(dropIt.id); state.onDone?.(); } },
             });
             state.onDone?.();
-            close();
+            goOn(keepIt, dropIt);
         } finally {
             setBusy(false);
         }
     };
+    const dropWord = state.onKeep ? 'отметить для корзины' : 'в корзину';
 
     const swap = () => setState(s => ({ ...s, items: [s.items[1], s.items[0]] }));
+    // Put `it` on side `i`; picking the other side's item swaps them.
+    const pick = (i, it) => setState(s => {
+        const items = [...s.items];
+        if (items[1 - i].id === it.id) items[1 - i] = items[i];
+        items[i] = it;
+        return { ...s, items };
+    });
 
     const Info = ({ it, other, side }) => (
         <div className={`cmp-info ${side}`}>
+            {state.pool && (
+                <div className="cmp-pick">
+                    {state.pool.map((p, n) => (
+                        <button key={p.id} className={p.id === it.id ? 'active' : p.id === other.id ? 'other' : ''}
+                                onClick={() => pick(side === 'left' ? 0 : 1, p)}
+                                title={`${n + 1}. ${p.width ? `${p.width}×${p.height} · ` : ''}${fmtSize(p.size)} · ${p.collectionName || ''}`}>
+                            <img src={p.thumb || p.url} alt="" draggable={false} />
+                            <span>{n + 1}</span>
+                        </button>
+                    ))}
+                </div>
+            )}
             <div className="cmp-title" title={it.title}>{it.title}</div>
             <div className="cmp-facts">
                 {facts(it, other).map(f => (
@@ -185,11 +225,11 @@ const CompareView = () => {
             <div className="cmp-bottom">
                 <Info it={a} other={b} side="left" />
                 <div className="cmp-actions">
-                    <button className="cmp-btn" disabled={busy} onClick={() => keep(a, b)} title="Правый — в корзину">
+                    <button className="cmp-btn" disabled={busy} onClick={() => keep(a, b)} title={`Правый — ${dropWord}`}>
                         <i className="bi bi-arrow-left" /> Оставить левый
                     </button>
                     <button className="cmp-btn ghost" onClick={close}>Оставить оба</button>
-                    <button className="cmp-btn" disabled={busy} onClick={() => keep(b, a)} title="Левый — в корзину">
+                    <button className="cmp-btn" disabled={busy} onClick={() => keep(b, a)} title={`Левый — ${dropWord}`}>
                         Оставить правый <i className="bi bi-arrow-right" />
                     </button>
                 </div>

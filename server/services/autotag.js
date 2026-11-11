@@ -5,6 +5,7 @@ const { app, net } = require('electron');
 const { Item } = require('../models/associations');
 const { withTagNames } = require('./itemTags');
 const { itemsPath } = require('./importService');
+const { addOutput } = require('./onnxPatch');
 
 /**
  * Tag suggestions from a local image tagger (WD ViT Tagger v3, ONNX, runs offline
@@ -24,6 +25,8 @@ const MODEL = {
     size: 448,
 };
 const DEFAULTS = { general: 0.35, character: 0.85 };
+// Pooled image features (768 floats) right before the tag head of the WD ViT tagger.
+const EMBEDDING_OUTPUT = '/core_model/ReduceMean_output_0';
 
 let modelDir = null;
 const dir = () => modelDir || path.join(app.getPath('userData'), 'models', 'wd-vit-tagger-v3');
@@ -100,9 +103,22 @@ async function ensureSession() {
     if (!installed()) throw new Error('Модель не скачана');
     const ort = require('onnxruntime-node');
     const modelPath = path.join(dir(), 'model.onnx');
+    // The same model also gives a content vector of the picture (services/embeddings):
+    // its pooled features before the tag head are exposed as an extra output.
+    let model = modelPath;
+    try { model = addOutput(fs.readFileSync(modelPath), EMBEDDING_OUTPUT); }
+    catch (e) { console.error('autotag: no embedding output:', e.message); }
+    const create = async (eps) => {
+        try { return await ort.InferenceSession.create(model, { executionProviders: eps }); }
+        catch (e) {
+            if (model === modelPath) throw e;
+            model = modelPath;   // the patched graph was refused: plain tagging still works
+            return ort.InferenceSession.create(model, { executionProviders: eps });
+        }
+    };
     // DirectML (any DX12 GPU on Windows) when it works, CPU otherwise.
-    try { session = await ort.InferenceSession.create(modelPath, { executionProviders: ['dml', 'cpu'] }); }
-    catch { session = await ort.InferenceSession.create(modelPath, { executionProviders: ['cpu'] }); }
+    try { session = await create(['dml', 'cpu']); }
+    catch { session = await create(['cpu']); }
     tags = fs.readFileSync(path.join(dir(), 'selected_tags.csv'), 'utf8')
         .split(/\r?\n/).slice(1).filter(Boolean)
         .map(line => { const [, name, category] = line.split(','); return { name: name.trim(), category: Number(category) }; });
@@ -131,8 +147,8 @@ async function tagFile(file, settings = getSettings()) {
     const s = await ensureSession();
     const ort = require('onnxruntime-node');
     const input = new ort.Tensor('float32', await toInput(file), [1, MODEL.size, MODEL.size, 3]);
-    const out = await s.run({ [s.inputNames[0]]: input });
-    const probs = out[s.outputNames[0]].data;
+    const out = await s.run({ [s.inputNames[0]]: input }, [TAGS_OUTPUT(s)]);
+    const probs = out[TAGS_OUTPUT(s)].data;
     const res = [];
     tags.forEach((t, i) => {
         const p = probs[i];
@@ -140,6 +156,26 @@ async function tagFile(file, settings = getSettings()) {
         else if (t.category === 4 && p >= settings.character) res.push({ name: t.name, score: p, category: 'character' });
     });
     return res.sort((a, b) => b.score - a.score);
+}
+
+const TAGS_OUTPUT = (s) => s.outputNames.find(n => n !== EMBEDDING_OUTPUT);
+
+/**
+ * Content vector of an image file: Float32Array(768), unit length. Pictures of the
+ * same thing — a crop, a mirror, another edit of one art — point the same way.
+ */
+async function embedFile(file) {
+    const s = await ensureSession();
+    if (!s.outputNames.includes(EMBEDDING_OUTPUT)) throw new Error('Модель не отдаёт вектор картинки');
+    const ort = require('onnxruntime-node');
+    const input = new ort.Tensor('float32', await toInput(file), [1, MODEL.size, MODEL.size, 3]);
+    const out = await s.run({ [s.inputNames[0]]: input }, [EMBEDDING_OUTPUT]);
+    const v = Float32Array.from(out[EMBEDDING_OUTPUT].data);
+    let n = 0;
+    for (let i = 0; i < v.length; i++) n += v[i] * v[i];
+    n = Math.sqrt(n) || 1;
+    for (let i = 0; i < v.length; i++) v[i] /= n;
+    return v;
 }
 
 // The picture of a library item the tagger should look at: display.jpg (HEIC),
@@ -175,4 +211,4 @@ async function suggest(ids, onProgress) {
     return out;
 }
 
-module.exports = { status, downloadModel, removeModel, getSettings, saveSettings, suggest, tagFile, setModelDir, MODEL };
+module.exports = { status, installed, downloadModel, removeModel, getSettings, saveSettings, suggest, tagFile, embedFile, imageOf, setModelDir, MODEL };
