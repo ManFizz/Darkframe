@@ -2,7 +2,6 @@
 if (require('path').resolve(process.cwd()) !== __dirname) process.chdir(__dirname);
 
 const { app, BrowserWindow, session } = require('electron');
-const { backupDatabase } = require('./server/backup');
 const { setupIpcHandlers } = require('./server/ipcManager');
 const { protocol } = require('electron');
 const { fileResponse } = require('./server/fileResponse');
@@ -277,7 +276,7 @@ app.whenReady().then(async () => {
 
     await initDatabase();
 
-    if (!SANDBOX) backupDatabase();
+    if (!SANDBOX) require('./server/backup').scheduleBackups();
 
     setupContentSecurityPolicy();
     setupRequestHeaders();
