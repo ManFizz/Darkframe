@@ -84,7 +84,7 @@ const ContextMenu = ({ x, y, node, onClose, onRename, onDelete, onCreateChild })
 const CollectionNode = ({ node, selectedId, onSelect, onRename, onDelete,
                             onCreateChild, onDropMedia, onDropCollection,
                             draggedIdRef, collapsed, onToggleCollapse, depth = 0,
-                            targetNodeId = null, onConfirmCreate }) => {
+                            targetNodeId = null, onConfirmCreate, onCancelCreate }) => {
     const isOpen = !collapsed.has(node.id);
     const [isRenaming, setIsRenaming]   = useState(false);
     const [renameValue, setRenameValue] = useState('');
@@ -248,7 +248,7 @@ const CollectionNode = ({ node, selectedId, onSelect, onRename, onDelete,
                     parentId={node.id}
                     depth={depth}
                     onConfirm={(name) => onConfirmCreate(name, node.id)}
-                    onCancel={() => setCreating(null)}
+                    onCancel={onCancelCreate}
                     placeholder="Вложенная коллекция..."
                 />
             )}
@@ -272,6 +272,7 @@ const CollectionNode = ({ node, selectedId, onSelect, onRename, onDelete,
                             depth={depth + 1}
                             targetNodeId={targetNodeId}
                             onConfirmCreate={onConfirmCreate}
+                            onCancelCreate={onCancelCreate}
                         />
                     ))}
                 </div>
@@ -549,6 +550,7 @@ const CollectionTree = ({ selectedId, onSelect, onMediaMoved, onFilesTrashed }) 
                             onToggleCollapse={handleToggleCollapse}
                             targetNodeId={creating?.targetNodeId ?? null}
                             onConfirmCreate={handleCreate}
+                            onCancelCreate={() => setCreating(null)}
                         />
                     ))}
                     {creating && creating.isTopLevel && (

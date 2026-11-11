@@ -16,7 +16,7 @@ import LibraryView from "./React/Library/LibraryView";
 import ModelsView from './React/Models/ModelsView';
 import {SOURCE_TYPES} from "./Constants";
 
-import {AppController, galleryReducer, initialState} from "@controllers/AppInitializerController";
+import {AppController, galleryReducer, getNextViewType, initialState} from "@controllers/AppInitializerController";
 import Notifications from "./React/Helpers/Notifications";
 import HotkeysHelp from "./React/Helpers/HotkeysHelp";
 
