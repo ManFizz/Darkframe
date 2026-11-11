@@ -275,6 +275,20 @@ export const libraryRegistryApi = {
     switch:      (id)                     => invoke('library:registry:switch', { id }),
 };
 
+// The library as a folder in Explorer (hard links, rebuilt after changes).
+export const explorerMirrorApi = {
+    status:   ()    => invoke('library:registry:mirrorStatus'),
+    set:      (cfg) => invoke('library:registry:mirrorSet', cfg),
+    sync:     ()    => invoke('library:registry:mirrorSync'),
+    open:     ()    => invoke('library:registry:mirrorOpen'),
+    pick:     ()    => invoke('library:registry:mirrorPick'),
+    onStatus: (fn)  => {
+        const handler = (_, p) => fn(p);
+        ipcRenderer.on('library:mirrorStatus', handler);
+        return () => ipcRenderer.removeListener('library:mirrorStatus', handler);
+    },
+};
+
 export const configApi = {
     get:      ()     => invoke('config:get'),
     save:     (data) => invoke('config:save', data),

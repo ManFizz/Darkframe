@@ -1,4 +1,4 @@
-const { ipcMain, dialog } = require('electron');
+const { ipcMain, dialog, shell } = require('electron');
 const registry = require('../libraryRegistry');
 
 function register() {
@@ -26,6 +26,27 @@ function register() {
 
     ipcMain.handle('library:registry:remove', (_, { id, deleteFiles }) => {
         return registry.removeLibrary(id, { deleteFiles });
+    });
+
+    // The library as a folder of hard links for Explorer (services/explorerMirror).
+    const mirror = () => require('../services/explorerMirror');
+    ipcMain.handle('library:registry:mirrorStatus', () => mirror().status());
+    ipcMain.handle('library:registry:mirrorSet', (_, cfg) => mirror().setConfig(cfg || {}));
+    ipcMain.handle('library:registry:mirrorSync', () => mirror().syncAndWait({ full: true }));
+    ipcMain.handle('library:registry:mirrorOpen', async () => {
+        const { path: dir } = mirror().status();
+        const err = await shell.openPath(dir);
+        if (err) throw new Error(err);
+        return true;
+    });
+    ipcMain.handle('library:registry:mirrorPick', async () => {
+        const { path: dir } = mirror().status();
+        const { canceled, filePaths } = await dialog.showOpenDialog({
+            title: 'Папка для библиотеки в проводнике',
+            defaultPath: require('path').dirname(dir),
+            properties: ['openDirectory', 'createDirectory'],
+        });
+        return canceled || !filePaths.length ? null : filePaths[0];
     });
 
     // Switching happens in place: the main process re-opens the database (see

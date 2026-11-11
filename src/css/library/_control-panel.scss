@@ -548,6 +548,10 @@
 .wf-foot { display: flex; align-items: center; gap: 8px; }
 .wf-spacer { flex: 1; }
 
+// Explorer folder of the library
+.em-stats { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: .85rem; opacity: .9; }
+.em-note { font-size: .78rem; opacity: .65; max-width: 60ch; }
+
 .at-card {
   display: flex;
   align-items: center;

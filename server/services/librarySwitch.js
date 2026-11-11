@@ -19,6 +19,8 @@ async function prepareDatabase() {
     await require('../favoritesCollection').ensureFavoritesCollection();
     // Background: content hashes for items imported before hashing existed.
     require('./importService').hashExistingItems();
+    // The Explorer folder of this library: checked in full a bit after opening it.
+    require('./explorerMirror').schedule({ full: true, delay: 8000 });
 }
 
 function resetCaches() {

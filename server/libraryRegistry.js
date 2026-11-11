@@ -132,7 +132,19 @@ function renameLibrary(id, newName) {
     return true;
 }
 
+// Explorer mirror settings of a library ({ enabled, path }), see services/explorerMirror.
+function setMirror(id, mirror) {
+    const reg = load();
+    const lib = reg.libraries.find(l => l.id === id);
+    if (!lib) return false;
+    if (mirror) lib.mirror = { enabled: !!mirror.enabled, path: mirror.path || '' };
+    else delete lib.mirror;
+    save();
+    return true;
+}
+
 module.exports = {
+    setMirror,
     getActive,
     listLibraries,
     setActive,

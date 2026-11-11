@@ -32,6 +32,8 @@ function setupIpcHandlers() {
 	remoteController.register();
 	// Push item changes (counts, API imports) to the renderer.
 	installItemHooks();
+	// Rebuild the Explorer folder of the library after changes.
+	require('./services/explorerMirror').installHooks();
 }
 
 module.exports = { setupIpcHandlers };
