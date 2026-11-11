@@ -35,6 +35,8 @@ const SANDBOX = SMOKE || process.env.DARKFRAME_SANDBOX === '1';
 // A second launch hands over to the running instance (it owns the API port and the tray).
 const primary = SANDBOX || app.requestSingleInstanceLock();
 if (!primary) app.quit();
+// The log file (userData/logs): errors of both processes, crashes. Not in a smoke check.
+if (primary && !SMOKE) require('./server/logger').install();
 
 // --hidden (autostart): live in the tray, create the window on first open.
 const START_HIDDEN = !SMOKE && process.argv.includes('--hidden');

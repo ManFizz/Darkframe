@@ -29,6 +29,7 @@ import LibraryService from '@services/LibraryService';
 import ImportActivity from './React/Library/Import/ImportActivity';
 import BootOverlay from './React/Helpers/BootOverlay';
 import CompareView from './React/Compare/CompareView';
+import ErrorBoundary, {installGlobalErrorLog} from './React/ErrorBoundary';
 import CommandPalette from './React/Helpers/CommandPalette';
 import MangaReader from './React/Manga/MangaReader';
 import PageEditor from './React/Manga/PageEditor';
@@ -228,6 +229,8 @@ const Main = () => {
         return () => document.removeEventListener('keydown', onKey);
     }, [isBooru, state.modalFileId, selection]);
 
+    const viewName = isLibrary ? 'Библиотека' : isModels ? 'Модели' : isFolder ? 'Папки' : isManga ? 'Манга' : 'Галерея';
+
     return (
         <GalleryContext.Provider value={contextValue}>
             <LibraryContext.Provider value={{
@@ -243,27 +246,30 @@ const Main = () => {
                 <HotkeysHelp />
                 <ImportActivity />
                 <BootOverlay />
-                <CompareView />
+                <ErrorBoundary name="Сравнение" compact><CompareView /></ErrorBoundary>
                 <DropToCollection />
-                <CommandPalette />
-                <MangaReader />
-                <PageEditor />
+                <ErrorBoundary name="Командная строка" compact><CommandPalette /></ErrorBoundary>
+                <ErrorBoundary name="Читалка" compact><MangaReader /></ErrorBoundary>
+                <ErrorBoundary name="Редактор страниц" compact><PageEditor /></ErrorBoundary>
                 <MangaDownloadsWatcher />
-                <NavBar setLibraryItems={setLibraryItems} />
+                <ErrorBoundary name="Верхняя панель" compact><NavBar setLibraryItems={setLibraryItems} /></ErrorBoundary>
 
                 {isGeneric && (
+                    <ErrorBoundary name="Просмотр" compact resetKey={state.modalFileId}>
                     <Modal
                         fileId={state.modalFileId}
                         modalUpdater={contextValue.setModalFile}
                         mainArray={visibleMain}
                         displayFiles={visibleDisplay}
                     />
+                    </ErrorBoundary>
                 )}
 
                 <div className="wrapper d-flex align-items-stretch main-split overflow-auto">
                     {isGeneric && <SideBar currentSource={state.currentSource} />}
 
                     <div className="container-fluid p-0">
+                        <ErrorBoundary name={viewName} resetKey={viewName}>
                         {isLibrary ? (
                             <LibraryView />
                         ) : isModels ? (
@@ -290,6 +296,7 @@ const Main = () => {
                                 onDragPost={isBooru ? (f, e) => startPostDrag(e, selection.isSelected(f.uniqueId) ? selection.selectedItems : [f]) : undefined}
                             />
                         )}
+                        </ErrorBoundary>
                     </div>
 
                     {hasSelection && (
@@ -318,5 +325,6 @@ const Main = () => {
     );
 };
 
+installGlobalErrorLog();
 const root = ReactDOM.createRoot(document.getElementById('root'));
-root.render(<Main />);
+root.render(<ErrorBoundary name="Darkframe"><Main /></ErrorBoundary>);

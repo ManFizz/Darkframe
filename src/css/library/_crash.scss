@@ -1,0 +1,41 @@
+// ErrorBoundary: what a crashed part of the window shows instead of itself.
+.df-crash {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-width: 640px;
+  margin: 48px auto;
+  padding: 20px 22px;
+  border: 1px solid var(--df-glass-border);
+  border-radius: 12px;
+  background: var(--df-glass);
+  color: var(--bs-body-color);
+}
+.df-crash-compact {
+  margin: 8px;
+  padding: 10px 12px;
+  gap: 6px;
+  font-size: 0.85rem;
+}
+.df-crash-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  i { color: var(--bs-danger); }
+}
+.df-crash-message { color: var(--df-text-dim); word-break: break-word; }
+.df-crash-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.df-crash-details {
+  font-size: 0.8rem;
+  color: var(--df-text-dim);
+  pre {
+    max-height: 240px;
+    overflow: auto;
+    margin: 6px 0 0;
+    padding: 8px;
+    border-radius: 6px;
+    background: var(--df-code-bg);
+    white-space: pre-wrap;
+  }
+}
