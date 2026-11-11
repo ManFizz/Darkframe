@@ -18,7 +18,7 @@ test('lines carry time, level and the error stack', async () => {
     await flush();
     const text = read();
     assert.match(text, /^\d{4}-\d\d-\d\dT[\d:.]+Z ERROR failed: Error: boom\n\s+at /m);
-    assert.match(text, /VIEW  \[Библиотека\]\nrender failed\n\n {4}at LibraryView/);
+    assert.match(text, /VIEW {2}\[Библиотека\]\nrender failed\n\n {4}at LibraryView/);
 });
 
 test('a report from the window is capped', async () => {

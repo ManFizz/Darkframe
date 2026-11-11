@@ -15,7 +15,6 @@ const { fileResponse } = require('./server/fileResponse');
 const path = require('path');
 const fs = require('fs');
 const { itemsPath } = require('./server/services/importService');
-const { generateHeifDisplay } = require('./server/services/thumbService');
 const mediaCache = require('./server/mediaCache');
 const { startApiServer, stopApiServer } = require('./server/apiServer');
 

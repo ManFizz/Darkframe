@@ -1,5 +1,4 @@
 import {useCallback, useEffect, useRef, useState} from "react";
-import {SOURCE_TYPES} from "@/Constants";
 import Settings from "@data/settings";
 import {BOORU_TYPES, CanMoreMedia, LoadMoreMedia} from "@modules/r34/R34Controller";
 

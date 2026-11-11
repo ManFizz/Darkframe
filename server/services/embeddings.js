@@ -1,6 +1,6 @@
-const { Op, QueryTypes } = require('sequelize');
+const { QueryTypes } = require('sequelize');
 const sequelize = require('../database');
-const { Item } = require('../models/associations');
+require('../models/associations');
 const autotag = require('./autotag');
 const { linkGroups, groupPairs, popcount32 } = require('./phash');
 const { runJob, detailGroups, imageFileFor } = require('./similarity');

@@ -38,7 +38,7 @@ const CONTENT_TYPE_EXT = {
 };
 
 function parseFile(jsonPath) {
-    const content = fs.readFileSync(jsonPath, 'utf-8').replace(/^﻿/, '');
+    const content = fs.readFileSync(jsonPath, 'utf-8').replace(/^\uFEFF/, '');
     const data = JSON.parse(content);
     if (Array.isArray(data)) return { items: data, defaultCollection: null };
     return {

@@ -1,6 +1,6 @@
 const fs = require('fs');
 const path = require('path');
-const { Item, Tag, ItemTag } = require('../models/associations');
+const { Item, ItemTag } = require('../models/associations');
 const { importFile, itemsPath } = require('./importService');
 const { importFromUrl } = require('./urlImportService');
 const { getFavoritesCollectionId } = require('../favoritesCollection');

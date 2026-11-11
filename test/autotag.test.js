@@ -44,7 +44,7 @@ test('suggestions follow the picture; character tags need the higher threshold',
 
 test('tags the item already has are not suggested again', async () => {
     const id = await solid('red2.png', { r: 240, g: 20, b: 15 });
-    const { Item, ItemTag } = require(S('models', 'associations'));
+    const { ItemTag } = require(S('models', 'associations'));
     const tag = await importService.ensureTag('red_theme');
     await ItemTag.create({ itemId: id, tagId: tag.id });
     const res = await autotag.suggest([id]);
