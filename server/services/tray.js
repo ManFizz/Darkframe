@@ -135,7 +135,7 @@ function attach(win) {
         win.hide();
         if (!hintShown) {
             hintShown = true;
-            notify('Darkframe продолжает работать в трее');
+            //notify('Darkframe продолжает работать в трее');
         }
     });
     win.on('hide', scheduleFree);
