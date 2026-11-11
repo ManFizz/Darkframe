@@ -149,8 +149,10 @@ async function initDatabase() {
 }
 
 // library://thumb|item|source/<id> → the file inside the item's folder. Served
-// with Range support (fileResponse), so videos can seek.
-function libraryFilePath(url) {
+// with Range support (fileResponse), so videos can seek. Asynchronous throughout:
+// a grid asks for hundreds of these while scrolling, and a synchronous folder read
+// per request held up the main process.
+async function libraryFilePath(url) {
     const type = url.hostname;                          // 'thumb' | 'item' | 'source'
     const id = url.pathname.replace(/^\//, '');         // uuid
 
@@ -161,8 +163,8 @@ function libraryFilePath(url) {
     if (type === 'thumb') return path.join(itemsPath(), id, 'thumb.jpg');
 
     const itemDir = path.join(itemsPath(), id);
-    if (!fs.existsSync(itemDir)) return null;
-    const files = fs.readdirSync(itemDir);
+    let files;
+    try { files = await fs.promises.readdir(itemDir); } catch { return null; }
 
     if (type === 'source') {
         // The image editor's starting point: base.* (old cumulative edits kept
@@ -200,9 +202,11 @@ function registerLibraryProtocol() {
                 if (!file) return new Response('not found', { status: 404 });
                 return fileResponse(file, request.headers.get('range'));
             }
-            const filePath = libraryFilePath(url);
-            if (!filePath || !fs.existsSync(filePath)) {
-                console.error('[Protocol] File not found:', filePath);
+            const filePath = await libraryFilePath(url);
+            const exists = filePath && await fs.promises.access(filePath).then(() => true, () => false);
+            if (!exists) {
+                // Not an error worth the log file: a thumbnail not made yet, an item just deleted.
+                console.log('[Protocol] File not found:', filePath);
                 return new Response('not found', { status: 404 });
             }
             return fileResponse(filePath, request.headers.get('range'));
