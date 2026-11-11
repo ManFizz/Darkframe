@@ -1,6 +1,6 @@
 import {useEffect, useState} from 'react';
 import {SearchMedia, getSearchStatus, subscribeSearchStatus, currentR34Source} from './R34Controller';
-import {AppController} from '@controllers/AppInitializerController';
+import {openModal} from '@controllers/AppInitializerController';
 
 // Structured booru query shared by the top search bar and the sidebar:
 //   tags     — ['cat', '-dog'] ("-" = exclude)
@@ -118,7 +118,7 @@ export async function runSearch(patch, { openRemoteId } = {}) {
     const posts = await SearchMedia(buildQueryString());
     if (openRemoteId && posts) {
         const hit = posts.find(p => String(p.remoteId) === String(openRemoteId));
-        if (hit) AppController.openModal?.(hit);
+        if (hit) openModal(hit);
     }
     return posts;
 }

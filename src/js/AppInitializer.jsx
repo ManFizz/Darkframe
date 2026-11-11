@@ -1,4 +1,4 @@
-import React, {createContext, useCallback, useEffect, useMemo, useReducer, useRef, useState} from 'react';
+import React, {createContext, useEffect, useMemo, useReducer, useRef, useState} from 'react';
 import ReactDOM from 'react-dom/client';
 
 import NavBar from "./React/PageBuilders/NavBar.jsx";
@@ -6,7 +6,6 @@ import Modal from "./React/Modal/Modal.jsx";
 import SideBar from "./React/PageBuilders/SideBar.jsx";
 import Gallery from "./React/PageBuilders/Gallery";
 import CustomPagination from "./React/Helpers/CustomPagination";
-import usePagination from "./Hooks/gallery/usePagination";
 
 import {InitDatabaseData} from "./BackendConnect";
 import ModuleRegistry from './ModuleRegistry';
@@ -16,7 +15,7 @@ import LibraryView from "./React/Library/LibraryView";
 import ModelsView from './React/Models/ModelsView';
 import {SOURCE_TYPES} from "./Constants";
 
-import {AppController, galleryReducer, getNextViewType, initialState} from "@controllers/AppInitializerController";
+import {bindGallery, galleryReducer, getNextViewType, initialState} from "@controllers/AppInitializerController";
 import Notifications from "./React/Helpers/Notifications";
 import HotkeysHelp from "./React/Helpers/HotkeysHelp";
 
@@ -36,19 +35,10 @@ import PageEditor from './React/Manga/PageEditor';
 import FolderView from './modules/folder/FolderView';
 import MangaView from './modules/manga/MangaView';
 import {MangaDownloadsWatcher} from './modules/manga/useMangaDownloads';
-import {useBooruQuery, useSearchStatus} from './modules/r34/booruQuery';
-import Settings from '@data/settings';
-import {blockedBy, setHiddenCount, useBlacklist} from './modules/r34/blacklist';
-import {setViewedHiddenCount, useHideViewed, useViewedKeys, viewedKeyOf} from './modules/r34/hideViewed';
-import {useLibraryLinks} from './modules/r34/libraryLinks';
 import BooruBulkBar from './modules/r34/BooruBulkBar';
+import useBooruFeed from './modules/r34/useBooruFeed';
+import {CanMoreMedia} from './modules/r34/R34Controller';
 import DropToCollection, {startPostDrag} from './React/Library/Collection/DropToCollection';
-import useSelection from './Hooks/gallery/useSelection';
-import {BOORU_TYPES, CanMoreMedia, LoadMoreMedia} from './modules/r34/R34Controller';
-import {useViewPref} from '@services/viewPrefs';
-import {matches} from '@services/keymap';
-
-const AUTOFILL = 15;   // pages fetched in a row to fill the shown pages when posts are hidden
 
 // Colour mode + accent before the first paint.
 initTheme();
@@ -120,16 +110,13 @@ const Main = () => {
         state.safeMode,
     ]);
 
+    // Modules outside React (booru controllers) reach the gallery through this; they
+    // read the current state, not the one of the first render.
+    const stateRef = useRef(state);
+    stateRef.current = state;
+
     useEffect(() => {
-        AppController.setGallery = contextValue.setMainArray;
-        AppController.addToGallery = contextValue.addToGallery;
-
-        AppController.getGallery = () => state.mainArray;
-        AppController.getCurrentSource = () => state.currentSource;
-
-        AppController.setTypeView = contextValue.setTypeView;
-        AppController.updateGalleryFile = contextValue.updateFile;
-        AppController.openModal = contextValue.setModalFile;
+        bindGallery({ dispatch, getState: () => stateRef.current });
 
         InitDatabaseData();
 
@@ -147,87 +134,12 @@ const Main = () => {
     // Library, Folders and Manga are self-contained views (own sidebar, grid and
     // viewer); the booru sources share the generic gallery + pagination below.
     const isGeneric = !isLibrary && !isModels && !isFolder && !isManga;
-    const booruView = useBooruQuery().view;   // 'saved' page has no pagination
-    const isBooru = BOORU_TYPES.includes(state.currentSource);
-    const [infinite] = useViewPref('booruInfinite');
-
-    // Blacklisted posts are dropped from what the grid and the viewer see (unless
-    // "show hidden" is on — then they stay, marked).
-    const { list: blacklist, showHidden } = useBlacklist(state.currentSource);
-    const hiding = isBooru && blacklist.length > 0;
-    // Posts already opened in the viewer, when "hide viewed" is on for this source.
-    // While the viewer is open the list stays as it was (see useViewedKeys).
-    const { on: hideViewedOn } = useHideViewed(state.currentSource);
-    const hidingViewed = isBooru && hideViewedOn;
-    const viewed = useViewedKeys(state.mainArray, hidingViewed, state.modalFileId !== null);
-    const isViewed = useCallback((f) => viewed.has(viewedKeyOf(f)), [viewed]);
-    const keep = useCallback((f) => !(hiding && !showHidden && blockedBy(f, blacklist)) && !(hidingViewed && isViewed(f)),
-        [hiding, showHidden, blacklist, hidingViewed, isViewed]);
-    const filtering = (hiding && !showHidden) || hidingViewed;
-    const visibleMain = useMemo(
-        () => (filtering ? state.mainArray.filter(keep) : state.mainArray),
-        [state.mainArray, filtering, keep]);
-    const visibleDisplay = useMemo(
-        () => (filtering ? state.displayArray.filter(keep) : state.displayArray),
-        [state.displayArray, filtering, keep]);
-    const hiddenCount = useMemo(
-        () => (hiding ? state.mainArray.filter(f => blockedBy(f, blacklist)).length : 0),
-        [state.mainArray, hiding, blacklist]);
-    useEffect(() => setHiddenCount(hiddenCount), [hiddenCount]);
-    const viewedHidden = useMemo(
-        () => (hidingViewed ? state.mainArray.filter(isViewed).length : 0),
-        [state.mainArray, hidingViewed, isViewed]);
-    useEffect(() => setViewedHiddenCount(viewedHidden), [viewedHidden]);
-
-    // Pages are cut from what's left after hiding.
-    const { currentPage, maxPage, pages, goToPage, loadNextPage } = usePagination({
-        mainArray: visibleMain,
-        displayArray: state.displayArray,
-        currentSource: state.currentSource,
-        updateDisplayArray: contextValue.setDisplayArray,
-        modalFile: state.modalFileId,
-        resetKey: state.mainArray[0]?.uniqueId,
-    });
-
-    // Too few posts left to fill the shown pages: fetch more from the site until they
-    // are full (at most AUTOFILL pages per search / per shown page, in case nearly
-    // everything is hidden — whether a post is viewed is known only after it loads).
-    const searchStatus = useSearchStatus();
-    const autoFill = useRef(0);
-    const need = maxPage * Settings.MaxThumbsPerPage;
-    useEffect(() => { autoFill.current = 0; }, [state.mainArray[0]?.uniqueId, need]);
-    useEffect(() => {
-        if (!isBooru || !filtering || booruView !== 'search') return;
-        if (searchStatus.loading || state.modalFileId !== null || !state.mainArray.length) return;
-        if (visibleMain.length >= need) return;
-        if (!CanMoreMedia() || autoFill.current >= AUTOFILL) return;
-        autoFill.current += 1;
-        LoadMoreMedia();
-    }, [isBooru, filtering, booruView, searchStatus.loading, state.modalFileId, state.mainArray.length, visibleMain.length, need]);
-
-    const inLibrary = useLibraryLinks();
-
-    // Booru selection: ctrl / shift click or the checkbox; a plain click opens the viewer.
-    const selection = useSelection(visibleDisplay);
-    const { clear: clearSelection } = selection;
-    useEffect(() => { clearSelection(); }, [state.currentSource, state.mainArray[0]?.uniqueId, clearSelection]);
-    const hasSelection = isBooru && selection.selected.size > 0;
-
-    const openOrSelect = useCallback((file, e) => {
-        if (isBooru && (e?.ctrlKey || e?.metaKey || e?.shiftKey)) selection.handleSelect(file.uniqueId, e);
-        else contextValue.setModalFile(file);
-    }, [isBooru, selection.handleSelect, contextValue]);
-
-    useEffect(() => {
-        if (!isBooru) return;
-        const onKey = (e) => {
-            if (state.modalFileId !== null || e.target.closest?.('input, textarea, [contenteditable="true"]')) return;
-            if (e.key === 'Escape' && selection.selected.size) selection.clear();
-            if (matches(e, 'common.selectAll')) { e.preventDefault(); selection.selectAll(); }
-        };
-        document.addEventListener('keydown', onKey);
-        return () => document.removeEventListener('keydown', onKey);
-    }, [isBooru, state.modalFileId, selection]);
+    // Booru sources: hiding (blacklist, viewed), pages, auto-fill, selection.
+    const {
+        isBooru, booruView, infinite, blacklist, hiding, showHidden,
+        visibleMain, visibleDisplay, currentPage, maxPage, pages, goToPage, loadNextPage,
+        inLibrary, selection, hasSelection, openOrSelect,
+    } = useBooruFeed({ state, setDisplayArray: contextValue.setDisplayArray, setModalFile: contextValue.setModalFile });
 
     const viewName = isLibrary ? 'Библиотека' : isModels ? 'Модели' : isFolder ? 'Папки' : isManga ? 'Манга' : 'Галерея';
 
