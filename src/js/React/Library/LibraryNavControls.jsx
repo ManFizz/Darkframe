@@ -334,7 +334,7 @@ export const LibraryNavSort = ({ ctx }) => {
             <RatingFilter filters={filters} update={update} />
 
             {/* Order: what by, which way, random, groups */}
-            <SortMenu filters={filters} patch={patch} />
+            <SortMenu filters={filters} patch={patch} items={ctx.items} />
 
             <NotificationBell />
         </div>

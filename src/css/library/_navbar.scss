@@ -591,6 +591,23 @@
   border-radius: 6px;
   &:hover { background: var(--df-accent-soft); }
 }
+.sort-menu-setorder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  margin-top: 6px;
+  padding: 6px 10px;
+  border: 1px dashed var(--df-accent);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--df-accent);
+  font-size: 12.5px;
+  font-weight: 600;
+  &:hover:not(:disabled) { background: var(--df-accent-soft); }
+  &:disabled { opacity: 0.6; }
+}
 .sort-menu-options {
   margin-top: 6px;
   padding: 8px 8px 2px;

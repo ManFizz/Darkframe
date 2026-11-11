@@ -1,6 +1,8 @@
 import React, {useEffect, useRef, useState} from 'react';
-import {SORTS, dirLabel, newSeed, sortOf} from '@/shared/librarySort';
+import {SORTS, comparator, dirLabel, newSeed, sortOf} from '@/shared/librarySort';
 import {useViewPref} from '@services/viewPrefs';
+import {libraryApi} from '@/Infrastructure/Ipc';
+import {notify} from '@services/NotificationService';
 
 /**
  * The library gallery's order: what to sort by (grouped list with icons), which
@@ -19,7 +21,9 @@ const groups = SORTS.reduce((acc, s) => {
     return acc;
 }, {});
 
-const SortMenu = ({ filters, patch }) => {
+const isFolder = (f) => !!(f.isCollection || f._meta?.isCollection);
+
+const SortMenu = ({ filters, patch, items = [] }) => {
     const [open, setOpen] = useState(false);
     const ref = useRef(null);
     const cur = sortOf(filters.sortBy);
@@ -45,6 +49,30 @@ const SortMenu = ({ filters, patch }) => {
         else patch({ sortBy: s.id, order: s.def ?? 1 });
     };
     const shuffle = () => patch({ sortBy: 'random', seed: newSeed() });
+
+    // "Set as my order": the current sort becomes the custom order of every item here
+    // (also those hidden by filters, placed by the same sort), and the view switches
+    // to it — the same picture, now draggable.
+    const isCustom = cur.id === 'order' && filters.order === 1;
+    const [saving, setSaving] = useState(false);
+    const setAsOrder = async () => {
+        const list = items.filter(f => !isFolder(f)).sort(comparator(filters.sortBy, filters.order, filters.seed));
+        if (!list.length || saving) return;
+        if (!confirm(`Запомнить текущую сортировку как свой порядок для ${list.length} медиа?
+Прежний свой порядок (перетаскиванием) заменится.`)) return;
+        setSaving(true);
+        try {
+            list.forEach((f, i) => { f.order = i; });
+            patch({ sortBy: 'order', order: 1 });
+            setOpen(false);
+            await libraryApi.reorderItems(list.map(f => f.id));
+            notify({ message: `Порядок запомнен: ${list.length}`, type: 'success' });
+        } catch (e) {
+            notify({ message: `Не удалось сохранить порядок: ${e.message}`, type: 'danger' });
+        } finally {
+            setSaving(false);
+        }
+    };
     const flip = () => patch({ order: -filters.order });
 
     return (
@@ -98,6 +126,12 @@ const SortMenu = ({ filters, patch }) => {
                             })}
                         </div>
                     ))}
+                    {!isCustom && (
+                        <button className="sort-menu-setorder" onClick={setAsOrder} disabled={saving}
+                                title="Медиа запомнят позиции из текущей сортировки, и включится «Свой порядок» — дальше можно двигать перетаскиванием">
+                            <i className="bi bi-pin-angle" /> Установить как свой порядок
+                        </button>
+                    )}
                     <div className="sort-menu-options">
                         {dividers && (
                             <label>

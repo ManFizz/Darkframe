@@ -233,6 +233,7 @@ const Main = () => {
             <LibraryContext.Provider value={{
                 ...libraryFilter,
                 total: libraryItems.length,
+                items: libraryItems,   // everything loaded for the current view, before filters
                 setLibraryItems,
                 statsVersion,
                 refreshStats,
