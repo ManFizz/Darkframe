@@ -41,7 +41,7 @@ function runSmokeCheck(win) {
 
     // Called once loadFile() has resolved. Webpack chunks keep loading after that, so
     // poll until the app has rendered, then give it a moment to surface late errors.
-    (async () => {
+    const waitRendered = async () => {
         let ui = null;
         const deadline = Date.now() + TIMEOUT_MS - SETTLE_MS - 1000;
         while (Date.now() < deadline) {
@@ -50,19 +50,34 @@ function runSmokeCheck(win) {
             await new Promise(r => setTimeout(r, 300));
         }
         await new Promise(r => setTimeout(r, SETTLE_MS));
-        clearTimeout(timer);
-        const rendered = !!(ui?.root && ui.tabs > 0);
-        if (!rendered) errors.push('app UI did not render');
-        // DARKFRAME_SMOKE_SHOT=<file.png>: a picture of the window, to look at styles.
+        return ui;
+    };
+
+    (async () => {
+        let ui = await waitRendered();
+        let rendered = !!(ui?.root && ui.tabs > 0);
+        // DARKFRAME_SMOKE_SHOT=<file.png>: a picture of the window, to look at styles;
+        // DARKFRAME_SMOKE_THEME=light|dark: in that colour mode (set the way the
+        // appearance settings do — services/theme keeps it in localStorage — then reloaded).
         const shot = process.env.DARKFRAME_SMOKE_SHOT;
+        const theme = process.env.DARKFRAME_SMOKE_THEME;
+        if (shot && rendered && theme) {
+            await wc.executeJavaScript(`(() => {
+                const key = 'jsg_theme';
+                let cur = {};
+                try { cur = JSON.parse(localStorage.getItem(key)) || {}; } catch {}
+                localStorage.setItem(key, JSON.stringify({ ...cur, mode: ${JSON.stringify(theme)} }));
+            })()`);
+            wc.reload();
+            await new Promise(r => setTimeout(r, 1000));
+            ui = await waitRendered();
+            rendered = !!(ui?.root && ui.tabs > 0);
+        }
+        clearTimeout(timer);
+        if (!rendered) errors.push('app UI did not render');
         if (shot && rendered) {
-            try {
-                if (process.env.DARKFRAME_SMOKE_THEME) {
-                    await wc.executeJavaScript(`document.querySelectorAll('[data-bs-theme]').forEach(e => e.setAttribute('data-bs-theme', ${JSON.stringify(process.env.DARKFRAME_SMOKE_THEME)}))`);
-                    await new Promise(r => setTimeout(r, 500));
-                }
-                require('fs').writeFileSync(shot, (await wc.capturePage()).toPNG());
-            } catch (e) { errors.push('screenshot: ' + e.message); }
+            try { require('fs').writeFileSync(shot, (await wc.capturePage()).toPNG()); }
+            catch (e) { errors.push('screenshot: ' + e.message); }
         }
         finish({ ok: rendered && errors.length === 0, ui, errors });
     })();
