@@ -15,7 +15,7 @@
       object-fit: cover;
       width: 100%;
       height: 100%;
-      transition: object-fit 0.3s ease-in-out;
+      transition: object-fit var(--df-dur-slow) ease-in-out;
     }
   }
 }
@@ -40,16 +40,16 @@
   flex: 0 0 100%;
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 18px 14px 8px;
+  gap: var(--df-sp-6);
+  padding: var(--df-sp-9) var(--df-sp-7) var(--df-sp-4);
   cursor: pointer;
   user-select: none;
   outline: none;
 
-  &:first-child { padding-top: 8px; }
+  &:first-child { padding-top: var(--df-sp-4); }
 
   &:hover .gallery-divider-label,
-  &:focus-visible .gallery-divider-label { box-shadow: 0 0 0 3px var(--df-accent-soft); }
+  &:focus-visible .gallery-divider-label { box-shadow: var(--df-ring); }
   &:hover .gallery-divider-caret { color: var(--bs-body-color); }
 
   // Folded: dimmed header, caret points right.
@@ -62,9 +62,9 @@
 .gallery-divider-caret {
   flex-shrink: 0;
   margin-right: -4px;
-  font-size: 12px;
+  font-size: var(--df-fs-sm);
   color: var(--bs-secondary);
-  transition: transform 0.18s, color 0.15s;
+  transition: transform var(--df-dur-base), color var(--df-dur-fast);
 }
 
 .gallery-divider-hidden { font-style: italic; }
@@ -72,20 +72,20 @@
 .gallery-divider-label {
   display: inline-flex;
   align-items: baseline;
-  gap: 6px;
+  gap: var(--df-sp-3);
   flex-shrink: 0;
-  padding: 3px 12px;
-  border-radius: 999px;
+  padding: 3px var(--df-sp-6);
+  border-radius: var(--df-r-pill);
   background: var(--df-accent-soft);
   border: 1px solid var(--df-accent-dim);
   color: var(--df-accent);
-  font-size: 13px;
+  font-size: var(--df-fs-md);
   font-weight: 700;
   font-variant-numeric: tabular-nums;
   line-height: 1.4;
 
-  .bi { font-size: 12px; }
-  small { font-size: 10.5px; font-weight: 600; opacity: 0.65; }
+  .bi { font-size: var(--df-fs-sm); }
+  small { font-size: var(--df-fs-xs); font-weight: 600; opacity: 0.65; }
 
   .unrated & {
     background: var(--bs-secondary-bg);
@@ -105,7 +105,7 @@
 
 .gallery-divider-count {
   flex-shrink: 0;
-  font-size: 11.5px;
+  font-size: var(--df-fs-sm);
   color: var(--bs-secondary);
   font-variant-numeric: tabular-nums;
 }

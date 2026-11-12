@@ -2,39 +2,39 @@
 .df-crash {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: var(--df-sp-5);
   max-width: 640px;
   margin: 48px auto;
-  padding: 20px 22px;
+  padding: var(--df-sp-10) var(--df-sp-11);
   border: 1px solid var(--df-glass-border);
-  border-radius: 12px;
+  border-radius: var(--df-r-2xl);
   background: var(--df-glass);
   color: var(--bs-body-color);
 }
 .df-crash-compact {
-  margin: 8px;
-  padding: 10px 12px;
-  gap: 6px;
-  font-size: 0.85rem;
+  margin: var(--df-sp-4);
+  padding: var(--df-sp-5) var(--df-sp-6);
+  gap: var(--df-sp-3);
+  font-size: var(--df-fs-base);
 }
 .df-crash-title {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--df-sp-4);
   font-weight: 600;
   i { color: var(--bs-danger); }
 }
 .df-crash-message { color: var(--df-text-dim); word-break: break-word; }
-.df-crash-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.df-crash-actions { display: flex; gap: var(--df-sp-4); flex-wrap: wrap; }
 .df-crash-details {
-  font-size: 0.8rem;
+  font-size: var(--df-fs-md);
   color: var(--df-text-dim);
   pre {
     max-height: 240px;
     overflow: auto;
-    margin: 6px 0 0;
-    padding: 8px;
-    border-radius: 6px;
+    margin: var(--df-sp-3) 0 0;
+    padding: var(--df-sp-4);
+    border-radius: var(--df-r-md);
     background: var(--df-code-bg);
     white-space: pre-wrap;
   }

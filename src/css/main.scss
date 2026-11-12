@@ -1,4 +1,5 @@
 @use 'variables';
+@use 'tokens';
 
 // The accent is a single source colour: --df-accent (+ its "r, g, b" triple). The
 // runtime theme service overrides both on :root when the user picks another colour;
@@ -15,7 +16,7 @@
 // Bootstrap's own [data-bs-theme] blocks, which load earlier) pick it up.
 :root,
 [data-bs-theme] {
-  --df-accent-dim: color-mix(in srgb, var(--df-accent) 72%, #000);
+  --df-accent-dim: color-mix(in srgb, var(--df-accent) 72%, var(--df-black));
   --df-accent-soft: rgba(var(--df-accent-rgb), 0.14);
   --df-accent-glow: rgba(var(--df-accent-rgb), 0.45);
 
@@ -23,60 +24,60 @@
   --bs-primary-rgb: var(--df-accent-rgb);
   --bs-link-color: var(--df-accent);
   --bs-link-color-rgb: var(--df-accent-rgb);
-  --bs-link-hover-color: color-mix(in srgb, var(--df-accent) 78%, #fff);
+  --bs-link-hover-color: color-mix(in srgb, var(--df-accent) 78%, var(--df-white));
 }
 
 :root,
 [data-bs-theme="dark"] {
-  --bs-primary-bg-subtle: color-mix(in srgb, var(--df-accent) 16%, #141019);
-  --bs-primary-border-subtle: color-mix(in srgb, var(--df-accent) 42%, #141019);
-  --bs-primary-text-emphasis: color-mix(in srgb, var(--df-accent) 62%, #fff);
+  --bs-primary-bg-subtle: color-mix(in srgb, var(--df-accent) 16%, var(--df-ink-900));
+  --bs-primary-border-subtle: color-mix(in srgb, var(--df-accent) 42%, var(--df-ink-900));
+  --bs-primary-text-emphasis: color-mix(in srgb, var(--df-accent) 62%, var(--df-white));
 
   // Glass surfaces (top bar, popovers, player, panels).
-  --df-glass: rgba(255, 255, 255, 0.035);
-  --df-glass-strong: rgba(20, 16, 28, 0.72);
-  --df-glass-border: #322a44;
-  --df-text-dim: #b9b3c6;
-  --df-code-bg: rgba(0, 0, 0, 0.35);
+  --df-glass: rgba(var(--df-white-rgb), 0.035);
+  --df-glass-strong: rgba(var(--df-ink-900-rgb), 0.72);
+  --df-glass-border: var(--df-ink-600);
+  --df-text-dim: var(--df-grey-200);
+  --df-code-bg: rgba(var(--df-black-rgb), 0.35);
 
   // Top bar / inputs on glass.
-  --df-nav-bg: linear-gradient(160deg, rgba(23, 19, 31, 0.9), rgba(16, 14, 21, 0.82));
-  --df-field: rgba(0, 0, 0, 0.3);          // search fields on the top bar
-  --df-island: rgba(0, 0, 0, 0.28);        // grouped action buttons
-  --df-hover: rgba(255, 255, 255, 0.06);   // hover wash on glass
-  --df-shadow: rgba(0, 0, 0, 0.45);
+  --df-nav-bg: linear-gradient(160deg, rgba(var(--df-ink-900-rgb), 0.9), rgba(var(--df-ink-900-rgb), 0.82));
+  --df-field: rgba(var(--df-black-rgb), 0.3);          // search fields on the top bar
+  --df-island: rgba(var(--df-black-rgb), 0.28);        // grouped action buttons
+  --df-hover: rgba(var(--df-white-rgb), 0.06);   // hover wash on glass
+  --df-shadow: rgba(var(--df-black-rgb), 0.45);
 }
 
 [data-bs-theme="light"] {
-  --bs-primary-bg-subtle: color-mix(in srgb, var(--df-accent) 12%, #fff);
-  --bs-primary-border-subtle: color-mix(in srgb, var(--df-accent) 45%, #fff);
-  --bs-primary-text-emphasis: color-mix(in srgb, var(--df-accent) 72%, #000);
+  --bs-primary-bg-subtle: color-mix(in srgb, var(--df-accent) 12%, var(--df-white));
+  --bs-primary-border-subtle: color-mix(in srgb, var(--df-accent) 45%, var(--df-white));
+  --bs-primary-text-emphasis: color-mix(in srgb, var(--df-accent) 72%, var(--df-black));
 
-  --df-glass: rgba(0, 0, 0, 0.03);
-  --df-glass-strong: rgba(255, 255, 255, 0.88);
-  --df-glass-border: #ddd6ea;
-  --df-text-dim: #5d566b;
-  --df-code-bg: rgba(0, 0, 0, 0.06);
+  --df-glass: rgba(var(--df-black-rgb), 0.03);
+  --df-glass-strong: rgba(var(--df-white-rgb), 0.88);
+  --df-glass-border: var(--df-grey-100);
+  --df-text-dim: var(--df-grey-500);
+  --df-code-bg: rgba(var(--df-black-rgb), 0.06);
 
-  --df-nav-bg: linear-gradient(160deg, rgba(255, 255, 255, 0.94), rgba(246, 242, 252, 0.92));
-  --df-field: rgba(0, 0, 0, 0.04);
-  --df-island: rgba(0, 0, 0, 0.035);
-  --df-hover: rgba(0, 0, 0, 0.05);
-  --df-shadow: rgba(40, 20, 70, 0.14);
+  --df-nav-bg: linear-gradient(160deg, rgba(var(--df-white-rgb), 0.94), rgba(var(--df-grey-50-rgb), 0.92));
+  --df-field: rgba(var(--df-black-rgb), 0.04);
+  --df-island: rgba(var(--df-black-rgb), 0.035);
+  --df-hover: rgba(var(--df-black-rgb), 0.05);
+  --df-shadow: rgba(var(--df-plum-rgb), 0.14);
 }
 
 // Stock Bootstrap components compile their own blue — re-skin them with the accent.
 .btn-primary {
-  --bs-btn-color: #fff;
+  --bs-btn-color: var(--df-white);
   --bs-btn-bg: var(--df-accent);
   --bs-btn-border-color: var(--df-accent);
-  --bs-btn-hover-color: #fff;
+  --bs-btn-hover-color: var(--df-white);
   --bs-btn-hover-bg: var(--df-accent-dim);
   --bs-btn-hover-border-color: var(--df-accent-dim);
-  --bs-btn-active-color: #fff;
+  --bs-btn-active-color: var(--df-white);
   --bs-btn-active-bg: var(--df-accent-dim);
   --bs-btn-active-border-color: var(--df-accent-dim);
-  --bs-btn-disabled-color: #fff;
+  --bs-btn-disabled-color: var(--df-white);
   --bs-btn-disabled-bg: var(--df-accent);
   --bs-btn-disabled-border-color: var(--df-accent);
   --bs-btn-focus-shadow-rgb: var(--df-accent-rgb);
@@ -84,10 +85,10 @@
 .btn-outline-primary {
   --bs-btn-color: var(--df-accent);
   --bs-btn-border-color: var(--df-accent);
-  --bs-btn-hover-color: #fff;
+  --bs-btn-hover-color: var(--df-white);
   --bs-btn-hover-bg: var(--df-accent);
   --bs-btn-hover-border-color: var(--df-accent);
-  --bs-btn-active-color: #fff;
+  --bs-btn-active-color: var(--df-white);
   --bs-btn-active-bg: var(--df-accent);
   --bs-btn-active-border-color: var(--df-accent);
   --bs-btn-disabled-color: var(--df-accent);
@@ -130,7 +131,7 @@
 #main-container {
   -webkit-transition: all 0.3s;
   -o-transition: all 0.3s;
-  transition: all 0.3s;
+  transition: all var(--df-dur-slow);
 }
 
 body {
@@ -151,7 +152,7 @@ body {
 }
 
 .btn-order svg::before {
-  transition: .2s linear;
+  transition: var(--df-dur-base) linear;
   &.flip{
     transform: rotateX(180deg);
   }
@@ -173,7 +174,7 @@ $tag-colors: (
   }
 }
 // User category "model" (shared/tagTypes.js MODEL_TYPE).
-.tag-type-100 { background-color: #fd7e14; }
+.tag-type-100 { background-color: var(--df-orange); }
 
 .background-overlay {
   position: absolute;
@@ -201,7 +202,7 @@ $tag-colors: (
   p.title {
     color: white;
     text-align: center;
-    font-size: 32px;
+    font-size: var(--df-fs-5xl);
     padding: 0;
     margin: auto;
     filter: drop-shadow(3px 2px 1px black);
@@ -224,17 +225,17 @@ $tag-colors: (
   display: flex;
   align-items: flex-end;
   justify-content: flex-end;
-  gap: 8px;
+  gap: var(--df-sp-4);
   padding: 0 7px 5px 0;
-  transition: .1s linear;
+  transition: var(--df-dur-instant) linear;
   z-index: 50;
 
   i {
-    font-size: 22px;
+    font-size: var(--df-fs-4xl);
     color: white;
     cursor: pointer;
     filter: drop-shadow(1px 1px 1px black);
-    transition: all .15s;
+    transition: all var(--df-dur-fast);
     &:hover {
       color: var(--bs-primary);
       transform: scale(1.2);
@@ -245,7 +246,7 @@ $tag-colors: (
 .overlay svg {
   height: 22px;
   width: auto;
-  margin: 4px;
+  margin: var(--df-sp-2);
 }
 
 .overlay .dropdown-toggle:after {
@@ -277,7 +278,7 @@ $tag-colors: (
 
   // "Append next page" control — visually distinct from the jump buttons.
   .page-append {
-    margin-left: 8px;
+    margin-left: var(--df-sp-4);
 
     .page-link {
       font-weight: 700;

@@ -8,46 +8,46 @@
 .dashboard-body {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: var(--df-sp-8);
 }
 
 // KPI strip
 .dash-kpis {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: 10px;
+  gap: var(--df-sp-5);
 }
 
 .dash-kpi {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 12px 14px;
+  gap: var(--df-sp-6);
+  padding: var(--df-sp-6) var(--df-sp-7);
   border: 1px solid var(--bs-border-color);
-  border-radius: 12px;
+  border-radius: var(--df-r-2xl);
   background: var(--bs-tertiary-bg);
 
   > .bi {
-    font-size: 22px;
+    font-size: var(--df-fs-4xl);
     color: var(--df-accent, var(--bs-primary));
     flex-shrink: 0;
   }
 }
-.dash-kpi-value { font-size: 20px; font-weight: 700; line-height: 1.1; }
-.dash-kpi-label { font-size: 12px; color: var(--bs-secondary); margin-top: 2px; }
-.dash-kpi-hint  { font-size: 11px; color: var(--bs-secondary); opacity: 0.8; margin-top: 1px; }
+.dash-kpi-value { font-size: var(--df-fs-3xl); font-weight: 700; line-height: 1.1; }
+.dash-kpi-label { font-size: var(--df-fs-sm); color: var(--bs-secondary); margin-top: var(--df-sp-1); }
+.dash-kpi-hint  { font-size: var(--df-fs-xs); color: var(--bs-secondary); opacity: 0.8; margin-top: 1px; }
 
 // Card grid
 .dash-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 14px;
+  gap: var(--df-sp-7);
 }
 
 .dash-card {
   border: 1px solid var(--bs-border-color);
-  border-radius: 12px;
-  padding: 14px 16px;
+  border-radius: var(--df-r-2xl);
+  padding: var(--df-sp-7) var(--df-sp-8);
   background: var(--bs-body-bg);
 
   &-wide { grid-column: 1 / -1; }
@@ -56,17 +56,17 @@
     display: flex;
     align-items: baseline;
     justify-content: space-between;
-    gap: 8px;
-    font-size: 13px;
+    gap: var(--df-sp-4);
+    font-size: var(--df-fs-md);
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.5px;
     color: var(--bs-secondary);
-    margin: 0 0 14px;
+    margin: 0 0 var(--df-sp-7);
   }
 }
 .dash-card-note {
-  font-size: 11px;
+  font-size: var(--df-fs-xs);
   font-weight: 500;
   text-transform: none;
   letter-spacing: 0;
@@ -77,35 +77,35 @@
 .dash-typebar {
   display: flex;
   height: 16px;
-  border-radius: 8px;
+  border-radius: var(--df-r-lg);
   overflow: hidden;
   background: var(--bs-tertiary-bg);
 }
-.dash-typebar-seg { transition: width 0.3s ease; }
+.dash-typebar-seg { transition: width var(--df-dur-slow) ease; }
 
 .dash-legend {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px 18px;
-  margin-top: 12px;
+  gap: var(--df-sp-4) var(--df-sp-9);
+  margin-top: var(--df-sp-6);
 }
 .dash-legend-item {
   display: flex;
   align-items: center;
-  gap: 6px;
-  font-size: 13px;
+  gap: var(--df-sp-3);
+  font-size: var(--df-fs-md);
   b { font-weight: 700; }
 }
-.dash-legend-pct { color: var(--bs-secondary); font-size: 12px; }
-.dash-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+.dash-legend-pct { color: var(--bs-secondary); font-size: var(--df-fs-sm); }
+.dash-dot { width: 10px; height: 10px; border-radius: var(--df-r-round); flex-shrink: 0; }
 
 // Vertical bar charts (rating + timeline)
 .dash-bars {
   display: flex;
   align-items: flex-end;
-  gap: 6px;
+  gap: var(--df-sp-3);
   height: 130px;
-  padding-top: 14px;
+  padding-top: var(--df-sp-7);
 }
 .dash-bar-col {
   flex: 1;
@@ -120,22 +120,22 @@
   width: 100%;
   max-width: 28px;
   min-height: 2px;
-  border-radius: 4px 4px 0 0;
+  border-radius: var(--df-r-sm) var(--df-r-sm) 0 0;
   // Rating bars (default): accent gradient. Timeline bars use the flat accent below.
   background: linear-gradient(var(--df-accent), var(--df-accent-dim));
-  transition: height 0.3s ease;
+  transition: height var(--df-dur-slow) ease;
 
   &-accent { background: var(--df-accent, var(--bs-primary)); }
 }
 .dash-bar-val {
-  font-size: 10px;
+  font-size: var(--df-fs-2xs);
   color: var(--bs-secondary);
   font-variant-numeric: tabular-nums;
   margin-bottom: 3px;
   min-height: 12px;
 }
 .dash-bar-label {
-  font-size: 10px;
+  font-size: var(--df-fs-2xs);
   color: var(--bs-secondary);
   margin-top: 5px;
   white-space: nowrap;
@@ -150,35 +150,35 @@
   display: grid;
   grid-template-columns: minmax(80px, 38%) 1fr auto;
   align-items: center;
-  gap: 10px;
-  font-size: 13px;
+  gap: var(--df-sp-5);
+  font-size: var(--df-fs-md);
 }
 .dash-tagrow-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .dash-tagrow-track {
   height: 8px;
-  border-radius: 6px;
+  border-radius: var(--df-r-md);
   background: var(--bs-tertiary-bg);
   overflow: hidden;
 }
 .dash-tagrow-fill {
   display: block;
   height: 100%;
-  border-radius: 6px;
+  border-radius: var(--df-r-md);
   background: var(--df-accent, var(--bs-primary));
 }
 .dash-tagrow-count {
   font-variant-numeric: tabular-nums;
   color: var(--bs-secondary);
-  font-size: 12px;
+  font-size: var(--df-fs-sm);
 }
 
 // Largest files
-.dash-filelist { display: flex; flex-direction: column; gap: 6px; }
+.dash-filelist { display: flex; flex-direction: column; gap: var(--df-sp-3); }
 .dash-filerow {
   display: flex;
   align-items: center;
-  gap: 10px;
-  font-size: 13px;
+  gap: var(--df-sp-5);
+  font-size: var(--df-fs-md);
 
   .bi { color: var(--bs-secondary); flex-shrink: 0; }
 }
