@@ -53,6 +53,17 @@ function runSmokeCheck(win) {
         clearTimeout(timer);
         const rendered = !!(ui?.root && ui.tabs > 0);
         if (!rendered) errors.push('app UI did not render');
+        // DARKFRAME_SMOKE_SHOT=<file.png>: a picture of the window, to look at styles.
+        const shot = process.env.DARKFRAME_SMOKE_SHOT;
+        if (shot && rendered) {
+            try {
+                if (process.env.DARKFRAME_SMOKE_THEME) {
+                    await wc.executeJavaScript(`document.querySelectorAll('[data-bs-theme]').forEach(e => e.setAttribute('data-bs-theme', ${JSON.stringify(process.env.DARKFRAME_SMOKE_THEME)}))`);
+                    await new Promise(r => setTimeout(r, 500));
+                }
+                require('fs').writeFileSync(shot, (await wc.capturePage()).toPNG());
+            } catch (e) { errors.push('screenshot: ' + e.message); }
+        }
         finish({ ok: rendered && errors.length === 0, ui, errors });
     })();
 

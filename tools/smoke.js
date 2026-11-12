@@ -8,6 +8,7 @@
  * project's data/data.db) and can run while the app itself is open.
  *
  * Usage: node tools/smoke.js            (run `npm run bundle` first)
+ *        node tools/smoke.js --shot=ui.png [--theme=light]   also save a picture of the window
  */
 const fs   = require('fs');
 const os   = require('os');
@@ -41,6 +42,9 @@ function run() {
     return new Promise((resolve) => {
         // Electron treats ELECTRON_RUN_AS_NODE as set even when empty — drop it entirely.
         const env = { ...process.env, DARKFRAME_SMOKE: '1' };
+        const arg = (name) => process.argv.find(a => a.startsWith(`--${name}=`))?.slice(name.length + 3);
+        if (arg('shot')) env.DARKFRAME_SMOKE_SHOT = path.resolve(arg('shot'));
+        if (arg('theme')) env.DARKFRAME_SMOKE_THEME = arg('theme');
         delete env.ELECTRON_RUN_AS_NODE;
 
         const child = spawn(electron, ['.', `--user-data-dir=${userData}`], {
