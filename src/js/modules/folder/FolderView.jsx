@@ -74,25 +74,25 @@ const FileTile = React.memo(({ file, onOpen, selected, selecting, onToggle, onDr
              draggable onDragStart={e => onDragStart(file, e)}>
             <button className="ftfile-check" title="Выделить (Shift — диапазон)"
                     onClick={e => { e.stopPropagation(); onToggle(file, e); }}>
-                <i className={`bi ${selected ? 'bi-check-circle-fill' : 'bi-circle'}`} />
+                <i aria-hidden="true" className={`bi ${selected ? 'bi-check-circle-fill' : 'bi-circle'}`} />
             </button>
             <div className={`ftfile-img ${loaded ? 'ready' : ''}`} onMouseEnter={hover.onMouseEnter} onMouseLeave={hover.onMouseLeave}>
                 {hover.overlay}
                 {broken
-                    ? <i className="bi bi-file-earmark-image ftfile-broken" />
+                    ? <i aria-hidden="true" className="bi bi-file-earmark-image ftfile-broken" />
                     : <img src={t.thumbUrl} alt="" loading="lazy" decoding="async" draggable={false}
                            onLoad={() => setLoaded(true)} onError={() => setBroken(true)} />}
-                {file.kind === 'video' && <span className="ftfile-kind"><i className="bi bi-play-fill" /></span>}
+                {file.kind === 'video' && <span className="ftfile-kind"><i aria-hidden="true" className="bi bi-play-fill" /></span>}
                 {file.kind === 'gif' && <span className="ftfile-kind gif">GIF</span>}
                 {lib?.inLibrary && (
                     <span className={`ftfile-lib ${lib.inLibrary.trashed ? 'trashed' : ''}`}
                           title={lib.inLibrary.trashed ? 'Такой файл лежит в корзине библиотеки' : `Уже в библиотеке · «${lib.inLibrary.collectionName}»`}>
-                        <i className={`bi ${lib.inLibrary.trashed ? 'bi-trash3' : 'bi-bookmark-check-fill'}`} />
+                        <i aria-hidden="true" className={`bi ${lib.inLibrary.trashed ? 'bi-trash3' : 'bi-bookmark-check-fill'}`} />
                     </span>
                 )}
                 {lib?.copies?.length > 0 && (
                     <span className="ftfile-dup" title={`Такой же файл в этой папке:\n${lib.copies.map(p => p.split(/[\\/]/).pop()).join('\n')}`}>
-                        <i className="bi bi-files" /> {lib.copies.length + 1}
+                        <i aria-hidden="true" className="bi bi-files" /> {lib.copies.length + 1}
                     </span>
                 )}
             </div>
@@ -431,29 +431,29 @@ const FolderView = () => {
             <div className="folder-main">
                 <div className="folder-toolbar">
                     <div className="ftb-nav">
-                        <button className="ftb-btn" disabled={!fb.canBack} onClick={goBack} title="Назад (Alt+←)"><i className="bi bi-arrow-left" /></button>
-                        <button className="ftb-btn" disabled={!fb.canForward} onClick={goForward} title="Вперёд (Alt+→)"><i className="bi bi-arrow-right" /></button>
-                        <button className="ftb-btn" disabled={!fb.canUp} onClick={goUp} title="Наверх (Backspace)"><i className="bi bi-arrow-up" /></button>
+                        <button className="ftb-btn" disabled={!fb.canBack} onClick={goBack} title="Назад (Alt+←)"><i aria-hidden="true" className="bi bi-arrow-left" /></button>
+                        <button className="ftb-btn" disabled={!fb.canForward} onClick={goForward} title="Вперёд (Alt+→)"><i aria-hidden="true" className="bi bi-arrow-right" /></button>
+                        <button className="ftb-btn" disabled={!fb.canUp} onClick={goUp} title="Наверх (Backspace)"><i aria-hidden="true" className="bi bi-arrow-up" /></button>
                     </div>
                     <PathBar path={fb.path} onOpen={openFolder} editSignal={editPath} />
                     <div className="ftb-nav">
                         <button className="ftb-btn" disabled={!fb.path} onClick={newFolder} title="Новая папка (Ctrl+Shift+N)">
-                            <i className="bi bi-folder-plus" />
+                            <i aria-hidden="true" className="bi bi-folder-plus" />
                         </button>
                         <button className="ftb-btn" onClick={fb.refresh} title="Обновить (F5)">
-                            <i className={`bi bi-arrow-clockwise ${fb.loading ? 'spin' : ''}`} />
+                            <i aria-hidden="true" className={`bi bi-arrow-clockwise ${fb.loading ? 'spin' : ''}`} />
                         </button>
                         <button className={`ftb-btn ${pinned ? 'on' : ''}`} disabled={!fb.path} onClick={() => togglePin(fb.path)}
                                 title={pinned ? 'Открепить' : 'Закрепить в боковой панели'}>
-                            <i className={`bi ${pinned ? 'bi-pin-angle-fill' : 'bi-pin-angle'}`} />
+                            <i aria-hidden="true" className={`bi ${pinned ? 'bi-pin-angle-fill' : 'bi-pin-angle'}`} />
                         </button>
                         <button className="ftb-btn" disabled={!fb.path} onClick={() => fsApi.open(fb.path)} title="Открыть в проводнике">
-                            <i className="bi bi-box-arrow-up-right" />
+                            <i aria-hidden="true" className="bi bi-box-arrow-up-right" />
                         </button>
                         <div className="ftb-import">
                             <button className={`ftb-btn primary ${importOpen ? 'on' : ''}`} disabled={!files.length && !folders.length}
                                     onClick={() => setImportOpen(v => !v)} title="Импортировать папку в библиотеку">
-                                <i className="bi bi-box-arrow-in-down" /> <span>В библиотеку</span>
+                                <i aria-hidden="true" className="bi bi-box-arrow-in-down" /> <span>В библиотеку</span>
                             </button>
                             {importOpen && (
                                 <>
@@ -475,7 +475,7 @@ const FolderView = () => {
                                     className={`ff-kind ${prefs.kind === k.id ? 'active' : ''}`}
                                     disabled={k.id !== 'all' && !kindCounts[k.id]}
                                     onClick={() => setFolderPrefs({ kind: k.id })}>
-                                <i className={`bi ${k.icon}`} /> {k.label}
+                                <i aria-hidden="true" className={`bi ${k.icon}`} /> {k.label}
                                 <span className="ff-count">{kindCounts[k.id]}</span>
                             </button>
                         ))}
@@ -489,29 +489,29 @@ const FolderView = () => {
                         ].map(o => (
                             <button key={o.id} className={`ff-kind ${prefs.lib === o.id ? 'active' : ''}`}
                                     onClick={() => setFolderPrefs({ lib: o.id })}>
-                                {o.icon && <i className={`bi ${o.icon}`} />} {o.label}
+                                {o.icon && <i aria-hidden="true" className={`bi ${o.icon}`} />} {o.label}
                                 {o.count != null && <span className="ff-count">{libCheck ? '…' : o.count}</span>}
                             </button>
                         ))}
                         <button className={`ff-kind ${prefs.unseen ? 'active' : ''}`}
                                 title="Скрыть файлы, которые уже открывали в просмотрщике (по истории просмотров)"
                                 onClick={() => setFolderPrefs({ unseen: !prefs.unseen })}>
-                            <i className={`bi ${prefs.unseen ? 'bi-eye-slash-fill' : 'bi-eye-slash'}`} /> Не просмотренные
+                            <i aria-hidden="true" className={`bi ${prefs.unseen ? 'bi-eye-slash-fill' : 'bi-eye-slash'}`} /> Не просмотренные
                             <span className="ff-count">{unseenCount}</span>
                         </button>
                         {libCheck && (
                             <span className="ff-libcheck" title="Сверяю файлы с библиотекой">
-                                <i className="bi bi-arrow-repeat spin" /> {libCheck.done}/{libCheck.total}
+                                <i aria-hidden="true" className="bi bi-arrow-repeat spin" /> {libCheck.done}/{libCheck.total}
                             </span>
                         )}
                     </div>
 
                     <div className="ff-search">
-                        <i className="bi bi-search" />
+                        <i aria-hidden="true" className="bi bi-search" />
                         <input ref={searchRef} placeholder="Фильтр по имени (Ctrl+F)" value={query}
                                onChange={e => setQuery(e.target.value)}
                                onKeyDown={e => { if (e.key === 'Escape') { setQuery(''); e.currentTarget.blur(); } }} />
-                        {query && <button onClick={() => setQuery('')}><i className="bi bi-x-lg" /></button>}
+                        {query && <button onClick={() => setQuery('')}><i aria-hidden="true" className="bi bi-x-lg" /></button>}
                     </div>
 
                     <div className="ff-sort">
@@ -521,23 +521,23 @@ const FolderView = () => {
                         </select>
                         <button className="ftb-btn" onClick={() => setFolderPrefs({ sortDir: -prefs.sortDir })}
                                 title={prefs.sortDir > 0 ? 'По возрастанию' : 'По убыванию'}>
-                            <i className={`bi ${prefs.sortDir > 0 ? 'bi-sort-down-alt' : 'bi-sort-down'}`} />
+                            <i aria-hidden="true" className={`bi ${prefs.sortDir > 0 ? 'bi-sort-down-alt' : 'bi-sort-down'}`} />
                         </button>
                     </div>
 
                     <label className="ff-zoom" title="Размер плиток">
-                        <i className="bi bi-grid-3x3-gap" />
+                        <i aria-hidden="true" className="bi bi-grid-3x3-gap" />
                         <input type="range" min={130} max={320} step={10} value={prefs.tile}
                                onChange={e => setFolderPrefs({ tile: Number(e.target.value) })} />
-                        <i className="bi bi-grid" />
+                        <i aria-hidden="true" className="bi bi-grid" />
                     </label>
                 </div>
 
                 {stats && (
                     <div className="folder-stats">
-                        <span><i className="bi bi-folder2" /> {stats.folders}</span>
-                        <span><i className="bi bi-images" /> {filesWord(stats.files)}</span>
-                        <span><i className="bi bi-hdd" /> {fmtSize(stats.totalSize)}</span>
+                        <span><i aria-hidden="true" className="bi bi-folder2" /> {stats.folders}</span>
+                        <span><i aria-hidden="true" className="bi bi-images" /> {filesWord(stats.files)}</span>
+                        <span><i aria-hidden="true" className="bi bi-hdd" /> {fmtSize(stats.totalSize)}</span>
                         {stats.otherFiles > 0 && <span className="muted">+ {stats.otherFiles} прочих не показано</span>}
                         {hidden > 0 && <span className="muted">скрыто фильтром: {hidden}</span>}
                     </div>
@@ -545,17 +545,17 @@ const FolderView = () => {
 
                 {selected.size > 0 && (
                     <div className="folder-selbar">
-                        <span className="fsel-count"><i className="bi bi-check2-square" /> Выбрано: <b>{selected.size}</b> · {fmtSize(selectedSize)}</span>
+                        <span className="fsel-count"><i aria-hidden="true" className="bi bi-check2-square" /> Выбрано: <b>{selected.size}</b> · {fmtSize(selectedSize)}</span>
                         <button className="ftb-btn" onClick={() => setSelected(new Set(files.map(f => f.path)))} title="Выделить всё (Ctrl+A)">Все</button>
                         <button className="ftb-btn" onClick={() => setSelected(new Set())} title="Снять выделение (Esc)">Снять</button>
                         <span className="fsel-sep" />
                         {selected.size === 1 && (
                             <button className="ftb-btn" onClick={() => renameEntry([...selected][0], false)} title="Переименовать (F2)">
-                                <i className="bi bi-input-cursor-text" /> <span>Имя</span>
+                                <i aria-hidden="true" className="bi bi-input-cursor-text" /> <span>Имя</span>
                             </button>
                         )}
                         <button className="ftb-btn danger" onClick={() => trashEntries([...selected], filesWord(selected.size))} title="Удалить в корзину (Del)">
-                            <i className="bi bi-trash3" /> <span>В корзину</span>
+                            <i aria-hidden="true" className="bi bi-trash3" /> <span>В корзину</span>
                         </button>
                         {selectedFiles.filter(f => f.kind !== 'video').length > 1 && (
                             <MakeMangaButton className="ftb-btn" files={selectedFiles.filter(f => f.kind !== 'video').map(f => f.path)}
@@ -564,7 +564,7 @@ const FolderView = () => {
                         <span className="fsel-hint">перетащи на папку, чтобы переместить</span>
                         <div className="ftb-import fsel-import">
                             <button className={`ftb-btn primary ${bulkOpen ? 'on' : ''}`} onClick={() => setBulkOpen(v => !v)}>
-                                <i className="bi bi-box-arrow-in-down" /> <span>Импортировать выбранные</span>
+                                <i aria-hidden="true" className="bi bi-box-arrow-in-down" /> <span>Импортировать выбранные</span>
                             </button>
                             {bulkOpen && (
                                 <>
@@ -581,7 +581,7 @@ const FolderView = () => {
                 <div className="folder-grid-scroll" ref={scrollRef}>
                     {fb.error ? (
                         <div className="folder-empty error">
-                            <i className="bi bi-exclamation-octagon" />
+                            <i aria-hidden="true" className="bi bi-exclamation-octagon" />
                             <div className="fe-title">{fb.error.message}</div>
                             <div className="fe-sub">{fb.error.path}</div>
                             <button className="btn btn-sm btn-outline-secondary" onClick={() => fb.canBack ? fb.back() : setEditPath(n => n + 1)}>
@@ -594,7 +594,7 @@ const FolderView = () => {
                         </div>
                     ) : total === 0 ? (
                         <div className="folder-empty">
-                            <i className={`bi ${q || prefs.kind !== 'all' || prefs.lib !== 'all' || prefs.unseen ? 'bi-funnel' : 'bi-folder2-open'}`} />
+                            <i aria-hidden="true" className={`bi ${q || prefs.kind !== 'all' || prefs.lib !== 'all' || prefs.unseen ? 'bi-funnel' : 'bi-folder2-open'}`} />
                             <div className="fe-title">{q || prefs.kind !== 'all' || prefs.lib !== 'all' || prefs.unseen ? 'Ничего не подходит под фильтр' : 'Здесь нет медиафайлов'}</div>
                             {(q || prefs.kind !== 'all' || prefs.lib !== 'all' || prefs.unseen) && (
                                 <button className="btn btn-sm btn-outline-secondary" onClick={() => { setQuery(''); setFolderPrefs({ kind: 'all', lib: 'all', unseen: false }); }}>
@@ -634,31 +634,31 @@ const FolderView = () => {
                 <div className="ctx-menu" style={{ left: ctxMenu.x, top: ctxMenu.y }} onMouseDown={e => e.stopPropagation()}>
                     <div className="ctx-title">{ctxMenu.folder.name}</div>
                     <button onClick={() => { setCtxMenu(null); openFolder(ctxMenu.folder.path); }}>
-                        <i className="bi bi-folder2-open" /> Открыть
+                        <i aria-hidden="true" className="bi bi-folder2-open" /> Открыть
                     </button>
                     <button onClick={() => { setCtxMenu(null); fsApi.open(ctxMenu.folder.path); }}>
-                        <i className="bi bi-box-arrow-up-right" /> Открыть в проводнике
+                        <i aria-hidden="true" className="bi bi-box-arrow-up-right" /> Открыть в проводнике
                     </button>
                     <button onClick={() => { setCtxMenu(null); togglePin(ctxMenu.folder.path); }}>
-                        <i className={`bi ${isPinned(ctxMenu.folder.path) ? 'bi-pin-angle-fill' : 'bi-pin-angle'}`} />
+                        <i aria-hidden="true" className={`bi ${isPinned(ctxMenu.folder.path) ? 'bi-pin-angle-fill' : 'bi-pin-angle'}`} />
                         {isPinned(ctxMenu.folder.path) ? ' Открепить' : ' Закрепить'}
                     </button>
                     <button onClick={() => { setCtxMenu(null); renameEntry(ctxMenu.folder.path, true); }}>
-                        <i className="bi bi-input-cursor-text" /> Переименовать
+                        <i aria-hidden="true" className="bi bi-input-cursor-text" /> Переименовать
                     </button>
                     <button className="danger" onClick={() => { setCtxMenu(null); trashEntries([ctxMenu.folder.path], `Папка «${ctxMenu.folder.name}» со всем содержимым`); }}>
-                        <i className="bi bi-trash3" /> Удалить в корзину
+                        <i aria-hidden="true" className="bi bi-trash3" /> Удалить в корзину
                     </button>
                     <div className="ctx-sep" />
                     <button onClick={() => { setCtxImport({ path: ctxMenu.folder.path, name: ctxMenu.folder.name, x: ctxMenu.x, y: ctxMenu.y }); setCtxMenu(null); }}>
-                        <i className="bi bi-box-arrow-in-down" /> Импортировать в библиотеку…
+                        <i aria-hidden="true" className="bi bi-box-arrow-in-down" /> Импортировать в библиотеку…
                     </button>
                     <button onClick={() => { setCtxImport({ path: ctxMenu.folder.path, name: ctxMenu.folder.name, x: ctxMenu.x, y: ctxMenu.y, as: 'manga' }); setCtxMenu(null); }}>
-                        <i className="bi bi-book" /> Импортировать как мангу…
+                        <i aria-hidden="true" className="bi bi-book" /> Импортировать как мангу…
                     </button>
                     {ctxMenu.folder.dirs > 1 && (
                         <button onClick={() => { setCtxImport({ path: ctxMenu.folder.path, name: ctxMenu.folder.name, x: ctxMenu.x, y: ctxMenu.y, as: 'manga-each' }); setCtxMenu(null); }}>
-                            <i className="bi bi-collection" /> Каждая подпапка — отдельная манга…
+                            <i aria-hidden="true" className="bi bi-collection" /> Каждая подпапка — отдельная манга…
                         </button>
                     )}
                 </div>

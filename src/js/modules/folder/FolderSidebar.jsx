@@ -36,7 +36,7 @@ const Item = ({ icon, label, sub, active, onClick, onRemove, removeTitle, childr
              e.preventDefault();
              onDropPaths(JSON.parse(e.dataTransfer.getData(DRAG_PATHS) || '[]'));
          }}>
-        <i className={`bi ${icon}`} />
+        <i aria-hidden="true" className={`bi ${icon}`} />
         <span className="fsb-label">{label}</span>
         {children}
         {onRemove && (
@@ -45,7 +45,7 @@ const Item = ({ icon, label, sub, active, onClick, onRemove, removeTitle, childr
                 title={removeTitle}
                 onClick={e => { e.stopPropagation(); onRemove(); }}
             >
-                <i className="bi bi-x" />
+                <i aria-hidden="true" className="bi bi-x" />
             </button>
         )}
     </div>

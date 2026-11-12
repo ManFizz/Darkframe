@@ -21,12 +21,12 @@ const AppInstallHelp = ({ urls }) => {
     return (
         <div className="rm-app">
             <button className="cp-linkbtn" onClick={() => setOpen(v => !v)}>
-                <i className={`bi bi-chevron-${open ? 'down' : 'right'} me-1`} />Как приложение на телефоне: своя иконка, во весь экран
+                <i aria-hidden="true" className={`bi bi-chevron-${open ? 'down' : 'right'} me-1`} />Как приложение на телефоне: своя иконка, во весь экран
             </button>
             {open && (
                 <div className="rm-app-body">
                     <div className="rm-app-os">
-                        <b><i className="bi bi-apple" /> iPhone / iPad</b>
+                        <b><i aria-hidden="true" className="bi bi-apple" /> iPhone / iPad</b>
                         <ol>
                             <li>Подключите устройство по QR-коду и откройте библиотеку в Safari.</li>
                             <li>«Поделиться» → «На экран Домой».</li>
@@ -34,7 +34,7 @@ const AppInstallHelp = ({ urls }) => {
                         <span className="rm-hint">Откроется со своей иконкой, без адресной строки.</span>
                     </div>
                     <div className="rm-app-os">
-                        <b><i className="bi bi-android2" /> Android (Chrome)</b>
+                        <b><i aria-hidden="true" className="bi bi-android2" /> Android (Chrome)</b>
                         <span className="rm-hint">
                             Chrome ставит приложения только с защищённых (https) адресов. Домашний адрес компьютера нужно один раз отметить как доверенный:
                         </span>
@@ -48,10 +48,10 @@ const AppInstallHelp = ({ urls }) => {
                                 <button className="cp-linkbtn" onClick={() => copy(origin)}>копировать</button>,
                                 выберите «Enabled» и нажмите «Relaunch».
                             </li>
-                            <li>Откройте библиотеку: вверху появится кнопка <i className="bi bi-download" /> «Установить» (или меню Chrome → «Установить приложение»).</li>
+                            <li>Откройте библиотеку: вверху появится кнопка <i aria-hidden="true" className="bi bi-download" /> «Установить» (или меню Chrome → «Установить приложение»).</li>
                         </ol>
                         <span className="rm-hint">
-                            Без этого «Добавить на главный экран» даёт ярлык, который открывается во вкладке; кнопка <i className="bi bi-arrows-fullscreen" /> вверху разворачивает на весь экран.
+                            Без этого «Добавить на главный экран» даёт ярлык, который открывается во вкладке; кнопка <i aria-hidden="true" className="bi bi-arrows-fullscreen" /> вверху разворачивает на весь экран.
                             Если адрес компьютера в сети меняется, закрепите его в настройках роутера.
                         </span>
                     </div>
@@ -143,7 +143,7 @@ const DevicesTab = () => {
                                 <option value="view">Только просмотр</option>
                             </select>
                             <button className="btn btn-sm btn-primary" onClick={startPairing} disabled={busy}>
-                                <i className="bi bi-qr-code me-1" />Подключить устройство
+                                <i aria-hidden="true" className="bi bi-qr-code me-1" />Подключить устройство
                             </button>
                             <span className="rm-hint">
                                 Телефон должен быть в той же Wi-Fi сети. Откроется QR-код — наведите на него камеру телефона.
@@ -182,7 +182,7 @@ const DevicesTab = () => {
 
             {st?.routeWarning && (
                 <div className="rm-warn">
-                    <i className="bi bi-exclamation-triangle-fill" />
+                    <i aria-hidden="true" className="bi bi-exclamation-triangle-fill" />
                     <div>
                         <b>Телефон может не подключиться: «{st.routeWarning.adapter}» перехватывает домашнюю сеть.</b>
                         <span>
@@ -199,14 +199,14 @@ const DevicesTab = () => {
                 <div className="apitok-list">
                     {!st.devices.length && (
                         <div className="cp-empty">
-                            <i className="bi bi-phone" />
+                            <i aria-hidden="true" className="bi bi-phone" />
                             <span>Подключённых устройств пока нет</span>
                         </div>
                     )}
                     {st.devices.map(d => (
                         <div key={d.id} className="apitok-row">
                             <div className="apitok-row-main">
-                                <i className={`bi ${/iphone|android|pixel|galaxy|xiaomi|redmi/i.test(d.name + d.agent) ? 'bi-phone' : /ipad|tablet/i.test(d.name + d.agent) ? 'bi-tablet' : 'bi-laptop'}`} />
+                                <i aria-hidden="true" className={`bi ${/iphone|android|pixel|galaxy|xiaomi|redmi/i.test(d.name + d.agent) ? 'bi-phone' : /ipad|tablet/i.test(d.name + d.agent) ? 'bi-tablet' : 'bi-laptop'}`} />
                                 <input className="form-control form-control-sm rm-name" defaultValue={d.name}
                                        onBlur={e => { if (e.target.value.trim() && e.target.value !== d.name) run(async () => { await remoteApi.updateDevice(d.id, { name: e.target.value.trim() }); await reload(); }); }} />
                                 {st.connected.includes(d.id) && <span className="rm-online" title="Сейчас подключено">в сети</span>}
@@ -223,7 +223,7 @@ const DevicesTab = () => {
                                 </select>
                                 <button className="btn btn-sm btn-outline-danger" title="Отключить устройство"
                                         onClick={() => { if (confirm(`Отключить «${d.name}»? Ему придётся подключаться заново по QR-коду.`)) run(async () => { await remoteApi.revoke(d.id); await reload(); }); }}>
-                                    <i className="bi bi-trash3" />
+                                    <i aria-hidden="true" className="bi bi-trash3" />
                                 </button>
                             </div>
                         </div>

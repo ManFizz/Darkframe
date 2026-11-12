@@ -79,17 +79,17 @@ const SortMenu = ({ filters, patch, items = [] }) => {
         <div className="sort-menu" ref={ref}>
             <button className={`btn btn-outline-secondary sort-menu-btn ${open ? 'active' : ''}`} onClick={() => setOpen(v => !v)}
                     title={cur.random ? 'Случайный порядок' : `${cur.label}: ${dirLabel(cur.id, filters.order)}`}>
-                <i className={`bi ${cur.icon}`} />
+                <i aria-hidden="true" className={`bi ${cur.icon}`} />
                 <span className="sort-menu-label">{cur.random ? 'Случайно' : cur.label.split(':')[0]}</span>
-                <i className="bi bi-chevron-down sort-menu-caret" />
+                <i aria-hidden="true" className="bi bi-chevron-down sort-menu-caret" />
             </button>
             {cur.random ? (
                 <button className="btn btn-outline-secondary" onClick={shuffle} title="Перемешать заново">
-                    <i className="bi bi-shuffle" />
+                    <i aria-hidden="true" className="bi bi-shuffle" />
                 </button>
             ) : (
                 <button className="btn btn-outline-secondary sort-dir-btn" onClick={flip} title={`Сейчас: ${dirLabel(cur.id, filters.order)} — нажмите, чтобы развернуть`}>
-                    <i className={`bi bi-sort-${filters.order === -1 ? 'down' : 'up'}`} />
+                    <i aria-hidden="true" className={`bi bi-sort-${filters.order === -1 ? 'down' : 'up'}`} />
                 </button>
             )}
 
@@ -103,7 +103,7 @@ const SortMenu = ({ filters, patch, items = [] }) => {
                                 return (
                                     <div key={s.id} className={`sort-menu-item ${active ? 'active' : ''}`}
                                          onClick={() => pick(s)} title={s.hint || ''}>
-                                        <i className={`bi ${s.icon}`} />
+                                        <i aria-hidden="true" className={`bi ${s.icon}`} />
                                         <span className="sort-menu-name">{s.label}</span>
                                         {active && !s.random && (
                                             <span className="sort-menu-dir" onClick={e => e.stopPropagation()}>
@@ -118,7 +118,7 @@ const SortMenu = ({ filters, patch, items = [] }) => {
                                         {s.random && (
                                             <button className="sort-menu-shuffle" title="Перемешать заново"
                                                     onClick={e => { e.stopPropagation(); shuffle(); }}>
-                                                <i className="bi bi-arrow-repeat" /> {active ? 'ещё раз' : ''}
+                                                <i aria-hidden="true" className="bi bi-arrow-repeat" /> {active ? 'ещё раз' : ''}
                                             </button>
                                         )}
                                     </div>
@@ -129,7 +129,7 @@ const SortMenu = ({ filters, patch, items = [] }) => {
                     {!isCustom && (
                         <button className="sort-menu-setorder" onClick={setAsOrder} disabled={saving}
                                 title="Медиа запомнят позиции из текущей сортировки, и включится «Свой порядок» — дальше можно двигать перетаскиванием">
-                            <i className="bi bi-pin-angle" /> Установить как свой порядок
+                            <i aria-hidden="true" className="bi bi-pin-angle" /> Установить как свой порядок
                         </button>
                     )}
                     <div className="sort-menu-options">

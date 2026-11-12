@@ -19,7 +19,7 @@ const Video = ({ file, hoverOverlay = null }) => {
             <div className="hover-video-host">
                 <Image file={file} />
                 {hoverOverlay}
-                <span className="video-mark"><i className="bi bi-play-fill" /></span>
+                <span className="video-mark"><i aria-hidden="true" className="bi bi-play-fill" /></span>
             </div>
         );
     }
@@ -35,7 +35,7 @@ const Video = ({ file, hoverOverlay = null }) => {
                 onLoadedData={() => setIsLoading(false)}
                 style={{ display: isLoading ? 'none' : 'block' }}
             />
-            <span className="video-mark"><i className="bi bi-play-fill" /></span>
+            <span className="video-mark"><i aria-hidden="true" className="bi bi-play-fill" /></span>
         </>
     );
 }

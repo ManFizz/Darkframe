@@ -57,7 +57,7 @@ const Cover = ({ src, className = '' }) => {
             {src && state !== 'broken'
                 ? <img src={src} alt="" loading="lazy" decoding="async" draggable={false}
                        onLoad={() => setState('ready')} onError={() => setState('broken')} />
-                : <i className="bi bi-book" />}
+                : <i aria-hidden="true" className="bi bi-book" />}
         </div>
     );
 };
@@ -80,7 +80,7 @@ const DownloadButton = ({ gallery, item, chapters = null, className = 'ftb-btn p
     return (
         <span className="mo-dl" onClick={e => e.stopPropagation()}>
             <button className={className} onClick={() => setOpen(v => !v)} title="Скачать в библиотеку (выбор коллекции)">
-                <i className="bi bi-download" />{!compact && <span>{label}</span>}
+                <i aria-hidden="true" className="bi bi-download" />{!compact && <span>{label}</span>}
             </button>
             {open && (
                 <>
@@ -118,7 +118,7 @@ const AddOnlineButton = ({ gallery, onAdded, className = 'ftb-btn', compact = fa
         <span className="mo-dl" onClick={e => e.stopPropagation()}>
             <button className={className} disabled={busy} onClick={() => setOpen(v => !v)}
                     title="Добавить в библиотеку без скачивания: главы читаются с сайта, скачать можно потом">
-                <i className={`bi ${busy ? 'bi-arrow-repeat spin' : 'bi-bookmark-plus'}`} />{!compact && <span>В библиотеку</span>}
+                <i aria-hidden="true" className={`bi ${busy ? 'bi-arrow-repeat spin' : 'bi-bookmark-plus'}`} />{!compact && <span>В библиотеку</span>}
             </button>
             {open && (
                 <>
@@ -140,9 +140,9 @@ const Card = React.memo(({ item, source, seen, onOpen, onRead }) => (
          onContextMenu={e => { e.preventDefault(); onRead?.(item); }}>
         <Cover src={item.cover} />
         <div className="mo-card-badges">
-            {seen && <span className="mo-badge seen" title={seenTitle(seen)}><i className="bi bi-eye-fill" /></span>}
-            {item.inLibrary && <span className="mo-badge lib" title="Уже в библиотеке"><i className="bi bi-bookmark-check-fill" /></span>}
-            {item.downloading && <span className="mo-badge dl" title={STATUS[item.downloading]?.label}><i className="bi bi-arrow-down-circle-fill" /></span>}
+            {seen && <span className="mo-badge seen" title={seenTitle(seen)}><i aria-hidden="true" className="bi bi-eye-fill" /></span>}
+            {item.inLibrary && <span className="mo-badge lib" title="Уже в библиотеке"><i aria-hidden="true" className="bi bi-bookmark-check-fill" /></span>}
+            {item.downloading && <span className="mo-badge dl" title={STATUS[item.downloading]?.label}><i aria-hidden="true" className="bi bi-arrow-down-circle-fill" /></span>}
         </div>
         {!item.inLibrary && !item.downloading && (
             <div className="mo-card-quick">
@@ -155,7 +155,7 @@ const Card = React.memo(({ item, source, seen, onOpen, onRead }) => (
             {item.chapters ? <span>{item.chapters} гл.</span> : null}
             {item.language ? <span>{item.language}</span> : null}
             {item.category ? <span>{item.category}</span> : null}
-            {item.rating != null ? <span><i className="bi bi-star-fill" /> {Number(item.rating).toFixed(1)}</span> : null}
+            {item.rating != null ? <span><i aria-hidden="true" className="bi bi-star-fill" /> {Number(item.rating).toFixed(1)}</span> : null}
         </div>
     </div>
 ));
@@ -280,7 +280,7 @@ const SearchPane = ({ source, onOpenGallery, onRead }) => {
                            onSearch={(o) => run(o)} onOpenGallery={onOpenGallery} inputRef={inputRef} />
                 {source.tagGroups?.length > 0 && (
                     <button className={`ftb-btn ${tagsOpen ? 'on' : ''}`} onClick={() => setTagsOpen(v => !v)} title="Теги, пародии, персонажи, авторы…">
-                        <i className="bi bi-tags" /> <span>Теги</span>
+                        <i aria-hidden="true" className="bi bi-tags" /> <span>Теги</span>
                     </button>
                 )}
                 {source.sorts?.length > 1 && (
@@ -290,23 +290,23 @@ const SearchPane = ({ source, onOpenGallery, onRead }) => {
                 )}
                 <button className={`ftb-btn ${hideInLib ? 'on' : ''}`} title="Скрыть то, что уже есть в библиотеке"
                         onClick={() => { setHideInLib(v => !v); savePrefs({ hideInLib: !hideInLib }); }}>
-                    <i className="bi bi-bookmark-x" />
+                    <i aria-hidden="true" className="bi bi-bookmark-x" />
                 </button>
-                <button className="ftb-btn" onClick={() => run({ page: res.first || 1 })} title="Обновить"><i className="bi bi-arrow-clockwise" /></button>
+                <button className="ftb-btn" onClick={() => run({ page: res.first || 1 })} title="Обновить"><i aria-hidden="true" className="bi bi-arrow-clockwise" /></button>
                 {!isWeb && (
                     <button className="ftb-btn" onClick={() => mangaApi.openSite(source.id).then(() => run())} title="Открыть сайт в окне (проверка Cloudflare и т. п.)">
-                        <i className="bi bi-globe2" />
+                        <i aria-hidden="true" className="bi bi-globe2" />
                     </button>
                 )}
                 {source.login && isWeb && (
                     <span className={`ftb-btn ${logged ? 'mo-logged' : ''}`} title={logged ? 'На компьютере выполнен вход на сайт' : 'Вход на сайт — на компьютере: вкладка Manga → Войти'}>
-                        <i className={`bi ${logged ? 'bi-person-check-fill' : 'bi-person-circle'}`} /> <span>{logged ? 'Вы вошли' : 'Вход — на ПК'}</span>
+                        <i aria-hidden="true" className={`bi ${logged ? 'bi-person-check-fill' : 'bi-person-circle'}`} /> <span>{logged ? 'Вы вошли' : 'Вход — на ПК'}</span>
                     </span>
                 )}
                 {source.login && !isWeb && (
                     <button className={`ftb-btn ${logged ? 'mo-logged' : ''}`} onClick={login}
                             title={logged ? 'Вы вошли на сайт · открыть окно входа ещё раз' : 'Войти на сайте (нужно для чтения глав)'}>
-                        <i className={`bi ${logged ? 'bi-person-check-fill' : 'bi-person-circle'}`} /> <span>{logged ? 'Вы вошли' : 'Войти'}</span>
+                        <i aria-hidden="true" className={`bi ${logged ? 'bi-person-check-fill' : 'bi-person-circle'}`} /> <span>{logged ? 'Вы вошли' : 'Войти'}</span>
                     </button>
                 )}
             </div>
@@ -320,13 +320,13 @@ const SearchPane = ({ source, onOpenGallery, onRead }) => {
                 <div className="mo-scroll" ref={scrollRef}>
                     {res.error && (
                         <div className="mo-error">
-                            <i className="bi bi-exclamation-triangle" /> {res.error}
+                            <i aria-hidden="true" className="bi bi-exclamation-triangle" /> {res.error}
                             <button className="ftb-btn" onClick={() => run({ more: res.items.length > 0, page: res.first || 1 })}>Повторить</button>
                             {!isWeb && <button className="ftb-btn" onClick={() => mangaApi.openSite(source.id).then(() => run())}>Открыть сайт</button>}
                         </div>
                     )}
                     {res.first > 1 && !res.loading && (
-                        <button className="ftb-btn mo-prev-page" onClick={() => goPage(res.first - 1)}><i className="bi bi-chevron-up" /> <span>Страница {res.first - 1}</span></button>
+                        <button className="ftb-btn mo-prev-page" onClick={() => goPage(res.first - 1)}><i aria-hidden="true" className="bi bi-chevron-up" /> <span>Страница {res.first - 1}</span></button>
                     )}
                     <div className="mo-grid">
                         {shown.map(item => <Card key={item.id} item={item} source={source.id} seen={seenById.get(String(item.id))} onOpen={openCard} onRead={readCard} />)}
@@ -339,7 +339,7 @@ const SearchPane = ({ source, onOpenGallery, onRead }) => {
                             {res.hasMore
                                 ? (
                                     <button className="ftb-btn primary" disabled={res.loading} onClick={() => run({ more: true })}>
-                                        <i className={`bi ${res.loading ? 'bi-arrow-repeat spin' : 'bi-chevron-down'}`} /> <span>Загрузить ещё</span>
+                                        <i aria-hidden="true" className={`bi ${res.loading ? 'bi-arrow-repeat spin' : 'bi-chevron-down'}`} /> <span>Загрузить ещё</span>
                                     </button>
                                 )
                                 : !res.loading && <span className="mo-pager-end">Это всё</span>}
@@ -462,14 +462,14 @@ const GalleryPane = ({ target, onBack, onSearchTag }) => {
     return (
         <div className="mo-pane">
             <div className="folder-toolbar mo-toolbar">
-                <button className="ftb-btn" onClick={onBack} title="Назад (Esc)"><i className="bi bi-arrow-left" /> <span>Назад</span></button>
+                <button className="ftb-btn" onClick={onBack} title="Назад (Esc)"><i aria-hidden="true" className="bi bi-arrow-left" /> <span>Назад</span></button>
                 <div className="mo-crumb">{title}</div>
-                {g?.url && <button className="ftb-btn" onClick={() => (isWeb ? window.open(g.url, '_blank', 'noopener') : mangaApi.openSite(target.source, g.url))} title="Открыть на сайте"><i className="bi bi-box-arrow-up-right" /></button>}
+                {g?.url && <button className="ftb-btn" onClick={() => (isWeb ? window.open(g.url, '_blank', 'noopener') : mangaApi.openSite(target.source, g.url))} title="Открыть на сайте"><i aria-hidden="true" className="bi bi-box-arrow-up-right" /></button>}
             </div>
             <div className="mo-scroll">
                 {error && !g && (
                     <div className="mo-error">
-                        <i className="bi bi-exclamation-triangle" /> {error}
+                        <i aria-hidden="true" className="bi bi-exclamation-triangle" /> {error}
                         <button className="ftb-btn" onClick={() => setReload(n => n + 1)}>Повторить</button>
                     </div>
                 )}
@@ -479,38 +479,38 @@ const GalleryPane = ({ target, onBack, onSearchTag }) => {
                         <h2 className="mo-title">{title}</h2>
                         {g?.altTitle && g.altTitle !== title && <div className="mo-alt">{g.altTitle}</div>}
                         <div className="mo-chips">
-                            {g?.pages ? <span className="mo-chip"><i className="bi bi-file-earmark-image" /> {g.pages} стр.</span> : null}
-                            {multi ? <span className="mo-chip"><i className="bi bi-list-ol" /> {g.chapters.length} гл.</span> : null}
-                            {g?.language && <span className="mo-chip"><i className="bi bi-translate" /> {g.language}</span>}
+                            {g?.pages ? <span className="mo-chip"><i aria-hidden="true" className="bi bi-file-earmark-image" /> {g.pages} стр.</span> : null}
+                            {multi ? <span className="mo-chip"><i aria-hidden="true" className="bi bi-list-ol" /> {g.chapters.length} гл.</span> : null}
+                            {g?.language && <span className="mo-chip"><i aria-hidden="true" className="bi bi-translate" /> {g.language}</span>}
                             {g?.category && <span className="mo-chip">{g.category}</span>}
-                            {g?.rating ? <span className="mo-chip"><i className="bi bi-star-fill" /> {Number(g.rating).toFixed(2)}</span> : null}
-                            {g?.favorites ? <span className="mo-chip"><i className="bi bi-heart-fill" /> {g.favorites}</span> : null}
-                            {g?.uploaded ? <span className="mo-chip"><i className="bi bi-calendar3" /> {new Date(g.uploaded * 1000).toLocaleDateString('ru')}</span> : null}
+                            {g?.rating ? <span className="mo-chip"><i aria-hidden="true" className="bi bi-star-fill" /> {Number(g.rating).toFixed(2)}</span> : null}
+                            {g?.favorites ? <span className="mo-chip"><i aria-hidden="true" className="bi bi-heart-fill" /> {g.favorites}</span> : null}
+                            {g?.uploaded ? <span className="mo-chip"><i aria-hidden="true" className="bi bi-calendar3" /> {new Date(g.uploaded * 1000).toLocaleDateString('ru')}</span> : null}
                         </div>
                         <div className="mo-actions">
                             <button className="ftb-btn primary" disabled={!g || !g.chapters.length} onClick={() => read()}>
-                                <i className="bi bi-book" />
+                                <i aria-hidden="true" className="bi bi-book" />
                                 <span>{saved?.chapter ? `Продолжить${multi && saved.chapterTitle ? ` · ${saved.chapterTitle}` : ''} · с. ${(saved.page || 0) + 1}` : 'Читать онлайн'}</span>
                             </button>
                             {saved?.chapter && <button className="ftb-btn" disabled={!g} onClick={() => read({ chapter: g.chapters[0].id, page: 0 })}>С начала</button>}
                             {g?.inLibrary ? (<>
                                 <button className="ftb-btn mo-inlib" onClick={() => readLibraryManga({ id: g.inLibrary, title, sourceUrl: g.url })}>
-                                    <i className="bi bi-bookmark-check-fill" /> <span>В библиотеке · читать</span>
+                                    <i aria-hidden="true" className="bi bi-bookmark-check-fill" /> <span>В библиотеке · читать</span>
                                 </button>
                                 {libRemote > 0 && (
                                     <button className="ftb-btn" onClick={downloadRemote} title="Главы в библиотеке, которые пока читаются с сайта">
-                                        <i className="bi bi-download" /> <span>Скачать {libRemote === libBook.chapters.length ? 'всё' : `онлайн-главы: ${libRemote}`}</span>
+                                        <i aria-hidden="true" className="bi bi-download" /> <span>Скачать {libRemote === libBook.chapters.length ? 'всё' : `онлайн-главы: ${libRemote}`}</span>
                                     </button>
                                 )}
                                 {canSubscribe && (
                                     <button className={`ftb-btn ${sub ? 'mo-sub-on' : ''}`} onClick={toggleSub}
                                             title={sub ? 'Новые главы проверяются сами. Нажмите, чтобы отписаться' : 'Новые главы будут появляться в библиотеке сами'}>
-                                        <i className={`bi ${sub ? 'bi-bell-fill' : 'bi-bell'}`} /> <span>{sub ? 'Подписка' : 'Подписаться'}</span>
+                                        <i aria-hidden="true" className={`bi ${sub ? 'bi-bell-fill' : 'bi-bell'}`} /> <span>{sub ? 'Подписка' : 'Подписаться'}</span>
                                     </button>
                                 )}
                             </>) : g?.downloading ? (
                                 <button className="ftb-btn" onClick={() => mangaRequests.request({ view: 'downloads' })}>
-                                    <i className="bi bi-arrow-down-circle" /> <span>{STATUS[g.downloading]?.label}{g.job?.total ? ` · ${g.job.done}/${g.job.total}` : ''}</span>
+                                    <i aria-hidden="true" className="bi bi-arrow-down-circle" /> <span>{STATUS[g.downloading]?.label}{g.job?.total ? ` · ${g.job.done}/${g.job.total}` : ''}</span>
                                 </button>
                             ) : g?.chapters.length > 0 && (<>
                                 <DownloadButton gallery={g} chapters={picked.size ? [...picked] : null}
@@ -519,18 +519,18 @@ const GalleryPane = ({ target, onBack, onSearchTag }) => {
                             </>)}
                             {fresh?.length > 0 && (
                                 <button className="ftb-btn primary" onClick={addFresh} title="Добавить в мангу из библиотеки главы, которых в ней нет (читаются онлайн, скачать можно потом)">
-                                    <i className="bi bi-plus-circle" /> <span>Новые главы: {fresh.length}</span>
+                                    <i aria-hidden="true" className="bi bi-plus-circle" /> <span>Новые главы: {fresh.length}</span>
                                 </button>
                             )}
                             {g?.login && !isWeb && (
                                 <button className="ftb-btn" title="Главы этого сайта видны только после входа — окно сайта, войдите в свой аккаунт"
                                         onClick={() => loginTo(target.source)}>
-                                    <i className="bi bi-person-circle" /> <span>Войти на сайте</span>
+                                    <i aria-hidden="true" className="bi bi-person-circle" /> <span>Войти на сайте</span>
                                 </button>
                             )}
                             {g && (
                                 <button className="ftb-btn" title="Скопировать ссылку" onClick={() => navigator.clipboard?.writeText(g.url).then(() => notify({ message: 'Ссылка скопирована', type: 'info' }))}>
-                                    <i className="bi bi-link-45deg" />
+                                    <i aria-hidden="true" className="bi bi-link-45deg" />
                                 </button>
                             )}
                         </div>
@@ -547,9 +547,9 @@ const GalleryPane = ({ target, onBack, onSearchTag }) => {
                                 ))}
                             </div>
                         ))}
-                        {!g && !error && <div className="mo-loading"><i className="bi bi-arrow-repeat spin" /> Загрузка…</div>}
+                        {!g && !error && <div className="mo-loading"><i aria-hidden="true" className="bi bi-arrow-repeat spin" /> Загрузка…</div>}
                         {g && !g.chapters.length && (
-                            <div className="mo-error"><i className="bi bi-info-circle" /> Читать нечего: на сайте нет загруженных глав{target.source === 'mangadex' ? ' на русском или английском' : ''}.</div>
+                            <div className="mo-error"><i aria-hidden="true" className="bi bi-info-circle" /> Читать нечего: на сайте нет загруженных глав{target.source === 'mangadex' ? ' на русском или английском' : ''}.</div>
                         )}
                     </div>
                 </div>
@@ -566,7 +566,7 @@ const GalleryPane = ({ target, onBack, onSearchTag }) => {
                             <div key={c.id} className={`mo-chapter ${saved?.chapter === c.id ? 'current' : ''} ${picked.has(c.id) ? 'picked' : ''}`}
                                  onClick={() => read({ chapter: c.id, page: 0 })}>
                                 <button className="mo-chapter-check" title="Выбрать для загрузки" onClick={e => { e.stopPropagation(); toggle(c.id); }}>
-                                    <i className={`bi ${picked.has(c.id) ? 'bi-check-square-fill' : 'bi-square'}`} />
+                                    <i aria-hidden="true" className={`bi ${picked.has(c.id) ? 'bi-check-square-fill' : 'bi-square'}`} />
                                 </button>
                                 <span className="mo-chapter-num">{i + 1}</span>
                                 <span className="mo-chapter-title">{c.title}</span>
@@ -600,9 +600,9 @@ const DownloadsPane = ({ jobs, onOpenGallery }) => {
     return (
         <div className="mo-pane">
             <div className="folder-toolbar mo-toolbar">
-                <div className="mo-crumb"><i className="bi bi-download" /> Загрузки</div>
+                <div className="mo-crumb"><i aria-hidden="true" className="bi bi-download" /> Загрузки</div>
                 <button className="ftb-btn" disabled={!finished} onClick={() => mangaApi.clearDownloads()} title="Убрать завершённые и отменённые из списка">
-                    <i className="bi bi-trash3" /> <span>Очистить готовые</span>
+                    <i aria-hidden="true" className="bi bi-trash3" /> <span>Очистить готовые</span>
                 </button>
             </div>
             <div className="mo-scroll">
@@ -623,7 +623,7 @@ const DownloadsPane = ({ jobs, onOpenGallery }) => {
                                 <div className="mo-job-body">
                                     <div className="mo-job-title" onClick={() => onOpenGallery({ source: j.source, id: j.galleryId })}>{j.title || j.url || j.galleryId}</div>
                                     <div className="mo-job-meta">
-                                        <span className={`mo-job-status ${j.status}`}><i className={`bi ${st.icon}`} /> {st.label}</span>
+                                        <span className={`mo-job-status ${j.status}`}><i aria-hidden="true" className={`bi ${st.icon}`} /> {st.label}</span>
                                         <span>{j.source}</span>
                                         {j.total > 0 && <span>{j.done} / {j.total} стр.</span>}
                                         {j.updatedAt && <span>{ago(j.updatedAt * 1000)}</span>}
@@ -635,13 +635,13 @@ const DownloadsPane = ({ jobs, onOpenGallery }) => {
                                 </div>
                                 <div className="mo-job-actions">
                                     {j.status === 'done' && j.itemId && (
-                                        <button className="ftb-btn primary" onClick={() => readLibraryManga({ id: j.itemId, title: j.title })}><i className="bi bi-book" /> <span>Читать</span></button>
+                                        <button className="ftb-btn primary" onClick={() => readLibraryManga({ id: j.itemId, title: j.title })}><i aria-hidden="true" className="bi bi-book" /> <span>Читать</span></button>
                                     )}
-                                    {(j.status === 'running' || j.status === 'queued') && <button className="ftb-btn" title="Пауза" onClick={() => act(j.id, 'pause')}><i className="bi bi-pause-fill" /></button>}
-                                    {j.status === 'paused' && <button className="ftb-btn" title="Продолжить" onClick={() => act(j.id, 'resume')}><i className="bi bi-play-fill" /></button>}
-                                    {(j.status === 'error' || j.status === 'canceled') && <button className="ftb-btn" title="Повторить" onClick={() => act(j.id, 'retry')}><i className="bi bi-arrow-clockwise" /></button>}
-                                    {['running', 'queued', 'paused'].includes(j.status) && <button className="ftb-btn danger" title="Отменить" onClick={() => act(j.id, 'cancel')}><i className="bi bi-x-lg" /></button>}
-                                    {!['running'].includes(j.status) && <button className="ftb-btn danger" title="Убрать из списка" onClick={() => act(j.id, 'remove')}><i className="bi bi-trash3" /></button>}
+                                    {(j.status === 'running' || j.status === 'queued') && <button className="ftb-btn" title="Пауза" onClick={() => act(j.id, 'pause')}><i aria-hidden="true" className="bi bi-pause-fill" /></button>}
+                                    {j.status === 'paused' && <button className="ftb-btn" title="Продолжить" onClick={() => act(j.id, 'resume')}><i aria-hidden="true" className="bi bi-play-fill" /></button>}
+                                    {(j.status === 'error' || j.status === 'canceled') && <button className="ftb-btn" title="Повторить" onClick={() => act(j.id, 'retry')}><i aria-hidden="true" className="bi bi-arrow-clockwise" /></button>}
+                                    {['running', 'queued', 'paused'].includes(j.status) && <button className="ftb-btn danger" title="Отменить" onClick={() => act(j.id, 'cancel')}><i aria-hidden="true" className="bi bi-x-lg" /></button>}
+                                    {!['running'].includes(j.status) && <button className="ftb-btn danger" title="Убрать из списка" onClick={() => act(j.id, 'remove')}><i aria-hidden="true" className="bi bi-trash3" /></button>}
                                 </div>
                             </div>
                         );
@@ -664,10 +664,10 @@ const RecentPane = ({ onOpenGallery, onRead }) => {
     return (
         <div className="mo-pane">
             <div className="folder-toolbar mo-toolbar">
-                <div className="mo-crumb"><i className="bi bi-clock-history" /> Продолжить чтение</div>
+                <div className="mo-crumb"><i aria-hidden="true" className="bi bi-clock-history" /> Продолжить чтение</div>
                 {visibleOnline.length > 0 && (
                     <button className="ftb-btn" onClick={() => { if (window.confirm('Очистить историю онлайн-чтения?')) onlineHistory.clear(); }}>
-                        <i className="bi bi-trash3" /> <span>Очистить онлайн-историю</span>
+                        <i aria-hidden="true" className="bi bi-trash3" /> <span>Очистить онлайн-историю</span>
                     </button>
                 )}
             </div>
@@ -696,7 +696,7 @@ const RecentPane = ({ onOpenGallery, onRead }) => {
 ПКМ — продолжить чтение`}>
                             <Cover src={e.cover} />
                             <button className="mo-card-remove" title="Убрать из истории" onClick={ev => { ev.stopPropagation(); onlineHistory.remove(e.key); }}>
-                                <i className="bi bi-x" />
+                                <i aria-hidden="true" className="bi bi-x" />
                             </button>
                             <div className="mo-card-title">{e.title}</div>
                             <div className="mo-card-meta">
@@ -780,9 +780,9 @@ const SubsPane = ({ state, onOpenGallery }) => {
     return (
         <div className="mo-pane">
             <div className="folder-toolbar mo-toolbar">
-                <div className="mo-crumb"><i className="bi bi-bell" /> Подписки</div>
+                <div className="mo-crumb"><i aria-hidden="true" className="bi bi-bell" /> Подписки</div>
                 <button className="ftb-btn primary" disabled={!!progress || !subs?.length} onClick={checkAll} title="Спросить сайты о новых главах сейчас">
-                    <i className={`bi bi-arrow-repeat ${progress ? 'spin' : ''}`} />
+                    <i aria-hidden="true" className={`bi bi-arrow-repeat ${progress ? 'spin' : ''}`} />
                     <span>{progress ? `Проверка… ${progress.done}/${progress.total}` : 'Проверить обновления'}</span>
                 </button>
             </div>
@@ -818,21 +818,21 @@ const SubsPane = ({ state, onOpenGallery }) => {
                             <div className="mo-sub-body">
                                 <div className="mo-sub-title" onClick={() => readLibraryManga({ id: s.id, title: s.title })}>{s.title}</div>
                                 <div className="mo-sub-meta">
-                                    <span><i className={`bi ${SOURCE_ICON[s.site] || 'bi-globe'}`} /> {s.site}</span>
+                                    <span><i aria-hidden="true" className={`bi ${SOURCE_ICON[s.site] || 'bi-globe'}`} /> {s.site}</span>
                                     <span>{s.chapters} гл.{s.remote ? ` · онлайн: ${s.remote}` : ''}</span>
                                     {s.unseen > 0 && <span className="new">новых: {s.unseen}</span>}
                                     <span>{s.checkedAt ? `проверено ${ago(s.checkedAt * 1000)}` : 'ещё не проверялась'}</span>
                                 </div>
-                                {s.error && <div className="mo-sub-error" title={s.error}><i className="bi bi-exclamation-triangle" /> {s.error}</div>}
+                                {s.error && <div className="mo-sub-error" title={s.error}><i aria-hidden="true" className="bi bi-exclamation-triangle" /> {s.error}</div>}
                             </div>
                             <div className="mo-sub-actions">
-                                <button className="ftb-btn" title="Читать" onClick={() => readLibraryManga({ id: s.id, title: s.title })}><i className="bi bi-book" /></button>
+                                <button className="ftb-btn" title="Читать" onClick={() => readLibraryManga({ id: s.id, title: s.title })}><i aria-hidden="true" className="bi bi-book" /></button>
                                 <button className="ftb-btn" title="Проверить эту" disabled={busyId === s.id || !!progress} onClick={() => checkOne(s)}>
-                                    <i className={`bi bi-arrow-repeat ${busyId === s.id ? 'spin' : ''}`} />
+                                    <i aria-hidden="true" className={`bi bi-arrow-repeat ${busyId === s.id ? 'spin' : ''}`} />
                                 </button>
-                                {s.remote > 0 && <button className="ftb-btn" title={`Скачать онлайн-главы (${s.remote})`} onClick={() => downloadRemote(s)}><i className="bi bi-download" /></button>}
-                                {s.site && s.galleryId && <button className="ftb-btn" title="Карточка на сайте" onClick={() => onOpenGallery({ source: s.site, id: s.galleryId, preview: { title: s.title } })}><i className="bi bi-globe2" /></button>}
-                                <button className="ftb-btn" title="Отписаться" onClick={() => unsubscribe(s)}><i className="bi bi-bell-slash" /></button>
+                                {s.remote > 0 && <button className="ftb-btn" title={`Скачать онлайн-главы (${s.remote})`} onClick={() => downloadRemote(s)}><i aria-hidden="true" className="bi bi-download" /></button>}
+                                {s.site && s.galleryId && <button className="ftb-btn" title="Карточка на сайте" onClick={() => onOpenGallery({ source: s.site, id: s.galleryId, preview: { title: s.title } })}><i aria-hidden="true" className="bi bi-globe2" /></button>}
+                                <button className="ftb-btn" title="Отписаться" onClick={() => unsubscribe(s)}><i aria-hidden="true" className="bi bi-bell-slash" /></button>
                             </div>
                         </div>
                     ))}
@@ -926,7 +926,7 @@ const MangaView = () => {
                     {sources.map(s => (
                         <div key={s.id} className={`fsb-item ${view === 'search' && source?.id === s.id ? 'active' : ''}`}
                              onClick={() => { setSourceId(s.id); setView('search'); }}>
-                            <i className={`bi ${SOURCE_ICON[s.id] || 'bi-globe'}`} />
+                            <i aria-hidden="true" className={`bi ${SOURCE_ICON[s.id] || 'bi-globe'}`} />
                             <span className="fsb-label">{s.name}</span>
                             {s.login && <i className="bi bi-person-lock mo-src-lock" title="Чтение глав — после входа на сайте" />}
                         </div>
@@ -935,16 +935,16 @@ const MangaView = () => {
                 <div className="fsb-section">
                     <div className="fsb-title">Моё</div>
                     <div className={`fsb-item ${view === 'recent' ? 'active' : ''}`} onClick={() => setView('recent')}>
-                        <i className="bi bi-clock-history" /><span className="fsb-label">Продолжить чтение</span>
+                        <i aria-hidden="true" className="bi bi-clock-history" /><span className="fsb-label">Продолжить чтение</span>
                     </div>
                     <div className={`fsb-item ${view === 'subs' ? 'active' : ''}`} onClick={() => setView('subs')}>
-                        <i className="bi bi-bell" /><span className="fsb-label">Подписки</span>
-                        {subsState.progress ? <i className="bi bi-arrow-repeat spin mo-count-spin" />
+                        <i aria-hidden="true" className="bi bi-bell" /><span className="fsb-label">Подписки</span>
+                        {subsState.progress ? <i aria-hidden="true" className="bi bi-arrow-repeat spin mo-count-spin" />
                             : unseen > 0 ? <span className="mo-count new" title="Новых глав">+{unseen}</span>
                             : subsState.subs?.length > 0 && <span className="mo-count muted">{subsState.subs.length}</span>}
                     </div>
                     <div className={`fsb-item ${view === 'downloads' ? 'active' : ''}`} onClick={() => setView('downloads')}>
-                        <i className="bi bi-download" /><span className="fsb-label">Загрузки</span>
+                        <i aria-hidden="true" className="bi bi-download" /><span className="fsb-label">Загрузки</span>
                         {active > 0 && <span className="mo-count">{active}</span>}
                     </div>
                 </div>
@@ -954,7 +954,7 @@ const MangaView = () => {
                         Вставьте ссылку на галерею в поиск — откроется карточка. Ctrl+V ссылки в библиотеке ставит её на загрузку.
                     </div>
                     <div className="fsb-item" onClick={() => mangaApi.clearCache().then(() => notify({ message: 'Кэш страниц очищен', type: 'info' }))}>
-                        <i className="bi bi-eraser" /><span className="fsb-label">Очистить кэш страниц</span>
+                        <i aria-hidden="true" className="bi bi-eraser" /><span className="fsb-label">Очистить кэш страниц</span>
                     </div>
                 </div>
             </aside>

@@ -23,10 +23,10 @@ const ControlPanel = ({ onClose, initialTab = 'manage', initialTool = null }) =>
         <div className="settings-overlay" onMouseDown={onClose}>
             <div className="settings-modal control-panel" onMouseDown={e => e.stopPropagation()}>
                 <div className="settings-header">
-                    <i className="bi bi-sliders me-2" />
+                    <i aria-hidden="true" className="bi bi-sliders me-2" />
                     <span>Панель управления</span>
                     <button className="settings-close" onClick={onClose} title="Закрыть">
-                        <i className="bi bi-x-lg" />
+                        <i aria-hidden="true" className="bi bi-x-lg" />
                     </button>
                 </div>
 
@@ -38,7 +38,7 @@ const ControlPanel = ({ onClose, initialTab = 'manage', initialTool = null }) =>
                             className={`cp-tab ${tab === t.id ? 'active' : ''}`}
                             onClick={() => setTab(t.id)}
                         >
-                            <i className={`bi ${t.icon} me-1`} />
+                            <i aria-hidden="true" className={`bi ${t.icon} me-1`} />
                             {t.label}
                         </button>
                     ))}

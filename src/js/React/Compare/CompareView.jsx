@@ -191,13 +191,13 @@ const CompareView = () => {
                     {MODES.map(m => (
                         <button key={m.id} className={mode === m.id ? 'active' : ''} onClick={() => setMode(m.id)}
                                 disabled={m.id !== 'side' && (isVideo(a) || isVideo(b))}>
-                            <i className={`bi ${m.icon}`} /> {m.label}
+                            <i aria-hidden="true" className={`bi ${m.icon}`} /> {m.label}
                         </button>
                     ))}
                 </div>
                 <span className="cmp-hint">Колесо — масштаб (синхронно), перетаскивание — сдвиг, 0 — сброс</span>
-                <button className="cmp-icon" onClick={swap} title="Поменять местами"><i className="bi bi-arrow-left-right" /></button>
-                <button className="cmp-icon" onClick={close} title="Закрыть (Esc)"><i className="bi bi-x-lg" /></button>
+                <button className="cmp-icon" onClick={swap} title="Поменять местами"><i aria-hidden="true" className="bi bi-arrow-left-right" /></button>
+                <button className="cmp-icon" onClick={close} title="Закрыть (Esc)"><i aria-hidden="true" className="bi bi-x-lg" /></button>
             </div>
 
             <div className={`cmp-stage mode-${mode}`} ref={stageRef} onPointerDown={onDown}>
@@ -214,7 +214,7 @@ const CompareView = () => {
                         </div>
                         {mode === 'wipe' && (
                             <div className="cmp-wipe-handle" style={{ left: `${wipe}%` }}>
-                                <span><i className="bi bi-chevron-left" /><i className="bi bi-chevron-right" /></span>
+                                <span><i aria-hidden="true" className="bi bi-chevron-left" /><i aria-hidden="true" className="bi bi-chevron-right" /></span>
                             </div>
                         )}
                         {mode === 'diff' && <div className="cmp-diff-note">Чёрное — совпадает, светлое — отличается</div>}
@@ -226,11 +226,11 @@ const CompareView = () => {
                 <Info it={a} other={b} side="left" />
                 <div className="cmp-actions">
                     <button className="cmp-btn" disabled={busy} onClick={() => keep(a, b)} title={`Правый — ${dropWord}`}>
-                        <i className="bi bi-arrow-left" /> Оставить левый
+                        <i aria-hidden="true" className="bi bi-arrow-left" /> Оставить левый
                     </button>
                     <button className="cmp-btn ghost" onClick={close}>Оставить оба</button>
                     <button className="cmp-btn" disabled={busy} onClick={() => keep(b, a)} title={`Левый — ${dropWord}`}>
-                        Оставить правый <i className="bi bi-arrow-right" />
+                        Оставить правый <i aria-hidden="true" className="bi bi-arrow-right" />
                     </button>
                 </div>
                 <Info it={b} other={a} side="right" />

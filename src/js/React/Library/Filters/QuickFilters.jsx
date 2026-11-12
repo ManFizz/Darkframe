@@ -114,8 +114,8 @@ const QuickFilters = () => {
     return (
         <div className={`quick-filters ${collapsed ? 'collapsed' : ''}`}>
             <button className="quick-filters-toggle" onClick={toggleCollapsed} title={collapsed ? 'Показать быстрые фильтры' : 'Скрыть'}>
-                <i className={`bi bi-chevron-${collapsed ? 'right' : 'down'}`} />
-                <i className="bi bi-lightning-charge-fill" />
+                <i aria-hidden="true" className={`bi bi-chevron-${collapsed ? 'right' : 'down'}`} />
+                <i aria-hidden="true" className="bi bi-lightning-charge-fill" />
                 {collapsed && <span>Быстрые фильтры</span>}
             </button>
 
@@ -127,7 +127,7 @@ const QuickFilters = () => {
                             className={`qf-chip ${isActive(p.patch, filters) ? 'active' : ''}`}
                             onClick={() => toggle(p)}
                         >
-                            <i className={`bi ${p.icon}`} />{p.label}
+                            <i aria-hidden="true" className={`bi ${p.icon}`} />{p.label}
                         </button>
                     ))}
 
@@ -142,7 +142,7 @@ const QuickFilters = () => {
                                 title="Закреплённый тег"
                                 onClick={() => toggle(preset)}
                             >
-                                <i className="bi bi-hash" />{name}
+                                <i aria-hidden="true" className="bi bi-hash" />{name}
                             </button>
                         );
                     })}
@@ -151,10 +151,10 @@ const QuickFilters = () => {
                     {custom.map(p => (
                         <span key={p.id} className={`qf-chip qf-chip--custom ${isActive(p.patch, filters) ? 'active' : ''}`}>
                             <button className="qf-chip-main" onClick={() => toggle(p)}>
-                                <i className="bi bi-bookmark-fill" />{p.label}
+                                <i aria-hidden="true" className="bi bi-bookmark-fill" />{p.label}
                             </button>
                             <button className="qf-chip-del" title="Удалить пресет" onClick={() => removeCustom(p.id)}>
-                                <i className="bi bi-x" />
+                                <i aria-hidden="true" className="bi bi-x" />
                             </button>
                         </span>
                     ))}
@@ -179,7 +179,7 @@ const QuickFilters = () => {
                             title={canSave ? 'Сохранить текущий фильтр как пресет' : 'Сначала настройте фильтр'}
                             onClick={() => setNaming(true)}
                         >
-                            <i className="bi bi-plus-lg" />Пресет
+                            <i aria-hidden="true" className="bi bi-plus-lg" />Пресет
                         </button>
                     )}
                 </div>

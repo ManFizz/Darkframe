@@ -44,7 +44,7 @@ const SaveButton = ({ sourceType, q }) => {
     return (
         <button className={`bs-save ${isSaved ? 'on' : ''}`} disabled={empty && !isSaved} onClick={onClick}
                 title={isSaved ? 'Поиск сохранён — открыть сохранённые' : 'Запомнить этот поиск'}>
-            <i className={`bi ${isSaved ? 'bi-bookmark-check-fill' : 'bi-bookmark-plus'}`} />
+            <i aria-hidden="true" className={`bi ${isSaved ? 'bi-bookmark-check-fill' : 'bi-bookmark-plus'}`} />
         </button>
     );
 };
@@ -175,7 +175,7 @@ const BooruSearchBar = ({ sourceType }) => {
     return (
         <div className="booru-search" ref={boxRef}>
             <div className="bs-field" onClick={() => inputRef.current?.focus()}>
-                <i className={`bi ${status.loading ? 'bi-arrow-repeat spin' : 'bi-search'} bs-icon`} />
+                <i aria-hidden="true" className={`bi ${status.loading ? 'bi-arrow-repeat spin' : 'bi-search'} bs-icon`} />
                 {q.tags.map(t => {
                     const excluded = t.startsWith('-');
                     const name = t.replace(/^-/, '');
@@ -185,11 +185,11 @@ const BooruSearchBar = ({ sourceType }) => {
                               title={`${excluded ? 'Исключён — нажми, чтобы включить' : 'Нажми, чтобы исключить'} · ПКМ — ${isFav(name) ? 'убрать из избранного' : 'в избранное'}`}
                               onClick={e => { e.stopPropagation(); toggleExclude(t); }}
                               onContextMenu={e => { e.preventDefault(); e.stopPropagation(); toggleFav(name); }}>
-                            {isFav(name) && <i className="bi bi-star-fill bs-chip-fav" />}
-                            {excluded && <i className="bi bi-dash-circle" />}
+                            {isFav(name) && <i aria-hidden="true" className="bi bi-star-fill bs-chip-fav" />}
+                            {excluded && <i aria-hidden="true" className="bi bi-dash-circle" />}
                             {name}
                             <button onClick={e => { e.stopPropagation(); removeTag(t); }} title="Убрать">
-                                <i className="bi bi-x" />
+                                <i aria-hidden="true" className="bi bi-x" />
                             </button>
                         </span>
                     );
@@ -221,7 +221,7 @@ const BooruSearchBar = ({ sourceType }) => {
                              title={`ПКМ — ${isFav(s.name) ? 'убрать из избранного' : 'в избранное'}`}>
                             <span className={`bs-dot kind-${s.kind}`} />
                             <span className="bs-opt-name">{s.name}</span>
-                            {isFav(s.name) && <i className="bi bi-star-fill bs-opt-fav" />}
+                            {isFav(s.name) && <i aria-hidden="true" className="bi bi-star-fill bs-opt-fav" />}
                             {s.count > 0 && <span className="bs-opt-count">{fmtCount(s.count)}</span>}
                         </div>
                     ))}

@@ -75,20 +75,20 @@ function TagTypeMenu({ menu, onClose }) {
                 {tag && <span className="tm-type-menu-now">{tagTypeLabel(tag.type)}{manual ? ' · вручную' : ''}</span>}
             </div>
             {error && <div role="alert" className="tm-type-menu-note err">{error}</div>}
-            {!tag && !error && <div className="tm-type-menu-note"><i className="bi bi-arrow-repeat spin" /> Загрузка…</div>}
+            {!tag && !error && <div className="tm-type-menu-note"><i aria-hidden="true" className="bi bi-arrow-repeat spin" /> Загрузка…</div>}
             {TAG_TYPE_CHOICES.map(({ id, label }) => {
                 const on = tag?.type === id;
                 return (
                     <button role="menuitemradio" aria-checked={on} disabled={!tag || busy} key={id} className={on ? 'active' : ''} onClick={() => choose(id)}>
                         <span className={`tag-dot tag-type-${id}`} />
                         <span className="tm-type-menu-label">{label}</span>
-                        {on && <i className="bi bi-check2" />}
+                        {on && <i aria-hidden="true" className="bi bi-check2" />}
                     </button>
                 );
             })}
             {manual && (
                 <button role="menuitem" disabled={busy} className="tm-type-menu-reset" onClick={() => choose(null)}>
-                    <i className="bi bi-arrow-counterclockwise" />
+                    <i aria-hidden="true" className="bi bi-arrow-counterclockwise" />
                     <span className="tm-type-menu-label">Как на сайте</span>
                 </button>
             )}

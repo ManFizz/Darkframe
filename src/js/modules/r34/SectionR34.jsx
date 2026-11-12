@@ -42,7 +42,7 @@ const BlacklistBlock = ({ source }) => {
                extra={hiddenCount > 0 && (
                    <button className="bsb-link" onClick={() => setShowHidden(!showHidden)}
                            title={showHidden ? 'Снова прятать' : 'Показать скрытые посты'}>
-                       <i className={`bi ${showHidden ? 'bi-eye-slash' : 'bi-eye'}`} /> {showHidden ? 'прятать' : `скрыто ${hiddenCount}`}
+                       <i aria-hidden="true" className={`bi ${showHidden ? 'bi-eye-slash' : 'bi-eye'}`} /> {showHidden ? 'прятать' : `скрыто ${hiddenCount}`}
                    </button>
                )}>
             {list.length > 0 ? (
@@ -61,7 +61,7 @@ const BlacklistBlock = ({ source }) => {
                 <input placeholder="Тег для скрытия" value={value}
                        onChange={e => setValue(e.target.value)}
                        onKeyDown={e => { if (e.key === 'Enter') add(); }} />
-                <button disabled={!value.trim()} onClick={add}><i className="bi bi-plus-lg" /></button>
+                <button disabled={!value.trim()} onClick={add} aria-label="Скрывать этот тег" title="Скрывать этот тег"><i aria-hidden="true" className="bi bi-plus-lg" /></button>
             </div>
         </Block>
     );
@@ -96,7 +96,7 @@ const Segmented = ({ options, value, onChange }) => (
     <div className="bsb-seg">
         {options.map(o => (
             <button key={o.id} className={value === o.id ? 'active' : ''} onClick={() => onChange(o.id)}>
-                {o.icon && <i className={`bi ${o.icon}`} />} {o.label}
+                {o.icon && <i aria-hidden="true" className={`bi ${o.icon}`} />} {o.label}
             </button>
         ))}
     </div>
@@ -120,7 +120,7 @@ const Block = ({ title, extra, children, count = null }) => {
             <div className="bsb-title">
                 <span className="bsb-fold" role="button" tabIndex={0} onClick={toggle} title={folded ? 'Развернуть' : 'Свернуть'}
                       onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(); } }}>
-                    <i className="bi bi-chevron-down bsb-fold-caret" />{title}
+                    <i aria-hidden="true" className="bi bi-chevron-down bsb-fold-caret" />{title}
                     {folded && count != null && <span className="bsb-fold-count">{count}</span>}
                 </span>
                 {!folded && extra}
@@ -251,8 +251,8 @@ const SectionR34 = ({ currentSource }) => {
                     <div>
                         <div className="bsb-name">{currentR34Source?.name}</div>
                         <div className="bsb-status">
-                            {status.loading ? <><i className="bi bi-arrow-repeat spin" /> Поиск…</>
-                                : status.error && searched ? <span className="err"><i className="bi bi-exclamation-triangle" /> {status.error}</span>
+                            {status.loading ? <><i aria-hidden="true" className="bi bi-arrow-repeat spin" /> Поиск…</>
+                                : status.error && searched ? <span className="err"><i aria-hidden="true" className="bi bi-exclamation-triangle" /> {status.error}</span>
                                 : searched ? <>{fmtTotal(status.total || 0)} постов</>
                                 : 'Готов к поиску'}
                         </div>
@@ -286,10 +286,10 @@ const SectionR34 = ({ currentSource }) => {
                        ? <span className="bsb-hint">выбери теги для удаления</span>
                        : <span className="bsb-extra">
                              <button className="bsb-link" onClick={() => setEditing(true)} title="Удалить избранные теги">
-                                 <i className="bi bi-pencil" />
+                                 <i aria-hidden="true" className="bi bi-pencil" />
                              </button>
                              <button className={`bsb-link ${q.view === 'favtags' ? 'active' : ''}`} onClick={() => setView('favtags')} title="Страница избранных тегов: свежие посты по каждому">
-                                 все <i className="bi bi-arrow-right" />
+                                 все <i aria-hidden="true" className="bi bi-arrow-right" />
                              </button>
                          </span>)}>
                 {savedFavs.length > 12 && !editing && (
@@ -312,7 +312,7 @@ const SectionR34 = ({ currentSource }) => {
                                       onDragEnd={onDragEnd}
                                       onClick={() => toggleMark(f.tag)}
                                       title={`${f.tag}\n${isMarked ? 'Не удалять' : 'Отметить для удаления'} · перетащи, чтобы переставить`}>
-                                    <i className={`bi ${isMarked ? 'bi-check-square-fill' : 'bi-square'}`} />
+                                    <i aria-hidden="true" className={`bi ${isMarked ? 'bi-check-square-fill' : 'bi-square'}`} />
                                     <span className="bsb-tag-name">{f.tag}</span>
                                 </span>
                             );
@@ -327,13 +327,13 @@ const SectionR34 = ({ currentSource }) => {
                                   onClick={() => cycleTag(f.tag)}
                                   onContextMenu={e => { e.preventDefault(); removeOne(f.tag); }}
                                   title={`${f.tag}\n${st === 'include' ? 'В запросе — нажми, чтобы исключить' : st === 'exclude' ? 'Исключён — нажми, чтобы убрать' : 'Нажми, чтобы добавить в запрос'} · ПКМ или × — убрать из избранного · перетащи, чтобы переставить`}>
-                                <i className="bi bi-grip-vertical bsb-grip" />
-                                {st === 'include' && <i className="bi bi-plus-circle-fill bsb-state" />}
-                                {st === 'exclude' && <i className="bi bi-dash-circle-fill bsb-state" />}
+                                <i aria-hidden="true" className="bi bi-grip-vertical bsb-grip" />
+                                {st === 'include' && <i aria-hidden="true" className="bi bi-plus-circle-fill bsb-state" />}
+                                {st === 'exclude' && <i aria-hidden="true" className="bi bi-dash-circle-fill bsb-state" />}
                                 <span className="bsb-tag-name">{f.tag}</span>
                                 <button className="bsb-tag-x" title="Убрать из избранного"
                                         onClick={e => { e.stopPropagation(); removeOne(f.tag); }}>
-                                    <i className="bi bi-x" />
+                                    <i aria-hidden="true" className="bi bi-x" />
                                 </button>
                             </span>
                         );
@@ -348,7 +348,7 @@ const SectionR34 = ({ currentSource }) => {
                         <span className="bsb-edit-spacer" />
                         <button className="bsb-edit-btn" onClick={() => { setEditing(false); setMarked(new Set()); }}>Отмена</button>
                         <button className="bsb-edit-btn danger" disabled={!marked.size} onClick={deleteMarked}>
-                            <i className="bi bi-trash3" /> Удалить{marked.size ? ` (${marked.size})` : ''}
+                            <i aria-hidden="true" className="bi bi-trash3" /> Удалить{marked.size ? ` (${marked.size})` : ''}
                         </button>
                     </div>
                 ) : (
@@ -357,12 +357,12 @@ const SectionR34 = ({ currentSource }) => {
                            onChange={e => setNewTag(e.target.value)}
                            onKeyDown={e => { if (e.key === 'Enter' && newTag.trim()) { addFavTag(newTag, currentSource); setNewTag(''); } }} />
                     <button disabled={!newTag.trim()} onClick={() => { addFavTag(newTag, currentSource); setNewTag(''); }}>
-                        <i className="bi bi-plus-lg" />
+                        <i aria-hidden="true" className="bi bi-plus-lg" />
                     </button>
                     {q.tags.length > 0 && (
                         <button title="Сохранить теги текущего запроса"
                                 onClick={() => q.tags.forEach(t => addFavTag(t.replace(/^-/, ''), currentSource))}>
-                            <i className="bi bi-star" />
+                            <i aria-hidden="true" className="bi bi-star" />
                         </button>
                     )}
                 </div>
@@ -370,19 +370,19 @@ const SectionR34 = ({ currentSource }) => {
             </Block>
 
             <Block title="Сохранённые поиски"
-                   extra={<button className="bsb-link" onClick={() => setView('saved')}>все <i className="bi bi-arrow-right" /></button>}>
+                   extra={<button className="bsb-link" onClick={() => setView('saved')}>все <i aria-hidden="true" className="bi bi-arrow-right" /></button>}>
                 {saved.length === 0 ? (
-                    <div className="bsb-empty">Нажми <i className="bi bi-bookmark-plus" /> в строке поиска, чтобы запомнить поиск</div>
+                    <div className="bsb-empty">Нажми <i aria-hidden="true" className="bi bi-bookmark-plus" /> в строке поиска, чтобы запомнить поиск</div>
                 ) : (
                     <div className="bsb-saved">
                         {saved.slice(0, 5).map(s => (
                             <button key={s.id} className="bsb-saved-item" onClick={() => runSearch(queryOf(s))} title={s.tags || 'все посты'}>
-                                <i className="bi bi-bookmark-fill" />
+                                <i aria-hidden="true" className="bi bi-bookmark-fill" />
                                 <span>{s.title || s.tags || 'все посты'}</span>
                             </button>
                         ))}
                         <button className={`bsb-saved-open ${q.view === 'saved' ? 'active' : ''}`} onClick={() => setView('saved')}>
-                            <i className="bi bi-grid-3x2-gap" /> Открыть страницу ({saved.length})
+                            <i aria-hidden="true" className="bi bi-grid-3x2-gap" /> Открыть страницу ({saved.length})
                         </button>
                     </div>
                 )}

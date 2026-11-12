@@ -51,7 +51,7 @@ const BooruBulkBar = ({ selectedItems, inLibrary, totalCount, onSelectAll, onCle
 
     return (
         <div className="booru-bulk-bar">
-            <span className="bbb-count"><i className="bi bi-check2-square" /> {selectedItems.length}</span>
+            <span className="bbb-count"><i aria-hidden="true" className="bi bi-check2-square" /> {selectedItems.length}</span>
             {selectedItems.length < totalCount && (
                 <button className="bbb-link" onClick={onSelectAll} title="Выделить все показанные (Ctrl+A)">Все ({totalCount})</button>
             )}
@@ -59,7 +59,7 @@ const BooruBulkBar = ({ selectedItems, inLibrary, totalCount, onSelectAll, onCle
 
             {progress ? (
                 <span className="bbb-progress">
-                    <i className="bi bi-arrow-repeat spin" /> Сохраняю {progress.done} / {progress.total}
+                    <i aria-hidden="true" className="bi bi-arrow-repeat spin" /> Сохраняю {progress.done} / {progress.total}
                     <span className="bbb-bar"><span style={{ width: `${(progress.done / Math.max(1, progress.total)) * 100}%` }} /></span>
                 </span>
             ) : (
@@ -70,7 +70,7 @@ const BooruBulkBar = ({ selectedItems, inLibrary, totalCount, onSelectAll, onCle
                     <div className="bbb-save">
                         <button className="btn btn-sm btn-primary" disabled={!fresh.length} onClick={() => setPicking(v => !v)}
                                 title={!fresh.length ? 'Все выбранные уже в библиотеке' : ''}>
-                            <i className="bi bi-download me-1" />
+                            <i aria-hidden="true" className="bi bi-download me-1" />
                             В библиотеку{fresh.length !== selectedItems.length ? ` (${fresh.length})` : ''}
                         </button>
                         {picking && (
@@ -86,7 +86,7 @@ const BooruBulkBar = ({ selectedItems, inLibrary, totalCount, onSelectAll, onCle
             )}
 
             <button className="bbb-close" onClick={onClear} title="Снять выделение (Esc)" disabled={!!progress}>
-                <i className="bi bi-x-lg" />
+                <i aria-hidden="true" className="bi bi-x-lg" />
             </button>
         </div>
     );

@@ -43,11 +43,11 @@ const MediaPeek = ({ items, index = 0, onClose }) => {
             </div>
             {many && (
                 <>
-                    <button className="peek-nav prev" onClick={() => go(-1)} title="Предыдущий (←)"><i className="bi bi-chevron-left" /></button>
-                    <button className="peek-nav next" onClick={() => go(1)} title="Следующий (→)"><i className="bi bi-chevron-right" /></button>
+                    <button className="peek-nav prev" onClick={() => go(-1)} title="Предыдущий (←)"><i aria-hidden="true" className="bi bi-chevron-left" /></button>
+                    <button className="peek-nav next" onClick={() => go(1)} title="Следующий (→)"><i aria-hidden="true" className="bi bi-chevron-right" /></button>
                 </>
             )}
-            <button className="peek-close" onClick={onClose} title="Закрыть (Esc)"><i className="bi bi-x-lg" /></button>
+            <button className="peek-close" onClick={onClose} title="Закрыть (Esc)"><i aria-hidden="true" className="bi bi-x-lg" /></button>
             <div className="peek-caption">
                 {many && <b>{i + 1} / {items.length}</b>}
                 <span>{it.collectionName}</span>

@@ -86,11 +86,11 @@ const FolderAuditTool = () => {
                 <div className="d-flex gap-2">
                     {dir && !scanning && (
                         <button className="btn btn-outline-secondary btn-sm" onClick={() => run(dir)}>
-                            <i className="bi bi-arrow-repeat me-1" />Снова
+                            <i aria-hidden="true" className="bi bi-arrow-repeat me-1" />Снова
                         </button>
                     )}
                     <button className="btn btn-outline-secondary btn-sm" onClick={pick} disabled={scanning || importing}>
-                        <i className="bi bi-folder2-open me-1" />Выбрать папку
+                        <i aria-hidden="true" className="bi bi-folder2-open me-1" />Выбрать папку
                     </button>
                 </div>
             </div>
@@ -100,7 +100,7 @@ const FolderAuditTool = () => {
 
             {scanning && (
                 <div className="cp-empty">
-                    <i className="bi bi-arrow-repeat spin" />
+                    <i aria-hidden="true" className="bi bi-arrow-repeat spin" />
                     <span>
                         {progress.total ? `Проверяю: ${progress.done} из ${progress.total}` : 'Просматриваю папку…'}
                     </span>
@@ -117,7 +117,7 @@ const FolderAuditTool = () => {
 
                     {report.missing.length === 0 ? (
                         <div className="cp-empty">
-                            <i className="bi bi-check-circle" />
+                            <i aria-hidden="true" className="bi bi-check-circle" />
                             <span>Всё из этой папки уже в библиотеке</span>
                         </div>
                     ) : (
@@ -126,10 +126,10 @@ const FolderAuditTool = () => {
                                 <span><b>{report.missing.length}</b> не в библиотеке</span>
                                 <span className="d-flex gap-2">
                                     <button className="btn btn-sm btn-outline-secondary" onClick={copyList}>
-                                        <i className="bi bi-clipboard me-1" />Копировать список
+                                        <i aria-hidden="true" className="bi bi-clipboard me-1" />Копировать список
                                     </button>
                                     <button className="btn btn-sm btn-primary" onClick={importMissing} disabled={importing}>
-                                        <i className={`bi me-1 ${importing ? 'bi-arrow-repeat spin' : 'bi-download'}`} />
+                                        <i aria-hidden="true" className={`bi me-1 ${importing ? 'bi-arrow-repeat spin' : 'bi-download'}`} />
                                         Импортировать
                                     </button>
                                 </span>
@@ -141,7 +141,7 @@ const FolderAuditTool = () => {
                                         title={`${m.path}\nКлик — показать в проводнике`}
                                         onClick={() => fsApi.reveal(m.path)}
                                     >
-                                        <i className="bi bi-file-earmark" />
+                                        <i aria-hidden="true" className="bi bi-file-earmark" />
                                         <span className="cp-intg-name">{m.path.slice(dir.length).replace(/^[\/]/, '')}</span>
                                         {m.copies > 0 && <span className="cp-intg-tag">копий в папке: {m.copies}</span>}
                                         <span className="cp-intg-size">{fmtSize(m.size)}</span>

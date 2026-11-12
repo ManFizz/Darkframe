@@ -61,8 +61,8 @@ const TagBrowser = ({ source, filters, onAdd, onClose }) => {
     return (
         <div className="mo-tb">
             <div className="mo-tb-head">
-                <span><i className="bi bi-tags" /> Теги · {source.name}</span>
-                <button className="ftb-btn" onClick={onClose} title="Закрыть"><i className="bi bi-x-lg" /></button>
+                <span><i aria-hidden="true" className="bi bi-tags" /> Теги · {source.name}</span>
+                <button className="ftb-btn" onClick={onClose} title="Закрыть"><i aria-hidden="true" className="bi bi-x-lg" /></button>
             </div>
             <div className="mo-tb-tabs">
                 {groups.map(g => (
@@ -92,12 +92,12 @@ const TagBrowser = ({ source, filters, onAdd, onClose }) => {
                             <span className="mo-tb-name">{t.name}</span>
                             {t.count != null && <span className="mo-tb-count">{fmt(t.count)}</span>}
                             <button className="mo-tb-ex" title="Исключить" onClick={e => { e.stopPropagation(); onAdd({ type: t.type, name: t.name, id: t.id ?? null, exclude: true }); }}>
-                                <i className="bi bi-dash" />
+                                <i aria-hidden="true" className="bi bi-dash" />
                             </button>
                         </div>
                     );
                 })}
-                {list.loading && <div className="mo-loading"><i className="bi bi-arrow-repeat spin" /> Загрузка…</div>}
+                {list.loading && <div className="mo-loading"><i aria-hidden="true" className="bi bi-arrow-repeat spin" /> Загрузка…</div>}
                 {!found && !q.trim() && list.hasMore && !list.loading && (
                     <button className="ftb-btn mo-tb-more" onClick={() => load(list.page + 1)}>
                         Ещё · стр. {list.page + 1} из {list.pages}

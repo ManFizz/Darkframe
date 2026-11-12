@@ -32,7 +32,7 @@ const PathBar = ({ path, onOpen, editSignal }) => {
     if (editing) {
         return (
             <div className="pathbar editing">
-                <i className="bi bi-folder2-open" />
+                <i aria-hidden="true" className="bi bi-folder2-open" />
                 <input
                     ref={inputRef}
                     value={value}
@@ -51,10 +51,10 @@ const PathBar = ({ path, onOpen, editSignal }) => {
 
     return (
         <div className="pathbar" onClick={() => setEditing(true)} title="Нажми, чтобы ввести путь (Ctrl+L)">
-            <i className="bi bi-hdd" />
+            <i aria-hidden="true" className="bi bi-hdd" />
             {shown.map((c, i) => c ? (
                 <React.Fragment key={c.path}>
-                    {i > 0 && <i className="bi bi-chevron-right pathbar-sep" />}
+                    {i > 0 && <i aria-hidden="true" className="bi bi-chevron-right pathbar-sep" />}
                     <button
                         className={`pathbar-crumb ${i === shown.length - 1 ? 'current' : ''}`}
                         onClick={e => { e.stopPropagation(); onOpen(c.path); }}
@@ -64,7 +64,7 @@ const PathBar = ({ path, onOpen, editSignal }) => {
                 </React.Fragment>
             ) : (
                 <React.Fragment key="gap">
-                    <i className="bi bi-chevron-right pathbar-sep" />
+                    <i aria-hidden="true" className="bi bi-chevron-right pathbar-sep" />
                     <span className="pathbar-gap">…</span>
                 </React.Fragment>
             ))}

@@ -271,7 +271,7 @@ const DuplicatesTab = () => {
                                 <>
                                     <span>Нужна модель автотегов (WD ViT Tagger, ~380 МБ, работает локально)</span>
                                     <button className="btn btn-sm btn-outline-primary" onClick={downloadModel}>
-                                        <i className="bi bi-download me-1" />Скачать модель
+                                        <i aria-hidden="true" className="bi bi-download me-1" />Скачать модель
                                     </button>
                                 </>
                             )
@@ -286,7 +286,7 @@ const DuplicatesTab = () => {
                                 </div>
                                 {kind !== 'images' && (
                                     <button className="btn btn-sm btn-outline-secondary" onClick={() => stop(kind)} title="Посчитанное сохранится, продолжить можно позже">
-                                        <i className="bi bi-stop-fill me-1" />Остановить
+                                        <i aria-hidden="true" className="bi bi-stop-fill me-1" />Остановить
                                     </button>
                                 )}
                             </>
@@ -297,11 +297,11 @@ const DuplicatesTab = () => {
                                     {KINDS[kind].perItem && <> · ещё {fmtEta(st.missing * KINDS[kind].perItem)}</>}
                                 </span>
                                 <button className="btn btn-sm btn-outline-primary" onClick={() => compute(kind)}>
-                                    <i className="bi bi-fingerprint me-1" />Посчитать {st.missing}
+                                    <i aria-hidden="true" className="bi bi-fingerprint me-1" />Посчитать {st.missing}
                                 </button>
                             </>
                         ) : (
-                            <span><i className="bi bi-check2-circle me-1" />{KINDS[kind].noun} готовы для всех {st.total} {KINDS[kind].what}</span>
+                            <span><i aria-hidden="true" className="bi bi-check2-circle me-1" />{KINDS[kind].noun} готовы для всех {st.total} {KINDS[kind].what}</span>
                         )}
                     </div>
 
@@ -352,7 +352,7 @@ const DuplicatesTab = () => {
                         disabled={scanning || !!running || !computed}
                         title={st.missing ? `Сравниваются только ${KINDS[kind].what} с посчитанными отпечатками` : ''}
                     >
-                        <i className={`bi ${scanning ? 'bi-arrow-repeat spin' : 'bi-search'} me-1`} />
+                        <i aria-hidden="true" className={`bi ${scanning ? 'bi-arrow-repeat spin' : 'bi-search'} me-1`} />
                         {scanning ? `Сравниваю${scanLabel}` : 'Найти похожие'}
                     </button>
                 </div>
@@ -361,7 +361,7 @@ const DuplicatesTab = () => {
             {!similar && (
                 <div className="cp-sim-controls cp-sim-controls--compact">
                     <button className="btn btn-outline-secondary btn-sm" onClick={scan} disabled={scanning}>
-                        <i className={`bi bi-arrow-repeat me-1 ${scanning ? 'spin' : ''}`} />
+                        <i aria-hidden="true" className={`bi bi-arrow-repeat me-1 ${scanning ? 'spin' : ''}`} />
                         {scanning ? 'Сканирую…' : 'Пересканировать'}
                     </button>
                 </div>
@@ -372,7 +372,7 @@ const DuplicatesTab = () => {
 
             {data && !scanning && data.totalGroups === 0 && (
                 <div className="cp-empty">
-                    <i className="bi bi-check2-circle" />
+                    <i aria-hidden="true" className="bi bi-check2-circle" />
                     <span>{NOTHING_FOUND[mode]}</span>
                 </div>
             )}
@@ -435,7 +435,7 @@ const DuplicatesTab = () => {
 
                     {!groups.length && (
                         <div className="cp-empty">
-                            <i className="bi bi-funnel" />
+                            <i aria-hidden="true" className="bi bi-funnel" />
                             <span>С такими фильтрами групп нет</span>
                             <button className="cp-linkbtn" onClick={() => setFilters(DEFAULT_FILTERS)}>Сбросить фильтры</button>
                         </div>
@@ -463,7 +463,7 @@ const DuplicatesTab = () => {
                                                     onKeep: (keepIt, dropIt) => applyMarks({ mark: [dropIt.id], unmark: [keepIt.id] }),
                                                 });
                                             }}>
-                                        <i className="bi bi-layout-split" /> Сравнить
+                                        <i aria-hidden="true" className="bi bi-layout-split" /> Сравнить
                                     </button>
                                     {group.items.some(it => selected.has(it.id)) && (
                                         <button className="cp-linkbtn" onClick={() => clearMarks([group])}>Снять</button>
@@ -488,7 +488,7 @@ const DuplicatesTab = () => {
                                             >
                                                 <img src={it.thumbPath} alt={it.title} loading="lazy" draggable={false} />
                                                 <div className="cp-dup-item-overlay">
-                                                    <i className={`bi ${isMarked ? 'bi-trash3-fill' : 'bi-check-circle'}`} />
+                                                    <i aria-hidden="true" className={`bi ${isMarked ? 'bi-trash3-fill' : 'bi-check-circle'}`} />
                                                 </div>
                                                 {i === 0 && !isMarked && (
                                                     <span className="cp-dup-badge">{similar ? 'лучшая' : 'старая'}</span>
@@ -532,7 +532,7 @@ const DuplicatesTab = () => {
                         <span className="cp-dup-spacer" />
                         {emptied > 0 && (
                             <span className="cp-dup-warn" title="В этих группах отмечены все копии">
-                                <i className="bi bi-exclamation-triangle-fill me-1" />Без копии останется групп: {emptied}
+                                <i aria-hidden="true" className="bi bi-exclamation-triangle-fill me-1" />Без копии останется групп: {emptied}
                             </span>
                         )}
                         <span className="cp-dup-selcount">Отмечено в корзину: <b>{marked.length}</b></span>
@@ -541,7 +541,7 @@ const DuplicatesTab = () => {
                             onClick={trashSelected}
                             disabled={!marked.length || busy}
                         >
-                            <i className="bi bi-trash me-1" />
+                            <i aria-hidden="true" className="bi bi-trash me-1" />
                             {busy ? 'Удаляю…' : `В корзину (${marked.length})`}
                         </button>
                     </div>

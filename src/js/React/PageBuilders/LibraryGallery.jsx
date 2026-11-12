@@ -38,14 +38,14 @@ const GROUPINGS = {
         collapsedPref: 'collapsedRatings',
         muted: (k) => !k,
         label: (k) => (k
-            ? <><i className="bi bi-star-fill" />{k}<small>/ 10</small></>
-            : <><i className="bi bi-star" />Без оценки</>),
+            ? <><i aria-hidden="true" className="bi bi-star-fill" />{k}<small>/ 10</small></>
+            : <><i aria-hidden="true" className="bi bi-star" />Без оценки</>),
     },
     type: {
         key: kindOf,
         collapsedPref: 'collapsedTypes',
         muted: () => false,
-        label: (k) => <><i className={`bi ${KINDS[k].icon}`} />{KINDS[k].label}</>,
+        label: (k) => <><i aria-hidden="true" className={`bi ${KINDS[k].icon}`} />{KINDS[k].label}</>,
     },
 };
 
@@ -58,10 +58,10 @@ function groupingFor(groupBy) {
         collapsedPref: 'collapsedMonths',
         muted: (k) => k === 'none',
         label: (k) => {
-            if (k === 'none') return <><i className="bi bi-calendar-x" />{NO_DATE[field] || 'Без даты'}</>;
+            if (k === 'none') return <><i aria-hidden="true" className="bi bi-calendar-x" />{NO_DATE[field] || 'Без даты'}</>;
             const [y, m] = k.split('-').map(Number);
             const thisYear = new Date().getFullYear();
-            return <><i className="bi bi-calendar3" />{MONTHS[m - 1]}{y !== thisYear && <small>{y}</small>}</>;
+            return <><i aria-hidden="true" className="bi bi-calendar3" />{MONTHS[m - 1]}{y !== thisYear && <small>{y}</small>}</>;
         },
     };
 }
@@ -80,7 +80,7 @@ const GroupDivider = ({ grouping, value, count, collapsed, onToggle }) => (
             if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); onToggle(); }
         }}
     >
-        <i className="bi bi-chevron-down gallery-divider-caret" />
+        <i aria-hidden="true" className="bi bi-chevron-down gallery-divider-caret" />
         <span className="gallery-divider-label">{grouping.label(value)}</span>
         <span className="gallery-divider-line" />
         <span className="gallery-divider-count">

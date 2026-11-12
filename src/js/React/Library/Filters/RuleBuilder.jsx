@@ -57,7 +57,7 @@ const Condition = ({ c, onChange, onRemove, collections }) => {
                     </span>
                 )
             )}
-            <button className="rb-remove" onClick={onRemove} title="Убрать условие"><i className="bi bi-x-lg" /></button>
+            <button className="rb-remove" onClick={onRemove} title="Убрать условие"><i aria-hidden="true" className="bi bi-x-lg" /></button>
         </div>
     );
 };
@@ -76,7 +76,7 @@ const Group = ({ group, onChange, onRemove, depth, collections }) => {
                     <button className={group.op === 'any' ? 'active' : ''} onClick={() => onChange({ ...group, op: 'any' })}>любое</button>
                 </div>
                 <span>условия</span>
-                {onRemove && <button className="rb-remove group" onClick={onRemove} title="Убрать группу"><i className="bi bi-trash3" /></button>}
+                {onRemove && <button className="rb-remove group" onClick={onRemove} title="Убрать группу"><i aria-hidden="true" className="bi bi-trash3" /></button>}
             </div>
             <div className="rb-items">
                 {group.items.map((x, i) => (x.items
@@ -87,10 +87,10 @@ const Group = ({ group, onChange, onRemove, depth, collections }) => {
                 {!group.items.length && <div className="rb-empty">Пока нет условий</div>}
             </div>
             <div className="rb-add">
-                <button onClick={() => add({ field: 'tag', cmp: 'has', value: '' })}><i className="bi bi-plus-lg" /> Условие</button>
+                <button onClick={() => add({ field: 'tag', cmp: 'has', value: '' })}><i aria-hidden="true" className="bi bi-plus-lg" /> Условие</button>
                 {depth < 3 && (
                     <button onClick={() => add({ op: group.op === 'all' ? 'any' : 'all', items: [{ field: 'tag', cmp: 'has', value: '' }] })}>
-                        <i className="bi bi-diagram-2" /> Группа
+                        <i aria-hidden="true" className="bi bi-diagram-2" /> Группа
                     </button>
                 )}
             </div>

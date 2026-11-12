@@ -34,7 +34,7 @@ const ManagementTab = ({ initialTool }) => {
                         className={`cp-subtab ${tool === t.id ? 'active' : ''}`}
                         onClick={() => setTool(t.id)}
                     >
-                        <i className={`bi ${t.icon} me-1`} />
+                        <i aria-hidden="true" className={`bi ${t.icon} me-1`} />
                         {t.label}
                     </button>
                 ))}

@@ -36,13 +36,13 @@ const VisualSearchHeader = ({ onClose, sortedBySimilarity, onSortBySimilarity })
         <div className="vsearch-bar">
             {vs.query?.preview
                 ? <img className="vsearch-preview" src={vs.query.preview} alt="" />
-                : <span className="vsearch-preview icon"><i className="bi bi-image" /></span>}
+                : <span className="vsearch-preview icon"><i aria-hidden="true" className="bi bi-image" /></span>}
             <div className="vsearch-info">
                 <div className="vsearch-title">
                     Поиск по картинке: <b>{vs.query?.label || '—'}</b>
                 </div>
                 <div className="vsearch-sub">
-                    {vs.loading ? <><i className="bi bi-arrow-repeat spin" /> Ищу…</>
+                    {vs.loading ? <><i aria-hidden="true" className="bi bi-arrow-repeat spin" /> Ищу…</>
                         : <>Найдено: <b>{vs.results.length}</b> · ищет те же картинки — пережатые, уменьшенные, обрезанные, перекрашенные</>}
                     {!sortedBySimilarity && (
                         <button className="vsearch-link" onClick={onSortBySimilarity}>упорядочить по сходству</button>
@@ -61,15 +61,15 @@ const VisualSearchHeader = ({ onClose, sortedBySimilarity, onSortBySimilarity })
             {vs.unhashed > 0 && (
                 <button className="btn btn-sm btn-outline-secondary" disabled={!!hashing} onClick={hashAll}
                         title="Без отпечатка картинка не может попасть в результаты">
-                    {hashing ? <><i className="bi bi-arrow-repeat spin" /> {hashing.done}/{hashing.total}</>
-                        : <><i className="bi bi-fingerprint" /> Досчитать отпечатки ({vs.unhashed})</>}
+                    {hashing ? <><i aria-hidden="true" className="bi bi-arrow-repeat spin" /> {hashing.done}/{hashing.total}</>
+                        : <><i aria-hidden="true" className="bi bi-fingerprint" /> Досчитать отпечатки ({vs.unhashed})</>}
                 </button>
             )}
             <button className="btn btn-sm btn-outline-secondary" onClick={() => runVisualSearch({ clipboard: true })}
                     title="Искать по картинке из буфера обмена">
-                <i className="bi bi-clipboard-image" />
+                <i aria-hidden="true" className="bi bi-clipboard-image" />
             </button>
-            <button className="vsearch-close" onClick={onClose} title="Закрыть поиск"><i className="bi bi-x-lg" /></button>
+            <button className="vsearch-close" onClick={onClose} title="Закрыть поиск"><i aria-hidden="true" className="bi bi-x-lg" /></button>
         </div>
     );
 };

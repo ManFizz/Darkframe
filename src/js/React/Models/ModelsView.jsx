@@ -72,12 +72,12 @@ const ModelsView = () => {
         return (
             <div className="models-detail">
                 <div className="models-detail-bar">
-                    <button className="ftb-btn" onClick={() => setOpenModel(null)} title="Все модели"><i className="bi bi-arrow-left" /> <span>Модели</span></button>
+                    <button className="ftb-btn" onClick={() => setOpenModel(null)} title="Все модели"><i aria-hidden="true" className="bi bi-arrow-left" /> <span>Модели</span></button>
                     {cur.thumbUrl && <img className="models-detail-avatar" src={appUrl(cur.thumbUrl)} alt="" />}
                     <div className="models-detail-name">{cur.name}</div>
                     <span className="models-detail-count">{files(cur.count)}</span>
                     <button className="ftb-btn models-detail-cover" onClick={() => setPicking(cur)} title="Выбрать превью модели из её файлов">
-                        <i className="bi bi-person-square" /> <span>Превью</span>
+                        <i aria-hidden="true" className="bi bi-person-square" /> <span>Превью</span>
                     </button>
                 </div>
                 <div className="models-detail-lib">
@@ -91,11 +91,11 @@ const ModelsView = () => {
     return (
         <main className="models-view">
             <div className="models-header">
-                <h2><i className="bi bi-people" /> Модели{models?.length ? <small>{models.length}</small> : null}</h2>
+                <h2><i aria-hidden="true" className="bi bi-people" /> Модели{models?.length ? <small>{models.length}</small> : null}</h2>
                 <input className="form-control form-control-sm models-search" placeholder="Поиск модели…" value={search} onChange={e => setSearch(e.target.value)} />
                 <div className="models-sort">
                     {[['name', 'По имени', 'bi-sort-alpha-down'], ['count', 'По числу файлов', 'bi-sort-numeric-down-alt']].map(([id, label, icon]) => (
-                        <button key={id} className={sort === id ? 'on' : ''} onClick={() => setSort(id)} title={label}><i className={`bi ${icon}`} /> <span>{label}</span></button>
+                        <button key={id} className={sort === id ? 'on' : ''} onClick={() => setSort(id)} title={label}><i aria-hidden="true" className={`bi ${icon}`} /> <span>{label}</span></button>
                     ))}
                 </div>
             </div>
@@ -107,10 +107,10 @@ const ModelsView = () => {
                         <button className="model-card" key={m.id} onClick={() => setOpenModel(m)} title={m.name}
                                 onContextMenu={e => { e.preventDefault(); setMenu({ model: m, x: e.clientX, y: e.clientY }); }}>
                             <div className="model-cover">
-                                {m.thumbUrl ? <img src={appUrl(m.thumbUrl)} alt="" loading="lazy" decoding="async" draggable={false} /> : <i className="bi bi-person" />}
+                                {m.thumbUrl ? <img src={appUrl(m.thumbUrl)} alt="" loading="lazy" decoding="async" draggable={false} /> : <i aria-hidden="true" className="bi bi-person" />}
                                 <span className="model-count">{m.count}</span>
                                 <span className="model-cover-edit" role="button" title="Выбрать превью"
-                                      onClick={e => { e.stopPropagation(); setPicking(m); }}><i className="bi bi-pencil" /></span>
+                                      onClick={e => { e.stopPropagation(); setPicking(m); }}><i aria-hidden="true" className="bi bi-pencil" /></span>
                             </div>
                             <div className="model-name">{m.name}</div>
                         </button>
@@ -121,7 +121,7 @@ const ModelsView = () => {
                 <div className="models-empty">
                     {search.trim() ? 'Ничего не найдено' : (
                         <>
-                            <i className="bi bi-people" />
+                            <i aria-hidden="true" className="bi bi-people" />
                             <b>Моделей пока нет</b>
                             <span>Нажмите правой кнопкой на тег (в панели файла, в просмотре или в управлении тегами) и выберите «Модель» — здесь появится карточка со всеми её файлами.</span>
                         </>
@@ -131,9 +131,9 @@ const ModelsView = () => {
             {menu && (
                 <div className="tm-type-menu models-menu" style={{ left: menu.x, top: menu.y }} onMouseDown={e => e.stopPropagation()}>
                     <div className="tm-type-menu-head"><span className="tm-type-menu-name">{menu.model.name}</span><span className="tm-type-menu-now">{files(menu.model.count)}</span></div>
-                    <button onClick={() => { setMenu(null); setOpenModel(menu.model); }}><i className="bi bi-images" /><span className="tm-type-menu-label">Открыть</span></button>
-                    <button onClick={() => { setMenu(null); setPicking(menu.model); }}><i className="bi bi-person-square" /><span className="tm-type-menu-label">Выбрать превью…</span></button>
-                    <button onClick={() => unmodel(menu.model)}><i className="bi bi-person-dash" /><span className="tm-type-menu-label">Убрать из моделей</span></button>
+                    <button onClick={() => { setMenu(null); setOpenModel(menu.model); }}><i aria-hidden="true" className="bi bi-images" /><span className="tm-type-menu-label">Открыть</span></button>
+                    <button onClick={() => { setMenu(null); setPicking(menu.model); }}><i aria-hidden="true" className="bi bi-person-square" /><span className="tm-type-menu-label">Выбрать превью…</span></button>
+                    <button onClick={() => unmodel(menu.model)}><i aria-hidden="true" className="bi bi-person-dash" /><span className="tm-type-menu-label">Убрать из моделей</span></button>
                 </div>
             )}
             {picking && <CoverPicker model={models?.find(m => m.id === picking.id) || picking} onClose={() => setPicking(null)} />}

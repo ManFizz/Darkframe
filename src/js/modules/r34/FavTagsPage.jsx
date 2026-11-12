@@ -96,25 +96,25 @@ const TagCard = ({ tag, kind, filter, source, refreshToken, onRemove, showKind }
                     {fresh > 0 && <span className="svs-new" title="С прошлого открытия">+{fmt(fresh)} новых</span>}
                 </div>
                 <div className="svs-actions">
-                    <button className="svs-btn primary" onClick={() => open()} title="Открыть поиск"><i className="bi bi-search" /> Открыть</button>
-                    <button className="svs-btn" onClick={() => load(true)} title="Обновить превью"><i className={`bi bi-arrow-clockwise ${loading ? 'spin' : ''}`} /></button>
-                    <button className="svs-btn" onClick={onRemove} title="Убрать из избранного"><i className="bi bi-star-fill fvt-star" /></button>
+                    <button className="svs-btn primary" onClick={() => open()} title="Открыть поиск"><i aria-hidden="true" className="bi bi-search" /> Открыть</button>
+                    <button className="svs-btn" onClick={() => load(true)} title="Обновить превью"><i aria-hidden="true" className={`bi bi-arrow-clockwise ${loading ? 'spin' : ''}`} /></button>
+                    <button className="svs-btn" onClick={onRemove} title="Убрать из избранного"><i aria-hidden="true" className="bi bi-star-fill fvt-star" /></button>
                 </div>
             </div>
             <div className="svs-strip">
                 {!preview ? Array.from({ length: 8 }, (_, i) => <div key={i} className="svs-thumb skel" />)
-                    : preview.error ? <div className="svs-strip-msg err"><i className="bi bi-exclamation-triangle" /> {preview.error}</div>
+                    : preview.error ? <div className="svs-strip-msg err"><i aria-hidden="true" className="bi bi-exclamation-triangle" /> {preview.error}</div>
                     : !preview.items.length ? <div className="svs-strip-msg">Ничего не найдено{filter.minScore || filter.exclude?.length ? ' с этим фильтром' : ''}</div>
                     : <>
                         {preview.items.map(p => (
                             <button key={p.uniqueId} className="svs-thumb" onClick={() => open(p.remoteId)} title={`#${p.remoteId}${p.score != null ? ` · ★ ${p.score}` : ''}`}>
                                 <img src={cachedMediaUrl(p.thumbUrl)} alt="" loading="lazy" draggable={false} />
-                                {p.type === FILE_TYPES.VIDEO && <span className="svs-play"><i className="bi bi-play-fill" /></span>}
+                                {p.type === FILE_TYPES.VIDEO && <span className="svs-play"><i aria-hidden="true" className="bi bi-play-fill" /></span>}
                             </button>
                         ))}
                         {total > preview.items.length && (
                             <button className="svs-thumb more" onClick={() => open()}>
-                                <span>ещё</span><b>{fmt(total - preview.items.length)}</b><i className="bi bi-arrow-right" />
+                                <span>ещё</span><b>{fmt(total - preview.items.length)}</b><i aria-hidden="true" className="bi bi-arrow-right" />
                             </button>
                         )}
                     </>}
@@ -134,7 +134,7 @@ const FilterBar = ({ filter, setFilter, source }) => {
     return (
         <div className="fvt-filter">
             <div className="fvt-filter-row">
-                <span className="fvt-filter-title"><i className="bi bi-funnel" /> Для всех тегов</span>
+                <span className="fvt-filter-title"><i aria-hidden="true" className="bi bi-funnel" /> Для всех тегов</span>
                 <label className="fvt-field" title="Только посты с оценкой не ниже">
                     <span>score от</span>
                     <input type="number" min="0" step="10" value={filter.minScore || ''} placeholder="0"
@@ -165,7 +165,7 @@ const FilterBar = ({ filter, setFilter, source }) => {
                 {active && <button className="svs-btn" onClick={() => setFilter(f => ({ ...DEFAULT_FILTER, group: f.group }))}>Сбросить</button>}
             </div>
             <div className="fvt-filter-row">
-                <span className="fvt-field-label"><i className="bi bi-slash-circle" /> без тегов</span>
+                <span className="fvt-field-label"><i aria-hidden="true" className="bi bi-slash-circle" /> без тегов</span>
                 {filter.exclude.map(t => (
                     <span key={t} className="svs-tag ex fvt-ex">
                         {t}
@@ -176,7 +176,7 @@ const FilterBar = ({ filter, setFilter, source }) => {
                        onKeyDown={e => { e.stopPropagation(); if (e.key === 'Enter') addExclude(); }} onBlur={() => ex.trim() && addExclude()} />
             </div>
             {source === SOURCE_TYPES.DANBOORU && filter.exclude.length > 0 && (
-                <div className="fvt-note"><i className="bi bi-info-circle" /> Danbooru без входа ищет не больше чем по 2 тегам — исключения могут не сработать.</div>
+                <div className="fvt-note"><i aria-hidden="true" className="bi bi-info-circle" /> Danbooru без входа ищет не больше чем по 2 тегам — исключения могут не сработать.</div>
             )}
         </div>
     );
@@ -253,9 +253,9 @@ const FavTagsPage = ({ source }) => {
     return (
         <div className="svs-page fvt-page">
             <div className="svs-page-head">
-                <button className="svs-btn" onClick={() => setView('search')} title="Назад к результатам"><i className="bi bi-arrow-left" /></button>
+                <button className="svs-btn" onClick={() => setView('search')} title="Назад к результатам"><i aria-hidden="true" className="bi bi-arrow-left" /></button>
                 <div>
-                    <div className="svs-page-title"><i className="bi bi-star-fill" /> Избранные теги</div>
+                    <div className="svs-page-title"><i aria-hidden="true" className="bi bi-star-fill" /> Избранные теги</div>
                     <div className="svs-page-sub">{currentR34Source?.name} · {tags.length} {plural(tags.length)}</div>
                 </div>
                 <span className="svs-spacer" />
@@ -264,14 +264,14 @@ const FavTagsPage = ({ source }) => {
                     <input type="checkbox" checked={f.group} onChange={e => setFilter(x => ({ ...x, group: e.target.checked }))} />
                     <span>По типу</span>
                 </label>
-                {tags.length > 0 && <button className="svs-btn" onClick={refreshAll}><i className="bi bi-arrow-clockwise" /> Обновить все</button>}
+                {tags.length > 0 && <button className="svs-btn" onClick={refreshAll}><i aria-hidden="true" className="bi bi-arrow-clockwise" /> Обновить все</button>}
             </div>
 
             {tags.length > 0 && <FilterBar filter={f} setFilter={setFilter} source={source} />}
 
             {tags.length === 0 ? (
                 <div className="booru-empty">
-                    <i className="bi bi-star" />
+                    <i aria-hidden="true" className="bi bi-star" />
                     <div className="be-title">Избранных тегов пока нет</div>
                     <div className="be-sub">Добавь тег в блоке «Избранные теги» слева или звёздочкой у тега поста — здесь появятся свежие посты по каждому.</div>
                 </div>
@@ -283,7 +283,7 @@ const FavTagsPage = ({ source }) => {
                                  aria-expanded={!collapsed.has(g.kind)} title={collapsed.has(g.kind) ? 'Показать группу' : 'Скрыть группу'}
                                  onClick={() => toggleGroup(g.kind)}
                                  onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleGroup(g.kind); } }}>
-                                <i className="bi bi-chevron-down gallery-divider-caret" />
+                                <i aria-hidden="true" className="bi bi-chevron-down gallery-divider-caret" />
                                 <span className={`gallery-divider-label fvt-kind-label kind-${g.kind}`}>{TAG_KINDS[g.kind]?.label || 'Прочие'}</span>
                                 <span className="gallery-divider-line" />
                                 <span className="gallery-divider-count">

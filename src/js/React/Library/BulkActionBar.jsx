@@ -128,7 +128,7 @@ const BulkActionBar = ({ selectedItems, onDone, onChanged, onSlideshow, permanen
     return (
         <div className="bulk-action-bar">
             <span className="bulk-count">
-                <i className="bi bi-check2-square me-1" />
+                <i aria-hidden="true" className="bi bi-check2-square me-1" />
                 {selectedItems.length}
             </span>
 
@@ -154,7 +154,7 @@ const BulkActionBar = ({ selectedItems, onDone, onChanged, onSlideshow, permanen
                             className={`btn btn-sm btn-outline-primary ${moveOpen ? 'active' : ''}`}
                             onClick={() => setMoveOpen(v => !v)}
                         >
-                            <i className="bi bi-folder-symlink me-1" />
+                            <i aria-hidden="true" className="bi bi-folder-symlink me-1" />
                             Переместить в…
                         </button>
                         {moveOpen && (
@@ -180,8 +180,8 @@ const BulkActionBar = ({ selectedItems, onDone, onChanged, onSlideshow, permanen
                                 try { await autotagItems(selectedItems.map(f => f.id), { onProgress: setTagging }); }
                                 finally { setTagging(null); onChanged?.(); }
                             }}>
-                        {tagging ? <><i className="bi bi-arrow-repeat spin me-1" />{tagging.done}/{tagging.total}</>
-                            : <><i className="bi bi-stars me-1" /> Автотеги</>}
+                        {tagging ? <><i aria-hidden="true" className="bi bi-arrow-repeat spin me-1" />{tagging.done}/{tagging.total}</>
+                            : <><i aria-hidden="true" className="bi bi-stars me-1" /> Автотеги</>}
                     </button>
 
                     {selectedItems.filter(f => f.type === FILE_TYPES.IMAGE && !f.isManga).length > 1 && (
@@ -191,7 +191,7 @@ const BulkActionBar = ({ selectedItems, onDone, onChanged, onSlideshow, permanen
 
                     {onSlideshow && selectedItems.length > 1 && (
                         <button className="btn btn-sm btn-outline-secondary" onClick={onSlideshow} title="Слайд-шоу из выделенных">
-                            <i className="bi bi-play-circle me-1" /> Слайд-шоу
+                            <i aria-hidden="true" className="bi bi-play-circle me-1" /> Слайд-шоу
                         </button>
                     )}
 
@@ -199,7 +199,7 @@ const BulkActionBar = ({ selectedItems, onDone, onChanged, onSlideshow, permanen
                         <button className="btn btn-sm btn-outline-secondary"
                                 onClick={() => openCompare(selectedItems.map(compareItemFromThumb), { onDone: onDone })}
                                 title="Сравнить два файла бок о бок">
-                            <i className="bi bi-layout-split me-1" /> Сравнить
+                            <i aria-hidden="true" className="bi bi-layout-split me-1" /> Сравнить
                         </button>
                     )}
 
@@ -209,7 +209,7 @@ const BulkActionBar = ({ selectedItems, onDone, onChanged, onSlideshow, permanen
                             title="Применить последнюю правку (поворот / обрезку / цвет) ко всем выбранным"
                             onClick={applyLastEdit}
                         >
-                            <i className="bi bi-magic me-1" />
+                            <i aria-hidden="true" className="bi bi-magic me-1" />
                             Применить правку
                         </button>
                     )}
@@ -221,7 +221,7 @@ const BulkActionBar = ({ selectedItems, onDone, onChanged, onSlideshow, permanen
                             onClick={() => setCompressOpen(v => !v)}
                             disabled={!!busy}
                         >
-                            <i className="bi bi-file-earmark-zip me-1" />
+                            <i aria-hidden="true" className="bi bi-file-earmark-zip me-1" />
                             {busy || 'Сжать'}
                         </button>
                         {compressOpen && (
@@ -262,7 +262,7 @@ const BulkActionBar = ({ selectedItems, onDone, onChanged, onSlideshow, permanen
                     className="btn btn-sm btn-outline-success ms-auto"
                     onClick={restoreAll}
                 >
-                    <i className="bi bi-arrow-counterclockwise me-1" />
+                    <i aria-hidden="true" className="bi bi-arrow-counterclockwise me-1" />
                     Восстановить
                 </button>
             )}
@@ -272,7 +272,7 @@ const BulkActionBar = ({ selectedItems, onDone, onChanged, onSlideshow, permanen
                 onClick={deleteAll}
                 title={permanent ? undefined : 'Shift + клик — удалить навсегда, минуя корзину'}
             >
-                <i className="bi bi-trash me-1" />
+                <i aria-hidden="true" className="bi bi-trash me-1" />
                 {permanent ? 'Удалить навсегда' : 'В корзину'}
             </button>
 
@@ -281,7 +281,7 @@ const BulkActionBar = ({ selectedItems, onDone, onChanged, onSlideshow, permanen
                 onClick={onClear || onDone}
                 title="Снять выделение (Esc)"
             >
-                <i className="bi bi-x" />
+                <i aria-hidden="true" className="bi bi-x" />
             </button>
         </div>
     );

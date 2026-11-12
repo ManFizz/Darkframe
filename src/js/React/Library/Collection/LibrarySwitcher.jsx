@@ -92,7 +92,7 @@ const LibrarySwitcher = () => {
         <div className="library-switcher" ref={wrapperRef}>
             {switching != null && (
                 <div className="library-switching">
-                    <i className="bi bi-arrow-repeat spin" /> Открываю библиотеку{switching ? ` «${switching}»` : ''}…
+                    <i aria-hidden="true" className="bi bi-arrow-repeat spin" /> Открываю библиотеку{switching ? ` «${switching}»` : ''}…
                 </div>
             )}
             <button
@@ -100,9 +100,9 @@ const LibrarySwitcher = () => {
                 onClick={() => setOpen(v => !v)}
                 title="Сменить библиотеку"
             >
-                <i className="bi bi-collection" />
+                <i aria-hidden="true" className="bi bi-collection" />
                 <span className="library-switcher-name">{active?.name || '—'}</span>
-                <i className={`bi bi-chevron-${open ? 'up' : 'down'} library-switcher-caret`} />
+                <i aria-hidden="true" className={`bi bi-chevron-${open ? 'up' : 'down'} library-switcher-caret`} />
             </button>
 
             {open && (
@@ -132,15 +132,15 @@ const LibrarySwitcher = () => {
                                         onClick={() => handleSwitch(lib.id)}
                                         title={lib.dbPath}
                                     >
-                                        <i className={`bi bi-${lib.id === activeId ? 'check2-circle' : 'circle'}`} />
+                                        <i aria-hidden="true" className={`bi bi-${lib.id === activeId ? 'check2-circle' : 'circle'}`} />
                                         <span>{lib.name}</span>
                                     </div>
                                     <div className="library-switcher-item-actions">
                                         <button onClick={() => startRename(lib)} title="Переименовать">
-                                            <i className="bi bi-pencil" />
+                                            <i aria-hidden="true" className="bi bi-pencil" />
                                         </button>
                                         <button onClick={() => handleRemove(lib)} title="Удалить">
-                                            <i className="bi bi-trash" />
+                                            <i aria-hidden="true" className="bi bi-trash" />
                                         </button>
                                     </div>
                                 </>
@@ -163,15 +163,15 @@ const LibrarySwitcher = () => {
                                 }}
                             />
                             <button onClick={handleAdd} title="Выбрать папку">
-                                <i className="bi bi-folder2-open" />
+                                <i aria-hidden="true" className="bi bi-folder2-open" />
                             </button>
                             <button onClick={() => { setAdding(false); setNewName(''); }} title="Отмена">
-                                <i className="bi bi-x" />
+                                <i aria-hidden="true" className="bi bi-x" />
                             </button>
                         </div>
                     ) : (
                         <button className="library-switcher-add" onClick={() => setAdding(true)}>
-                            <i className="bi bi-plus-circle" />
+                            <i aria-hidden="true" className="bi bi-plus-circle" />
                             <span>Добавить библиотеку...</span>
                         </button>
                     )}

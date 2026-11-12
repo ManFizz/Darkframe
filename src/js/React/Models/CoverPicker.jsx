@@ -42,15 +42,15 @@ const CoverPicker = ({ model, onClose }) => {
         <div className="settings-overlay" onMouseDown={e => { if (e.target === e.currentTarget) onClose(); }}>
             <div className="settings-modal cover-picker">
                 <div className="settings-header">
-                    <i className="bi bi-person-square me-2" />
+                    <i aria-hidden="true" className="bi bi-person-square me-2" />
                     <span>Превью: {model.name}</span>
-                    <button className="settings-close" onClick={onClose} title="Закрыть (Esc)"><i className="bi bi-x-lg" /></button>
+                    <button className="settings-close" onClick={onClose} title="Закрыть (Esc)"><i aria-hidden="true" className="bi bi-x-lg" /></button>
                 </div>
                 <div className="cover-picker-bar">
                     <span>Нажмите на файл, чтобы сделать его превью модели.</span>
                     <button className={`btn btn-sm ${model.customCover ? 'btn-outline-secondary' : 'btn-secondary'}`} disabled={busy || !model.customCover}
                             onClick={() => pick(null)} title="Лучший по оценке файл модели">
-                        <i className="bi bi-magic me-1" />{model.customCover ? 'Автоматически' : 'Сейчас: автоматически'}
+                        <i aria-hidden="true" className="bi bi-magic me-1" />{model.customCover ? 'Автоматически' : 'Сейчас: автоматически'}
                     </button>
                 </div>
                 {error && <div role="alert" className="cover-picker-note err">{error}</div>}
@@ -61,8 +61,8 @@ const CoverPicker = ({ model, onClose }) => {
                         return (
                             <button key={f.id} className={`cover-picker-tile ${on ? 'on' : ''}`} disabled={busy} onClick={() => pick(f.id)} title={f.title}>
                                 <img src={appUrl(f.thumbPath)} alt="" loading="lazy" decoding="async" draggable={false} />
-                                {/^video\//.test(f.mimeType) && <i className="bi bi-play-circle-fill cover-picker-kind" />}
-                                {on && <span className="cover-picker-mark"><i className="bi bi-check-lg" /> {model.customCover ? 'превью' : 'авто'}</span>}
+                                {/^video\//.test(f.mimeType) && <i aria-hidden="true" className="bi bi-play-circle-fill cover-picker-kind" />}
+                                {on && <span className="cover-picker-mark"><i aria-hidden="true" className="bi bi-check-lg" /> {model.customCover ? 'превью' : 'авто'}</span>}
                             </button>
                         );
                     })}

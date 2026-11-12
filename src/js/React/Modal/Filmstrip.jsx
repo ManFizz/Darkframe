@@ -72,7 +72,7 @@ const Filmstrip = ({ items, current, onPick, onHide, onReorder }) => {
         }}>
             {onHide && (
                 <button className="fs-hide" onClick={onHide} title="Спрятать ленту (T)">
-                    <i className="bi bi-chevron-down" />
+                    <i aria-hidden="true" className="bi bi-chevron-down" />
                 </button>
             )}
             <div className="fs-track" ref={trackRef} onDragOver={onDragOver} onDrop={onDrop}>
@@ -91,9 +91,9 @@ const Filmstrip = ({ items, current, onPick, onHide, onReorder }) => {
                             onDragEnd={endDrag}
                             title={f.title}>
                         {f.type === FILE_TYPES.VIDEO && !f.thumbUrl?.startsWith('library://') && f.thumbUrl === f.contentUrl
-                            ? <span className="fs-video-ph"><i className="bi bi-film" /></span>
+                            ? <span className="fs-video-ph"><i aria-hidden="true" className="bi bi-film" /></span>
                             : <img src={srcOf(f)} alt="" loading="lazy" draggable={false} />}
-                        {f.type === FILE_TYPES.VIDEO && <span className="fs-play"><i className="bi bi-play-fill" /></span>}
+                        {f.type === FILE_TYPES.VIDEO && <span className="fs-play"><i aria-hidden="true" className="bi bi-play-fill" /></span>}
                     </button>
                 ))}
                 {index + RADIUS + 1 < media.length && <div className="fs-more">+{media.length - index - RADIUS - 1}</div>}

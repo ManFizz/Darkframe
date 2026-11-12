@@ -28,7 +28,7 @@ const EagleImportProgress = ({ onDone }) => {
         <div className="eagle-import-overlay">
             <div className="eagle-import-modal">
                 <div className="eagle-import-header">
-                    <i className="bi bi-box-arrow-in-down me-2" />
+                    <i aria-hidden="true" className="bi bi-box-arrow-in-down me-2" />
                     {progress.done ? 'Импорт завершён' : (progress.label || 'Импорт')}
                 </div>
 

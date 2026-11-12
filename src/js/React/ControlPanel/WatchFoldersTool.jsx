@@ -26,10 +26,10 @@ const FolderCard = ({ f, onChange, onRemove }) => {
                 <div className="form-check form-switch ar-switch" title={f.enabled ? 'Остановить' : 'Следить'}>
                     <input className="form-check-input" type="checkbox" checked={f.enabled} onChange={() => patch({ enabled: !f.enabled })} />
                 </div>
-                <i className="bi bi-folder2-open wf-icon" />
+                <i aria-hidden="true" className="bi bi-folder2-open wf-icon" />
                 <div className="wf-path" title={f.path}><bdi>{f.path}</bdi></div>
                 <span className={`wf-state ${f.error ? 'err' : f.watching ? 'on' : ''}`}>
-                    {f.error ? <><i className="bi bi-exclamation-triangle" /> {f.error}</>
+                    {f.error ? <><i aria-hidden="true" className="bi bi-exclamation-triangle" /> {f.error}</>
                         : f.watching ? <><span className="wf-dot" /> слежу{f.imported ? ` · +${f.imported}` : ''}</>
                         : 'выключено'}
                 </span>
@@ -37,11 +37,11 @@ const FolderCard = ({ f, onChange, onRemove }) => {
 
             <div className="wf-grid">
                 <div className="ar-action">
-                    <span className="ar-label"><i className="bi bi-folder" /> Коллекция</span>
+                    <span className="ar-label"><i aria-hidden="true" className="bi bi-folder" /> Коллекция</span>
                     <CollectionPicker currentCollectionId={f.collectionId} onChange={collectionId => patch({ collectionId })} />
                 </div>
                 <div className="ar-action">
-                    <span className="ar-label"><i className="bi bi-tags" /> Теги для новых файлов</span>
+                    <span className="ar-label"><i aria-hidden="true" className="bi bi-tags" /> Теги для новых файлов</span>
                     <TagEditor tags={f.tags} onChange={tags => patch({ tags })} />
                 </div>
             </div>
@@ -61,9 +61,9 @@ const FolderCard = ({ f, onChange, onRemove }) => {
                     <>
                         <button className="btn btn-sm btn-outline-secondary" disabled={busy} onClick={() => setConfirm('import')}
                                 title="Скопировать в библиотеку файлы, которые были в папке до того, как её добавили">
-                            {busy ? <><i className="bi bi-arrow-repeat spin" /> Импорт…</> : <><i className="bi bi-box-arrow-in-down" /> Импортировать существующие</>}
+                            {busy ? <><i aria-hidden="true" className="bi bi-arrow-repeat spin" /> Импорт…</> : <><i aria-hidden="true" className="bi bi-box-arrow-in-down" /> Импортировать существующие</>}
                         </button>
-                        <button className="ar-icon danger" onClick={() => setConfirm('remove')} title="Перестать следить"><i className="bi bi-trash3" /></button>
+                        <button className="ar-icon danger" onClick={() => setConfirm('remove')} title="Перестать следить"><i aria-hidden="true" className="bi bi-trash3" /></button>
                     </>
                 )}
             </div>
@@ -103,11 +103,11 @@ const WatchFoldersTool = () => {
                         Недокачанные файлы пропускаются, то, что пришло пока приложение было закрыто, подхватится при запуске.
                     </p>
                 </div>
-                <button className="btn btn-sm btn-primary text-nowrap" onClick={add}><i className="bi bi-plus-lg me-1" />Добавить папку</button>
+                <button className="btn btn-sm btn-primary text-nowrap" onClick={add}><i aria-hidden="true" className="bi bi-plus-lg me-1" />Добавить папку</button>
             </div>
 
             {folders && !folders.length && (
-                <div className="cp-empty"><i className="bi bi-folder-check fs-3" /><span>Например, «Загрузки» — всё скачанное сразу окажется в библиотеке.</span></div>
+                <div className="cp-empty"><i aria-hidden="true" className="bi bi-folder-check fs-3" /><span>Например, «Загрузки» — всё скачанное сразу окажется в библиотеке.</span></div>
             )}
 
             <div className="ar-list">

@@ -369,7 +369,7 @@ const ReaderView = ({ book, onClose }) => {
         <div className={`rd bg-${prefs.background} ${ui ? '' : 'rd-hidden-ui'} ${vertical ? 'is-vertical' : ''}`}
              onMouseMove={onMouseMove}>
             <div className="rd-top">
-                <button className="rd-btn" onClick={onClose} title="Закрыть (Esc)"><i className="bi bi-arrow-left" /></button>
+                <button className="rd-btn" onClick={onClose} title="Закрыть (Esc)"><i aria-hidden="true" className="bi bi-arrow-left" /></button>
                 <div className="rd-title" title={book.title}>
                     <div className="rd-title-main">{book.title}</div>
                     {chapters.length > 1 && (
@@ -381,40 +381,40 @@ const ReaderView = ({ book, onClose }) => {
                 {book.savePage && (
                     <button className="rd-btn" onClick={savePage} disabled={saving || !pages}
                             title={`Сохранить страницу ${page + 1} в библиотеку отдельной картинкой (S)`}>
-                        <i className={`bi ${saving ? 'bi-arrow-repeat spin' : 'bi-file-earmark-arrow-down'}`} />
+                        <i aria-hidden="true" className={`bi ${saving ? 'bi-arrow-repeat spin' : 'bi-file-earmark-arrow-down'}`} />
                     </button>
                 )}
                 <div className="rd-seg" title="Режим (V)">
                     {MODES.map(m => (
                         <button key={m.id} className={prefs.mode === m.id ? 'on' : ''} onClick={() => setPref({ mode: m.id })} title={m.label}>
-                            <i className={`bi ${m.icon}`} /><span>{m.label}</span>
+                            <i aria-hidden="true" className={`bi ${m.icon}`} /><span>{m.label}</span>
                         </button>
                     ))}
                 </div>
                 {!vertical && (
                     <button className="rd-btn" onClick={() => setPref({ direction: prefs.direction === 'rtl' ? 'ltr' : 'rtl' })}
                             title={prefs.direction === 'rtl' ? 'Справа налево (D)' : 'Слева направо (D)'}>
-                        <i className={`bi ${prefs.direction === 'rtl' ? 'bi-arrow-left-square' : 'bi-arrow-right-square'}`} />
+                        <i aria-hidden="true" className={`bi ${prefs.direction === 'rtl' ? 'bi-arrow-left-square' : 'bi-arrow-right-square'}`} />
                         <span className="rd-btn-text">{prefs.direction === 'rtl' ? 'RTL' : 'LTR'}</span>
                     </button>
                 )}
                 {!vertical && (
                     <button className="rd-btn" onClick={() => setPref({ fit: FITS[(FITS.findIndex(f => f.id === prefs.fit) + 1) % FITS.length].id })}
                             title={`Подгонка: ${FITS.find(f => f.id === prefs.fit)?.label} (W)`}>
-                        <i className={`bi ${FITS.find(f => f.id === prefs.fit)?.icon}`} />
+                        <i aria-hidden="true" className={`bi ${FITS.find(f => f.id === prefs.fit)?.icon}`} />
                     </button>
                 )}
                 {vertical && (
                     <button className={`rd-btn ${auto ? 'on' : ''}`} onClick={() => setAuto(v => !v)} title="Автопрокрутка (A)">
-                        <i className={`bi ${auto ? 'bi-pause-fill' : 'bi-play-fill'}`} />
+                        <i aria-hidden="true" className={`bi ${auto ? 'bi-pause-fill' : 'bi-play-fill'}`} />
                     </button>
                 )}
-                <button className={`rd-btn ${thumbs ? 'on' : ''}`} onClick={() => setThumbs(v => !v)} title="Миниатюры (G)"><i className="bi bi-grid-3x3-gap" /></button>
-                <button className={`rd-btn ${menu ? 'on' : ''}`} onClick={() => setMenu(v => !v)} title="Настройки"><i className="bi bi-sliders" /></button>
-                <button className="rd-btn" onClick={toggleViewerFullscreen} title="Во весь экран (F)"><i className="bi bi-fullscreen" /></button>
+                <button className={`rd-btn ${thumbs ? 'on' : ''}`} onClick={() => setThumbs(v => !v)} title="Миниатюры (G)"><i aria-hidden="true" className="bi bi-grid-3x3-gap" /></button>
+                <button className={`rd-btn ${menu ? 'on' : ''}`} onClick={() => setMenu(v => !v)} title="Настройки"><i aria-hidden="true" className="bi bi-sliders" /></button>
+                <button className="rd-btn" onClick={toggleViewerFullscreen} title="Во весь экран (F)"><i aria-hidden="true" className="bi bi-fullscreen" /></button>
                 {(book.actions || []).map(a => (
                     <button key={a.id} className="rd-btn rd-action" onClick={() => a.run({ close: onClose })} title={a.label}>
-                        <i className={`bi ${a.icon}`} /><span className="rd-btn-text">{a.label}</span>
+                        <i aria-hidden="true" className={`bi ${a.icon}`} /><span className="rd-btn-text">{a.label}</span>
                     </button>
                 ))}
             </div>
@@ -465,11 +465,11 @@ const ReaderView = ({ book, onClose }) => {
                  }, { enabled: !vertical && zoom <= 1 })}>
                 {error ? (
                     <div className="rd-msg err">
-                        <i className="bi bi-exclamation-triangle" /> {error}
+                        <i aria-hidden="true" className="bi bi-exclamation-triangle" /> {error}
                         {book.loadChapter && <button className="rd-btn rd-action" onClick={e => { e.stopPropagation(); setRetry(n => n + 1); }}>Повторить</button>}
                     </div>
                 ) : !pages ? (
-                    <div className="rd-msg"><i className="bi bi-arrow-repeat spin" /> Загружаю главу…</div>
+                    <div className="rd-msg"><i aria-hidden="true" className="bi bi-arrow-repeat spin" /> Загружаю главу…</div>
                 ) : vertical ? (
                     <div className="rd-column" style={{ width: `min(100%, ${Math.round(prefs.verticalWidth * zoom)}px)`, gap: prefs.gap }}>
                         {pages.map((p, i) => {
@@ -485,11 +485,11 @@ const ReaderView = ({ book, onClose }) => {
                                         <div className="rd-page-wait">
                                             {st === 'err' ? (
                                                 <>
-                                                    <span><i className="bi bi-exclamation-triangle" /> Стр. {i + 1} не загрузилась</span>
+                                                    <span><i aria-hidden="true" className="bi bi-exclamation-triangle" /> Стр. {i + 1} не загрузилась</span>
                                                     <button className="rd-btn rd-action" onClick={e => { e.stopPropagation(); retryPage(p.url); }}>Повторить</button>
                                                 </>
                                             ) : (
-                                                <><i className="bi bi-arrow-repeat spin" /><span>Стр. {i + 1}</span></>
+                                                <><i aria-hidden="true" className="bi bi-arrow-repeat spin" /><span>Стр. {i + 1}</span></>
                                             )}
                                         </div>
                                     )}
@@ -499,7 +499,7 @@ const ReaderView = ({ book, onClose }) => {
                         <div className="rd-endcard">
                             {nextChapter ? (
                                 <button className="rd-next-ch" onClick={() => goChapter(ch + 1)}>
-                                    Следующая глава: {nextChapter.title || `Глава ${ch + 2}`} <i className="bi bi-chevron-down" />
+                                    Следующая глава: {nextChapter.title || `Глава ${ch + 2}`} <i aria-hidden="true" className="bi bi-chevron-down" />
                                 </button>
                             ) : <span>Конец</span>}
                         </div>
@@ -524,11 +524,11 @@ const ReaderView = ({ book, onClose }) => {
                                 <div className="rd-paged-wait-num">{label}<small> / {pages.length}</small></div>
                                 {failed.length ? (
                                     <>
-                                        <span><i className="bi bi-exclamation-triangle" /> Страница не загрузилась</span>
+                                        <span><i aria-hidden="true" className="bi bi-exclamation-triangle" /> Страница не загрузилась</span>
                                         <button className="rd-btn rd-action" onClick={() => failed.forEach(i => retryPage(pages[i].url))}>Повторить</button>
                                     </>
                                 ) : (
-                                    <span><i className="bi bi-arrow-repeat spin" /> Загрузка…</span>
+                                    <span><i aria-hidden="true" className="bi bi-arrow-repeat spin" /> Загрузка…</span>
                                 )}
                             </div>
                         </div>
@@ -558,7 +558,7 @@ const ReaderView = ({ book, onClose }) => {
             {/* Touch screens: a button to bring the bars back, and a one-time hint. */}
             {touch && !ui && (
                 <button className="rd-fab" onClick={e => { e.stopPropagation(); clearTimeout(hideTimer.current); setUi(true); }} title="Меню">
-                    <i className="bi bi-three-dots" />
+                    <i aria-hidden="true" className="bi bi-three-dots" />
                 </button>
             )}
             {touch && hint && (

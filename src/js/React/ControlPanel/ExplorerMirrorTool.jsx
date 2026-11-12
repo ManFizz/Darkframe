@@ -57,7 +57,7 @@ const ExplorerMirrorTool = () => {
                 </div>
                 {st.enabled && (
                     <button className="btn btn-primary btn-sm" onClick={() => act(explorerMirrorApi.open)}>
-                        <i className="bi bi-folder2-open me-1" /> Открыть в проводнике
+                        <i aria-hidden="true" className="bi bi-folder2-open me-1" /> Открыть в проводнике
                     </button>
                 )}
             </div>
@@ -68,19 +68,19 @@ const ExplorerMirrorTool = () => {
                         <input className="form-check-input" type="checkbox" checked={st.enabled} disabled={working}
                                onChange={() => (st.enabled ? setConfirmOff(true) : turnOn())} />
                     </div>
-                    <i className="bi bi-folder-symlink wf-icon" />
+                    <i aria-hidden="true" className="bi bi-folder-symlink wf-icon" />
                     <div className="wf-path" title={st.path}><bdi>{st.path}</bdi></div>
                     <button className="btn btn-sm btn-outline-secondary" disabled={working} onClick={choose}>
-                        <i className="bi bi-pencil me-1" /> Другая папка
+                        <i aria-hidden="true" className="bi bi-pencil me-1" /> Другая папка
                     </button>
                 </div>
 
                 <div className="em-stats">
                     {st.running ? (
-                        <span><i className="bi bi-arrow-repeat spin me-1" />Обновляю… {st.total ? `${st.done} / ${st.total} (${pct}%)` : ''}</span>
+                        <span><i aria-hidden="true" className="bi bi-arrow-repeat spin me-1" />Обновляю… {st.total ? `${st.done} / ${st.total} (${pct}%)` : ''}</span>
                     ) : st.enabled ? (
                         <>
-                            <span><i className="bi bi-files me-1" />Файлов: <b>{st.files}</b></span>
+                            <span><i aria-hidden="true" className="bi bi-files me-1" />Файлов: <b>{st.files}</b></span>
                             <span>Обновлено: {fmtTime(st.lastSync)}</span>
                             {st.missing > 0 && <span className="text-warning" title="У этих медиа нет файла в папке библиотеки (см. «Целостность»)">Без файла: {st.missing}</span>}
                             {st.failed > 0 && <span className="text-warning" title="Скорее всего, открыты в другой программе; повторю при следующем обновлении">Не получилось: {st.failed}</span>}
@@ -88,7 +88,7 @@ const ExplorerMirrorTool = () => {
                     ) : (
                         <span className="text-muted">Выключено. Папка должна быть на том же диске, что и библиотека.</span>
                     )}
-                    {st.lastError && <span className="text-danger"><i className="bi bi-exclamation-triangle me-1" />{st.lastError}</span>}
+                    {st.lastError && <span className="text-danger"><i aria-hidden="true" className="bi bi-exclamation-triangle me-1" />{st.lastError}</span>}
                 </div>
 
                 <div className="wf-foot">
@@ -109,7 +109,7 @@ const ExplorerMirrorTool = () => {
                                 <button className="btn btn-sm btn-outline-secondary" disabled={working}
                                         onClick={() => act(explorerMirrorApi.sync, 'Папка обновлена')}
                                         title="Пересобрать и проверить все ссылки">
-                                    <i className="bi bi-arrow-repeat me-1" /> Обновить сейчас
+                                    <i aria-hidden="true" className="bi bi-arrow-repeat me-1" /> Обновить сейчас
                                 </button>
                             )}
                         </>

@@ -88,9 +88,9 @@ const TagManager = ({ onClose }) => {
             {tagTypeMenu}
             <div className="settings-modal tag-manager" onMouseDown={e => e.stopPropagation()}>
                 <div className="settings-header">
-                    <i className="bi bi-tags-fill me-2" />
+                    <i aria-hidden="true" className="bi bi-tags-fill me-2" />
                     <span>Управление тегами</span>
-                    <button className="settings-close" onClick={onClose} title="Закрыть"><i className="bi bi-x-lg" /></button>
+                    <button className="settings-close" onClick={onClose} title="Закрыть"><i aria-hidden="true" className="bi bi-x-lg" /></button>
                 </div>
 
                 <div className="settings-body">
@@ -99,7 +99,7 @@ const TagManager = ({ onClose }) => {
                         <div className="tm-rule-add">
                             <input className="form-control form-control-sm" placeholder="из"
                                    value={ruleFrom} onChange={e => setRuleFrom(e.target.value)} />
-                            <i className="bi bi-arrow-right" />
+                            <i aria-hidden="true" className="bi bi-arrow-right" />
                             <input className="form-control form-control-sm" placeholder="в"
                                    value={ruleTo} onChange={e => setRuleTo(e.target.value)}
                                    onKeyDown={e => e.key === 'Enter' && addRule()} />
@@ -111,8 +111,8 @@ const TagManager = ({ onClose }) => {
                         </div>
                         {rules.map(r => (
                             <div key={r.id} className="tm-rule">
-                                <span><b>{r.from}</b> <i className="bi bi-arrow-right mx-1" /> {r.to}</span>
-                                <button className="tm-icon" title="Удалить правило" onClick={() => delRule(r.id)}><i className="bi bi-x-lg" /></button>
+                                <span><b>{r.from}</b> <i aria-hidden="true" className="bi bi-arrow-right mx-1" /> {r.to}</span>
+                                <button className="tm-icon" title="Удалить правило" onClick={() => delRule(r.id)}><i aria-hidden="true" className="bi bi-x-lg" /></button>
                             </div>
                         ))}
                         {!rules.length && <div className="tm-empty">Правил пока нет — например «dots» → «dot»</div>}
@@ -154,7 +154,7 @@ const TagManager = ({ onClose }) => {
                                         title={tag.pinned ? 'Открепить' : 'Закрепить — будет первым в подсказках'}
                                         onClick={() => togglePin(tag)}
                                     >
-                                        <i className={`bi ${tag.pinned ? 'bi-pin-angle-fill' : 'bi-pin-angle'}`} />
+                                        <i aria-hidden="true" className={`bi ${tag.pinned ? 'bi-pin-angle-fill' : 'bi-pin-angle'}`} />
                                     </button>
                                     {editId === tag.id ? (
                                         <input autoFocus className="form-control form-control-sm tm-tag-edit"
@@ -171,8 +171,8 @@ const TagManager = ({ onClose }) => {
                                         <span className={`tag-dot tag-type-${tag.type ?? 'none'}`} />
                                         {tagTypeLabel(tag.type)}
                                     </button>
-                                    <button className="tm-icon" title="Переименовать" onClick={() => startRename(tag)}><i className="bi bi-pencil" /></button>
-                                    <button className="tm-icon danger" title="Удалить" onClick={() => del(tag)}><i className="bi bi-trash" /></button>
+                                    <button className="tm-icon" title="Переименовать" onClick={() => startRename(tag)}><i aria-hidden="true" className="bi bi-pencil" /></button>
+                                    <button className="tm-icon danger" title="Удалить" onClick={() => del(tag)}><i aria-hidden="true" className="bi bi-trash" /></button>
                                 </div>
                             ))}
                             {!loading && !filtered.length && <div className="tm-empty">Ничего не найдено</div>}

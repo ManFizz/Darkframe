@@ -21,7 +21,7 @@ const AppearanceSection = () => {
     return (
         <div className="settings-section">
             <div className="settings-section-title">
-                <i className="bi bi-palette me-2" />
+                <i aria-hidden="true" className="bi bi-palette me-2" />
                 Оформление
                 <span className="appearance-live">применяется сразу</span>
             </div>
@@ -38,7 +38,7 @@ const AppearanceSection = () => {
                                 className={theme.mode === m.id ? 'active' : ''}
                                 onClick={() => setTheme({ mode: m.id })}
                             >
-                                <i className={`bi ${m.icon}`} /> {m.label}
+                                <i aria-hidden="true" className={`bi ${m.icon}`} /> {m.label}
                             </button>
                         ))}
                     </div>
@@ -63,7 +63,7 @@ const AppearanceSection = () => {
                             title="Свой цвет"
                             style={!isPreset ? { background: theme.accent } : undefined}
                         >
-                            <i className="bi bi-eyedropper" />
+                            <i aria-hidden="true" className="bi bi-eyedropper" />
                             <input
                                 type="color"
                                 value={theme.accent}

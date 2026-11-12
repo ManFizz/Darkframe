@@ -112,35 +112,35 @@ const RemotePanel = ({ file }) => {
                 <div className="rp-head">
                     {postId && <span className="rp-id">#{postId}</span>}
                     <div className="rp-facts">
-                        {facts.map(f => <span key={f.icon} className={f.cls || ''}><i className={`bi ${f.icon}`} /> {f.text}</span>)}
+                        {facts.map(f => <span key={f.icon} className={f.cls || ''}><i aria-hidden="true" className={`bi ${f.icon}`} /> {f.text}</span>)}
                     </div>
                 </div>
 
                 <div className="rp-actions">
                     {file.sourceUrl && (
                         <button className="fp-action" onClick={() => openExternalUrl(file.sourceUrl)} title="Открыть страницу поста в браузере">
-                            <i className="bi bi-box-arrow-up-right" /><span>Пост</span>
+                            <i aria-hidden="true" className="bi bi-box-arrow-up-right" /><span>Пост</span>
                         </button>
                     )}
                     <button className="fp-action" onClick={similar} title="Искать по художнику и персонажам">
-                        <i className="bi bi-stars" /><span>Похожее</span>
+                        <i aria-hidden="true" className="bi bi-stars" /><span>Похожее</span>
                     </button>
                     <button className="fp-action" onClick={() => copy(tagNames.join(' '), '__all__')} title="Скопировать все теги">
-                        <i className={`bi ${copied === '__all__' ? 'bi-check2' : 'bi-clipboard'}`} /><span>Теги</span>
+                        <i aria-hidden="true" className={`bi ${copied === '__all__' ? 'bi-check2' : 'bi-clipboard'}`} /><span>Теги</span>
                     </button>
                 </div>
 
                 <div className="rp-save">
                     {saving && saving !== 'busy' ? (
                         <div className={`fp-result ${saving.ok ? 'ok' : 'warn'}`}>
-                            <i className={`bi ${saving.ok ? 'bi-check-circle-fill' : 'bi-exclamation-circle-fill'}`} /> {saving.message}
+                            <i aria-hidden="true" className={`bi ${saving.ok ? 'bi-check-circle-fill' : 'bi-exclamation-circle-fill'}`} /> {saving.message}
                         </div>
                     ) : (
                         <div className="rp-save-row">
                             <button className="fp-import-btn" disabled={saving === 'busy'} onClick={() => setPicking(v => !v)}>
                                 {saving === 'busy'
-                                    ? <><i className="bi bi-arrow-repeat spin" /> Сохранение…</>
-                                    : <><i className="bi bi-box-arrow-in-down" /> В библиотеку…</>}
+                                    ? <><i aria-hidden="true" className="bi bi-arrow-repeat spin" /> Сохранение…</>
+                                    : <><i aria-hidden="true" className="bi bi-box-arrow-in-down" /> В библиотеку…</>}
                             </button>
                             <label className="rp-withtags" title="Сохранить вместе с тегами поста">
                                 <input type="checkbox" checked={withTags} onChange={e => setWithTags(e.target.checked)} /> теги
@@ -171,13 +171,13 @@ const RemotePanel = ({ file }) => {
                                         </button>
                                         {count > 0 && <span className="rp-tag-count">{fmtCount(count)}</span>}
                                         <span className="rp-tag-tools">
-                                            <button onClick={() => addTag(name, { exclude: true })} title="Исключить из поиска"><i className="bi bi-dash-circle" /></button>
+                                            <button onClick={() => addTag(name, { exclude: true })} title="Исключить из поиска"><i aria-hidden="true" className="bi bi-dash-circle" /></button>
                                             <button className={fav ? 'on' : ''} onClick={() => (fav ? removeFavTag(name, file.remoteType) : addFavTag(name, file.remoteType))}
                                                     title={fav ? 'Убрать из избранных тегов' : 'В избранные теги'}>
-                                                <i className={`bi ${fav ? 'bi-star-fill' : 'bi-star'}`} />
+                                                <i aria-hidden="true" className={`bi ${fav ? 'bi-star-fill' : 'bi-star'}`} />
                                             </button>
                                             <button onClick={() => copy(name, name)} title="Скопировать">
-                                                <i className={`bi ${copied === name ? 'bi-check2' : 'bi-copy'}`} />
+                                                <i aria-hidden="true" className={`bi ${copied === name ? 'bi-check2' : 'bi-copy'}`} />
                                             </button>
                                         </span>
                                     </div>

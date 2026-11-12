@@ -103,7 +103,7 @@ const Thumb = (({ file, isModal, modalUpdater, isSelected, onOpen, onToggleSelec
                     title="Выделить (Shift — диапазон)"
                     onClick={handleCheckClick}
                 >
-                    <i className={`bi ${isSelected ? 'bi-check-square-fill' : 'bi-square'}`} />
+                    <i aria-hidden="true" className={`bi ${isSelected ? 'bi-check-square-fill' : 'bi-square'}`} />
                 </button>
             )}
             {hasOverlay && (
@@ -118,7 +118,7 @@ const Thumb = (({ file, isModal, modalUpdater, isSelected, onOpen, onToggleSelec
                     {showHeart && (
                         isPending(file)
                             ? <i className="bi bi-arrow-repeat spin" title="Добавление…" />
-                            : <i
+                            : <i aria-hidden="true"
                                 className={`bi ${isFav(file) ? 'bi-ban' : 'bi-heart-fill'}`}
                                 onClick={handleLikeClick}
                             />
@@ -126,13 +126,13 @@ const Thumb = (({ file, isModal, modalUpdater, isSelected, onOpen, onToggleSelec
                 </div>
             )}
             {file.score != null && hasOverlay && (
-                <span className="thumb-score" title="Score"><i className="bi bi-star-fill" /> {file.score}</span>
+                <span className="thumb-score" title="Score"><i aria-hidden="true" className="bi bi-star-fill" /> {file.score}</span>
             )}
             {file.isManga && (
                 <>
                     <span className="thumb-manga" title={file.mangaRemote ? `Манга · не скачанных глав: ${file.mangaRemote} (читаются с сайта)` : 'Манга'}>
-                        <i className="bi bi-book" /> {file.pageCount || ''}
-                        {file.mangaRemote > 0 && <i className="bi bi-cloud thumb-manga-online" />}
+                        <i aria-hidden="true" className="bi bi-book" /> {file.pageCount || ''}
+                        {file.mangaRemote > 0 && <i aria-hidden="true" className="bi bi-cloud thumb-manga-online" />}
                     </span>
                     {file.mangaNew > 0 && <span className="thumb-manga-new" title={`Новых глав: ${file.mangaNew}`}>+{file.mangaNew}</span>}
                     {file.readPosition != null && (file.readTotal || file.pageCount) > 0 && (
@@ -143,10 +143,10 @@ const Thumb = (({ file, isModal, modalUpdater, isSelected, onOpen, onToggleSelec
                 </>
             )}
             {inLibrary && (
-                <span className="thumb-inlib" title="Уже в библиотеке"><i className="bi bi-bookmark-check-fill" /></span>
+                <span className="thumb-inlib" title="Уже в библиотеке"><i aria-hidden="true" className="bi bi-bookmark-check-fill" /></span>
             )}
             {blockedTag && (
-                <span className="thumb-blocked-tag" title="Скрыт чёрным списком"><i className="bi bi-eye-slash" /> {blockedTag}</span>
+                <span className="thumb-blocked-tag" title="Скрыт чёрным списком"><i aria-hidden="true" className="bi bi-eye-slash" /> {blockedTag}</span>
             )}
             {renderContent()}
         </div>

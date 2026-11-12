@@ -558,7 +558,7 @@ const ImageEditor = ({ file, onCancel, onSaved }) => {
                     <div className="img-editor-zoom-badge">
                         {Math.round(zoom * 100)}%
                         <button className="ie-zoom-reset" title="Сбросить масштаб" onClick={resetZoom}>
-                            <i className="bi bi-arrows-angle-contract" />
+                            <i aria-hidden="true" className="bi bi-arrows-angle-contract" />
                         </button>
                     </div>
                 )}
@@ -566,7 +566,7 @@ const ImageEditor = ({ file, onCancel, onSaved }) => {
                 {panel === 'color' && (
                     <div className="ie-panel" onPointerDown={e => e.stopPropagation()}>
                         <div className="ie-panel-head">
-                            <span><i className="bi bi-palette" /> Цвет</span>
+                            <span><i aria-hidden="true" className="bi bi-palette" /> Цвет</span>
                             {colorTouched && (
                                 <button className="ie-panel-link" onClick={() => setColor(NEUTRAL_COLOR)}>Сбросить</button>
                             )}
@@ -589,7 +589,7 @@ const ImageEditor = ({ file, onCancel, onSaved }) => {
                 {panel === 'export' && (
                     <div className="ie-panel" onPointerDown={e => e.stopPropagation()}>
                         <div className="ie-panel-head">
-                            <span><i className="bi bi-file-earmark-zip" /> Экспорт и сжатие</span>
+                            <span><i aria-hidden="true" className="bi bi-file-earmark-zip" /> Экспорт и сжатие</span>
                             {exportTouched && (
                                 <button className="ie-panel-link" onClick={() => setOutput(DEFAULT_OUTPUT)}>Сбросить</button>
                             )}
@@ -642,10 +642,10 @@ const ImageEditor = ({ file, onCancel, onSaved }) => {
 
             <div className="img-editor-toolbar">
                 <div className="img-editor-group">
-                    <button className="ie-btn" title="Повернуть влево" onClick={rotateLeft}><i className="bi bi-arrow-counterclockwise" /></button>
-                    <button className="ie-btn" title="Повернуть вправо" onClick={rotateRight}><i className="bi bi-arrow-clockwise" /></button>
-                    <button className={`ie-btn ${flipH ? 'on' : ''}`} title="Отразить по горизонтали" onClick={doFlipH}><i className="bi bi-symmetry-vertical" /></button>
-                    <button className={`ie-btn ${flipV ? 'on' : ''}`} title="Отразить по вертикали" onClick={doFlipV}><i className="bi bi-symmetry-horizontal" /></button>
+                    <button className="ie-btn" title="Повернуть влево" onClick={rotateLeft}><i aria-hidden="true" className="bi bi-arrow-counterclockwise" /></button>
+                    <button className="ie-btn" title="Повернуть вправо" onClick={rotateRight}><i aria-hidden="true" className="bi bi-arrow-clockwise" /></button>
+                    <button className={`ie-btn ${flipH ? 'on' : ''}`} title="Отразить по горизонтали" onClick={doFlipH}><i aria-hidden="true" className="bi bi-symmetry-vertical" /></button>
+                    <button className={`ie-btn ${flipV ? 'on' : ''}`} title="Отразить по вертикали" onClick={doFlipV}><i aria-hidden="true" className="bi bi-symmetry-horizontal" /></button>
                 </div>
 
                 <label className="img-editor-straighten" title="Выровнять горизонт">
@@ -664,13 +664,13 @@ const ImageEditor = ({ file, onCancel, onSaved }) => {
                 {/* Toggles */}
                 <div className="img-editor-group">
                     <button className={`ie-btn ${gridOn ? 'on' : ''}`} title="Пиксельная сетка (зум колесом)" onClick={() => setGridOn(v => !v)}>
-                        <i className="bi bi-grid-3x3" />
+                        <i aria-hidden="true" className="bi bi-grid-3x3" />
                     </button>
                     <button className={`ie-btn ${snapOn ? 'on' : ''}`} title="Привязка к краям" onClick={() => setSnapOn(v => !v)}>
-                        <i className="bi bi-magnet" />
+                        <i aria-hidden="true" className="bi bi-magnet" />
                     </button>
                     <button className={`ie-btn ${loupeOn ? 'on' : ''}`} title="Лупа (пиксели под курсором)" onClick={() => setLoupeOn(v => !v)}>
-                        <i className="bi bi-search" />
+                        <i aria-hidden="true" className="bi bi-search" />
                     </button>
                 </div>
 
@@ -681,26 +681,26 @@ const ImageEditor = ({ file, onCancel, onSaved }) => {
                         title="Цвет: яркость, контраст, насыщенность, гамма"
                         onClick={() => setPanel(p => (p === 'color' ? null : 'color'))}
                     >
-                        <i className="bi bi-palette" />
+                        <i aria-hidden="true" className="bi bi-palette" />
                     </button>
                     <button
                         className={`ie-btn ${panel === 'export' ? 'on' : ''} ${exportTouched ? 'dot' : ''}`}
                         title="Экспорт и сжатие: формат, качество, размер"
                         onClick={() => setPanel(p => (p === 'export' ? null : 'export'))}
                     >
-                        <i className="bi bi-file-earmark-zip" />
+                        <i aria-hidden="true" className="bi bi-file-earmark-zip" />
                     </button>
                 </div>
 
                 <div className="img-editor-actions">
                     {file.editedAt && (
                         <button className="ie-btn-text ie-revert" onClick={handleRevert} disabled={saving}>
-                            <i className="bi bi-arrow-90deg-left me-1" />Оригинал
+                            <i aria-hidden="true" className="bi bi-arrow-90deg-left me-1" />Оригинал
                         </button>
                     )}
                     <button className="ie-btn-text" onClick={onCancel} disabled={saving}>Отмена</button>
                     <button className="ie-btn-text ie-save" onClick={handleSave} disabled={saving || !img}>
-                        {saving ? <i className="bi bi-arrow-repeat spin" /> : <><i className="bi bi-check-lg me-1" />Сохранить</>}
+                        {saving ? <i aria-hidden="true" className="bi bi-arrow-repeat spin" /> : <><i aria-hidden="true" className="bi bi-check-lg me-1" />Сохранить</>}
                     </button>
                 </div>
             </div>

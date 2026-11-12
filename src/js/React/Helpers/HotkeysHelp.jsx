@@ -67,17 +67,17 @@ const HotkeysHelp = () => {
         <div className="settings-overlay" onMouseDown={() => setContext(null)}>
             <div className="settings-modal hotkeys-modal" onMouseDown={e => e.stopPropagation()}>
                 <div className="settings-header">
-                    <i className="bi bi-keyboard me-2" />
+                    <i aria-hidden="true" className="bi bi-keyboard me-2" />
                     <span>Горячие клавиши</span>
                     <button className="settings-close" onClick={() => setContext(null)} title="Закрыть (Esc)">
-                        <i className="bi bi-x-lg" />
+                        <i aria-hidden="true" className="bi bi-x-lg" />
                     </button>
                 </div>
                 <div className="settings-body hotkeys-body">
                     {groups.map(g => (
                         <section key={g.id} className={`hotkeys-group ${g.id === context ? 'current' : ''}`}>
                             <h3>
-                                <i className={`bi ${g.icon}`} /> {g.title}
+                                <i aria-hidden="true" className={`bi ${g.icon}`} /> {g.title}
                                 {g.id === context && <span className="hotkeys-now">сейчас</span>}
                             </h3>
                             {g.items.map((it, i) => (

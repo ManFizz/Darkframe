@@ -61,18 +61,18 @@ const RuleEditor = ({ initial, onSaved, onCancel }) => {
             <div className="ar-section-title">То</div>
             <div className="ar-actions-grid">
                 <div className="ar-action">
-                    <span className="ar-label"><i className="bi bi-tags" /> Добавить теги</span>
+                    <span className="ar-label"><i aria-hidden="true" className="bi bi-tags" /> Добавить теги</span>
                     <TagEditor tags={rule.addTags} onChange={addTags => set({ addTags })} />
                 </div>
                 <div className="ar-action">
-                    <span className="ar-label"><i className="bi bi-folder" /> Положить в коллекцию</span>
+                    <span className="ar-label"><i aria-hidden="true" className="bi bi-folder" /> Положить в коллекцию</span>
                     <div className="ar-inline">
                         <CollectionPicker currentCollectionId={rule.collectionId} onChange={collectionId => set({ collectionId })} />
-                        {rule.collectionId && <button className="ar-clear" onClick={() => set({ collectionId: null })} title="Не перемещать"><i className="bi bi-x-lg" /></button>}
+                        {rule.collectionId && <button className="ar-clear" onClick={() => set({ collectionId: null })} title="Не перемещать"><i aria-hidden="true" className="bi bi-x-lg" /></button>}
                     </div>
                 </div>
                 <div className="ar-action">
-                    <span className="ar-label"><i className="bi bi-star" /> Рейтинг (если не стоит)</span>
+                    <span className="ar-label"><i aria-hidden="true" className="bi bi-star" /> Рейтинг (если не стоит)</span>
                     <select className="form-select form-select-sm" value={rule.rating || ''} onChange={e => set({ rating: e.target.value ? Number(e.target.value) : null })}>
                         <option value="">не менять</option>
                         {Array.from({ length: 10 }, (_, i) => i + 1).map(r => <option key={r} value={r}>{r}</option>)}
@@ -83,13 +83,13 @@ const RuleEditor = ({ initial, onSaved, onCancel }) => {
             <div className="ar-footer">
                 <span className="ar-preview">
                     {!rule.rules.items.length ? 'Добавь хотя бы одно условие'
-                        : pv == null ? <><i className="bi bi-arrow-repeat spin" /> Считаю…</>
+                        : pv == null ? <><i aria-hidden="true" className="bi bi-arrow-repeat spin" /> Считаю…</>
                         : <>Сейчас подходит <b>{pv.matched}</b> {plural(pv.matched, 'файл', 'файла', 'файлов')}, изменится <b>{pv.changed}</b></>}
                 </span>
                 <button className="btn btn-sm btn-outline-secondary" onClick={onCancel}>Отмена</button>
                 <button className="btn btn-sm btn-primary" disabled={saving || !rule.rules.items.length || !hasAction} onClick={save}
                         title={!hasAction ? 'Выбери хотя бы одно действие' : ''}>
-                    <i className="bi bi-check2 me-1" />Сохранить
+                    <i aria-hidden="true" className="bi bi-check2 me-1" />Сохранить
                 </button>
             </div>
         </div>
@@ -128,7 +128,7 @@ const AutoRulesTool = () => {
                     <h3>Правила импорта</h3>
                     <p className="cp-manage-desc">Срабатывают на каждый новый файл — из диалога, перетаскивания, Folders и API. Выполняются сверху вниз.</p>
                 </div>
-                {!editing && <button className="btn btn-sm btn-primary text-nowrap" onClick={() => setEditing(EMPTY)}><i className="bi bi-plus-lg me-1" />Новое правило</button>}
+                {!editing && <button className="btn btn-sm btn-primary text-nowrap" onClick={() => setEditing(EMPTY)}><i aria-hidden="true" className="bi bi-plus-lg me-1" />Новое правило</button>}
             </div>
 
             {editing && (
@@ -137,7 +137,7 @@ const AutoRulesTool = () => {
             )}
 
             {rules && !rules.length && !editing && (
-                <div className="cp-empty"><i className="bi bi-magic fs-3" /><span>Правил пока нет. Например: «источник pixiv.net → тег pixiv и коллекция Art».</span></div>
+                <div className="cp-empty"><i aria-hidden="true" className="bi bi-magic fs-3" /><span>Правил пока нет. Например: «источник pixiv.net → тег pixiv и коллекция Art».</span></div>
             )}
 
             <div className="ar-list">
@@ -164,10 +164,10 @@ const AutoRulesTool = () => {
                         ) : (
                             <div className="ar-card-actions">
                                 <button className="btn btn-sm btn-outline-secondary" onClick={() => askApply(r)} title="Применить к уже импортированным файлам">
-                                    <i className="bi bi-lightning-charge" /> К существующим
+                                    <i aria-hidden="true" className="bi bi-lightning-charge" /> К существующим
                                 </button>
-                                <button className="ar-icon" onClick={() => setEditing(r)} title="Изменить"><i className="bi bi-pencil" /></button>
-                                <button className="ar-icon danger" onClick={() => setConfirm({ id: r.id, kind: 'delete' })} title="Удалить"><i className="bi bi-trash3" /></button>
+                                <button className="ar-icon" onClick={() => setEditing(r)} title="Изменить"><i aria-hidden="true" className="bi bi-pencil" /></button>
+                                <button className="ar-icon danger" onClick={() => setConfirm({ id: r.id, kind: 'delete' })} title="Удалить"><i aria-hidden="true" className="bi bi-trash3" /></button>
                             </div>
                         )}
                     </div>

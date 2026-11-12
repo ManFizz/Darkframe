@@ -108,19 +108,19 @@ const FolderPanel = ({ file }) => {
             <div className="metadata-content">
                 <div className="fp-title" title={file.title}>{file.title}</div>
                 <button className="fp-path" onClick={copyPath} title="Скопировать полный путь">
-                    <i className={`bi ${copied ? 'bi-check2' : 'bi-folder2'}`} />
+                    <i aria-hidden="true" className={`bi ${copied ? 'bi-check2' : 'bi-folder2'}`} />
                     <span>{info?.dir || file.filePath}</span>
                 </button>
 
                 <div className="fp-actions">
                     <button className="fp-action" onClick={() => fsApi.reveal(file.filePath)} title="Показать в проводнике">
-                        <i className="bi bi-folder-symlink" /><span>В проводнике</span>
+                        <i aria-hidden="true" className="bi bi-folder-symlink" /><span>В проводнике</span>
                     </button>
                     <button className="fp-action" onClick={() => fsApi.open(file.filePath)} title="Открыть в приложении по умолчанию">
-                        <i className="bi bi-box-arrow-up-right" /><span>Открыть</span>
+                        <i aria-hidden="true" className="bi bi-box-arrow-up-right" /><span>Открыть</span>
                     </button>
                     <button className="fp-action" onClick={copyPath} title="Скопировать путь">
-                        <i className={`bi ${copied ? 'bi-check2' : 'bi-clipboard'}`} /><span>Путь</span>
+                        <i aria-hidden="true" className={`bi ${copied ? 'bi-check2' : 'bi-clipboard'}`} /><span>Путь</span>
                     </button>
                 </div>
 
@@ -132,13 +132,13 @@ const FolderPanel = ({ file }) => {
                 </div>
 
                 <div className="fp-import">
-                    <div className="fp-import-title"><i className="bi bi-box-arrow-in-down" /> В библиотеку</div>
+                    <div className="fp-import-title"><i aria-hidden="true" className="bi bi-box-arrow-in-down" /> В библиотеку</div>
 
                     <div className="fp-target">
                         <button className={`fp-target-btn ${picking ? 'open' : ''}`} onClick={() => setPicking(v => !v)}>
-                            <i className={`bi ${target.collectionId ? 'bi-folder' : 'bi-inbox'}`} />
+                            <i aria-hidden="true" className={`bi ${target.collectionId ? 'bi-folder' : 'bi-inbox'}`} />
                             <span>{targetName}</span>
-                            <i className="bi bi-chevron-down ms-auto" />
+                            <i aria-hidden="true" className="bi bi-chevron-down ms-auto" />
                         </button>
                         {picking && (
                             <div className="fp-target-drop">
@@ -155,7 +155,7 @@ const FolderPanel = ({ file }) => {
 
                     {state && state !== 'busy' ? (
                         <div className={`fp-result ${state.done ? 'ok' : 'warn'}`}>
-                            <i className={`bi ${state.done ? 'bi-check-circle-fill' : 'bi-exclamation-circle-fill'}`} />
+                            <i aria-hidden="true" className={`bi ${state.done ? 'bi-check-circle-fill' : 'bi-exclamation-circle-fill'}`} />
                             <span>{state.message}</span>
                             {state.duplicate && (
                                 <button className="btn btn-sm btn-link" onClick={() => doImport(true)}>Добавить копию</button>
@@ -164,8 +164,8 @@ const FolderPanel = ({ file }) => {
                     ) : (
                         <button className="fp-import-btn" disabled={state === 'busy'} onClick={() => doImport(false)}>
                             {state === 'busy'
-                                ? <><i className="bi bi-arrow-repeat spin me-1" /> Импорт…</>
-                                : <><i className="bi bi-plus-lg me-1" /> Импортировать</>}
+                                ? <><i aria-hidden="true" className="bi bi-arrow-repeat spin me-1" /> Импорт…</>
+                                : <><i aria-hidden="true" className="bi bi-plus-lg me-1" /> Импортировать</>}
                         </button>
                     )}
                 </div>

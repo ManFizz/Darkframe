@@ -35,18 +35,18 @@ const FsDialog = ({ title, text, icon = 'bi-pencil', initial, selectTo, submitLa
         <div className="fsd-overlay" onMouseDown={onClose}>
             <div className="fsd" onMouseDown={e => e.stopPropagation()}
                  onKeyDown={e => { if (e.key === 'Escape') onClose(); if (e.key === 'Enter') submit(); }}>
-                <div className="fsd-title"><i className={`bi ${icon}`} /> {title}</div>
+                <div className="fsd-title"><i aria-hidden="true" className={`bi ${icon}`} /> {title}</div>
                 {text && <div className="fsd-text">{text}</div>}
                 {withInput && (
                     <input ref={inputRef} className="form-control form-control-sm" value={value} spellCheck={false}
                            onChange={e => { setValue(e.target.value); setError(null); }} />
                 )}
-                {error && <div className="fsd-error"><i className="bi bi-exclamation-circle" /> {error}</div>}
+                {error && <div className="fsd-error"><i aria-hidden="true" className="bi bi-exclamation-circle" /> {error}</div>}
                 <div className="fsd-actions">
                     <button className="btn btn-sm btn-outline-secondary" onClick={onClose}>Отмена</button>
                     <button className={`btn btn-sm ${danger ? 'btn-danger' : 'btn-primary'}`} disabled={busy || (withInput && !value.trim())}
                             onClick={submit} autoFocus={!withInput}>
-                        {busy ? <i className="bi bi-arrow-repeat spin" /> : submitLabel}
+                        {busy ? <i aria-hidden="true" className="bi bi-arrow-repeat spin" /> : submitLabel}
                     </button>
                 </div>
             </div>

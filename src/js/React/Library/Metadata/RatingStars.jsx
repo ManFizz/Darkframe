@@ -20,7 +20,7 @@ const RatingStars = ({ value, onChange }) => {
                         onClick={() => onChange(star === value ? 0 : star)}
                         title={star === value ? 'Снять оценку' : `Оценка ${star}`}
                     >
-                        <i className={`bi bi-star${star <= shown ? '-fill' : ''}`} />
+                        <i aria-hidden="true" className={`bi bi-star${star <= shown ? '-fill' : ''}`} />
                         <span className="rating-star-n">{star}</span>
                     </button>
                 ))}

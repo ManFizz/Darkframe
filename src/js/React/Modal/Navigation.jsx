@@ -180,7 +180,7 @@ const Navigation = ({ uiTheme = 'dark', file, modalUpdater, mainArray, setDegree
                 <div className="modal-nav-more" data-bs-theme={uiTheme}>
                     {extras.map(x => (
                         <button key={x.icon} className={x.active ? 'active' : ''} onClick={() => { setMoreOpen(false); x.onClick(); }}>
-                            <i className={`bi ${x.icon}`} />{x.label}
+                            <i aria-hidden="true" className={`bi ${x.icon}`} />{x.label}
                         </button>
                     ))}
                 </div>
@@ -219,13 +219,13 @@ const Navigation = ({ uiTheme = 'dark', file, modalUpdater, mainArray, setDegree
             )}
 
             {canGoLeft && (
-                <i
+                <i aria-hidden="true"
                     className="bi bi-chevron-compact-left arrow arrow-left"
                     onClick={() => openShift(DIRECTION.LEFT)}
                 />
             )}
             {(canGoRight || CanMoreMedia()) && (
-                <i
+                <i aria-hidden="true"
                     className="bi bi-chevron-compact-right arrow arrow-right"
                     onClick={() => openShift(DIRECTION.RIGHT)}
                 />

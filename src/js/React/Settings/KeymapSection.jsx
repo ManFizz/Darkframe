@@ -35,7 +35,7 @@ const KeymapSection = () => {
     return (
         <div className="settings-section">
             <div className="settings-section-title">
-                <i className="bi bi-keyboard me-2" />
+                <i aria-hidden="true" className="bi bi-keyboard me-2" />
                 Горячие клавиши
                 <button className="km-reset-all" onClick={() => { resetAll(); notify({ message: 'Все сочетания — по умолчанию', type: 'info' }); }}>
                     сбросить всё
@@ -58,7 +58,7 @@ const KeymapSection = () => {
                                             </button>
                                             {binds.length > 1 && (
                                                 <button className="km-x" onClick={() => clearBinding(a.id, i)} title="Убрать это сочетание">
-                                                    <i className="bi bi-x" />
+                                                    <i aria-hidden="true" className="bi bi-x" />
                                                 </button>
                                             )}
                                         </span>
@@ -67,12 +67,12 @@ const KeymapSection = () => {
                                         <span className="km-bind capturing"><span className="km-bind-btn">Нажми сочетание…</span></span>
                                     ) : (
                                         <button className="km-add" onClick={() => setCapture({ id: a.id, index: binds.length })} title="Добавить ещё одно сочетание">
-                                            <i className="bi bi-plus" />
+                                            <i aria-hidden="true" className="bi bi-plus" />
                                         </button>
                                     )}
                                     {isCustom(a.id) && (
                                         <button className="km-add" onClick={() => resetBinding(a.id)} title="По умолчанию">
-                                            <i className="bi bi-arrow-counterclockwise" />
+                                            <i aria-hidden="true" className="bi bi-arrow-counterclockwise" />
                                         </button>
                                     )}
                                 </span>

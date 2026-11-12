@@ -30,11 +30,11 @@ export const SiteSwitcher = ({ items, activeIdx, lastIdx, onGo, icon }) => {
         <div className={`nav-site ${active ? 'active' : ''}`} ref={ref}>
             <button className="btn nav-source-tab nav-site-main" title={active ? `${shown.btn.label} — другие сайты в списке` : `Открыть ${shown.btn.label}`}
                     onClick={() => (active ? setOpen(v => !v) : go(shown.idx))}>
-                <i className={`bi ${icon(shown.btn)}`} />
+                <i aria-hidden="true" className={`bi ${icon(shown.btn)}`} />
                 <span>{shown.btn.label}</span>
             </button>
             <button className="btn nav-source-tab nav-site-caret" title="Сайты" onClick={() => setOpen(v => !v)}>
-                <i className={`bi bi-chevron-${open ? 'up' : 'down'}`} />
+                <i aria-hidden="true" className={`bi bi-chevron-${open ? 'up' : 'down'}`} />
             </button>
             {open && (
                 <div className="nav-pop nav-site-menu" role="menu">
@@ -42,9 +42,9 @@ export const SiteSwitcher = ({ items, activeIdx, lastIdx, onGo, icon }) => {
                     {items.map(({ btn, idx }) => (
                         <button key={idx} role="menuitemradio" aria-checked={idx === activeIdx}
                                 className={idx === activeIdx ? 'on' : ''} onClick={() => go(idx)}>
-                            <i className={`bi ${icon(btn)}`} />
+                            <i aria-hidden="true" className={`bi ${icon(btn)}`} />
                             <span>{btn.label}</span>
-                            {idx === activeIdx && <i className="bi bi-check2 nav-pop-check" />}
+                            {idx === activeIdx && <i aria-hidden="true" className="bi bi-check2 nav-pop-check" />}
                         </button>
                     ))}
                 </div>
@@ -64,13 +64,13 @@ export const MoreMenu = ({ items }) => {
     return (
         <div className="nav-more" ref={ref}>
             <button className={`btn navbar-settings-btn ${open ? 'active' : ''}`} onClick={() => setOpen(v => !v)} title="Ещё">
-                <i className="bi bi-three-dots" />
+                <i aria-hidden="true" className="bi bi-three-dots" />
             </button>
             {open && (
                 <div className="nav-pop nav-more-menu" role="menu">
                     {list.map(it => (
                         <button key={it.id} role="menuitem" onClick={() => { setOpen(false); it.run(); }}>
-                            <i className={`bi ${it.icon}`} />
+                            <i aria-hidden="true" className={`bi ${it.icon}`} />
                             <span>{it.label}</span>
                             {it.hint && <kbd>{it.hint}</kbd>}
                         </button>

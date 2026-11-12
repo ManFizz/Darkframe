@@ -27,14 +27,14 @@ const SuggestTags = ({ file, onAdd, label = null, children = null }) => {
     // (the tag editor) go between that row and the suggestions.
     const ask_btn = (
         <button className="st-ask" onClick={ask} title="Локальная нейросеть предложит теги по картинке">
-            <i className="bi bi-stars" /> Предложить теги
+            <i aria-hidden="true" className="bi bi-stars" /> Предложить теги
         </button>
     );
     const head = (extra = null) => (
         <>{label ? <div className="st-row"><label>{label}</label>{extra}</div> : extra}{children}</>
     );
     if (!state) return head(ask_btn);
-    if (state === 'busy') return head(<div className="st-hint"><i className="bi bi-arrow-repeat spin" /> Смотрю на картинку…</div>);
+    if (state === 'busy') return head(<div className="st-hint"><i aria-hidden="true" className="bi bi-arrow-repeat spin" /> Смотрю на картинку…</div>);
     if (state === 'nomodel') {
         return <>{head(null)}<div className="st-hint">
             Нужна модель автотегов (~380 МБ). <button className="st-link" onClick={openAutotagSettings}>Скачать…</button>
@@ -46,7 +46,7 @@ const SuggestTags = ({ file, onAdd, label = null, children = null }) => {
     return (
         <>{head()}<div className="st-box">
             <div className="st-head">
-                <span><i className="bi bi-stars" /> Предложения</span>
+                <span><i aria-hidden="true" className="bi bi-stars" /> Предложения</span>
                 <button className="st-link" onClick={() => add(state.list.map(t => t.name))}>добавить все ({state.list.length})</button>
             </div>
             <div className="st-chips">

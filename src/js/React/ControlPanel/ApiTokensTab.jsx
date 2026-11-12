@@ -102,13 +102,13 @@ const ApiTokensTab = () => {
             {created && (
                 <div className="apitok-new">
                     <div className="apitok-new-head">
-                        <i className="bi bi-key-fill me-1" />
+                        <i aria-hidden="true" className="bi bi-key-fill me-1" />
                         Токен «{created.info.name}» создан. Скопируй его — больше он не покажется.
                     </div>
                     <div className="apitok-new-value">
                         <code>{created.token}</code>
                         <button className="btn btn-sm btn-primary" onClick={() => copy(created.token)}>
-                            <i className="bi bi-clipboard me-1" />Копировать
+                            <i aria-hidden="true" className="bi bi-clipboard me-1" />Копировать
                         </button>
                     </div>
                     <button className="cp-linkbtn" onClick={() => setCreated(null)}>Скрыть</button>
@@ -130,7 +130,7 @@ const ApiTokensTab = () => {
                             onClick={createToken}
                             disabled={busy || !newName.trim() || !newScopes.size}
                         >
-                            <i className="bi bi-plus-lg me-1" />Создать
+                            <i aria-hidden="true" className="bi bi-plus-lg me-1" />Создать
                         </button>
                     </div>
                     <div className="apitok-scopes">
@@ -152,7 +152,7 @@ const ApiTokensTab = () => {
             <div className="apitok-list">
                 {tokens.length === 0 && (
                     <div className="cp-empty">
-                        <i className="bi bi-key" />
+                        <i aria-hidden="true" className="bi bi-key" />
                         <span>Токенов пока нет</span>
                     </div>
                 )}
@@ -177,14 +177,14 @@ const ApiTokensTab = () => {
                                 onClick={() => setEnabled(t.id, !t.enabled)}
                                 title={t.enabled ? 'Отключить' : 'Включить'}
                             >
-                                <i className={`bi ${t.enabled ? 'bi-pause' : 'bi-play'}`} />
+                                <i aria-hidden="true" className={`bi ${t.enabled ? 'bi-pause' : 'bi-play'}`} />
                             </button>
                             <button
                                 className="btn btn-sm btn-outline-danger"
                                 onClick={() => revoke(t.id, t.name)}
                                 title="Отозвать"
                             >
-                                <i className="bi bi-trash3" />
+                                <i aria-hidden="true" className="bi bi-trash3" />
                             </button>
                         </div>
                     </div>

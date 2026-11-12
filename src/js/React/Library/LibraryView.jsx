@@ -566,7 +566,7 @@ const LibraryView = ({ model = null }) => {
             <div className="library-main">
             {mobile && !model && (
                 <button className="lib-drawer-btn" onClick={() => setDrawer(true)}>
-                    <i className="bi bi-list" />
+                    <i aria-hidden="true" className="bi bi-list" />
                     <span>{isTrash ? 'Корзина' : isHistory ? 'История' : currentCollectionName || (selectedCollection === SPECIAL.UNCATEGORIZED ? 'Без коллекции' : 'Все файлы')}</span>
                     <span className="lib-drawer-count">{orderedItems.length}</span>
                 </button>
@@ -574,24 +574,24 @@ const LibraryView = ({ model = null }) => {
             {backTarget && (
                 <div className="collection-back">
                     <button className="btn btn-sm btn-outline-secondary" onClick={() => handleCollectionSelect(backTarget.id)}>
-                        <i className="bi bi-arrow-left" />{backTarget.label}
+                        <i aria-hidden="true" className="bi bi-arrow-left" />{backTarget.label}
                     </button>
                     <span className="collection-back-name">{currentCollectionName}</span>
                 </div>
             )}
             {isTrash && (
                 <div className="trash-toolbar">
-                    <i className="bi bi-trash me-1" />
+                    <i aria-hidden="true" className="bi bi-trash me-1" />
                     <span>Корзина — удалённые элементы</span>
                     <button className="btn btn-sm btn-outline-danger ms-auto" onClick={handleEmptyTrash}>
-                        <i className="bi bi-trash3 me-1" />
+                        <i aria-hidden="true" className="bi bi-trash3 me-1" />
                         Очистить корзину
                     </button>
                 </div>
             )}
             {isHistory && (
                 <div className="history-toolbar">
-                    <i className="bi bi-clock-history history-toolbar-icon" />
+                    <i aria-hidden="true" className="bi bi-clock-history history-toolbar-icon" />
                     <div className="history-sections">
                         <button
                             className={`history-sec ${historySection == null ? 'active' : ''}`}
@@ -613,12 +613,12 @@ const LibraryView = ({ model = null }) => {
                     <div className="history-actions ms-auto">
                         {selectedItems.length > 0 && (
                             <button className="btn btn-sm btn-outline-secondary" onClick={removeSelectedFromHistory}>
-                                <i className="bi bi-x-lg me-1" />
+                                <i aria-hidden="true" className="bi bi-x-lg me-1" />
                                 Убрать ({selectedItems.length})
                             </button>
                         )}
                         <button className="btn btn-sm btn-outline-danger" onClick={clearCurrentHistory}>
-                            <i className="bi bi-trash3 me-1" />
+                            <i aria-hidden="true" className="bi bi-trash3 me-1" />
                             Очистить
                         </button>
                     </div>
@@ -719,7 +719,7 @@ const LibraryView = ({ model = null }) => {
                                         <label>Источник</label>
                                         <a className="btn btn-sm btn-outline-secondary"
                                            href={focused.sourceUrl} target="_blank" rel="noreferrer">
-                                            <i className="bi bi-box-arrow-up-right me-1" />
+                                            <i aria-hidden="true" className="bi bi-box-arrow-up-right me-1" />
                                             Открыть источник
                                         </a>
                                     </div>
@@ -728,7 +728,7 @@ const LibraryView = ({ model = null }) => {
                         </>
                     ) : (
                         <div className="metadata-panel-empty">
-                            <i className="bi bi-clock-history" />
+                            <i aria-hidden="true" className="bi bi-clock-history" />
                             <span>Выбери элемент</span>
                         </div>
                     )}

@@ -99,7 +99,7 @@ const AdvancedFilterFields = ({ value, onChange }) => {
                             className={`adv-chip ${types.includes(t.id) ? 'active' : ''}`}
                             onClick={() => toggleType(t.id)}
                         >
-                            <i className={`bi ${t.icon}`} /> {t.label}
+                            <i aria-hidden="true" className={`bi ${t.icon}`} /> {t.label}
                         </button>
                     ))}
                 </div>

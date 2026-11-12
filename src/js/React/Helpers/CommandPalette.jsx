@@ -73,7 +73,7 @@ const CommandPalette = () => {
         <div className="cmdp-overlay" onMouseDown={() => setOpen(false)}>
             <div className="cmdp" onMouseDown={e => e.stopPropagation()}>
                 <div className="cmdp-input">
-                    <i className="bi bi-search" />
+                    <i aria-hidden="true" className="bi bi-search" />
                     <input autoFocus value={query} spellCheck={false}
                            placeholder="Раздел, коллекция, папка, действие…"
                            onChange={e => setQuery(e.target.value)} onKeyDown={onKeyDown} />
@@ -89,7 +89,7 @@ const CommandPalette = () => {
                                 {header && <div className="cmdp-group">{header}</div>}
                                 <div className={`cmdp-item ${i === active ? 'active' : ''}`}
                                      onMouseMove={() => setActive(i)} onClick={() => run(c)}>
-                                    <i className={`bi ${c.icon || 'bi-arrow-return-right'}`} />
+                                    <i aria-hidden="true" className={`bi ${c.icon || 'bi-arrow-return-right'}`} />
                                     <span className="cmdp-title">{c.title}</span>
                                     {c.hint && <span className="cmdp-hint">{c.hint}</span>}
                                 </div>

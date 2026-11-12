@@ -265,8 +265,8 @@ const ImportButton = ({ collectionId, collectionName, onImported }) => {
                 {/* Primary path — one clear button */}
                 <button className="import-primary" onClick={handleImportFiles} disabled={!!uploading}>
                     {uploading
-                        ? <><i className="bi bi-arrow-repeat spin" /> Загрузка {uploading.done}/{uploading.total}</>
-                        : <><i className="bi bi-plus-lg" /> Добавить файлы</>}
+                        ? <><i aria-hidden="true" className="bi bi-arrow-repeat spin" /> Загрузка {uploading.done}/{uploading.total}</>
+                        : <><i aria-hidden="true" className="bi bi-plus-lg" /> Добавить файлы</>}
                 </button>
                 {isWeb && (
                     <input ref={fileInput} type="file" multiple hidden accept="image/*,video/*,.cbz,.zip"
@@ -282,7 +282,7 @@ const ImportButton = ({ collectionId, collectionName, onImported }) => {
                     className={`import-more-toggle ${expanded ? 'open' : ''}`}
                     onClick={() => setExpanded(v => !v)}
                 >
-                    <i className="bi bi-chevron-down" />
+                    <i aria-hidden="true" className="bi bi-chevron-down" />
                     {isWeb ? 'По ссылке' : 'Ссылка · Папка · JSON · CSV'}
                 </button>
 
@@ -304,8 +304,8 @@ const ImportButton = ({ collectionId, collectionName, onImported }) => {
                                 title="Загрузить по ссылке"
                             >
                                 {urlImporting
-                                    ? <i className="bi bi-arrow-repeat spin" />
-                                    : <i className="bi bi-link-45deg" />}
+                                    ? <i aria-hidden="true" className="bi bi-arrow-repeat spin" />
+                                    : <i aria-hidden="true" className="bi bi-link-45deg" />}
                             </button>
                         </div>
 
@@ -333,23 +333,23 @@ const ImportButton = ({ collectionId, collectionName, onImported }) => {
                         {!isWeb && <>
                         <div className="import-more-actions">
                             <button className="import-ghost" onClick={handleImportDirectory}>
-                                <i className="bi bi-folder-plus" /> Папку
+                                <i aria-hidden="true" className="bi bi-folder-plus" /> Папку
                             </button>
                             <button className="import-ghost" onClick={handleImportJson} disabled={importing}>
-                                <i className="bi bi-filetype-json" /> JSON
+                                <i aria-hidden="true" className="bi bi-filetype-json" /> JSON
                             </button>
                             <button className="import-ghost" onClick={handleImportEagle} disabled={importing}>
-                                <i className="bi bi-box-arrow-in-down" /> CSV
+                                <i aria-hidden="true" className="bi bi-box-arrow-in-down" /> CSV
                             </button>
                         </div>
                         <div className="import-more-actions">
                             <button className="import-ghost" title="Картинки папки — страницы; подпапки — главы"
                                     onClick={async () => { const r = await mangaApi.importFolderDialog({ collectionId: collectionId ?? null }).catch(e => { notify({ message: String(e.message).split(': ').pop(), type: 'warning' }); return null; }); if (r?.length) { notify({ message: `Манга добавлена: ${r.length}`, type: 'success' }); onImported?.(); } }}>
-                                <i className="bi bi-book" /> Манга из папки
+                                <i aria-hidden="true" className="bi bi-book" /> Манга из папки
                             </button>
                             <button className="import-ghost" title="Комиксы / манга в CBZ или ZIP"
                                     onClick={async () => { const r = await mangaApi.importArchiveDialog({ collectionId: collectionId ?? null }); if (r) { notify({ message: r.items.length ? `Манга добавлена: ${r.items.length}${r.errors.length ? ` · ошибок: ${r.errors.length}` : ''}` : `Не удалось: ${r.errors[0]?.error}`, type: r.items.length ? 'success' : 'warning' }); onImported?.(); } }}>
-                                <i className="bi bi-file-zip" /> CBZ / ZIP
+                                <i aria-hidden="true" className="bi bi-file-zip" /> CBZ / ZIP
                             </button>
                         </div>
                         </>}

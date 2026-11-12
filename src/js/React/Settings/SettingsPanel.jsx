@@ -139,7 +139,7 @@ const FieldRow = ({ name, value, meta = {}, onChange }) => {
 const Section = ({ icon, title, value, meta, keys, onChange }) => (
     <div className="settings-section">
         <div className="settings-section-title">
-            <i className={`bi ${icon} me-2`} />
+            <i aria-hidden="true" className={`bi ${icon} me-2`} />
             {title}
         </div>
         <div className="settings-section-body">
@@ -211,7 +211,7 @@ const SettingsPanel = ({ onClose }) => {
                 <KeymapSection />
                 {loading ? (
                     <div className="settings-loading">
-                        <i className="bi bi-arrow-repeat spin me-2" />Загрузка…
+                        <i aria-hidden="true" className="bi bi-arrow-repeat spin me-2" />Загрузка…
                     </div>
                 ) : (
                     <>
@@ -244,8 +244,8 @@ const SettingsPanel = ({ onClose }) => {
                 </button>
                 <button className="btn btn-primary btn-sm" onClick={handleSave} disabled={loading || saving}>
                     {saving
-                        ? <><i className="bi bi-arrow-repeat spin me-1" />Сохранение…</>
-                        : <><i className="bi bi-check2 me-1" />Сохранить</>}
+                        ? <><i aria-hidden="true" className="bi bi-arrow-repeat spin me-1" />Сохранение…</>
+                        : <><i aria-hidden="true" className="bi bi-check2 me-1" />Сохранить</>}
                 </button>
             </div>
         </>

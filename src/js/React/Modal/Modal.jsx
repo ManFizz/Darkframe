@@ -365,7 +365,7 @@ const Modal = ({ fileId, mainArray, modalUpdater, displayFiles, onUpdated, onReo
         <div className="manga-cover-view">
             <img src={imageSrc} alt={file.title} draggable={false} />
             <button className="manga-cover-read" onClick={(e) => { e.stopPropagation(); readLibraryManga(file); }}>
-                <i className="bi bi-book-half" /> Читать · {file.pageCount} стр.
+                <i aria-hidden="true" className="bi bi-book-half" /> Читать · {file.pageCount} стр.
             </button>
         </div>
     ) : file.type === FILE_TYPES.IMAGE ? (
@@ -434,7 +434,7 @@ const Modal = ({ fileId, mainArray, modalUpdater, displayFiles, onUpdated, onReo
                 {showStrip && <Filmstrip items={mainArray} current={file} onPick={modalUpdater} onHide={() => setStripPref(false)} onReorder={onReorder} />}
                 {!stripPref && !ss.active && !editing && mainArray.length > 1 && (
                     <button className="fs-show" onClick={() => setStripPref(true)} title="Показать ленту миниатюр (T)">
-                        <i className="bi bi-chevron-up" />
+                        <i aria-hidden="true" className="bi bi-chevron-up" />
                     </button>
                 )}
 

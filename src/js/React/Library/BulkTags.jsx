@@ -77,7 +77,7 @@ const BulkTags = ({ selectedItems, onChanged }) => {
     return (
         <div className="bulk-action-group bulk-tags">
             <button className={`btn btn-sm btn-outline-secondary ${open ? 'active' : ''}`} onClick={() => setOpen(v => !v)}>
-                <i className="bi bi-tags me-1" /> Теги
+                <i aria-hidden="true" className="bi bi-tags me-1" /> Теги
             </button>
             {open && (
                 <>
@@ -86,7 +86,7 @@ const BulkTags = ({ selectedItems, onChanged }) => {
                         <div className="bt-tabs">
                             {[['add', 'Добавить', 'bi-plus-lg'], ['remove', 'Убрать', 'bi-dash-lg'], ['replace', 'Заменить', 'bi-arrow-left-right']].map(([id, label, icon]) => (
                                 <button key={id} className={mode === id ? 'active' : ''} onClick={() => setMode(id)}>
-                                    <i className={`bi ${icon}`} /> {label}
+                                    <i aria-hidden="true" className={`bi ${icon}`} /> {label}
                                 </button>
                             ))}
                         </div>
@@ -114,7 +114,7 @@ const BulkTags = ({ selectedItems, onChanged }) => {
                                                 {n === selectedItems.length ? 'у всех' : `${n} из ${selectedItems.length}`}
                                             </span>
                                             <button disabled={busy} onClick={() => doRemove(tag)} title="Убрать у всех выбранных">
-                                                <i className="bi bi-x-lg" />
+                                                <i aria-hidden="true" className="bi bi-x-lg" />
                                             </button>
                                         </div>
                                     ))}
@@ -127,7 +127,7 @@ const BulkTags = ({ selectedItems, onChanged }) => {
                                 <div className="bt-row">
                                     <input className="form-control form-control-sm" list="bt-existing" placeholder="какой тег"
                                            value={from} onChange={e => setFrom(e.target.value)} />
-                                    <i className="bi bi-arrow-right" />
+                                    <i aria-hidden="true" className="bi bi-arrow-right" />
                                     <input className="form-control form-control-sm" placeholder="на какой"
                                            value={to} onChange={e => setTo(e.target.value)}
                                            onKeyDown={e => { if (e.key === 'Enter') doReplace(); }} />

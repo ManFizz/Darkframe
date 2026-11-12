@@ -47,7 +47,7 @@ const AutotagTool = () => {
         finally { setRun(null); refresh(); }
     };
 
-    if (!st) return <div className="settings-body cp-manage"><i className="bi bi-arrow-repeat spin" /></div>;
+    if (!st) return <div className="settings-body cp-manage"><i aria-hidden="true" className="bi bi-arrow-repeat spin" /></div>;
     const pct = dl?.total ? Math.round((dl.done / dl.total) * 100) : 0;
 
     return (
@@ -63,7 +63,7 @@ const AutotagTool = () => {
             </div>
 
             <div className="at-card">
-                <i className={`bi ${st.installed ? 'bi-cpu-fill' : 'bi-cloud-arrow-down'} at-card-icon`} />
+                <i aria-hidden="true" className={`bi ${st.installed ? 'bi-cpu-fill' : 'bi-cloud-arrow-down'} at-card-icon`} />
                 <div className="at-card-body">
                     <div className="at-card-title">{st.installed ? 'Модель установлена' : 'Модель не скачана'}</div>
                     <div className="at-card-sub">
@@ -74,12 +74,12 @@ const AutotagTool = () => {
                     {dl && <div className="at-bar"><span style={{ width: `${pct}%` }} /></div>}
                 </div>
                 {!st.installed && !dl && (
-                    <button className="btn btn-sm btn-primary" onClick={download}><i className="bi bi-download me-1" />Скачать модель</button>
+                    <button className="btn btn-sm btn-primary" onClick={download}><i aria-hidden="true" className="bi bi-download me-1" />Скачать модель</button>
                 )}
                 {st.installed && (
                     <button className="btn btn-sm btn-outline-secondary" onClick={async () => setSt(await autotagApi.remove())}
                             title="Освободить место; скачать можно снова">
-                        <i className="bi bi-trash3" />
+                        <i aria-hidden="true" className="bi bi-trash3" />
                     </button>
                 )}
             </div>
@@ -107,7 +107,7 @@ const AutotagTool = () => {
                     <div className="cp-manage-desc">Выделенные файлы можно разметить и из панели выделения («Автотеги»), а один файл — в просмотре.</div>
                 </div>
                 <button className="btn btn-sm btn-primary" disabled={!st.installed || !untagged?.length || !!run} onClick={tagUntagged}>
-                    {run ? <><i className="bi bi-arrow-repeat spin me-1" />{run.done} / {run.total}</> : <><i className="bi bi-stars me-1" />Разметить</>}
+                    {run ? <><i aria-hidden="true" className="bi bi-arrow-repeat spin me-1" />{run.done} / {run.total}</> : <><i aria-hidden="true" className="bi bi-stars me-1" />Разметить</>}
                 </button>
             </div>
         </div>

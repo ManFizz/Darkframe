@@ -68,7 +68,7 @@ const Row = ({ node, onDrop }) => {
              onDragOver={e => { if (carries(e)) { e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; setOver(true); } }}
              onDragLeave={() => setOver(false)}
              onDrop={e => { setOver(false); onDrop(e, node); }}>
-            {node.icon ? <span className="dtc-emoji">{node.icon}</span> : <i className={`bi ${node.id ? 'bi-folder' : 'bi-inbox'}`} />}
+            {node.icon ? <span className="dtc-emoji">{node.icon}</span> : <i aria-hidden="true" className={`bi ${node.id ? 'bi-folder' : 'bi-inbox'}`} />}
             <span className="dtc-name">{node.name}</span>
             {node.count > 0 && <span className="dtc-count">{node.count}</span>}
         </div>
@@ -97,7 +97,7 @@ const ScrollZone = ({ dir, listRef, visible }) => {
                  until.current = performance.now() + 120;
                  if (raf.current == null) raf.current = requestAnimationFrame(step);
              }}>
-            <i className={`bi ${dir < 0 ? 'bi-chevron-up' : 'bi-chevron-down'}`} />
+            <i aria-hidden="true" className={`bi ${dir < 0 ? 'bi-chevron-up' : 'bi-chevron-down'}`} />
         </div>
     );
 };
@@ -160,7 +160,7 @@ const DropToCollection = () => {
     return (
         <aside className="dtc-panel">
             <div className="dtc-head">
-                <i className="bi bi-box-arrow-in-down" />
+                <i aria-hidden="true" className="bi bi-box-arrow-in-down" />
                 <div>
                     <div className="dtc-title">Сохранить в библиотеку</div>
                     <div className="dtc-sub">

@@ -76,9 +76,9 @@ export const TagFilterInput = ({ filters, addTag, removeTag, toggleTagExclude })
                         title={exclude ? 'Исключение · клик, чтобы включить' : 'Включение · клик, чтобы исключить'}
                         onClick={() => toggleTagExclude(name)}
                     >
-                        {exclude && <i className="bi bi-slash-circle" />}
+                        {exclude && <i aria-hidden="true" className="bi bi-slash-circle" />}
                         <span className={exclude ? 'struck' : ''}>{name}</span>
-                        <i
+                        <i aria-hidden="true"
                             className="bi bi-x"
                             onClick={e => { e.stopPropagation(); removeTag(name); }}
                         />
@@ -111,7 +111,7 @@ export const TagFilterInput = ({ filters, addTag, removeTag, toggleTagExclude })
                         >
                             {t.type != null && <span className={`tag-dot tag-type-${t.type}`} />}
                             <span>{t.name}</span>
-                            {t.pinned && <i className="bi bi-pin-angle-fill tag-pin-mark" />}
+                            {t.pinned && <i aria-hidden="true" className="bi bi-pin-angle-fill tag-pin-mark" />}
                         </div>
                     ))}
                 </div>
@@ -127,14 +127,14 @@ const VisualSearchButton = () => {
     return (
         <div className="nav-vsearch">
             <button className={`nav-vsearch-btn ${open ? 'on' : ''}`} onClick={() => setOpen(v => !v)} title="Поиск по картинке">
-                <i className="bi bi-image" />
+                <i aria-hidden="true" className="bi bi-image" />
             </button>
             {open && (
                 <>
                     <div className="bulk-move-backdrop" onMouseDown={() => setOpen(false)} />
                     <div className="nav-vsearch-menu">
-                        <button onClick={() => go({ clipboard: true })}><i className="bi bi-clipboard-image" /> Из буфера обмена</button>
-                        <button onClick={() => go({ pick: true })}><i className="bi bi-folder2-open" /> Из файла…</button>
+                        <button onClick={() => go({ clipboard: true })}><i aria-hidden="true" className="bi bi-clipboard-image" /> Из буфера обмена</button>
+                        <button onClick={() => go({ pick: true })}><i aria-hidden="true" className="bi bi-folder2-open" /> Из файла…</button>
                         <div className="nav-vsearch-hint">Или в просмотрщике: «Искать похожие во всей библиотеке»</div>
                     </div>
                 </>
@@ -163,7 +163,7 @@ export const LibraryNavControls = ({ ctx }) => {
         <div className="library-nav-controls">
             {/* Search — glass pill with an inline clear */}
             <div className="nav-search">
-                <i className="bi bi-search nav-search-icon" />
+                <i aria-hidden="true" className="bi bi-search nav-search-icon" />
                 <input
                     className="nav-search-input"
                     placeholder="Поиск…"
@@ -172,7 +172,7 @@ export const LibraryNavControls = ({ ctx }) => {
                 />
                 {filters.search && (
                     <button className="nav-search-clear" title="Очистить поиск" onClick={() => update('search', '')}>
-                        <i className="bi bi-x" />
+                        <i aria-hidden="true" className="bi bi-x" />
                     </button>
                 )}
             </div>
@@ -199,14 +199,14 @@ export const LibraryNavControls = ({ ctx }) => {
                 />
             ) : (
                 <button className="nav-reset" title="Сохранить фильтр как умную коллекцию" onClick={() => setSavingSmart(true)}>
-                    <i className="bi bi-funnel-fill" />
+                    <i aria-hidden="true" className="bi bi-funnel-fill" />
                 </button>
             ))}
 
             {/* Reset-all sits right next to the filters it clears */}
             {hasFilters && (
                 <button className="nav-reset" title="Сбросить фильтры" onClick={reset}>
-                    <i className="bi bi-x-circle" />
+                    <i aria-hidden="true" className="bi bi-x-circle" />
                 </button>
             )}
 
@@ -247,7 +247,7 @@ const RatingFilter = ({ filters, update }) => {
         <div className="rating-filter" ref={ref}>
             <button className={`btn btn-outline-secondary ${active ? 'rating-filter-active' : ''}`}
                     onClick={() => setOpen(v => !v)}>
-                {active ? ratingLabel(min, max) : <><i className="bi bi-star rf-icon" /><span className="rf-text">Рейтинг</span></>}
+                {active ? ratingLabel(min, max) : <><i aria-hidden="true" className="bi bi-star rf-icon" /><span className="rf-text">Рейтинг</span></>}
             </button>
 
             {open && (
@@ -303,7 +303,7 @@ const AdvancedFilter = ({ filters, patch }) => {
                 title="Дополнительные условия: тип, размер, разрешение, дата…"
                 onClick={() => setOpen(v => !v)}
             >
-                <i className="bi bi-sliders2" />
+                <i aria-hidden="true" className="bi bi-sliders2" />
                 {count > 0 && <span className="adv-filter-badge">{count}</span>}
             </button>
 

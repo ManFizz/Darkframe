@@ -34,7 +34,7 @@ const volumeIcon = (muted, v) =>
 const BusyIndicator = ({ busy }) => (
     <div className="vc-busy">
         <div className="vc-busy-label">
-            <i className="bi bi-arrow-repeat spin" />
+            <i aria-hidden="true" className="bi bi-arrow-repeat spin" />
             {busy.label}{busy.percent != null ? ` ${Math.round(busy.percent)}%` : '…'}
         </div>
         <div className="vc-busy-bar">
@@ -317,17 +317,17 @@ const VideoControls = ({
                 {resume && !busy && (
                     <div className="vc-busy-float">
                         <div className="vc-resume">
-                            <i className="bi bi-clock-history" />
+                            <i aria-hidden="true" className="bi bi-clock-history" />
                             <span>Продолжить с <b>{formatTime(resume.position)}</b>?</span>
                             <button className="vc-panel-btn primary" onClick={onResume}>
-                                <i className="bi bi-play-fill" /> Продолжить
+                                <i aria-hidden="true" className="bi bi-play-fill" /> Продолжить
                             </button>
                             <button className="vc-panel-btn" onClick={onDismissResume}>С начала</button>
                         </div>
                     </div>
                 )}
                 <button className="vc-expand" title="Показать управление" onClick={toggleCollapsed}>
-                    <i className="bi bi-chevron-up" />
+                    <i aria-hidden="true" className="bi bi-chevron-up" />
                 </button>
             </>
         );
@@ -349,10 +349,10 @@ const VideoControls = ({
 
             {resume && !busy && (
                 <div className="vc-resume">
-                    <i className="bi bi-clock-history" />
+                    <i aria-hidden="true" className="bi bi-clock-history" />
                     <span>Продолжить с <b>{formatTime(resume.position)}</b>?</span>
                     <button className="vc-panel-btn primary" onClick={onResume}>
-                        <i className="bi bi-play-fill" /> Продолжить
+                        <i aria-hidden="true" className="bi bi-play-fill" /> Продолжить
                     </button>
                     <button className="vc-panel-btn" onClick={onDismissResume}>С начала</button>
                 </div>
@@ -361,7 +361,7 @@ const VideoControls = ({
             {trimOpen && tools?.trim && abActive && !busy && (
                 <div className="vc-panel">
                     <div className="vc-panel-title">
-                        <i className="bi bi-scissors" />
+                        <i aria-hidden="true" className="bi bi-scissors" />
                         Оставить {formatTime(startRec)} – {formatTime(endRec)}
                         <span className="vc-panel-dim">({formatTime(endRec - startRec)})</span>
                     </div>
@@ -380,7 +380,7 @@ const VideoControls = ({
                     <div className="vc-panel-actions">
                         <button className="vc-panel-btn" onClick={() => setTrimOpen(false)}>Отмена</button>
                         <button className="vc-panel-btn primary" onClick={startTrim}>
-                            <i className="bi bi-scissors" /> Обрезать
+                            <i aria-hidden="true" className="bi bi-scissors" /> Обрезать
                         </button>
                     </div>
                 </div>
@@ -442,7 +442,7 @@ const VideoControls = ({
                     <time className="vc-time">{formatTime(currentTime)} <span>/</span> {formatTime(dur)}</time>
                     <div className="vc-vol">
                         <button className="vc-btn" title="Звук (M)" onClick={toggleMute}>
-                            <i className={`bi ${volumeIcon(muted, volume)}`} />
+                            <i aria-hidden="true" className={`bi ${volumeIcon(muted, volume)}`} />
                         </button>
                         <div className="vc-vol-popup">
                             <input
@@ -460,19 +460,19 @@ const VideoControls = ({
 
                 <div className="vc-zone vc-center">
                     <button className="vc-btn" title="В начало" onClick={() => skipToSec(0)}>
-                        <i className="bi bi-skip-start-fill" />
+                        <i aria-hidden="true" className="bi bi-skip-start-fill" />
                     </button>
                     <button className="vc-btn" title="−10 c" onClick={() => skipSec(-10)}>
-                        <i className="bi bi-rewind-fill" />
+                        <i aria-hidden="true" className="bi bi-rewind-fill" />
                     </button>
                     <button className="vc-btn vc-play" title="Пробел" onClick={togglePlay}>
-                        <i className={`bi ${isPaused ? 'bi-play-fill' : 'bi-pause-fill'}`} />
+                        <i aria-hidden="true" className={`bi ${isPaused ? 'bi-play-fill' : 'bi-pause-fill'}`} />
                     </button>
                     <button className="vc-btn" title="+10 c" onClick={() => skipSec(10)}>
-                        <i className="bi bi-fast-forward-fill" />
+                        <i aria-hidden="true" className="bi bi-fast-forward-fill" />
                     </button>
                     <button className="vc-btn" title="В конец" onClick={() => skipToSec(Number.MAX_VALUE)}>
-                        <i className="bi bi-skip-end-fill" />
+                        <i aria-hidden="true" className="bi bi-skip-end-fill" />
                     </button>
                 </div>
 
@@ -485,7 +485,7 @@ const VideoControls = ({
                         {abLabel}
                     </button>
                     <button className="vc-btn vc-mode" title={mode.title} onClick={cyclePlayMode}>
-                        <i className={`bi ${mode.icon}`} />
+                        <i aria-hidden="true" className={`bi ${mode.icon}`} />
                     </button>
                     <div className="vc-speed-wrap" ref={speedRef}>
                         <button
@@ -518,17 +518,17 @@ const VideoControls = ({
                                 onClick={() => setToolsOpen(v => !v)}
                                 disabled={!!busy}
                             >
-                                <i className="bi bi-tools" />
+                                <i aria-hidden="true" className="bi bi-tools" />
                             </button>
                             {toolsOpen && (
                                 <div className="vc-tools-menu">
                                     <button onClick={() => { setToolsOpen(false); tools.captureFrame(); }}>
-                                        <i className="bi bi-camera" />
+                                        <i aria-hidden="true" className="bi bi-camera" />
                                         Сохранить кадр в библиотеку
                                     </button>
                                     {tools.setThumb && (
                                         <button onClick={() => { setToolsOpen(false); tools.setThumb(); }}>
-                                            <i className="bi bi-image" />
+                                            <i aria-hidden="true" className="bi bi-image" />
                                             Сделать этот кадр превью
                                         </button>
                                     )}
@@ -538,13 +538,13 @@ const VideoControls = ({
                                             title={abActive ? '' : 'Сначала отметьте A и B кнопкой «A‑B»'}
                                             onClick={() => { setToolsOpen(false); setTrimOpen(true); }}
                                         >
-                                            <i className="bi bi-scissors" />
+                                            <i aria-hidden="true" className="bi bi-scissors" />
                                             Обрезать по A–B
                                         </button>
                                     )}
                                     {tools.canRevert && (
                                         <button onClick={startRevert}>
-                                            <i className="bi bi-arrow-counterclockwise" />
+                                            <i aria-hidden="true" className="bi bi-arrow-counterclockwise" />
                                             Вернуть оригинал
                                         </button>
                                     )}
@@ -553,13 +553,13 @@ const VideoControls = ({
                         </div>
                     )}
                     <button className="vc-btn" title="Картинка-в-картинке (P)" onClick={togglePip}>
-                        <i className="bi bi-pip" />
+                        <i aria-hidden="true" className="bi bi-pip" />
                     </button>
                     <button className="vc-btn" title="На весь экран (F)" onClick={toggleFullscreen}>
-                        <i className="bi bi-arrows-fullscreen" />
+                        <i aria-hidden="true" className="bi bi-arrows-fullscreen" />
                     </button>
                     <button className="vc-btn" title="Свернуть панель" onClick={toggleCollapsed}>
-                        <i className="bi bi-chevron-down" />
+                        <i aria-hidden="true" className="bi bi-chevron-down" />
                     </button>
                 </div>
             </div>

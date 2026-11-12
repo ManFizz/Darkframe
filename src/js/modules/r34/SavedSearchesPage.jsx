@@ -89,8 +89,8 @@ const SearchCard = ({ row, dragging, onDragStart, onDragOver, onDragEnd, refresh
                         {tags.length ? tags.map(t => (
                             <span key={t} className={`svs-tag kind-${kindOf(t.replace(/^-/, ''))} ${t.startsWith('-') ? 'ex' : ''}`}>{t.replace(/^-/, '')}</span>
                         )) : <span className="svs-tag muted">все посты</span>}
-                        {row.minScore > 0 && <span className="svs-mod"><i className="bi bi-star-fill" /> {row.minScore}+</span>}
-                        {SORT_LABEL[row.sort] && <span className="svs-mod"><i className="bi bi-sort-down" /> {SORT_LABEL[row.sort]}</span>}
+                        {row.minScore > 0 && <span className="svs-mod"><i aria-hidden="true" className="bi bi-star-fill" /> {row.minScore}+</span>}
+                        {SORT_LABEL[row.sort] && <span className="svs-mod"><i aria-hidden="true" className="bi bi-sort-down" /> {SORT_LABEL[row.sort]}</span>}
                         {row.rating !== 'any' && <span className="svs-mod">{row.rating}</span>}
                     </div>
                 </div>
@@ -101,9 +101,9 @@ const SearchCard = ({ row, dragging, onDragStart, onDragOver, onDragEnd, refresh
                 </div>
 
                 <div className="svs-actions">
-                    <button className="svs-btn primary" onClick={() => open()} title="Открыть поиск"><i className="bi bi-search" /> Открыть</button>
-                    <button className="svs-btn" onClick={() => load(true)} title="Обновить превью"><i className={`bi bi-arrow-clockwise ${loading ? 'spin' : ''}`} /></button>
-                    <button className="svs-btn" onClick={() => setRenaming(true)} title="Переименовать"><i className="bi bi-pencil" /></button>
+                    <button className="svs-btn primary" onClick={() => open()} title="Открыть поиск"><i aria-hidden="true" className="bi bi-search" /> Открыть</button>
+                    <button className="svs-btn" onClick={() => load(true)} title="Обновить превью"><i aria-hidden="true" className={`bi bi-arrow-clockwise ${loading ? 'spin' : ''}`} /></button>
+                    <button className="svs-btn" onClick={() => setRenaming(true)} title="Переименовать"><i aria-hidden="true" className="bi bi-pencil" /></button>
                     {confirmDel ? (
                         <span className="svs-confirm">
                             Удалить?
@@ -111,25 +111,25 @@ const SearchCard = ({ row, dragging, onDragStart, onDragOver, onDragEnd, refresh
                             <button className="svs-btn" onClick={() => setConfirmDel(false)}>Нет</button>
                         </span>
                     ) : (
-                        <button className="svs-btn" onClick={() => setConfirmDel(true)} title="Удалить поиск"><i className="bi bi-trash3" /></button>
+                        <button className="svs-btn" onClick={() => setConfirmDel(true)} title="Удалить поиск"><i aria-hidden="true" className="bi bi-trash3" /></button>
                     )}
                 </div>
             </div>
 
             <div className="svs-strip">
                 {!preview ? Array.from({ length: 8 }, (_, i) => <div key={i} className="svs-thumb skel" />)
-                    : preview.error ? <div className="svs-strip-msg err"><i className="bi bi-exclamation-triangle" /> {preview.error}</div>
+                    : preview.error ? <div className="svs-strip-msg err"><i aria-hidden="true" className="bi bi-exclamation-triangle" /> {preview.error}</div>
                     : !preview.items.length ? <div className="svs-strip-msg">Ничего не найдено</div>
                     : <>
                         {preview.items.map(p => (
                             <button key={p.uniqueId} className="svs-thumb" onClick={() => open(p.remoteId)} title={`#${p.remoteId}${p.score != null ? ` · ★ ${p.score}` : ''}`}>
                                 <img src={cachedMediaUrl(p.thumbUrl)} alt="" loading="lazy" draggable={false} />
-                                {p.type === FILE_TYPES.VIDEO && <span className="svs-play"><i className="bi bi-play-fill" /></span>}
+                                {p.type === FILE_TYPES.VIDEO && <span className="svs-play"><i aria-hidden="true" className="bi bi-play-fill" /></span>}
                             </button>
                         ))}
                         {total > preview.items.length && (
                             <button className="svs-thumb more" onClick={() => open()}>
-                                <span>ещё</span><b>{fmt(total - preview.items.length)}</b><i className="bi bi-arrow-right" />
+                                <span>ещё</span><b>{fmt(total - preview.items.length)}</b><i aria-hidden="true" className="bi bi-arrow-right" />
                             </button>
                         )}
                     </>}
@@ -170,20 +170,20 @@ const SavedSearchesPage = ({ source }) => {
     return (
         <div className="svs-page">
             <div className="svs-page-head">
-                <button className="svs-btn" onClick={() => setView('search')} title="Назад к результатам"><i className="bi bi-arrow-left" /></button>
+                <button className="svs-btn" onClick={() => setView('search')} title="Назад к результатам"><i aria-hidden="true" className="bi bi-arrow-left" /></button>
                 <div>
-                    <div className="svs-page-title"><i className="bi bi-bookmarks-fill" /> Сохранённые поиски</div>
+                    <div className="svs-page-title"><i aria-hidden="true" className="bi bi-bookmarks-fill" /> Сохранённые поиски</div>
                     <div className="svs-page-sub">{currentR34Source?.name} · {saved.length}</div>
                 </div>
                 <span className="svs-spacer" />
-                {saved.length > 0 && <button className="svs-btn" onClick={refreshAll}><i className="bi bi-arrow-clockwise" /> Обновить все</button>}
+                {saved.length > 0 && <button className="svs-btn" onClick={refreshAll}><i aria-hidden="true" className="bi bi-arrow-clockwise" /> Обновить все</button>}
             </div>
 
             {saved.length === 0 ? (
                 <div className="booru-empty">
-                    <i className="bi bi-bookmark-plus" />
+                    <i aria-hidden="true" className="bi bi-bookmark-plus" />
                     <div className="be-title">Пока ничего не сохранено</div>
-                    <div className="be-sub">Набери поиск и нажми <i className="bi bi-bookmark" /> в строке поиска — он появится здесь вместе с превью свежих постов.</div>
+                    <div className="be-sub">Набери поиск и нажми <i aria-hidden="true" className="bi bi-bookmark" /> в строке поиска — он появится здесь вместе с превью свежих постов.</div>
                 </div>
             ) : (
                 <div className="svs-list" onDragOver={e => { if (drag) e.preventDefault(); }} onDrop={drop}>

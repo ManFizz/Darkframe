@@ -29,11 +29,11 @@ const fmtCount = (n) => (n == null ? '' : n >= 1000 ? `${(n / 1000).toFixed(n >=
 export const FilterChip = ({ f, label, onToggle, onRemove }) => (
     <span className={`mo-chip-f ${f.exclude ? 'ex' : ''}`} title={`${label}: ${f.name}\nКлик — ${f.exclude ? 'включить' : 'исключить'}`}>
         <button className="mo-chip-f-main" onClick={onToggle}>
-            {f.exclude && <i className="bi bi-dash-circle" />}
+            {f.exclude && <i aria-hidden="true" className="bi bi-dash-circle" />}
             <span className="mo-chip-f-type">{label}</span>
             <span className="mo-chip-f-name">{f.name}</span>
         </button>
-        <button className="mo-chip-f-x" onClick={onRemove} title="Убрать"><i className="bi bi-x" /></button>
+        <button className="mo-chip-f-x" onClick={onRemove} title="Убрать"><i aria-hidden="true" className="bi bi-x" /></button>
     </span>
 );
 
@@ -131,7 +131,7 @@ const SearchBar = ({ source, query, setQuery, filters, setFilters, onSearch, onO
     return (
         <div className="mo-sbar" ref={boxRef}>
             <div className={`mo-search ${open ? 'open' : ''}`} onClick={() => inputRef.current?.focus()}>
-                <i className="bi bi-search" />
+                <i aria-hidden="true" className="bi bi-search" />
                 {filters.map((f, i) => (
                     <FilterChip key={`${f.type}:${f.name}`} f={f} label={label(f.type)} onToggle={() => toggle(i)} onRemove={() => remove(i)} />
                 ))}
@@ -140,10 +140,10 @@ const SearchBar = ({ source, query, setQuery, filters, setFilters, onSearch, onO
                        onChange={e => { setQuery(e.target.value); setOpen(true); }}
                        onFocus={() => setOpen(true)}
                        onKeyDown={onKeyDown} />
-                {loading && <i className="bi bi-arrow-repeat spin mo-sbar-spin" />}
+                {loading && <i aria-hidden="true" className="bi bi-arrow-repeat spin mo-sbar-spin" />}
                 {(query || filters.length > 0) && (
                     <button className="mo-search-clear" title="Очистить (Esc)" onClick={e => { e.stopPropagation(); setQuery(''); setFilters([]); onSearch({ q: '', f: [] }); }}>
-                        <i className="bi bi-x" />
+                        <i aria-hidden="true" className="bi bi-x" />
                     </button>
                 )}
             </div>
@@ -163,20 +163,20 @@ const SearchBar = ({ source, query, setQuery, filters, setFilters, onSearch, onO
                                      onContextMenu={e => { e.preventDefault(); if (r.kind === 'tag') take(r, true); }}>
                                     {r.kind === 'gallery' ? (
                                         <>
-                                            {r.cover ? <img src={r.cover} alt="" className="mo-ac-cover" /> : <i className="bi bi-book" />}
+                                            {r.cover ? <img src={r.cover} alt="" className="mo-ac-cover" /> : <i aria-hidden="true" className="bi bi-book" />}
                                             <span className="mo-ac-name">{r.title}</span>
                                             <span className="mo-ac-hint">открыть</span>
                                         </>
                                     ) : r.kind === 'recent' ? (
                                         <>
-                                            <i className="bi bi-clock-history" />
+                                            <i aria-hidden="true" className="bi bi-clock-history" />
                                             <span className="mo-ac-name">
                                                 {r.filters.map(f => `${f.exclude ? '−' : ''}${f.name}`).concat(r.query ? [`«${r.query}»`] : []).join(' · ')}
                                             </span>
                                         </>
                                     ) : (
                                         <>
-                                            <i className={`bi ${exclude ? 'bi-dash-circle' : 'bi-tag'}`} />
+                                            <i aria-hidden="true" className={`bi ${exclude ? 'bi-dash-circle' : 'bi-tag'}`} />
                                             <span className="mo-ac-name">{r.name}</span>
                                             {r.count != null && <span className="mo-ac-count">{fmtCount(r.count)}</span>}
                                             <span className="mo-ac-hint">{exclude ? 'исключить' : 'Shift+Enter / ПКМ — исключить'}</span>

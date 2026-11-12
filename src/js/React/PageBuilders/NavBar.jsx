@@ -208,7 +208,7 @@ const NavBar = () => {
                                         htmlFor={`nav-${idx}`}
                                         onClick={() => handleNavigation(idx)}
                                     >
-                                        <i className={`bi ${NAV_ICON[btn.label] || NAV_TYPE_ICON[btn.type] || 'bi-globe2'}`} />
+                                        <i aria-hidden="true" className={`bi ${NAV_ICON[btn.label] || NAV_TYPE_ICON[btn.type] || 'bi-globe2'}`} />
                                         <span>{btn.label}</span>
                                     </label>
                                 </React.Fragment>
@@ -235,7 +235,7 @@ const NavBar = () => {
                             onClick={() => setSafeMode(!state.safeMode)}
                             title={state.safeMode ? 'Безопасный режим включён (размытие)' : 'Безопасный режим'}
                         >
-                            <i className={`bi ${state.safeMode ? 'bi-eye-slash-fill' : 'bi-eye'}`} />
+                            <i aria-hidden="true" className={`bi ${state.safeMode ? 'bi-eye-slash-fill' : 'bi-eye'}`} />
                         </button>
                     ) : (
                         <>
@@ -244,27 +244,27 @@ const NavBar = () => {
                                 onClick={() => setTypeView(null)}
                                 title={`Вид сетки: ${VIEW_NAMES[state.typeView] || state.typeView}`}
                             >
-                                <i className={`bi ${VIEW_ICONS[state.typeView] || 'bi-grid'}`} />
+                                <i aria-hidden="true" className={`bi ${VIEW_ICONS[state.typeView] || 'bi-grid'}`} />
                             </button>
                             <button
                                 className={`btn navbar-settings-btn ${state.safeMode ? 'on' : ''}`}
                                 onClick={() => setSafeMode(!state.safeMode)}
                                 title={state.safeMode ? 'Безопасный режим включён (размытие)' : 'Безопасный режим'}
                             >
-                                <i className={`bi ${state.safeMode ? 'bi-eye-slash-fill' : 'bi-eye'}`} />
+                                <i aria-hidden="true" className={`bi ${state.safeMode ? 'bi-eye-slash-fill' : 'bi-eye'}`} />
                             </button>
                         </>
                     )}
 
                     {pwa.installable && (
                         <button className="btn navbar-settings-btn on" onClick={() => installApp()} title="Установить как приложение">
-                            <i className="bi bi-download" />
+                            <i aria-hidden="true" className="bi bi-download" />
                         </button>
                     )}
                     {/* Phone in a browser tab: full screen instead of the hotkeys. */}
                     {isWeb && touch ? (pwa.canFullscreen && !pwa.standalone && (
                         <button className="btn navbar-settings-btn" onClick={toggleFullscreen} title={pwa.fullscreen ? 'Выйти из полноэкранного режима' : 'Во весь экран'}>
-                            <i className={`bi ${pwa.fullscreen ? 'bi-fullscreen-exit' : 'bi-arrows-fullscreen'}`} />
+                            <i aria-hidden="true" className={`bi ${pwa.fullscreen ? 'bi-fullscreen-exit' : 'bi-arrows-fullscreen'}`} />
                         </button>
                     )) : null}
                     {/* Used now and then: one menu instead of a button each. */}

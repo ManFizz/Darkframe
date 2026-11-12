@@ -65,16 +65,16 @@ const ContextMenu = ({ x, y, node, onClose, onRename, onDelete, onCreateChild })
             onMouseDown={e => e.stopPropagation()}
         >
             <div className="context-menu-item" onClick={() => { onCreateChild(node.id); onClose(); }}>
-                <i className="bi bi-folder-plus me-2" />
+                <i aria-hidden="true" className="bi bi-folder-plus me-2" />
                 Создать вложенную
             </div>
             <div className="context-menu-item" onClick={() => { onRename(); onClose(); }}>
-                <i className="bi bi-pencil me-2" />
+                <i aria-hidden="true" className="bi bi-pencil me-2" />
                 Переименовать
             </div>
             <div className="context-menu-divider" />
             <div className="context-menu-item danger" onClick={() => { onDelete(node.id); onClose(); }}>
-                <i className="bi bi-trash me-2" />
+                <i aria-hidden="true" className="bi bi-trash me-2" />
                 Удалить
             </div>
         </div>
@@ -212,10 +212,12 @@ const CollectionNode = ({ node, selectedId, onSelect, onRename, onDelete,
             >
                 <button
                     className="collection-toggle"
+                    aria-label={isOpen ? 'Свернуть' : 'Развернуть'}
+                    aria-expanded={hasChildren ? isOpen : undefined}
                     style={{ visibility: hasChildren ? 'visible' : 'hidden' }}
                     onClick={handleToggle}
                 >
-                    <i className={`bi bi-chevron-${isOpen ? 'down' : 'right'}`} />
+                    <i aria-hidden="true" className={`bi bi-chevron-${isOpen ? 'down' : 'right'}`} />
                 </button>
 
                 <span className="collection-icon">
@@ -316,7 +318,7 @@ const CreateInput = ({ parentId = null, depth = 0, onConfirm, onCancel, placehol
             onMouseDown={handleMouseDown}
             onDragStart={(e) => e.preventDefault()}
         >
-            <i className="bi bi-folder me-1 opacity-50" />
+            <i aria-hidden="true" className="bi bi-folder me-1 opacity-50" />
             <input
                 ref={inputRef}
                 autoFocus
@@ -470,18 +472,18 @@ const CollectionTree = ({ selectedId, onSelect, onMediaMoved, onFilesTrashed }) 
                         onClick={() => setTreeCollapsed(v => !v)}
                         title={treeCollapsed ? 'Развернуть' : 'Свернуть'}
                 >
-                    <i className={`bi bi-chevron-${treeCollapsed ? 'right' : 'down'}`} />
+                    <i aria-hidden="true" className={`bi bi-chevron-${treeCollapsed ? 'right' : 'down'}`} />
                 </button>
                 <span>Коллекции</span>
                 <button className="collection-add-btn" title="Создать коллекцию"
                         onClick={() => setCreating({ parentId: null, isTopLevel: true })}>
-                    <i className="bi bi-plus" />
+                    <i aria-hidden="true" className="bi bi-plus" />
                 </button>
             </div>
 
             <div className={`collection-node special ${selectedId === SPECIAL.ALL ? 'active' : ''}`}
                  onClick={() => onSelect(SPECIAL.ALL)}>
-                <i className="bi bi-images collection-special-icon" />
+                <i aria-hidden="true" className="bi bi-images collection-special-icon" />
                 <span className="collection-name">Все файлы</span>
                 <span className="collection-item-count">{total}</span>
             </div>
@@ -492,7 +494,7 @@ const CollectionTree = ({ selectedId, onSelect, onMediaMoved, onFilesTrashed }) 
                 onDropFiles={fileIds => handleDropMedia(fileIds, null)}
                 title="Перетащите сюда файл, чтобы убрать его из коллекции"
             >
-                <i className="bi bi-inbox collection-special-icon" />
+                <i aria-hidden="true" className="bi bi-inbox collection-special-icon" />
                 <span className="collection-name">Без коллекции</span>
                 <span className="collection-item-count">{uncategorized}</span>
             </SpecialFileDropTarget>
@@ -504,7 +506,7 @@ const CollectionTree = ({ selectedId, onSelect, onMediaMoved, onFilesTrashed }) 
                     onDropFiles={fileIds => handleDropMedia(fileIds, favoritesId)}
                     title="Перетащите сюда файл, чтобы добавить в избранное"
                 >
-                    <i className="bi bi-heart-fill collection-special-icon" />
+                    <i aria-hidden="true" className="bi bi-heart-fill collection-special-icon" />
                     <span className="collection-name">Избранное</span>
                     <span className="collection-item-count">{favoritesCount}</span>
                 </SpecialFileDropTarget>
@@ -515,7 +517,7 @@ const CollectionTree = ({ selectedId, onSelect, onMediaMoved, onFilesTrashed }) 
                 onClick={() => onSelect(SPECIAL.HISTORY)}
                 title="Недавно просмотренное (по секциям)"
             >
-                <i className="bi bi-clock-history collection-special-icon" />
+                <i aria-hidden="true" className="bi bi-clock-history collection-special-icon" />
                 <span className="collection-name">История</span>
             </div>
 
@@ -525,7 +527,7 @@ const CollectionTree = ({ selectedId, onSelect, onMediaMoved, onFilesTrashed }) 
                 onDropFiles={handleDropTrash}
                 title="Перетащите сюда файл, чтобы отправить в корзину"
             >
-                <i className="bi bi-trash collection-special-icon" />
+                <i aria-hidden="true" className="bi bi-trash collection-special-icon" />
                 <span className="collection-name">Корзина</span>
                 <span className="collection-item-count">{trashCount}</span>
             </SpecialFileDropTarget>
@@ -573,7 +575,7 @@ const CollectionTree = ({ selectedId, onSelect, onMediaMoved, onFilesTrashed }) 
                             onClick={() => onSelect(sc.id)}
                             title="Умная коллекция (по фильтру)"
                         >
-                            <i className="bi bi-funnel-fill collection-special-icon" />
+                            <i aria-hidden="true" className="bi bi-funnel-fill collection-special-icon" />
                             <span className="collection-name">{sc.name}</span>
                             <span className="collection-item-count">{sc.itemCount ?? 0}</span>
                             <button
@@ -581,14 +583,14 @@ const CollectionTree = ({ selectedId, onSelect, onMediaMoved, onFilesTrashed }) 
                                 title="Изменить условия"
                                 onClick={(e) => { e.stopPropagation(); setEditingSmart(sc); }}
                             >
-                                <i className="bi bi-pencil" />
+                                <i aria-hidden="true" className="bi bi-pencil" />
                             </button>
                             <button
                                 className="collection-smart-delete"
                                 title="Удалить умную коллекцию"
                                 onClick={(e) => { e.stopPropagation(); handleDelete(sc.id); }}
                             >
-                                <i className="bi bi-x" />
+                                <i aria-hidden="true" className="bi bi-x" />
                             </button>
                         </div>
                     ))}

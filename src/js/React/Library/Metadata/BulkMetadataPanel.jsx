@@ -67,7 +67,7 @@ const BulkMetadataPanel = ({ items, onUpdated }) => {
     return (
         <div className="metadata-panel">
             <div className="metadata-panel-bulk-header">
-                <i className="bi bi-collection" />
+                <i aria-hidden="true" className="bi bi-collection" />
                 <span>Выбрано: {items.length}</span>
             </div>
 

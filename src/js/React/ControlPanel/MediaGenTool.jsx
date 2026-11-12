@@ -56,7 +56,7 @@ const MediaGenTool = () => {
                     </p>
                 </div>
                 <button className="btn btn-outline-primary btn-sm" onClick={run} disabled={running}>
-                    <i className={`bi ${running ? 'bi-arrow-repeat spin' : 'bi-images'} me-1`} />
+                    <i aria-hidden="true" className={`bi ${running ? 'bi-arrow-repeat spin' : 'bi-images'} me-1`} />
                     {running ? 'Генерирую…' : 'Сгенерировать недостающее'}
                 </button>
             </div>
@@ -79,7 +79,7 @@ const MediaGenTool = () => {
 
             {result && !running && result.total === 0 && (
                 <div className="cp-empty">
-                    <i className="bi bi-check2-circle" />
+                    <i aria-hidden="true" className="bi bi-check2-circle" />
                     <span>Всё уже сгенерировано</span>
                 </div>
             )}

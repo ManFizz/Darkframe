@@ -10,7 +10,7 @@ export const SearchByThisButton = ({ file, onOpened }) => (
         <button className="rel-search" onClick={async () => {
             if (await runVisualSearch({ id: file.id, label: file.title || file.fileName, preview: file.thumbUrl })) onOpened?.();
         }}>
-            <i className="bi bi-images" /> Искать похожие во всей библиотеке
+            <i aria-hidden="true" className="bi bi-images" /> Искать похожие во всей библиотеке
         </button>
     ) : null
 );
@@ -41,7 +41,7 @@ export function useRelations(file) {
 export const RelatedHint = ({ file, data }) => (
     data && !data.exact.length && !data.similar.length && data.unhashed > 0 && String(file.mimeType || '').startsWith('image/') ? (
         <div className="rel-hint" title="Панель управления → Дубликаты → Похожие → «Посчитать отпечатки»">
-            <i className="bi bi-info-circle" /> Похожих не найдено среди файлов с отпечатком ({data.unhashed} без отпечатка)
+            <i aria-hidden="true" className="bi bi-info-circle" /> Похожих не найдено среди файлов с отпечатком ({data.unhashed} без отпечатка)
         </div>
     ) : null
 );
@@ -72,14 +72,14 @@ const RelatedBlock = ({ file, data, reload, onChanged }) => {
             {data.exact.length > 0 && (
                 <div className="rel-group exact">
                     <div className="rel-title">
-                        <i className="bi bi-exclamation-triangle-fill" /> Точная копия в библиотеке: {data.exact.length}
+                        <i aria-hidden="true" className="bi bi-exclamation-triangle-fill" /> Точная копия в библиотеке: {data.exact.length}
                     </div>
                     <Thumbs rows={data.exact} />
                 </div>
             )}
             {data.similar.length > 0 && (
                 <div className="rel-group">
-                    <div className="rel-title"><i className="bi bi-images" /> Похожие: {data.similar.length}</div>
+                    <div className="rel-title"><i aria-hidden="true" className="bi bi-images" /> Похожие: {data.similar.length}</div>
                     <Thumbs rows={data.similar} />
                 </div>
             )}

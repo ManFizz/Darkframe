@@ -30,7 +30,7 @@ const EmptyState = () => {
     if (status.error && status.source === source) {
         return (
             <div className="booru-empty">
-                <i className="bi bi-wifi-off" />
+                <i aria-hidden="true" className="bi bi-wifi-off" />
                 <div className="be-title">Не удалось загрузить</div>
                 <div className="be-sub">{status.error}</div>
                 {status.errorCode === 'CF_CHALLENGE' ? (
@@ -38,7 +38,7 @@ const EmptyState = () => {
                         <button className="be-btn primary" onClick={async () => {
                             if (await ipcRenderer.invoke('danbooru:verify')) runSearch();
                         }}>
-                            <i className="bi bi-shield-check" /> Пройти проверку
+                            <i aria-hidden="true" className="bi bi-shield-check" /> Пройти проверку
                         </button>
                         <button className="be-btn" onClick={() => runSearch()}>Повторить</button>
                     </div>
@@ -53,7 +53,7 @@ const EmptyState = () => {
         const hasFilters = q.minScore > 0 || q.rating !== 'any';
         return (
             <div className="booru-empty">
-                <i className="bi bi-search" />
+                <i aria-hidden="true" className="bi bi-search" />
                 <div className="be-title">Ничего не найдено</div>
                 <div className="be-sub">
                     {hasFilters ? 'Попробуй снять фильтры score / рейтинга' : 'Проверь написание тегов или убери исключения'}
@@ -67,15 +67,15 @@ const EmptyState = () => {
     const history = getHistory(source).slice(0, 5);
     return (
         <div className="booru-empty start">
-            <div className="be-hero"><i className="bi bi-stars" /></div>
+            <div className="be-hero"><i aria-hidden="true" className="bi bi-stars" /></div>
             <div className="be-title">{currentR34Source?.name}: с чего начнём?</div>
             <div className="be-sub">Введи теги в строке сверху — или начни с этого:</div>
             <div className="be-actions">
                 <button className="be-btn primary" onClick={() => runSearch({ tags: [] })}>
-                    <i className="bi bi-lightning-charge" /> Свежие посты
+                    <i aria-hidden="true" className="bi bi-lightning-charge" /> Свежие посты
                 </button>
                 <button className="be-btn" onClick={() => runSearch({ tags: [], sort: 'score' })}>
-                    <i className="bi bi-fire" /> Лучшие
+                    <i aria-hidden="true" className="bi bi-fire" /> Лучшие
                 </button>
             </div>
             {favs.length > 0 && (
@@ -95,7 +95,7 @@ const EmptyState = () => {
                         {history.map(h => (
                             <button key={h.tags.join(' ')} className="be-chip hist"
                                     onClick={() => { setQuery({ tags: h.tags }); runSearch(); }}>
-                                <i className="bi bi-clock-history" /> {h.tags.join(' ')}
+                                <i aria-hidden="true" className="bi bi-clock-history" /> {h.tags.join(' ')}
                             </button>
                         ))}
                     </div>
@@ -109,8 +109,8 @@ const EmptyState = () => {
 // loads, "that's all" once there is nothing more.
 const GalleryFooter = ({ hasMore, loadedCount }) => {
     const status = useSearchStatus();
-    if (status.loading) return <div className="gallery-footer"><i className="bi bi-arrow-repeat spin" /> Загружаю ещё…</div>;
-    if (!hasMore) return <div className="gallery-footer end"><i className="bi bi-check2-circle" /> Это всё — {loadedCount.toLocaleString('ru-RU')} постов</div>;
+    if (status.loading) return <div className="gallery-footer"><i aria-hidden="true" className="bi bi-arrow-repeat spin" /> Загружаю ещё…</div>;
+    if (!hasMore) return <div className="gallery-footer end"><i aria-hidden="true" className="bi bi-check2-circle" /> Это всё — {loadedCount.toLocaleString('ru-RU')} постов</div>;
     return <div className="gallery-footer" />;
 };
 

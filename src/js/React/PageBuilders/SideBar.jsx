@@ -18,7 +18,7 @@ const SideBar = ({ currentSource }) => {
                     onClick={() => setSidebarOpen(!sidebarOpen)}
                     title={sidebarOpen ? 'Скрыть панель' : 'Показать панель'}
                 >
-                    <i className={`bi ${sidebarOpen ? 'bi-chevron-left' : 'bi-chevron-right'}`} />
+                    <i aria-hidden="true" className={`bi ${sidebarOpen ? 'bi-chevron-left' : 'bi-chevron-right'}`} />
                 </button>
             </div>
             {SideSection && <SideSection currentSource={currentSource} />}

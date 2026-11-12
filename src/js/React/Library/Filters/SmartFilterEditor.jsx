@@ -70,10 +70,10 @@ const SmartFilterEditor = ({ collection, onClose }) => {
         <div className="settings-overlay" onMouseDown={onClose}>
             <div className="settings-modal smart-editor" onMouseDown={e => e.stopPropagation()}>
                 <div className="settings-header">
-                    <i className="bi bi-funnel-fill me-2" />
+                    <i aria-hidden="true" className="bi bi-funnel-fill me-2" />
                     <span>Умная коллекция</span>
                     <button className="settings-close" onClick={onClose} title="Закрыть">
-                        <i className="bi bi-x-lg" />
+                        <i aria-hidden="true" className="bi bi-x-lg" />
                     </button>
                 </div>
 
@@ -141,7 +141,7 @@ const SmartFilterEditor = ({ collection, onClose }) => {
 
                     <div className="smart-editor-divider" />
                     <div className="rb-title">
-                        <i className="bi bi-diagram-3" /> Условия с группами
+                        <i aria-hidden="true" className="bi bi-diagram-3" /> Условия с группами
                         <span>«все / любое», вложенные группы, источник, просмотры</span>
                     </div>
                     <RuleBuilder
@@ -153,14 +153,14 @@ const SmartFilterEditor = ({ collection, onClose }) => {
                 <div className="settings-footer">
                     <span className="smart-editor-count">
                         {matches == null
-                            ? <><i className="bi bi-arrow-repeat spin me-1" />Считаю…</>
+                            ? <><i aria-hidden="true" className="bi bi-arrow-repeat spin me-1" />Считаю…</>
                             : <>Подходит: <b>{matches}</b></>}
                     </span>
                     <button className="btn btn-outline-secondary btn-sm" onClick={onClose} disabled={saving}>
                         Отмена
                     </button>
                     <button className="btn btn-primary btn-sm" onClick={save} disabled={saving}>
-                        <i className="bi bi-check2 me-1" />Сохранить
+                        <i aria-hidden="true" className="bi bi-check2 me-1" />Сохранить
                     </button>
                 </div>
             </div>

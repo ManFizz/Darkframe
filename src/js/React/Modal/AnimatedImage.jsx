@@ -125,11 +125,11 @@ const AnimatedImage = ({ file, src, alt, style, onImgRef }) => {
         <>
             <canvas ref={canvasRef} className="anim-canvas" style={style} />
             <div className="anim-controls" onPointerDown={e => e.stopPropagation()}>
-                <button onClick={() => step(-1)} title="Кадр назад (,)"><i className="bi bi-skip-start-fill" /></button>
+                <button onClick={() => step(-1)} title="Кадр назад (,)"><i aria-hidden="true" className="bi bi-skip-start-fill" /></button>
                 <button className="anim-play" onClick={() => setPlaying(p => !p)} title="Пауза / пуск (пробел)">
-                    <i className={`bi ${playing ? 'bi-pause-fill' : 'bi-play-fill'}`} />
+                    <i aria-hidden="true" className={`bi ${playing ? 'bi-pause-fill' : 'bi-play-fill'}`} />
                 </button>
-                <button onClick={() => step(1)} title="Кадр вперёд (.)"><i className="bi bi-skip-end-fill" /></button>
+                <button onClick={() => step(1)} title="Кадр вперёд (.)"><i aria-hidden="true" className="bi bi-skip-end-fill" /></button>
                 <input type="range" min={0} max={info.frames - 1} value={frame}
                        onChange={e => { setPlaying(false); draw(Number(e.target.value)); }} />
                 <span className="anim-frame">{frame + 1} / {info.frames}</span>

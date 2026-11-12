@@ -117,7 +117,7 @@ const MetadataPanel = ({ file, onUpdated }) => {
     if (!file || !form) return (
         <div className="metadata-panel">
             <div className="metadata-panel-empty">
-                <i className="bi bi-cursor-fill" />
+                <i aria-hidden="true" className="bi bi-cursor-fill" />
                 <span>Выбери файл</span>
             </div>
         </div>
@@ -139,7 +139,7 @@ const MetadataPanel = ({ file, onUpdated }) => {
                         className={`metadata-tab ${activeTab === tab ? 'active' : ''}`}
                         onClick={() => setActiveTab(tab)}
                     >
-                        <i className={`bi bi-${tab === 'info' ? 'info-circle' : 'file-earmark'} me-1`} />
+                        <i aria-hidden="true" className={`bi bi-${tab === 'info' ? 'info-circle' : 'file-earmark'} me-1`} />
                         {tab === 'info' ? 'Инфо' : 'Файл'}
                     </button>
                 ))}
@@ -193,7 +193,7 @@ const MetadataPanel = ({ file, onUpdated }) => {
                                     target="_blank"
                                     rel="noreferrer"
                                 >
-                                    <i className="bi bi-box-arrow-up-right" />
+                                    <i aria-hidden="true" className="bi bi-box-arrow-up-right" />
                                 </a>
                             )}
                         </div>
@@ -239,7 +239,7 @@ const MetadataPanel = ({ file, onUpdated }) => {
                             className="btn btn-sm btn-outline-secondary w-100"
                             onClick={() => libraryApi.revealItem({ id: file.id })}
                         >
-                            <i className="bi bi-folder2-open me-1" />
+                            <i aria-hidden="true" className="bi bi-folder2-open me-1" />
                             Показать в проводнике
                         </button>
                     </div>}
@@ -253,7 +253,7 @@ const MetadataPanel = ({ file, onUpdated }) => {
                         title="Восстановить из корзины"
                         onClick={() => onUpdated?.('restore', file.id)}
                     >
-                        <i className="bi bi-arrow-counterclockwise" />
+                        <i aria-hidden="true" className="bi bi-arrow-counterclockwise" />
                     </button>
                 )}
                 <button
@@ -265,7 +265,7 @@ const MetadataPanel = ({ file, onUpdated }) => {
                         } else onUpdated?.('delete', file.id);
                     }}
                 >
-                    <i className={`bi ${file.deletedAt ? 'bi-trash3' : 'bi-trash'}`} />
+                    <i aria-hidden="true" className={`bi ${file.deletedAt ? 'bi-trash3' : 'bi-trash'}`} />
                 </button>
             </div>
         </div>

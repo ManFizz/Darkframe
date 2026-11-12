@@ -59,7 +59,7 @@ const FolderTile = ({
             </div>
             <div className="ftile-front">
                 {!previews.length && (
-                    <i className={`bi ${denied ? 'bi-lock-fill' : icon || (variant === 'collection' ? 'bi-collection' : 'bi-folder2-open')}`} />
+                    <i aria-hidden="true" className={`bi ${denied ? 'bi-lock-fill' : icon || (variant === 'collection' ? 'bi-collection' : 'bi-folder2-open')}`} />
                 )}
             </div>
             {badge != null && <span className="ftile-badge">{badge}</span>}

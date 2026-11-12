@@ -121,7 +121,7 @@ const PageEditor = () => {
         <div className="pe-overlay" onMouseDown={close}>
             <div className="pe" onMouseDown={e => e.stopPropagation()}>
                 <div className="pe-head">
-                    <i className="bi bi-grid-3x3" />
+                    <i aria-hidden="true" className="bi bi-grid-3x3" />
                     <div className="pe-title">
                         <b>{item.title}</b>
                         <span>{book ? `${flat.length} стр.${book.chapters.length > 1 ? ` · ${book.chapters.length} гл.` : ''}` : '…'}</span>
@@ -129,23 +129,23 @@ const PageEditor = () => {
                     {!isWeb && <>
                     <button className="btn btn-sm btn-outline-secondary" disabled={busy || !book}
                             onClick={() => run(() => mangaApi.addPagesDialog(item.id, { chapter: book.chapters[book.chapters.length - 1]?.id }))}>
-                        <i className="bi bi-plus-lg me-1" />Страницы
+                        <i aria-hidden="true" className="bi bi-plus-lg me-1" />Страницы
                     </button>
                     <button className="btn btn-sm btn-outline-secondary" disabled={busy || !book}
                             onClick={() => run(() => mangaApi.addPagesDialog(item.id, { newChapterTitle: `Глава ${book.chapters.length + 1}` }))}>
-                        <i className="bi bi-journal-plus me-1" />Новая глава
+                        <i aria-hidden="true" className="bi bi-journal-plus me-1" />Новая глава
                     </button>
                     </>}
-                    <button className="pe-close" onClick={close} title="Закрыть (Esc)"><i className="bi bi-x-lg" /></button>
+                    <button className="pe-close" onClick={close} title="Закрыть (Esc)"><i aria-hidden="true" className="bi bi-x-lg" /></button>
                 </div>
 
                 {sel.size > 0 && (
                     <div className="pe-selbar">
                         <span>Выбрано: <b>{sel.size}</b></span>
                         {one && <button className="btn btn-sm btn-outline-secondary" disabled={busy} onClick={() => run(() => mangaApi.setCover(item.id, one), { message: 'Обложка обновлена', type: 'success' })}>
-                            <i className="bi bi-star me-1" />Обложкой</button>}
+                            <i aria-hidden="true" className="bi bi-star me-1" />Обложкой</button>}
                         <button className="btn btn-sm btn-outline-danger" disabled={busy || sel.size >= flat.length} onClick={remove}>
-                            <i className="bi bi-trash3 me-1" />Удалить
+                            <i aria-hidden="true" className="bi bi-trash3 me-1" />Удалить
                         </button>
                         <button className="btn btn-sm btn-link" onClick={() => setSel(new Set())}>снять</button>
                         <span className="pe-hint">Del — удалить · перетаскивание — переставить · Shift/Ctrl — несколько</span>
@@ -153,7 +153,7 @@ const PageEditor = () => {
                 )}
 
                 <div className="pe-body">
-                    {!book ? <div className="pe-empty"><i className="bi bi-arrow-repeat spin" /></div> : book.chapters.map((c, ci) => (
+                    {!book ? <div className="pe-empty"><i aria-hidden="true" className="bi bi-arrow-repeat spin" /></div> : book.chapters.map((c, ci) => (
                         <section key={c.id} className="pe-chapter">
                             {(book.chapters.length > 1 || c.title) && (
                                 <input className="pe-ch-title" defaultValue={c.title} placeholder={`Глава ${ci + 1}`}
@@ -175,7 +175,7 @@ const PageEditor = () => {
                                              title={`Страница ${n}${p.w ? ` · ${p.w}×${p.h}` : ''}`}>
                                             <img src={p.thumb} alt="" loading="lazy" draggable={false} />
                                             <span className="pe-n">{n}</span>
-                                            {book.cover === p.file && <span className="pe-cover" title="Обложка"><i className="bi bi-star-fill" /></span>}
+                                            {book.cover === p.file && <span className="pe-cover" title="Обложка"><i aria-hidden="true" className="bi bi-star-fill" /></span>}
                                         </div>
                                     );
                                 })}
@@ -186,14 +186,14 @@ const PageEditor = () => {
                     {book?.removed?.length > 0 && (
                         <section className="pe-removed">
                             <button className="pe-removed-toggle" onClick={() => setShowRemoved(v => !v)}>
-                                <i className={`bi bi-chevron-${showRemoved ? 'down' : 'right'}`} /> Удалённые страницы ({book.removed.length})
+                                <i aria-hidden="true" className={`bi bi-chevron-${showRemoved ? 'down' : 'right'}`} /> Удалённые страницы ({book.removed.length})
                             </button>
                             {showRemoved && (
                                 <>
                                     <div className="pe-removed-actions">
                                         <button className="btn btn-sm btn-outline-secondary" disabled={busy}
                                                 onClick={() => run(() => mangaApi.restorePages(item.id, book.removed.map(r => r.stored)))}>
-                                            <i className="bi bi-arrow-counterclockwise me-1" />Вернуть все
+                                            <i aria-hidden="true" className="bi bi-arrow-counterclockwise me-1" />Вернуть все
                                         </button>
                                         <button className="btn btn-sm btn-outline-danger" disabled={busy}
                                                 onClick={() => { if (confirm(`Удалить ${book.removed.length} стр. окончательно? Вернуть будет нельзя.`)) run(() => mangaApi.purgeRemoved(item.id)); }}>
@@ -205,7 +205,7 @@ const PageEditor = () => {
                                             <div key={r.stored} className="pe-page removed" title="Вернуть на место"
                                                  onClick={() => run(() => mangaApi.restorePages(item.id, [r.stored]))}>
                                                 <img src={r.thumb} alt="" loading="lazy" draggable={false} />
-                                                <span className="pe-restore"><i className="bi bi-arrow-counterclockwise" /></span>
+                                                <span className="pe-restore"><i aria-hidden="true" className="bi bi-arrow-counterclockwise" /></span>
                                             </div>
                                         ))}
                                     </div>

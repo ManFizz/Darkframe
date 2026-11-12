@@ -40,13 +40,13 @@ const MakeMangaButton = ({ items, files, defaultTitle, collectionId, onDone, cla
     return (
         <span className="mk-wrap">
             <button className={className} onClick={start} title="Сделать из выбранных одну мангу (страницы — в показанном порядке)">
-                <i className="bi bi-book me-1" /> Собрать мангу
+                <i aria-hidden="true" className="bi bi-book me-1" /> Собрать мангу
             </button>
             {open && (
                 <>
                     <div className="bulk-move-backdrop" onMouseDown={() => !busy && setOpen(false)} />
                     <div className="mk-pop" onKeyDown={e => { if (e.key === 'Enter') make(); if (e.key === 'Escape') setOpen(false); }}>
-                        <div className="mk-title"><i className="bi bi-book" /> Новая манга · {count} стр.</div>
+                        <div className="mk-title"><i aria-hidden="true" className="bi bi-book" /> Новая манга · {count} стр.</div>
                         <input className="form-control form-control-sm" autoFocus placeholder="Название" value={title} onChange={e => setTitle(e.target.value)} />
                         {items && (
                             <label className="mk-check">
@@ -57,7 +57,7 @@ const MakeMangaButton = ({ items, files, defaultTitle, collectionId, onDone, cla
                         <div className="mk-actions">
                             <button className="btn btn-sm btn-outline-secondary" onClick={() => setOpen(false)} disabled={busy}>Отмена</button>
                             <button className="btn btn-sm btn-primary" onClick={make} disabled={busy}>
-                                {busy ? <i className="bi bi-arrow-repeat spin" /> : 'Собрать'}
+                                {busy ? <i aria-hidden="true" className="bi bi-arrow-repeat spin" /> : 'Собрать'}
                             </button>
                         </div>
                     </div>
