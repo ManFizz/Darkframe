@@ -22,6 +22,7 @@ const { rankTags, allowedTypos } = require('../../src/js/shared/tagRank');
 const similarity = require('../services/similarity');
 const maintenance = require('../services/maintenance');
 const { itemUrls } = require('../services/itemUrls');
+const { readClipboardImageBuffer } = require('../services/clipboardImage');
 const videoEdit = require('../services/videoEditService');
 const videoPositions = require('../services/videoPositions');
 const viewHistory = require('../services/viewHistory');
@@ -69,13 +70,28 @@ async function collectionPreviews(collectionId, childIds = [], limit = 3) {
     return rows.map(r => itemUrls(r).thumbPath);
 }
 
+// nativeImage only decodes PNG and JPEG. Anything else (webp, gif, bmp) is
+// re-encoded to PNG so the search and the preview still get a picture.
+async function nativeImageFromClipboard(buf) {
+    if (!buf?.length) return null;
+    const direct = nativeImage.createFromBuffer(buf);
+    if (direct && !direct.isEmpty()) return direct;
+    try {
+        const png = await require('sharp')(buf).png().toBuffer();
+        const img = nativeImage.createFromBuffer(png);
+        return img.isEmpty() ? null : img;
+    } catch {
+        return null;
+    }
+}
+
 function register() {
     // Search by picture: a library item, or whatever image is on the clipboard.
     ipcMain.handle('library:visualSearch', async (event, { id, hash, clipboard: fromClipboard, pick, maxDistance } = {}) => {
         const { searchByImage } = require('../services/similarity');
         if (fromClipboard) {
-            const img = clipboard.readImage();
-            if (img.isEmpty()) return { error: 'В буфере обмена нет картинки' };
+            const img = await nativeImageFromClipboard(await readClipboardImageBuffer(clipboard));
+            if (!img) return { error: 'В буфере обмена нет картинки' };
             const res = await searchByImage({ buffer: img.toPNG() }, maxDistance);
             return { ...res, preview: img.resize({ width: 160 }).toDataURL() };
         }
