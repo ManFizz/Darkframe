@@ -32,6 +32,79 @@
   .library-nav-controls { flex: 1 1 100%; max-width: none; flex-wrap: wrap; order: 5; }
   .navbar-spacer { display: none; }
 
+  // Booru search sidebar overlays the grid. It used to grow in the row (width
+  // transition), which reflowed every tile. Same pattern as the collection drawer.
+  .main-split > .sidebar {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    z-index: var(--df-z-viewer);
+    width: min(86vw, 340px);
+    min-width: 0;
+    max-width: none;
+    height: auto;
+    margin: 0;
+    padding: 0;
+    transform: translateX(-105%);
+    transition: transform var(--df-dur-base) ease;
+    background: var(--bs-body-bg) !important;
+    border-right: 1px solid var(--bs-border-color);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    overscroll-behavior: contain;
+    &.open { width: min(86vw, 340px); transform: none; }
+    // Keep wheel/touch pans inside the drawer; otherwise they chain to the
+    // gallery under the overlay (main-split is overflow-auto).
+    > section {
+      flex: 1 1 auto;
+      min-height: 0;
+      height: auto;
+      opacity: 1;
+      pointer-events: auto;
+      overflow-y: auto;
+      overscroll-behavior: contain;
+      -webkit-overflow-scrolling: touch;
+      touch-action: pan-y;
+    }
+  }
+  .sidebar-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: calc(var(--df-z-viewer) - 10);
+    border: 0;
+    padding: 0;
+    background: rgba(var(--df-black-rgb), 0.5);
+    // Block scroll gestures on the dimmed gallery while the drawer is open.
+    touch-action: none;
+    overscroll-behavior: none;
+  }
+  // Closed: left-edge handle clear of the two-row navbar/search.
+  // Open: half-out on the drawer edge (same idea as desktop .custom-menu).
+  .sidebar-edge {
+    position: fixed;
+    z-index: calc(var(--df-z-viewer) + 2);
+    top: 50%;
+    left: 0;
+    width: 40px;
+    height: 40px;
+    display: grid;
+    place-items: center;
+    border: 0;
+    border-radius: 0 var(--df-r-round) var(--df-r-round) 0;
+    background: var(--df-island);
+    color: var(--bs-body-color);
+    box-shadow: var(--df-shadow-lg);
+    transform: translateY(-50%);
+    &.open {
+      top: max(16px, calc(env(safe-area-inset-top) + 14px));
+      left: calc(min(86vw, 340px) - 20px);
+      border-radius: var(--df-r-round);
+      transform: none;
+    }
+  }
+
   .library-layout { position: relative; }
   .library-sidebar {
     position: fixed;
