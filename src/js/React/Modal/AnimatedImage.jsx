@@ -19,7 +19,7 @@ export const isMaybeAnimated = (file, src) => !!mimeFor(file, src);
  * WebCodecs' ImageDecoder, so long animations don't sit in memory as bitmaps.
  * Stills (and browsers without ImageDecoder) stay a plain <img>.
  */
-const AnimatedImage = ({ file, src, alt, style, onImgRef }) => {
+const AnimatedImage = ({ file, src, alt, style, onImgRef, onLoad, onError }) => {
     const canvasRef = useRef(null);
     const decoderRef = useRef(null);
     const timerRef = useRef(null);
@@ -78,6 +78,7 @@ const AnimatedImage = ({ file, src, alt, style, onImgRef }) => {
                 if (cancelled || !track?.animated || track.frameCount < 2) { dec.close(); return; }
                 decoderRef.current = dec;
                 setInfo({ frames: track.frameCount });
+                onLoad?.();
             } catch { /* not decodable here — keep the <img> */ }
         })();
         return () => {
@@ -119,7 +120,10 @@ const AnimatedImage = ({ file, src, alt, style, onImgRef }) => {
         return () => document.removeEventListener('keydown', onKey);
     }, [info, step]);
 
-    if (!info) return <img ref={onImgRef} alt={alt} src={src} style={style} draggable={false} onDragStart={e => e.preventDefault()} />;
+    if (!info) return (
+        <img ref={onImgRef} alt={alt} src={src} style={style} draggable={false}
+             onDragStart={e => e.preventDefault()} onLoad={onLoad} onError={onError} />
+    );
 
     return (
         <>

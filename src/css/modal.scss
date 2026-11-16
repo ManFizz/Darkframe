@@ -421,9 +421,13 @@
 
 .modal-view {
   .modal-content-wrapper {
+    position: relative;
     display: flex;
     align-items: center;
     justify-content: center;
+
+    // Dim the outgoing/empty stage while the next still is still fetching.
+    &.is-pending > :not(.modal-media-wait) { opacity: 0.35; }
   }
 
   // Give the media a real frame: rounded, hairline edge, deep soft shadow.
@@ -431,6 +435,30 @@
     border-radius: var(--df-r-2xl);
     border: 1px solid rgba(var(--df-white-rgb), 0.08);
     box-shadow: var(--df-shadow-xl);
+  }
+}
+
+// Still swap feedback: spinner appears after a beat so cached frames don't flash it.
+@keyframes modal-media-wait-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes modal-media-spin { to { transform: rotate(360deg); } }
+.modal-media-wait {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--df-sp-4);
+  pointer-events: none;
+  color: var(--df-white);
+  font-size: var(--df-fs-md);
+  text-shadow: 0 1px 2px rgba(var(--df-black-rgb), 0.7);
+  animation: modal-media-wait-in var(--df-dur-base) ease var(--df-dur-fast) both;
+
+  .bi {
+    font-size: 28px;
+    animation: modal-media-spin 0.8s linear infinite;
   }
 }
 

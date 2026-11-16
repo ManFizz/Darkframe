@@ -37,6 +37,8 @@ const Modal = ({ fileId, mainArray, modalUpdater, displayFiles, onUpdated, onReo
     const [editing, setEditing]           = useState(false);
     const [zoom, setZoom]                 = useState(1);
     const [pan, setPan]                   = useState({ x: 0, y: 0 });
+    // uniqueId of the still that has finished loading; mismatch = swap still pending.
+    const [readyId, setReadyId] = useState(null);
     const modalRef       = useRef(null);
     const contentRef     = useRef(null);
     const panDrag        = useRef(null);
@@ -213,6 +215,23 @@ const Modal = ({ fileId, mainArray, modalUpdater, displayFiles, onUpdated, onReo
         return () => { cancelled = true; };
     }, [file?.uniqueId]);
 
+    // Neighbour preload may already hold this still — clear the wait without flashing.
+    useEffect(() => {
+        if (!file || file.type !== FILE_TYPES.IMAGE || file.isManga) return;
+        const url = cachedMediaUrl(file.getUrl());
+        const cached = preloadRef.current.get(url);
+        if (cached?.complete && cached.naturalWidth > 0) setReadyId(file.uniqueId);
+    }, [file?.uniqueId]);
+
+    const markMediaReady = useCallback(() => {
+        if (file) setReadyId(file.uniqueId);
+    }, [file]);
+    const onStillRef = useCallback((el) => {
+        if (el?.complete && el.naturalWidth > 0 && file) setReadyId(file.uniqueId);
+    }, [file]);
+
+    const mediaPending = !!file && file.type === FILE_TYPES.IMAGE && !file.isManga && readyId !== file.uniqueId;
+
     // Record a view once the item has actually been looked at for a moment — a short
     // dwell keeps arrow-key fly-throughs out of the history. Dedup + per-section
     // storage happens server-side; the key is stable per source (lib id / media URL).
@@ -363,7 +382,7 @@ const Modal = ({ fileId, mainArray, modalUpdater, displayFiles, onUpdated, onReo
     const imageSrc = cachedMediaUrl(file.getUrl());
     const mediaContent = file.isManga ? (
         <div className="manga-cover-view">
-            <img src={imageSrc} alt={file.title} draggable={false} />
+            <img src={imageSrc} alt={file.title} draggable={false} onLoad={markMediaReady} onError={markMediaReady} ref={onStillRef} />
             <button className="manga-cover-read" onClick={(e) => { e.stopPropagation(); readLibraryManga(file); }}>
                 <i aria-hidden="true" className="bi bi-book-half" /> Читать · {file.pageCount} стр.
             </button>
@@ -371,16 +390,20 @@ const Modal = ({ fileId, mainArray, modalUpdater, displayFiles, onUpdated, onReo
     ) : file.type === FILE_TYPES.IMAGE ? (
         isMaybeAnimated(file, file.getUrl())
             // GIF / WebP: turns into a player (pause, frames, speed) when animated.
-            ? <AnimatedImage key={file.uniqueId} file={file} src={imageSrc} alt={file.title} style={imageStyle} />
+            ? <AnimatedImage key={file.uniqueId} file={file} src={imageSrc} alt={file.title} style={imageStyle}
+                             onImgRef={onStillRef} onLoad={markMediaReady} onError={markMediaReady} />
             : <img
-                // Re-mounted per file during a slideshow so each slide fades in.
-                key={ss.active ? file.uniqueId : 'img'}
+                // Remount per file so a slow swap does not keep showing the previous still.
+                key={file.uniqueId}
                 className={ss.active ? 'ss-slide' : undefined}
                 alt={file.title}
                 draggable={false}
                 onDragStart={(e) => e.preventDefault()}
                 style={imageStyle}
                 src={imageSrc}
+                ref={onStillRef}
+                onLoad={markMediaReady}
+                onError={markMediaReady}
             />
     ) : (
         <Video
@@ -446,8 +469,14 @@ const Modal = ({ fileId, mainArray, modalUpdater, displayFiles, onUpdated, onReo
                          // Swipe left → next, right → previous (not while zoomed in).
                          document.dispatchEvent(new CustomEvent('df:modalShift', { detail: -dir }));
                      }, { enabled: zoom <= 1 && !editing })}>
-                    <div className="modal-content-wrapper">
+                    <div className={`modal-content-wrapper${mediaPending ? ' is-pending' : ''}`}>
                         {editing ? null : mediaContent}
+                        {mediaPending && !editing && (
+                            <div className="modal-media-wait" aria-live="polite" aria-busy="true">
+                                <i aria-hidden="true" className="bi bi-arrow-repeat" />
+                                <span>Загрузка…</span>
+                            </div>
+                        )}
                     </div>
                 </div>
                 {showPanel && (
