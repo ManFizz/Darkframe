@@ -28,6 +28,19 @@ async function migrations() {
             defaultValue: null,
         });
     }
+    if (!tableDesc.phashMirror) {
+        await queryInterface.addColumn('Items', 'phashMirror', { type: DataTypes.STRING(16), allowNull: true, defaultValue: null });
+    }
+    if (!tableDesc.vhash) {
+        await queryInterface.addColumn('Items', 'vhash', { type: DataTypes.TEXT, allowNull: true, defaultValue: null });
+    }
+    // Content vectors of images (services/embeddings), keyed to the file they were
+    // computed from (fileHash): an edited file simply counts as not computed.
+    await sequelize.query(`CREATE TABLE IF NOT EXISTS ItemEmbeddings (
+        itemId TEXT PRIMARY KEY,
+        fileHash TEXT,
+        vec BLOB NOT NULL
+    )`);
     if (!tableDesc.editParams) {
         // Full image-edit parameters (JSON), re-applied from the source on each save.
         await queryInterface.addColumn('Items', 'editParams', {
@@ -59,8 +72,8 @@ async function migrations() {
         });
     }
 
-    // fileHash used to be UNIQUE (dedup on import). Duplicates are now allowed on
-    // purpose, so drop the unique index and keep a plain one for fast grouping.
+    // Duplicates are allowed: fileHash gets a plain index (for grouping) instead of
+    // the unique one of older databases.
     const itemIndexes = await queryInterface.showIndex('Items');
     if (itemIndexes.find(i => i.name === 'items_fileHash_unique')) {
         await queryInterface.removeIndex('Items', 'items_fileHash_unique');
@@ -69,6 +82,13 @@ async function migrations() {
         await queryInterface.addIndex('Items', ['fileHash'], { name: 'items_fileHash_idx' });
     }
     const tagsDesc = await queryInterface.describeTable('Tags');
+    if (!tagsDesc.userType) {
+        await queryInterface.addColumn('Tags', 'userType', { type: DataTypes.INTEGER, allowNull: true, defaultValue: null });
+    }
+    if (!tagsDesc.coverItemId) {
+        // A model's preview picked by hand (else: its best rated file).
+        await queryInterface.addColumn('Tags', 'coverItemId', { type: DataTypes.UUID, allowNull: true, defaultValue: null });
+    }
     if (!tagsDesc.pinned) {
         // User-pinned tags float to the top of pickers and filters.
         await queryInterface.addColumn('Tags', 'pinned', {
@@ -111,13 +131,36 @@ async function migrations() {
     // Resume positions for long videos. New table — create if missing.
     await require('./models/VideoPosition').sync();
 
-    // Lookup indexes. Tags also holds the remote (r34 / gelbooru) tag cache — well over
-    // a million rows — so "pinned" / per-tag lookups without an index were full scans
-    // that stalled every other query at startup (one SQLite connection).
+    // Remembered booru searches. New table — create if missing.
+    await require('./models/SavedSearch').sync();
+
+    // Import rules (auto tags / collection / rating). New table — create if missing.
+    await require('./models/AutoRule').sync();
+
+    // Watched folders (auto import). New table — create if missing.
+    await require('./models/WatchedFolder').sync();
+
+    // Manga: page count on the item + reading progress. New column / table.
+    if (!(await queryInterface.describeTable('Items')).pageCount) {
+        await queryInterface.addColumn('Items', 'pageCount', { type: DataTypes.INTEGER, allowNull: true, defaultValue: null });
+    }
+    await require('./models/MangaState').sync();
+    await require('./models/MangaDownload').sync();
+
+    // Lookup indexes. Tags also holds the remote tag cache (over a million rows):
+    // without them pinned / per-tag lookups are full scans that block the single
+    // SQLite connection.
     await sequelize.query('CREATE INDEX IF NOT EXISTS tags_pinned_idx ON Tags (pinned)');
     await sequelize.query('CREATE INDEX IF NOT EXISTS itemtags_tagId_idx ON ItemTags (tagId)');
     await sequelize.query('CREATE INDEX IF NOT EXISTS items_collectionId_idx ON Items (collectionId)');
     await sequelize.query('CREATE INDEX IF NOT EXISTS items_deletedAt_idx ON Items (deletedAt)');
+
+    // Saved booru tags: one row per tag and source (older databases may hold
+    // duplicates — the first copy stays).
+    await require('./models/FavoriteTag').sync();
+    await sequelize.query(`DELETE FROM FavoriteTags WHERE id NOT IN
+        (SELECT MIN(id) FROM FavoriteTags GROUP BY tag, remote_type)`);
+    await sequelize.query('CREATE UNIQUE INDEX IF NOT EXISTS favtags_tag_source_uq ON FavoriteTags (tag, remote_type)');
 }
 
 module.exports = { migrations};

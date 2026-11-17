@@ -1,4 +1,5 @@
 import {libraryApi} from '@/Infrastructure/Ipc';
+import {ipcRenderer} from '@/Infrastructure/electron';
 
 let collections = [];
 let listeners = new Set();
@@ -8,7 +9,6 @@ let listeners = new Set();
 // views subscribe via onLibraryChanged to decide whether they need a reload.
 const changeListeners = new Set();
 {
-    const { ipcRenderer } = window.require('electron');
     ipcRenderer.on('library:changed', (_, change) => {
         LibraryService.loadCollections().catch(() => {});
         changeListeners.forEach(fn => fn(change));
@@ -67,7 +67,6 @@ export const LibraryService = {
         await libraryApi.reorderCollections({ updates });
         await this.loadCollections();
     },
-    // --- Items ---
 
     async getItems({ collectionId, trash = false } = {}) {
         if (trash)
@@ -93,8 +92,19 @@ export const LibraryService = {
         return libraryApi.updateSmartFilter({ id, filter });
     },
 
-    // --- Tag manager ---
     getAllTags()               { return libraryApi.getAllTags(); },
+    getModels()                { return libraryApi.getModels(); },
+    getModelFiles(id)          { return libraryApi.getModelFiles(id); },
+    async setModelCover(id, itemId) {
+        const result = await libraryApi.setModelCover({ id, itemId });
+        window.dispatchEvent(new Event('df:libraryReload'));
+        return result;
+    },
+    async setTagType(ids, type) {
+        const result = await libraryApi.setTagType({ ids, type });
+        window.dispatchEvent(new Event('df:libraryReload'));
+        return result;
+    },
     renameTag(id, newName)     { return libraryApi.renameTag({ id, newName }); },
     mergeTags(sourceId, targetId) { return libraryApi.mergeTags({ sourceId, targetId }); },
     deleteTag(id)              { return libraryApi.deleteTag({ id }); },
@@ -118,8 +128,8 @@ export const LibraryService = {
         return libraryApi.importDirectory({ dirPath, collectionId });
     },
 
-    async importUrl({ url, collectionId }) {
-        return libraryApi.importUrl({ url, collectionId });
+    async importUrl({ url, collectionId, tags, sourceUrl, title }) {
+        return libraryApi.importUrl({ url, collectionId, tags, sourceUrl, title });
     },
 
     async updateItem(id, data) {
@@ -154,7 +164,13 @@ export const LibraryService = {
     // Near-duplicates (perceptual hash)
     async phashStatus()             { return libraryApi.phashStatus(); },
     async computePhashes()          { return libraryApi.computePhashes(); },
-    async findSimilar(maxDistance)  { return libraryApi.findSimilar({ maxDistance }); },
+    async findSimilar(maxDistance, mirror = true) { return libraryApi.findSimilar({ maxDistance, mirror }); },
+    async fingerprintStatus()       { return libraryApi.fingerprintStatus(); },
+    async computeVideoHashes()      { return libraryApi.computeVideoHashes(); },
+    async computeEmbeddings()       { return libraryApi.computeEmbeddings(); },
+    async cancelFingerprints(kind)  { return libraryApi.cancelFingerprints(kind); },
+    async findSimilarVideos(maxDistance) { return libraryApi.findSimilarVideos({ maxDistance }); },
+    async findByContent(threshold, verify) { return libraryApi.findByContent({ threshold, verify }); },
 
     async checkIntegrity() {
         return libraryApi.checkIntegrity();
@@ -168,7 +184,6 @@ export const LibraryService = {
         return libraryApi.generateMissingMedia();
     },
 
-    // --- View history ---
     async recordView(payload) {
         return libraryApi.recordView(payload);
     },
@@ -246,7 +261,6 @@ export const LibraryService = {
         }
         return libraryApi.importJsonDialog({ collectionId });
     },
-    // --- Pub/Sub ---
 
     subscribe(cb) {
         listeners.add(cb);

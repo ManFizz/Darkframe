@@ -1,4 +1,4 @@
-const { ipcMain, dialog, app } = require('electron');
+const { ipcMain, dialog, shell } = require('electron');
 const registry = require('../libraryRegistry');
 
 function register() {
@@ -28,13 +28,34 @@ function register() {
         return registry.removeLibrary(id, { deleteFiles });
     });
 
-    // Switching: relaunch the app pointing at the new active library.
-    // The Electron process restart is short (~1-2s) and guarantees clean
-    // re-initialization of the SQLite connection and all in-memory caches.
-    ipcMain.handle('library:registry:switch', (_, { id }) => {
-        registry.setActive(id);
-        app.relaunch();
-        app.exit(0);
+    // The library as a folder of hard links for Explorer (services/explorerMirror).
+    const mirror = () => require('../services/explorerMirror');
+    ipcMain.handle('library:registry:mirrorStatus', () => mirror().status());
+    ipcMain.handle('library:registry:mirrorSet', (_, cfg) => mirror().setConfig(cfg || {}));
+    ipcMain.handle('library:registry:mirrorSync', () => mirror().syncAndWait({ full: true }));
+    ipcMain.handle('library:registry:mirrorOpen', async () => {
+        const { path: dir } = mirror().status();
+        const err = await shell.openPath(dir);
+        if (err) throw new Error(err);
+        return true;
+    });
+    ipcMain.handle('library:registry:mirrorPick', async () => {
+        const { path: dir } = mirror().status();
+        const { canceled, filePaths } = await dialog.showOpenDialog({
+            title: 'Папка для библиотеки в проводнике',
+            defaultPath: require('path').dirname(dir),
+            properties: ['openDirectory', 'createDirectory'],
+        });
+        return canceled || !filePaths.length ? null : filePaths[0];
+    });
+
+    // Switching happens in place: the main process re-opens the database (see
+    // librarySwitch), then the window reloads its UI so no view keeps data of the
+    // previous library. No process restart.
+    ipcMain.handle('library:registry:switch', async (event, { id }) => {
+        const res = await require('../services/librarySwitch').switchLibrary(id);
+        if (res.changed) setTimeout(() => { if (!event.sender.isDestroyed()) event.sender.reload(); }, 50);
+        return res;
     });
 }
 

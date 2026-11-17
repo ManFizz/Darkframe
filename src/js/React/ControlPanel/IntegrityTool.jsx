@@ -66,7 +66,7 @@ const IntegrityTool = () => {
                     </p>
                 </div>
                 <button className="btn btn-outline-secondary btn-sm" onClick={scan} disabled={scanning || busy}>
-                    <i className={`bi bi-arrow-repeat me-1 ${scanning ? 'spin' : ''}`} />
+                    <i aria-hidden="true" className={`bi bi-arrow-repeat me-1 ${scanning ? 'spin' : ''}`} />
                     {scanning ? 'Проверяю…' : (report ? 'Проверить снова' : 'Проверить')}
                 </button>
             </div>
@@ -75,7 +75,7 @@ const IntegrityTool = () => {
 
             {report && clean && (
                 <div className="cp-empty">
-                    <i className="bi bi-shield-check" />
+                    <i aria-hidden="true" className="bi bi-shield-check" />
                     <span>Всё в порядке — проблем не найдено</span>
                 </div>
             )}
@@ -91,14 +91,14 @@ const IntegrityTool = () => {
                                     onClick={() => cleanup({ records: true })}
                                     disabled={busy}
                                 >
-                                    <i className="bi bi-trash3 me-1" />
+                                    <i aria-hidden="true" className="bi bi-trash3 me-1" />
                                     Удалить записи
                                 </button>
                             </div>
                             <div className="cp-intg-list">
                                 {report.missing.slice(0, 200).map(m => (
                                     <div key={m.id} className="cp-intg-row">
-                                        <i className="bi bi-file-earmark-x" />
+                                        <i aria-hidden="true" className="bi bi-file-earmark-x" />
                                         <span className="cp-intg-name" title={m.fileName}>{m.title}</span>
                                         {m.trashed && <span className="cp-intg-tag">в корзине</span>}
                                     </div>
@@ -119,14 +119,14 @@ const IntegrityTool = () => {
                                     onClick={() => cleanup({ folders: true })}
                                     disabled={busy}
                                 >
-                                    <i className="bi bi-trash3 me-1" />
+                                    <i aria-hidden="true" className="bi bi-trash3 me-1" />
                                     Удалить папки
                                 </button>
                             </div>
                             <div className="cp-intg-list">
                                 {report.orphans.slice(0, 200).map(o => (
                                     <div key={o.name} className="cp-intg-row">
-                                        <i className="bi bi-folder-x" />
+                                        <i aria-hidden="true" className="bi bi-folder-x" />
                                         <span className="cp-intg-name" title={o.name}>{o.name}</span>
                                         <span className="cp-intg-size">{fmtSize(o.size)}</span>
                                     </div>
@@ -145,7 +145,7 @@ const IntegrityTool = () => {
                                 onClick={() => cleanup({ records: true, folders: true })}
                                 disabled={busy}
                             >
-                                <i className="bi bi-trash me-1" />
+                                <i aria-hidden="true" className="bi bi-trash me-1" />
                                 Удалить всё найденное
                             </button>
                         </div>

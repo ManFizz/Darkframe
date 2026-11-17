@@ -2,6 +2,7 @@ import {GetSourceDataById, sources} from "@modules/r34/R34Controller";
 import {SOURCE_TYPES} from "@/Constants";
 import PrivateData from "@data/private";
 import TagsService from "@services/TagsService";
+import {httpFetch} from '@/Infrastructure/http';
 
 class Tag {
 	constructor({ id, name, type, count, remoteType }) {
@@ -63,11 +64,18 @@ export function subscribe(callback) {
 	};
 }
 
+const askedForType = new Set();   // names fetched for their kind this session
+
 export function ensureTags(tags = [], sourceType = SOURCE_TYPES.R34) {
 	if (!Array.isArray(tags)) return;
 
 	tags.forEach(tag => {
-		if (!tag || tagsMap.has(tag) || pendingTags.has(tag)) return;
+		if (!tag || pendingTags.has(tag)) return;
+		// Known with a kind: nothing to do. Known without one (seen in a post's tag
+		// list): asked once per session.
+		const known = tagsMap.get(tag);
+		if (known && (known.type != null || askedForType.has(tag))) return;
+		if (known) askedForType.add(tag);
 		pendingTags.set(tag, sourceType);
 	});
 
@@ -95,7 +103,7 @@ async function processQueue() {
 		if (Array.isArray(dbTags)) {
 			dbTags.forEach(tag => {
 				setTagToCache(tag);
-				foundInDb.add(tag.name);
+				if (tag.type != null) foundInDb.add(tag.name);   // without a kind: ask the site
 			});
 		}
 	} catch (e) {
@@ -104,15 +112,19 @@ async function processQueue() {
 
 	const missing = batch.filter(([name]) => !foundInDb.has(name));
 
-	const results = await Promise.all(
-		missing.map(([name, sourceType]) =>
-			fetchTagInfo({ name, sourceType })
-		)
-	);
-
-	updateTags(results.filter(Boolean));
-
-	isFetching = false;
+	// A failing batch must not stop the queue for good.
+	try {
+		const results = await Promise.all(
+			missing.map(([name, sourceType]) =>
+				fetchTagInfo({ name, sourceType })
+			)
+		);
+		updateTags(results.filter(Boolean));
+	} catch (e) {
+		console.warn("Tag info batch failed:", e);
+	} finally {
+		isFetching = false;
+	}
 
 	triggerUpdate();
 
@@ -121,24 +133,37 @@ async function processQueue() {
 	}
 }
 
-/* ---------------- ENCODE ---------------- */
+/**
+ * Kinds of these tags straight from the site's tag API (R34), past the queue:
+ * for pages that need them now (the favourite tags page). → [{ name, type }]
+ */
+export async function fetchTagKinds(names = [], sourceType = SOURCE_TYPES.R34) {
+	const out = [];
+	for (const name of names) {
+		const known = tagsMap.get(name);
+		if (known?.type != null) { out.push({ name, type: known.type }); continue; }
+		const tag = await fetchTagInfo({ name, sourceType });
+		if (tag) { updateTags([tag]); out.push({ name: tag.name, type: tag.type }); }
+	}
+	if (out.length) triggerUpdate();
+	return out;
+}
 
 function encodeTag(tag) {
 	return tag
 		.trim()
-		.replace(/\s+/g, "_")          // space → _
-		.replace(/'/g, "%27")          // ' → %27
-		.replace(/"/g, "%22")          // " → %22
-		.replace(/:/g, "%3A")          // : → %3A
-		.replace(/\(/g, "%28")         // ( → %28
-		.replace(/\)/g, "%29")         // ) → %29
-		.replace(/\[/g, "%5B")         // [ → %5B
-		.replace(/\]/g, "%5D")         // ] → %5D
-		.replace(/&/g, "%26")          // & → %26
-		.replace(/\+/g, "%2B");       // + → %2B
+		.replace(/\s+/g, "_")
+		.replace(/'/g, "%27")
+		.replace(/"/g, "%22")
+		.replace(/:/g, "%3A")
+		.replace(/\(/g, "%28")
+		.replace(/\)/g, "%29")
+		.replace(/\[/g, "%5B")
+		.replace(/\]/g, "%5D")
+		.replace(/&/g, "%26")
+		.replace(/\+/g, "%2B");
 }
 
-const { R34ApiKey, R34UserId } = PrivateData;
 
 async function fetchTagInfo({ name, sourceType }) {
 	try {
@@ -146,9 +171,9 @@ async function fetchTagInfo({ name, sourceType }) {
 
 		const url =
 			`${sources.r34.tagsUrl}${encodeTag(name)}` +
-			`&api_key=${R34ApiKey}&user_id=${R34UserId}`;
+			`&api_key=${PrivateData.R34ApiKey}&user_id=${PrivateData.R34UserId}`;
 
-		const res = await fetch(url);
+		const res = await httpFetch(url);
 		const text = await res.text();
 
 		const parser = new DOMParser();
@@ -170,8 +195,8 @@ async function fetchTagInfo({ name, sourceType }) {
 			return null;
 		}
 
-		// Not cached here: updateTags() caches it and marks it dirty so it gets saved
-		// to the DB. Caching first made updateTags see it as already known → never saved.
+		// Not cached here: updateTags() caches it and marks it dirty, so it is saved
+		// to the DB (a cached tag would count as known and never be saved).
 		return tag;
 
 	} catch (e) {
@@ -201,7 +226,7 @@ export function updateTags(newTags = []) {
 			markDirty(tag);
 			hasChanges = true;
 		} else {
-			if (!existing.type && tag.type) {
+			if (existing.type == null && tag.type != null) {   // 0 (general) is a kind too
 				existing.type = tag.type;
 				hasChanges = true;
 				markDirty(existing);
@@ -248,23 +273,37 @@ export async function fetchTagSuggestions(query, sourceId) {
 
 	const lastWord = match[0].toLowerCase();
 
-	if (suggestionsCache.has(lastWord)) {
-		return suggestionsCache.get(lastWord);
+	const cacheKey = `${sourceId}:${lastWord}`;
+	if (suggestionsCache.has(cacheKey)) {
+		return suggestionsCache.get(cacheKey);
 	}
 
 	const sourceData = GetSourceDataById(sourceId);
+	const isDanbooru = sourceData.api === 'danbooru';
 
 	try {
 		const url =
 			sourceData.tagUrl +
-			lastWord +
-			(sourceData.remoteType === SOURCE_TYPES.R34 ? "" : "%");
+			encodeURIComponent(lastWord) +
+			(sourceData.remoteType === SOURCE_TYPES.R34 || isDanbooru ? "" : "%");
 
-		const res = await fetch(url);
+		const res = await httpFetch(url);
 		let data = await res.json();
 
 		if (sourceData.remoteType === SOURCE_TYPES.GELBOORU) {
 			data = data.tag || [];
+		}
+
+		if (isDanbooru) {
+			const normalized = (Array.isArray(data) ? data : []).map(t => ({
+				name: t.value,
+				count: t.post_count || 0,
+				type: t.category ?? null,
+				label: `${t.value} (${t.post_count || 0})`,
+				value: t.value,
+			}));
+			suggestionsCache.set(cacheKey, normalized);
+			return normalized;
 		}
 
 		const normalized = data.map(t => ({
@@ -278,7 +317,7 @@ export async function fetchTagSuggestions(query, sourceId) {
 			value: t.name || t.value
 		}));
 
-		suggestionsCache.set(lastWord, normalized);
+		suggestionsCache.set(cacheKey, normalized);
 
 		return normalized;
 	} catch (e) {

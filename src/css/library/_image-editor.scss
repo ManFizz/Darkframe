@@ -1,11 +1,10 @@
-// ─── In-modal image editor (rotate / crop) ───────────────────────────────────
 .img-editor {
   position: absolute;
   inset: 0;
   z-index: 20;
   display: flex;
   flex-direction: column;
-  background: rgba(6, 5, 9, 0.96);
+  background: rgba(var(--df-black-rgb), 0.96);
   backdrop-filter: blur(6px);
 }
 
@@ -27,10 +26,10 @@
 
 .img-editor-loupe {
   position: absolute;
-  border-radius: 50%;
+  border-radius: var(--df-r-round);
   overflow: hidden;
-  border: 2px solid rgba(255, 255, 255, 0.85);
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.55);
+  border: 2px solid rgba(var(--df-white-rgb), 0.85);
+  box-shadow: var(--df-shadow-lg);
   pointer-events: none;
   z-index: 6;
 
@@ -43,30 +42,30 @@
   bottom: 12px;
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 4px 6px 4px 12px;
-  border-radius: 999px;
+  gap: var(--df-sp-4);
+  padding: var(--df-sp-2) var(--df-sp-3) var(--df-sp-2) var(--df-sp-6);
+  border-radius: var(--df-r-pill);
   background: var(--df-glass-strong);
   border: 1px solid var(--df-glass-border);
   backdrop-filter: blur(10px);
-  color: #fff;
+  color: var(--df-white);
   font: 600 12px/1 var(--mono, ui-monospace, monospace);
 
   .ie-zoom-reset {
     width: 24px; height: 24px;
     display: grid; place-items: center;
-    border: none; border-radius: 50%;
-    background: rgba(255, 255, 255, 0.08);
-    color: #fff; cursor: pointer;
-    &:hover { background: rgba(255, 255, 255, 0.18); }
+    border: none; border-radius: var(--df-r-round);
+    background: rgba(var(--df-white-rgb), 0.08);
+    color: var(--df-white); cursor: pointer;
+    &:hover { background: rgba(var(--df-white-rgb), 0.18); }
   }
 }
 
 // The crop rectangle: everything outside is dimmed by the huge box-shadow.
 .img-editor-crop {
   position: absolute;
-  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.55);
-  border: 1px solid rgba(255, 255, 255, 0.9);
+  box-shadow: 0 0 0 9999px rgba(var(--df-black-rgb), 0.55);
+  border: 1px solid rgba(var(--df-white-rgb), 0.9);
   cursor: move;
 }
 
@@ -76,19 +75,19 @@
   inset: 0;
   pointer-events: none;
   background:
-    linear-gradient(to right,  transparent calc(33.33% - 0.5px), rgba(255,255,255,0.35) 33.33%, rgba(255,255,255,0.35) calc(33.33% + 0.5px), transparent calc(33.33% + 0.5px)),
-    linear-gradient(to right,  transparent calc(66.66% - 0.5px), rgba(255,255,255,0.35) 66.66%, rgba(255,255,255,0.35) calc(66.66% + 0.5px), transparent calc(66.66% + 0.5px)),
-    linear-gradient(to bottom, transparent calc(33.33% - 0.5px), rgba(255,255,255,0.35) 33.33%, rgba(255,255,255,0.35) calc(33.33% + 0.5px), transparent calc(33.33% + 0.5px)),
-    linear-gradient(to bottom, transparent calc(66.66% - 0.5px), rgba(255,255,255,0.35) 66.66%, rgba(255,255,255,0.35) calc(66.66% + 0.5px), transparent calc(66.66% + 0.5px));
+    linear-gradient(to right,  transparent calc(33.33% - 0.5px), rgba(var(--df-white-rgb), 0.35) 33.33%, rgba(var(--df-white-rgb), 0.35) calc(33.33% + 0.5px), transparent calc(33.33% + 0.5px)),
+    linear-gradient(to right,  transparent calc(66.66% - 0.5px), rgba(var(--df-white-rgb), 0.35) 66.66%, rgba(var(--df-white-rgb), 0.35) calc(66.66% + 0.5px), transparent calc(66.66% + 0.5px)),
+    linear-gradient(to bottom, transparent calc(33.33% - 0.5px), rgba(var(--df-white-rgb), 0.35) 33.33%, rgba(var(--df-white-rgb), 0.35) calc(33.33% + 0.5px), transparent calc(33.33% + 0.5px)),
+    linear-gradient(to bottom, transparent calc(66.66% - 0.5px), rgba(var(--df-white-rgb), 0.35) 66.66%, rgba(var(--df-white-rgb), 0.35) calc(66.66% + 0.5px), transparent calc(66.66% + 0.5px));
 }
 
 .img-editor-handle {
   position: absolute;
   width: 12px;
   height: 12px;
-  background: #fff;
-  border-radius: 2px;
-  box-shadow: 0 0 4px rgba(0, 0, 0, 0.6);
+  background: var(--df-white);
+  border-radius: var(--df-r-xs);
+  box-shadow: 0 0 4px rgba(var(--df-black-rgb), 0.6);
 
   &.h-nw { left: -6px;  top: -6px;  cursor: nwse-resize; }
   &.h-ne { right: -6px; top: -6px;  cursor: nesw-resize; }
@@ -100,21 +99,39 @@
   &.h-e  { top: 50%; right: -6px;   transform: translateY(-50%); cursor: ew-resize; }
 }
 
-// ─── Toolbar ──────────────────────────────────────────────────────────────────
+// Fingers: the editor handles every touch itself (no page scroll / browser zoom
+// mid-drag), and the handles get a much bigger invisible grip.
+.img-editor-stage, .img-editor-crop, .img-editor-handle { touch-action: none; }
+@media (pointer: coarse) {
+  .img-editor-handle {
+    width: 18px;
+    height: 18px;
+    &::after { content: ''; position: absolute; inset: -16px; }
+    &.h-nw { left: -9px;  top: -9px; }
+    &.h-ne { right: -9px; top: -9px; }
+    &.h-sw { left: -9px;  bottom: -9px; }
+    &.h-se { right: -9px; bottom: -9px; }
+    &.h-n  { top: -9px; }
+    &.h-s  { bottom: -9px; }
+    &.h-w  { left: -9px; }
+    &.h-e  { right: -9px; }
+  }
+}
+
 .img-editor-toolbar {
   flex-shrink: 0;
   display: flex;
   align-items: center;
-  gap: 18px;
+  gap: var(--df-sp-9);
   flex-wrap: wrap;
-  padding: 12px 20px;
+  padding: var(--df-sp-6) var(--df-sp-10);
   background: var(--df-glass-strong);
   border-top: 1px solid var(--df-glass-border);
   backdrop-filter: blur(16px);
-  color: #fff;
+  color: var(--df-white);
 }
 
-.img-editor-group { display: flex; align-items: center; gap: 4px; }
+.img-editor-group { display: flex; align-items: center; gap: var(--df-sp-2); }
 
 .ie-btn {
   width: 36px;
@@ -122,14 +139,14 @@
   display: grid;
   place-items: center;
   border: 1px solid transparent;
-  border-radius: 9px;
+  border-radius: var(--df-r-xl);
   background: transparent;
-  color: #fff;
+  color: var(--df-white);
   cursor: pointer;
-  font-size: 17px;
-  transition: background 0.15s, border-color 0.15s, color 0.15s;
+  font-size: var(--df-fs-2xl);
+  transition: background var(--df-dur-fast), border-color var(--df-dur-fast), color var(--df-dur-fast);
 
-  &:hover { background: rgba(255, 255, 255, 0.1); }
+  &:hover { background: rgba(var(--df-white-rgb), 0.1); }
   &.on { color: var(--df-accent); border-color: var(--df-accent-dim); background: var(--df-accent-soft); }
 
   // Small marker: this panel holds non-default settings.
@@ -141,12 +158,11 @@
     right: 5px;
     width: 6px;
     height: 6px;
-    border-radius: 50%;
+    border-radius: var(--df-r-round);
     background: var(--df-accent);
   }
 }
 
-// ─── Floating colour / export panels (bottom-right of the stage) ───────────────
 .ie-panel {
   position: absolute;
   right: 16px;
@@ -155,29 +171,29 @@
   width: 300px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  padding: 14px;
-  border-radius: 14px;
+  gap: var(--df-sp-5);
+  padding: var(--df-sp-7);
+  border-radius: var(--df-r-3xl);
   background: var(--df-glass-strong);
   border: 1px solid var(--df-glass-border);
   backdrop-filter: blur(18px);
-  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.5);
-  color: #fff;
+  box-shadow: var(--df-shadow-xl);
+  color: var(--df-white);
   cursor: default;
 }
 .ie-panel-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  font-size: 13px;
+  font-size: var(--df-fs-md);
   font-weight: 700;
-  .bi { color: var(--df-accent); margin-right: 4px; }
+  .bi { color: var(--df-accent); margin-right: var(--df-sp-2); }
 }
 .ie-panel-link {
   border: none;
   background: none;
   color: var(--df-accent);
-  font-size: 12px;
+  font-size: var(--df-fs-sm);
   font-weight: 600;
   cursor: pointer;
   &:hover { text-decoration: underline; }
@@ -186,115 +202,115 @@
   display: grid;
   grid-template-columns: 96px 1fr 36px;
   align-items: center;
-  gap: 8px;
+  gap: var(--df-sp-4);
   margin: 0;
-  font-size: 12px;
-  color: var(--df-text-dim, #b9b3c6);
+  font-size: var(--df-fs-sm);
+  color: var(--df-text-dim, var(--df-grey-200));
 
   input[type="range"] { width: 100%; accent-color: var(--df-accent); cursor: pointer; }
-  b { text-align: right; color: #fff; font-variant-numeric: tabular-nums; }
+  b { text-align: right; color: var(--df-white); font-variant-numeric: tabular-nums; }
 }
 .ie-seg {
   display: flex;
   border: 1px solid var(--df-glass-border);
-  border-radius: 9px;
+  border-radius: var(--df-r-xl);
   overflow: hidden;
 
   button {
     flex: 1;
-    padding: 6px 8px;
+    padding: var(--df-sp-3) var(--df-sp-4);
     border: none;
     border-right: 1px solid var(--df-glass-border);
     background: transparent;
-    color: var(--df-text-dim, #b9b3c6);
-    font-size: 12px;
+    color: var(--df-text-dim, var(--df-grey-200));
+    font-size: var(--df-fs-sm);
     font-weight: 600;
     cursor: pointer;
     &:last-child { border-right: none; }
-    &:hover { color: #fff; }
-    &.on { color: #fff; background: var(--df-accent-soft); }
+    &:hover { color: var(--df-white); }
+    &.on { color: var(--df-white); background: var(--df-accent-soft); }
   }
 }
 .ie-field {
   display: grid;
   grid-template-columns: 96px 1fr auto;
   align-items: center;
-  gap: 8px;
+  gap: var(--df-sp-4);
   margin: 0;
-  font-size: 12px;
-  color: var(--df-text-dim, #b9b3c6);
+  font-size: var(--df-fs-sm);
+  color: var(--df-text-dim, var(--df-grey-200));
 
   input {
     width: 100%;
-    padding: 5px 8px;
+    padding: 5px var(--df-sp-4);
     border: 1px solid var(--df-glass-border);
-    border-radius: 8px;
-    background: rgba(0, 0, 0, 0.3);
-    color: #fff;
-    font-size: 12px;
+    border-radius: var(--df-r-lg);
+    background: rgba(var(--df-black-rgb), 0.3);
+    color: var(--df-white);
+    font-size: var(--df-fs-sm);
     outline: none;
     &:focus { border-color: var(--df-accent-dim); }
   }
   em { font-style: normal; }
 }
 .ie-panel-hint {
-  font-size: 11.5px;
-  color: var(--df-text-dim, #b9b3c6);
+  font-size: var(--df-fs-sm);
+  color: var(--df-text-dim, var(--df-grey-200));
   font-variant-numeric: tabular-nums;
 }
 
 .img-editor-straighten {
   display: flex;
   align-items: center;
-  gap: 10px;
-  font-size: 12px;
-  color: var(--df-text-dim, #b9b3c6);
+  gap: var(--df-sp-5);
+  font-size: var(--df-fs-sm);
+  color: var(--df-text-dim, var(--df-grey-200));
   margin: 0;
 
   input[type="range"] { width: 160px; accent-color: var(--df-accent); cursor: pointer; }
-  b { min-width: 34px; text-align: right; color: #fff; font-variant-numeric: tabular-nums; }
+  b { min-width: 34px; text-align: right; color: var(--df-white); font-variant-numeric: tabular-nums; }
 }
 
 .img-editor-aspects { flex-wrap: wrap; }
 
 .ie-chip {
-  padding: 6px 10px;
+  padding: var(--df-sp-3) var(--df-sp-5);
   border: 1px solid var(--df-glass-border);
-  border-radius: 8px;
+  border-radius: var(--df-r-lg);
   background: transparent;
-  color: var(--df-text-dim, #b9b3c6);
-  font-size: 12px;
+  color: var(--df-text-dim, var(--df-grey-200));
+  font-size: var(--df-fs-sm);
   cursor: pointer;
-  transition: all 0.15s;
+  transition: all var(--df-dur-fast);
 
-  &:hover { color: #fff; border-color: var(--df-accent-dim); }
-  &.on { color: #fff; background: var(--df-accent-soft); border-color: var(--df-accent-dim); }
+  &:hover { color: var(--df-white); border-color: var(--df-accent-dim); }
+  &.on { color: var(--df-white); background: var(--df-accent-soft); border-color: var(--df-accent-dim); }
 }
 
 .img-editor-actions {
   margin-left: auto;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--df-sp-4);
 }
 
 .ie-btn-text {
-  padding: 8px 16px;
+  padding: var(--df-sp-4) var(--df-sp-8);
   border: 1px solid var(--df-glass-border);
-  border-radius: 9px;
+  border-radius: var(--df-r-xl);
   background: transparent;
-  color: #fff;
-  font-size: 13px;
+  color: var(--df-white);
+  font-size: var(--df-fs-md);
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.15s;
+  transition: all var(--df-dur-fast);
 
-  &:hover { background: rgba(255, 255, 255, 0.08); }
+  &:hover { background: rgba(var(--df-white-rgb), 0.08); }
   &:disabled { opacity: 0.5; cursor: default; }
 
-  &.ie-revert { color: #f4c95d; border-color: rgba(244, 201, 93, 0.4); }
+  &.ie-revert { color: var(--df-gold); border-color: rgba(var(--df-gold-rgb), 0.4); }
   &.ie-save {
-    color: #fff;
+    color: var(--df-white);
     background: linear-gradient(135deg, var(--df-accent), var(--df-accent-dim));
     border-color: transparent;
     box-shadow: 0 4px 14px var(--df-accent-glow);

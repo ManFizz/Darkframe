@@ -61,6 +61,21 @@ async function getHistorySections() {
     return rows.map(r => ({ section: r.section, count: Number(r.get('count')) }));
 }
 
+// Which of `keys` (in one section) were ever viewed — the history is never pruned on
+// its own, only by hand on the history page.
+async function viewedKeys({ section, keys = [] } = {}) {
+    if (section == null || !keys.length) return [];
+    const out = [];
+    for (let i = 0; i < keys.length; i += 500) {   // SQLite caps bound parameters
+        const rows = await ViewHistory.findAll({
+            where: { section, key: { [Op.in]: keys.slice(i, i + 500) } },
+            attributes: ['key'], raw: true,
+        });
+        rows.forEach(r => out.push(r.key));
+    }
+    return out;
+}
+
 async function clearHistory({ section = null } = {}) {
     const where = {};
     if (section != null) where.section = section;
@@ -74,4 +89,4 @@ async function removeHistory({ ids = [] } = {}) {
     return { ok: true, count };
 }
 
-module.exports = { recordView, getHistory, getHistorySections, clearHistory, removeHistory };
+module.exports = { recordView, getHistory, getHistorySections, viewedKeys, clearHistory, removeHistory };

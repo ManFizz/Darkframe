@@ -14,15 +14,15 @@ const hashBuffer = (buf) => crypto.createHash('sha256').update(buf).digest('hex'
 // original stays locked and the *next* edit's write-back fails (Windows sharing violation).
 sharp.cache(false);
 
-const ITEMS_PATH = getActive().itemsPath;
+const itemsPath = () => getActive().itemsPath;   // active library, may change at runtime
 const THUMB_SIZE = 400;
 
 // Files inside an item folder:
 //   original.<ext> — what the library shows
 //   source.<ext>   — pristine copy kept from the first edit (full revert)
-//   base.<ext>     — edit starting point for items edited the old, cumulative way
-//                    (their current look becomes the baseline so it isn't lost)
-// Every edit is now applied to base/source from scratch using the full saved
+//   base.<ext>     — starting point of items edited before parameters were stored
+//                    (their look at that time is the baseline)
+// Every edit is applied to base / source from scratch with the full saved
 // parameters, so repeated edits never compound JPEG loss.
 
 const MIME_BY_EXT = {
@@ -40,8 +40,8 @@ const findOriginal = (dir) => findIn(dir, /^original\./i);
 const findSource   = (dir) => findIn(dir, /^source\./i);
 const findBase     = (dir) => findIn(dir, /^base\./i);
 
-// Build thumb + read dimensions straight from the edited buffer, so we never re-open
-// the original by path (which is what left a lingering handle on the file).
+// Thumb + dimensions straight from the edited buffer: re-opening the original by
+// path would leave a handle on it (Windows).
 async function writeThumbAndSize(buf, thumbPath) {
     await sharp(buf)
         .resize(THUMB_SIZE, THUMB_SIZE, { fit: 'inside', withoutEnlargement: true })
@@ -81,6 +81,57 @@ function unlinkQuiet(p) {
     if (p && fs.existsSync(p)) { try { fs.unlinkSync(p); } catch { /* ignore */ } }
 }
 
+// Animated GIF / WebP: sharp can't rotate a multi-frame image, and colour work
+// needs raw pixels — so each frame goes through the same steps as a still
+// (flip → rotate → crop → colour → size) and the animation is put back together
+// with its original frame delays and loop count.
+const MAX_ANIM_BYTES = 1.2e9;   // raw RGBA of all frames, in and out
+
+async function renderAnimated(inputBuf, params, outExt) {
+    const meta = await sharp(inputBuf, { animated: true }).metadata();
+    const pages = meta.pages || 1;
+    const W = meta.width;
+    const H = meta.pageHeight || meta.height;
+    if (W * H * 4 * pages * 2 > MAX_ANIM_BYTES) throw new Error('Анимация слишком большая для редактирования');
+    const raw = await sharp(inputBuf, { animated: true }).ensureAlpha().raw().toBuffer();
+    const frameBytes = W * H * 4;
+    const clear = { r: 0, g: 0, b: 0, alpha: 0 };
+    const frames = [];
+    let OW = 0, OH = 0;
+    for (let i = 0; i < pages; i++) {
+        const frame = raw.subarray(i * frameBytes, (i + 1) * frameBytes);
+        let s1 = sharp(frame, { raw: { width: W, height: H, channels: 4 } });
+        if (params.flipH) s1 = s1.flop();
+        if (params.flipV) s1 = s1.flip();
+        const flipped = await s1.raw().toBuffer();
+        const rotated = await sharp(flipped, { raw: { width: W, height: H, channels: 4 } })
+            .rotate(params.angle, { background: clear }).raw().toBuffer({ resolveWithObject: true });
+        const RW = rotated.info.width, RH = rotated.info.height;
+        const c = params.crop;
+        const left   = clamp(Math.round(c.x * RW), 0, RW - 1);
+        const top    = clamp(Math.round(c.y * RH), 0, RH - 1);
+        const width  = clamp(Math.round(c.w * RW), 1, RW - left);
+        const height = clamp(Math.round(c.h * RH), 1, RH - top);
+        let pipe = sharp(rotated.data, { raw: { width: RW, height: RH, channels: 4 } }).extract({ left, top, width, height });
+        if (!isNeutralColor(params.color)) {
+            const { data, info } = await pipe.raw().toBuffer({ resolveWithObject: true });
+            applyColorToRaw(data, info.channels, params.color);
+            pipe = sharp(data, { raw: { width: info.width, height: info.height, channels: info.channels } });
+        }
+        if (params.output.maxSide) pipe = pipe.resize(params.output.maxSide, params.output.maxSide, { fit: 'inside', withoutEnlargement: true });
+        const out = await pipe.ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+        if (!i) { OW = out.info.width; OH = out.info.height; }
+        frames.push(out.data);
+    }
+    const strip = sharp(Buffer.concat(frames), { raw: { width: OW, height: OH * pages, channels: 4, pageHeight: OH } });
+    const timing = { delay: meta.delay || undefined, loop: meta.loop ?? 0 };
+    if (outExt === '.webp') return strip.webp({ quality: params.output.quality, ...timing }).toBuffer();
+    if (outExt === '.gif') return strip.gif({ ...timing }).toBuffer();
+    // JPEG has no animation: the first frame.
+    return sharp(frames[0], { raw: { width: OW, height: OH, channels: 4 } })
+        .flatten({ background: '#ffffff' }).jpeg({ quality: params.output.quality, mozjpeg: true }).toBuffer();
+}
+
 // The file edits start from (and makes sure the pristine backup exists).
 function prepareInput(item, dir, originalPath) {
     const ext = path.extname(originalPath).toLowerCase();
@@ -109,14 +160,11 @@ async function editImage(id, rawParams = {}) {
     const item = await Item.unscoped().findByPk(id);
     if (!item) throw new Error('Элемент не найден');
 
-    const itemDir = path.join(ITEMS_PATH, id);
+    const itemDir = path.join(itemsPath(), id);
     const originalPath = findOriginal(itemDir);
     if (!originalPath) throw new Error('original file not found');
 
     const origExt = path.extname(originalPath).toLowerCase();
-    // sharp only sees the first frame of an animated GIF, so editing would silently
-    // drop the animation — refuse it.
-    if (origExt === '.gif') throw new Error('Редактирование GIF не поддерживается');
 
     // Read into a buffer and feed sharp the buffer (not the path) — otherwise libvips
     // keeps the file open and the write-back below fails as "busy" on Windows.
@@ -126,6 +174,16 @@ async function editImage(id, rawParams = {}) {
     const outExt = params.output.format === 'jpeg' ? '.jpg'
         : params.output.format === 'webp' ? '.webp'
         : origExt;
+
+    // Several frames → frame by frame (see renderAnimated).
+    const pagesIn = (origExt === '.gif' || origExt === '.webp') ? (await sharp(inputBuf, { animated: true }).metadata()).pages || 1 : 1;
+    const outBuf = pagesIn > 1
+        ? await renderAnimated(inputBuf, params, outExt)
+        : await renderStill(inputBuf, params, outExt);
+    return finishEdit(id, item, itemDir, originalPath, origExt, outExt, outBuf, params);
+}
+
+async function renderStill(inputBuf, params, outExt) {
 
     // JPEG has no alpha, so rotation corners fill black; formats with alpha stay clear.
     const hasAlpha = outExt === '.png' || outExt === '.webp';
@@ -164,8 +222,10 @@ async function editImage(id, rawParams = {}) {
     if (outExt === '.jpg' || outExt === '.jpeg' || outExt === '.jfif') {
         pipeline = pipeline.flatten({ background: '#ffffff' });   // transparent → white, JPEG has no alpha
     }
-    const outBuf = await encodeAs(pipeline, outExt, params.output.quality).toBuffer();
+    return encodeAs(pipeline, outExt, params.output.quality).toBuffer();
+}
 
+async function finishEdit(id, item, itemDir, originalPath, origExt, outExt, outBuf, params) {
     // Thumb + dimensions from the buffer first (no path re-open of the original).
     const size = await writeThumbAndSize(outBuf, path.join(itemDir, 'thumb.jpg'));
     const newOriginal = path.join(itemDir, `original${outExt}`);
@@ -188,6 +248,7 @@ async function editImage(id, rawParams = {}) {
         editedAt,
         editParams: JSON.stringify(params),
         phash: null,   // content changed → recompute for the near-duplicate finder
+        phashMirror: null,
     }, { where: { id } });
 
     return { ok: true, width: size.width, height: size.height, editedAt, size: outBuf.length };
@@ -207,7 +268,7 @@ async function revertImage(id) {
     const item = await Item.unscoped().findByPk(id);
     if (!item) throw new Error('Элемент не найден');
 
-    const itemDir = path.join(ITEMS_PATH, id);
+    const itemDir = path.join(itemsPath(), id);
     const originalPath = findOriginal(itemDir);
     const source = findSource(itemDir);
     if (!source) throw new Error('no backup to revert to');
@@ -235,6 +296,7 @@ async function revertImage(id) {
         editedAt: null,
         editParams: null,
         phash: null,
+        phashMirror: null,
     }, { where: { id } });
 
     return { ok: true, width: size.width, height: size.height };

@@ -1,12 +1,13 @@
-import {useCallback, useEffect, useState} from "react";
-import {SOURCE_TYPES} from "@/Constants";
+import {useCallback, useEffect, useRef, useState} from "react";
 import Settings from "@data/settings";
-import {setGallery} from "@controllers/AppInitializerController";
-import {CanMoreMedia, LoadMoreMedia} from "@modules/r34/R34Controller";
+import {BOORU_TYPES, CanMoreMedia, LoadMoreMedia} from "@modules/r34/R34Controller";
 
-export function usePagination({ mainArray, currentSource, updateDisplayArray, modalFile }) {
+// `mainArray` is what the pages are cut from — for the booru sources, the results
+// minus the hidden posts, so a page is full however many of them are hidden.
+export function usePagination({ mainArray, displayArray, currentSource, updateDisplayArray, modalFile, resetKey = mainArray[0]?.uniqueId }) {
     const [currentPage, setCurrentPage] = useState(1);
     const [maxPage, setMaxPage] = useState(1);
+    const [perPage, setPerPage] = useState(Settings.MaxThumbsPerPage);
 
     const pages = Math.ceil(mainArray.length / Settings.MaxThumbsPerPage);
 
@@ -22,7 +23,7 @@ export function usePagination({ mainArray, currentSource, updateDisplayArray, mo
     }, [mainArray, currentSource, pages, updateDisplayArray]);
 
     const tryLoadR34MoreMedia = () => {
-        const isR34 = currentSource === SOURCE_TYPES.R34 || currentSource === SOURCE_TYPES.GELBOORU;
+        const isR34 = BOORU_TYPES.includes(currentSource);
         if (isR34 &&  CanMoreMedia()) LoadMoreMedia();
     }
 
@@ -47,11 +48,11 @@ export function usePagination({ mainArray, currentSource, updateDisplayArray, mo
             if (e.key === 'ArrowRight' && currentPage < pages) goToPage(currentPage + 1);
             if (e.key === 'ArrowUp') {
                 Settings.MaxThumbsPerPage = Math.min(Settings.MaxThumbsPerPage + 8, 160);
-                setGallery(mainArray);
+                setPerPage(Settings.MaxThumbsPerPage);
             }
             if (e.key === 'ArrowDown') {
                 Settings.MaxThumbsPerPage = Math.max(Settings.MaxThumbsPerPage - 8, 16);
-                setGallery(mainArray);
+                setPerPage(Settings.MaxThumbsPerPage);
             }
         };
 
@@ -66,10 +67,26 @@ export function usePagination({ mainArray, currentSource, updateDisplayArray, mo
         }
     }, [mainArray]);
 
+    // A new list (a new search, another sort) starts at page 1. `resetKey` tells one
+    // apart: hiding the first post isn't a new list.
     useEffect(() => {
         setCurrentPage(1);
         setMaxPage(1);
-    }, [mainArray[0]?.uniqueId]);
+    }, [resetKey]);
+    const lastKey = useRef(resetKey);
+
+    // The shown pages follow the list: posts that got hidden leave a gap the next ones
+    // fill, more results top up a short last page, page size changes apply.
+    useEffect(() => {
+        if (!displayArray) return;
+        // A new list: the pages are about to go back to 1 — cut that, not the old ones.
+        const fresh = lastKey.current !== resetKey;
+        lastKey.current = resetKey;
+        const from = fresh ? 1 : currentPage, to = fresh ? 1 : maxPage;
+        const next = mainArray.slice((from - 1) * perPage, to * perPage);
+        const same = next.length === displayArray.length && next.every((f, i) => f.uniqueId === displayArray[i]?.uniqueId);
+        if (!same) updateDisplayArray(next);
+    }, [mainArray, currentPage, maxPage, perPage, resetKey]);   // eslint-disable-line react-hooks/exhaustive-deps
 
     return { currentPage, maxPage, pages, goToPage, loadNextPage };
 }

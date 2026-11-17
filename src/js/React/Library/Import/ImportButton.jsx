@@ -1,19 +1,43 @@
-import React, {useEffect, useState} from 'react';
+import React, {useEffect, useRef, useState} from 'react';
 import LibraryService from '@services/LibraryService';
+import {mangaApi} from '@/Infrastructure/Ipc';
 import EagleImportProgress from './EagleImportProgress';
 import {notify} from '@services/NotificationService';
+import {ipcRenderer, isWeb, uploadFile, webUtils} from '@/Infrastructure/electron';
 
 const ImportButton = ({ collectionId, collectionName, onImported }) => {
     const [importing, setImporting] = useState(false);
     const [url, setUrl] = useState('');
     const [urlImporting, setUrlImporting] = useState(false);
     const [urlProgress, setUrlProgress] = useState(null);
-    // The secondary import paths (link/folder/json/csv) are hidden until asked for —
-    // "Добавить файлы" is the one action people reach for 95% of the time.
+    // The secondary import paths (link / folder / JSON / CSV) stay hidden until asked
+    // for: adding files is what people reach for almost every time.
     const [expanded, setExpanded] = useState(false);
+    const fileInput = useRef(null);
+    const [uploading, setUploading] = useState(null);   // { done, total } — phone uploads
+
+    // Phone / browser: files from the device go up to the PC one by one.
+    const uploadAll = async (files) => {
+        const list = [...files];
+        if (!list.length) return;
+        const all = { results: [], skipped: [], errors: [] };
+        setUploading({ done: 0, total: list.length });
+        for (let i = 0; i < list.length; i++) {
+            try {
+                const r = await uploadFile(list[i], { collectionId: collectionId ?? null });
+                all.results.push(...(r.results || []));
+                all.skipped.push(...(r.skipped || []).map(s => ({ ...s, filePath: null })));
+                all.errors.push(...(r.errors || []));
+            } catch (e) {
+                all.errors.push({ error: e.message });
+            }
+            setUploading({ done: i + 1, total: list.length });
+        }
+        setUploading(null);
+        await handleImport(all);
+    };
 
     useEffect(() => {
-        const { ipcRenderer } = window.require('electron');
         const handler = (_, p) => setUrlProgress(p);
         ipcRenderer.on('library:urlImportProgress', handler);
         return () => ipcRenderer.removeListener('library:urlImportProgress', handler);
@@ -69,6 +93,7 @@ const ImportButton = ({ collectionId, collectionName, onImported }) => {
     };
 
     const handleImportFiles = async () => {
+        if (isWeb) { fileInput.current?.click(); return; }
         const raw = await LibraryService.importDialog(collectionId);
         await handleImport(raw);
     };
@@ -124,9 +149,8 @@ const ImportButton = ({ collectionId, collectionName, onImported }) => {
             });
         }
 
-        // Duplicates aren't dropped silently anymore: ask once (per import) whether to
-        // add them anyway. Non-blocking — the unique files are already in by now, and
-        // this single toast lets the user opt the duplicates in with one click.
+        // Duplicates: one toast per import offers to add them anyway (the unique
+        // files are already in).
         const dupes = skipped.filter(s => s.reason === 'duplicate' && s.filePath);
         if (dupes.length) {
             notify({
@@ -163,8 +187,9 @@ const ImportButton = ({ collectionId, collectionName, onImported }) => {
     const handleDrop = async (e) => {
         e.preventDefault();
         e.stopPropagation();
+        if (isWeb) { await uploadAll(e.dataTransfer.files); return; }
 
-        const { webUtils } = window.require('electron');
+        
         const filePaths = [];
         const dirPaths = [];
 
@@ -188,11 +213,34 @@ const ImportButton = ({ collectionId, collectionName, onImported }) => {
 
         const allResults = { results: [], skipped: [], errors: [] };
 
+        // CBZ / ZIP archives are manga.
+        const archives = filePaths.filter(p => /\.(cbz|zip)$/i.test(p));
+        if (archives.length) {
+            const r = await mangaApi.importArchives(archives, collectionId ?? null);
+            notify({
+                message: r.items.length ? `Манга добавлена: ${r.items.length}${r.errors.length ? ` · ошибок: ${r.errors.length}` : ''}` : `Не удалось: ${r.errors[0]?.error || 'нет картинок'}`,
+                type: r.items.length ? 'success' : 'warning',
+            });
+            filePaths.splice(0, filePaths.length, ...filePaths.filter(p => !archives.includes(p)));
+            if (r.items.length) onImported?.();
+        }
+
         if (filePaths.length) {
             const r = await LibraryService.importFiles({ filePaths, collectionId });
             allResults.results.push(...(r.results || []));
             allResults.skipped.push(...(r.skipped || []));
             allResults.errors.push(...(r.errors || []));
+        }
+
+        // Shift + drop a folder = a manga made of it.
+        if (e.shiftKey && dirPaths.length) {
+            for (const dirPath of dirPaths.splice(0)) {
+                try {
+                    await mangaApi.importFolder(dirPath, { collectionId: collectionId ?? null });
+                    notify({ message: 'Манга из папки добавлена', type: 'success' });
+                } catch (err) { notify({ message: String(err.message).split(': ').pop(), type: 'warning' }); }
+            }
+            onImported?.();
         }
 
         for (const dirPath of dirPaths) {
@@ -215,10 +263,15 @@ const ImportButton = ({ collectionId, collectionName, onImported }) => {
 
             <div className="import-zone" onDrop={handleDrop} onDragOver={e => e.preventDefault()}>
                 {/* Primary path — one clear button */}
-                <button className="import-primary" onClick={handleImportFiles}>
-                    <i className="bi bi-plus-lg" />
-                    Добавить файлы
+                <button className="import-primary" onClick={handleImportFiles} disabled={!!uploading}>
+                    {uploading
+                        ? <><i aria-hidden="true" className="bi bi-arrow-repeat spin" /> Загрузка {uploading.done}/{uploading.total}</>
+                        : <><i aria-hidden="true" className="bi bi-plus-lg" /> Добавить файлы</>}
                 </button>
+                {isWeb && (
+                    <input ref={fileInput} type="file" multiple hidden accept="image/*,video/*,.cbz,.zip"
+                           onChange={e => { uploadAll(e.target.files); e.target.value = ''; }} />
+                )}
 
                 <div className="import-target">
                     {collectionName ? <>в <b>{collectionName}</b></> : 'без коллекции'}
@@ -229,8 +282,8 @@ const ImportButton = ({ collectionId, collectionName, onImported }) => {
                     className={`import-more-toggle ${expanded ? 'open' : ''}`}
                     onClick={() => setExpanded(v => !v)}
                 >
-                    <i className="bi bi-chevron-down" />
-                    Ссылка · Папка · JSON · CSV
+                    <i aria-hidden="true" className="bi bi-chevron-down" />
+                    {isWeb ? 'По ссылке' : 'Ссылка · Папка · JSON · CSV'}
                 </button>
 
                 {expanded && (
@@ -251,8 +304,8 @@ const ImportButton = ({ collectionId, collectionName, onImported }) => {
                                 title="Загрузить по ссылке"
                             >
                                 {urlImporting
-                                    ? <i className="bi bi-arrow-repeat spin" />
-                                    : <i className="bi bi-link-45deg" />}
+                                    ? <i aria-hidden="true" className="bi bi-arrow-repeat spin" />
+                                    : <i aria-hidden="true" className="bi bi-link-45deg" />}
                             </button>
                         </div>
 
@@ -277,22 +330,36 @@ const ImportButton = ({ collectionId, collectionName, onImported }) => {
                             </div>
                         )}
 
+                        {!isWeb && <>
                         <div className="import-more-actions">
                             <button className="import-ghost" onClick={handleImportDirectory}>
-                                <i className="bi bi-folder-plus" /> Папку
+                                <i aria-hidden="true" className="bi bi-folder-plus" /> Папку
                             </button>
                             <button className="import-ghost" onClick={handleImportJson} disabled={importing}>
-                                <i className="bi bi-filetype-json" /> JSON
+                                <i aria-hidden="true" className="bi bi-filetype-json" /> JSON
                             </button>
                             <button className="import-ghost" onClick={handleImportEagle} disabled={importing}>
-                                <i className="bi bi-box-arrow-in-down" /> CSV
+                                <i aria-hidden="true" className="bi bi-box-arrow-in-down" /> CSV
                             </button>
                         </div>
+                        <div className="import-more-actions">
+                            <button className="import-ghost" title="Картинки папки — страницы; подпапки — главы"
+                                    onClick={async () => { const r = await mangaApi.importFolderDialog({ collectionId: collectionId ?? null }).catch(e => { notify({ message: String(e.message).split(': ').pop(), type: 'warning' }); return null; }); if (r?.length) { notify({ message: `Манга добавлена: ${r.length}`, type: 'success' }); onImported?.(); } }}>
+                                <i aria-hidden="true" className="bi bi-book" /> Манга из папки
+                            </button>
+                            <button className="import-ghost" title="Комиксы / манга в CBZ или ZIP"
+                                    onClick={async () => { const r = await mangaApi.importArchiveDialog({ collectionId: collectionId ?? null }); if (r) { notify({ message: r.items.length ? `Манга добавлена: ${r.items.length}${r.errors.length ? ` · ошибок: ${r.errors.length}` : ''}` : `Не удалось: ${r.errors[0]?.error}`, type: r.items.length ? 'success' : 'warning' }); onImported?.(); } }}>
+                                <i aria-hidden="true" className="bi bi-file-zip" /> CBZ / ZIP
+                            </button>
+                        </div>
+                        </>}
                     </div>
                 )}
 
                 <div className="import-drop-hint">
-                    или перетащи файлы / папки
+                    {isWeb
+                        ? 'Файлы с этого устройства уйдут в библиотеку на компьютере · CBZ / ZIP — как манга'
+                        : 'или перетащи файлы / папки · CBZ — как мангу · Shift + папка — манга'}
                 </div>
             </div>
         </>

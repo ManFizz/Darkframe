@@ -1,6 +1,7 @@
 import React, {useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState} from 'react';
 import LibraryService from '@services/LibraryService';
 import {notify} from '@services/NotificationService';
+import {appUrl} from '@/Infrastructure/electron';
 import {saveEditPreset} from '@services/imageEditPreset';
 import {NEUTRAL_COLOR, DEFAULT_OUTPUT, cssFilter, colorFactors, normalizeEditParams} from '@/shared/imageAdjust';
 
@@ -91,15 +92,19 @@ const ImageEditor = ({ file, onCancel, onSaved }) => {
     const previewFilter = cssFilter(color, `#${gammaId}`);
     const gammaExp = 1 / colorFactors(color).g;
 
-    // ─── Load image + measure the stage ────────────────────────────────────────
     // Edit from the pristine source (library://source → base/source/original). Items
-    // edited the old cumulative way (no stored params) start from their current look,
-    // which the server then keeps as their baseline.
+    // edited before parameters were stored start from their current look (the server
+    // keeps it as their baseline).
     useEffect(() => {
         const legacy = !!file.editedAt && !file.editParams;
         const im = new window.Image();
+        const src = legacy ? file.getUrl() : appUrl(`library://source/${file.id}?v=${file.editedAt || 0}`);
+        // CORS is needed so the off-screen edge-analysis canvas stays readable.
+        // file:// (legacy) resources can't be cors-fetched, so leave those alone
+        // and degrade snapping gracefully instead.
+        if (!/^file:/i.test(String(src))) im.crossOrigin = 'anonymous';
         im.onload = () => setImg(im);
-        im.src = legacy ? file.getUrl() : `library://source/${file.id}?v=${file.editedAt || 0}`;
+        im.src = src;
     }, [file]);
 
     useLayoutEffect(() => {
@@ -136,7 +141,6 @@ const ImageEditor = ({ file, onCancel, onSaved }) => {
         return { bf, drawScale, boxW, boxH, origin };
     }, [layout, stageSize, zoom, offset]);
 
-    // ─── Draw the canvas (viewport-sized; whole image drawn, clipped) ───────────
     useLayoutEffect(() => {
         if (!img || !layout || !view || !canvasRef.current) return;
         const canvas = canvasRef.current;
@@ -180,70 +184,81 @@ const ImageEditor = ({ file, onCancel, onSaved }) => {
         }
     }, [img, layout, view, flipH, flipV, gridOn, stageSize, previewFilter, gammaExp]);
 
-    // ─── Edge analysis for magnetic snapping ───────────────────────────────────
     // Uses the discrete (90°) orientation only — the straighten slider is ignored so
     // we don't rebuild the edge map on every tick; small angles snap close enough.
     useEffect(() => {
         if (!img || !snapOn) { colEdgeRef.current = null; rowEdgeRef.current = null; return; }
-        const quarter = ((rot90 % 4) + 4) % 4;
-        const rad = quarter * Math.PI / 2;
-        const swap = quarter % 2 === 1;
-        const RW = swap ? img.naturalHeight : img.naturalWidth;
-        const RH = swap ? img.naturalWidth : img.naturalHeight;
+        // Keep a tainted canvas (cross-origin / file:// source) from crashing the app:
+        // snapping degrades to no-op if the pixels can't be read.
+        try {
+            const quarter = ((rot90 % 4) + 4) % 4;
+            const rad = quarter * Math.PI / 2;
+            const swap = quarter % 2 === 1;
+            const RW = swap ? img.naturalHeight : img.naturalWidth;
+            const RH = swap ? img.naturalWidth : img.naturalHeight;
 
-        const maxSide = 1400;
-        const aScale = Math.min(maxSide / RW, maxSide / RH, 1);
-        const aw = Math.max(2, Math.round(RW * aScale));
-        const ah = Math.max(2, Math.round(RH * aScale));
+            const maxSide = 1400;
+            const aScale = Math.min(maxSide / RW, maxSide / RH, 1);
+            const aw = Math.max(2, Math.round(RW * aScale));
+            const ah = Math.max(2, Math.round(RH * aScale));
 
-        const oc = document.createElement('canvas');
-        oc.width = aw; oc.height = ah;
-        const octx = oc.getContext('2d', { willReadFrequently: true });
-        octx.fillStyle = '#000';
-        octx.fillRect(0, 0, aw, ah);
-        octx.save();
-        octx.translate(aw / 2, ah / 2);
-        octx.rotate(rad);
-        octx.scale(flipH ? -1 : 1, flipV ? -1 : 1);
-        const dw = img.naturalWidth * aScale, dh = img.naturalHeight * aScale;
-        octx.drawImage(img, -dw / 2, -dh / 2, dw, dh);
-        octx.restore();
+            const oc = document.createElement('canvas');
+            oc.width = aw; oc.height = ah;
+            const octx = oc.getContext('2d', { willReadFrequently: true });
+            octx.fillStyle = '#000';
+            octx.fillRect(0, 0, aw, ah);
+            octx.save();
+            octx.translate(aw / 2, ah / 2);
+            octx.rotate(rad);
+            octx.scale(flipH ? -1 : 1, flipV ? -1 : 1);
+            const dw = img.naturalWidth * aScale, dh = img.naturalHeight * aScale;
+            octx.drawImage(img, -dw / 2, -dh / 2, dw, dh);
+            octx.restore();
 
-        const data = octx.getImageData(0, 0, aw, ah).data;
-        const gray = new Float32Array(aw * ah);
-        for (let i = 0, p = 0; i < gray.length; i++, p += 4) {
-            gray[i] = 0.299 * data[p] + 0.587 * data[p + 1] + 0.114 * data[p + 2];
+            const data = octx.getImageData(0, 0, aw, ah).data;
+            const gray = new Float32Array(aw * ah);
+            for (let i = 0, p = 0; i < gray.length; i++, p += 4) {
+                gray[i] = 0.299 * data[p] + 0.587 * data[p + 1] + 0.114 * data[p + 2];
+            }
+            // Average gradient per column / row → favours long, straight boundaries.
+            const colEdge = new Float32Array(aw), rowEdge = new Float32Array(ah);
+            for (let x = 1; x < aw - 1; x++) {
+                let s = 0;
+                for (let y = 0; y < ah; y++) s += Math.abs(gray[y * aw + x + 1] - gray[y * aw + x - 1]);
+                colEdge[x] = s / ah;
+            }
+            for (let y = 1; y < ah - 1; y++) {
+                let s = 0;
+                for (let x = 0; x < aw; x++) s += Math.abs(gray[(y + 1) * aw + x] - gray[(y - 1) * aw + x]);
+                rowEdge[y] = s / aw;
+            }
+            colEdgeRef.current = colEdge;
+            rowEdgeRef.current = rowEdge;
+            // fine is intentionally excluded (perf) — analysis uses the last discrete geometry.
+        } catch (e) {
+            colEdgeRef.current = null;
+            rowEdgeRef.current = null;
+            if (e && /cross-origin|tainted|SecurityError/i.test(String(e.message || e))) {
+                // Expected with a cross-origin source: snapping stays off.
+            } else {
+                console.warn('[ImageEditor] edge analysis failed:', e?.message || e);
+            }
         }
-        // Average gradient per column / row → favours long, straight boundaries.
-        const colEdge = new Float32Array(aw), rowEdge = new Float32Array(ah);
-        for (let x = 1; x < aw - 1; x++) {
-            let s = 0;
-            for (let y = 0; y < ah; y++) s += Math.abs(gray[y * aw + x + 1] - gray[y * aw + x - 1]);
-            colEdge[x] = s / ah;
-        }
-        for (let y = 1; y < ah - 1; y++) {
-            let s = 0;
-            for (let x = 0; x < aw; x++) s += Math.abs(gray[(y + 1) * aw + x] - gray[(y - 1) * aw + x]);
-            rowEdge[y] = s / aw;
-        }
-        colEdgeRef.current = colEdge;
-        rowEdgeRef.current = rowEdge;
-        // fine is intentionally excluded (perf) — analysis uses the last discrete geometry.
     }, [img, snapOn, layout, rot90, flipH, flipV]);   // eslint-disable-line
 
-    const snapFrac = (frac, edgeArr) => {
+    const snapFrac = (frac, edgeArr, radius = SNAP_RADIUS) => {
         if (!edgeArr) return frac;
         const N = edgeArr.length;
+        const r = clamp(Math.round(Number(radius) || SNAP_RADIUS), 1, SNAP_RADIUS);
         let idx = clamp(Math.round(frac * (N - 1)), 0, N - 1);
         let best = idx, bestV = edgeArr[idx];
-        for (let d = 1; d <= SNAP_RADIUS; d++) {
+        for (let d = 1; d <= r; d++) {
             if (idx - d >= 0 && edgeArr[idx - d] > bestV) { bestV = edgeArr[idx - d]; best = idx - d; }
             if (idx + d < N  && edgeArr[idx + d] > bestV) { bestV = edgeArr[idx + d]; best = idx + d; }
         }
         return bestV >= SNAP_THRESHOLD ? best / (N - 1) : frac;
     };
 
-    // ─── Loupe: follow the cursor over the stage ───────────────────────────────
     useEffect(() => {
         if (!loupeOn) { setLoupePos(null); return; }
         const onMove = (e) => {
@@ -322,7 +337,6 @@ const ImageEditor = ({ file, onCancel, onSaved }) => {
         ctx.stroke();
     }, [loupePos, view, img, layout, crop, flipH, flipV, previewFilter, gammaExp]);
 
-    // ─── Aspect / rotate / flip ────────────────────────────────────────────────
     const axisSwapped = (((rot90 % 2) + 2) % 2) === 1;
     const rotateLeft  = () => { setCrop(rotateCropCCW); setRot90(r => r - 1); setAspect(null); setZoom(1); setOffset({ x: 0, y: 0 }); };
     const rotateRight = () => { setCrop(rotateCropCW);  setRot90(r => r + 1); setAspect(null); setZoom(1); setOffset({ x: 0, y: 0 }); };
@@ -331,13 +345,12 @@ const ImageEditor = ({ file, onCancel, onSaved }) => {
 
     const applyAspect = useCallback((ratio) => {
         setAspect(ratio);
-        if (!ratio || !view) return;                    // "Свободно": keep current selection
+        if (!ratio || !view) return;                    // free aspect: keep the current selection
         let wf = 1, hf = (view.boxW / ratio) / view.boxH;
         if (hf > 1) { hf = 1; wf = (view.boxH * ratio) / view.boxW; }
         setCrop({ x: (1 - wf) / 2, y: (1 - hf) / 2, w: wf, h: hf });
     }, [view]);
 
-    // ─── Crop drag / resize ─────────────────────────────────────────────────────
     const onPointerMove = useCallback((e) => {
         const d = dragRef.current;
         if (!d) return;
@@ -357,11 +370,14 @@ const ImageEditor = ({ file, onCancel, onSaved }) => {
         if (d.mode.includes('s')) b = clamp(b + dfy, t + MIN, 1);
 
         // Magnetic snap to strong edges (only on the moved sides, only when free-form).
+        // The search radius shrinks as the user zooms in, so coarse cropping is easy
+        // at 1x while precise crops stay precise at high zoom.
         if (d.snap && !d.aspect) {
-            if (d.mode.includes('w')) l = clamp(snapFrac(l, colEdgeRef.current), 0, r - MIN);
-            if (d.mode.includes('e')) r = clamp(snapFrac(r, colEdgeRef.current), l + MIN, 1);
-            if (d.mode.includes('n')) t = clamp(snapFrac(t, rowEdgeRef.current), 0, b - MIN);
-            if (d.mode.includes('s')) b = clamp(snapFrac(b, rowEdgeRef.current), t + MIN, 1);
+            const rad = d.snapRadius || SNAP_RADIUS;
+            if (d.mode.includes('w')) l = clamp(snapFrac(l, colEdgeRef.current, rad), 0, r - MIN);
+            if (d.mode.includes('e')) r = clamp(snapFrac(r, colEdgeRef.current, rad), l + MIN, 1);
+            if (d.mode.includes('n')) t = clamp(snapFrac(t, rowEdgeRef.current, rad), 0, b - MIN);
+            if (d.mode.includes('s')) b = clamp(snapFrac(b, rowEdgeRef.current, rad), t + MIN, 1);
         }
 
         let nx = l, ny = t, nw = r - l, nh = b - t;
@@ -381,17 +397,18 @@ const ImageEditor = ({ file, onCancel, onSaved }) => {
         dragRef.current = null;
         window.removeEventListener('pointermove', onPointerMove);
         window.removeEventListener('pointerup', onPointerUp);
+        window.removeEventListener('pointercancel', onPointerUp);
     }, [onPointerMove]);
 
     const startCropDrag = useCallback((e, mode) => {
         e.preventDefault();
         e.stopPropagation();
-        dragRef.current = { mode, sx: e.clientX, sy: e.clientY, crop, aspect, snap: snapOn, boxW: view.boxW, boxH: view.boxH };
+        dragRef.current = { mode, sx: e.clientX, sy: e.clientY, crop, aspect, snap: snapOn, snapRadius: Math.max(1, Math.round(SNAP_RADIUS / Math.max(1, zoom))), boxW: view.boxW, boxH: view.boxH };
         window.addEventListener('pointermove', onPointerMove);
         window.addEventListener('pointerup', onPointerUp);
+        window.addEventListener('pointercancel', onPointerUp);   // a touch the system took over
     }, [crop, aspect, snapOn, view, onPointerMove, onPointerUp]);
 
-    // ─── Pan (drag background) + zoom (wheel) ───────────────────────────────────
     const onPanMove = useCallback((e) => {
         const p = panRef.current;
         if (!p) return;
@@ -435,7 +452,6 @@ const ImageEditor = ({ file, onCancel, onSaved }) => {
         return () => el.removeEventListener('wheel', onWheel);
     }, [onWheel]);
 
-    // ─── Cleanup + Escape ──────────────────────────────────────────────────────
     useEffect(() => () => {
         window.removeEventListener('pointermove', onPointerMove);
         window.removeEventListener('pointerup', onPointerUp);
@@ -449,7 +465,6 @@ const ImageEditor = ({ file, onCancel, onSaved }) => {
         return () => document.removeEventListener('keydown', onKey);
     }, [onCancel]);
 
-    // ─── Save / revert ─────────────────────────────────────────────────────────
     const handleSave = async () => {
         setSaving(true);
         try {
@@ -543,7 +558,7 @@ const ImageEditor = ({ file, onCancel, onSaved }) => {
                     <div className="img-editor-zoom-badge">
                         {Math.round(zoom * 100)}%
                         <button className="ie-zoom-reset" title="Сбросить масштаб" onClick={resetZoom}>
-                            <i className="bi bi-arrows-angle-contract" />
+                            <i aria-hidden="true" className="bi bi-arrows-angle-contract" />
                         </button>
                     </div>
                 )}
@@ -551,7 +566,7 @@ const ImageEditor = ({ file, onCancel, onSaved }) => {
                 {panel === 'color' && (
                     <div className="ie-panel" onPointerDown={e => e.stopPropagation()}>
                         <div className="ie-panel-head">
-                            <span><i className="bi bi-palette" /> Цвет</span>
+                            <span><i aria-hidden="true" className="bi bi-palette" /> Цвет</span>
                             {colorTouched && (
                                 <button className="ie-panel-link" onClick={() => setColor(NEUTRAL_COLOR)}>Сбросить</button>
                             )}
@@ -574,7 +589,7 @@ const ImageEditor = ({ file, onCancel, onSaved }) => {
                 {panel === 'export' && (
                     <div className="ie-panel" onPointerDown={e => e.stopPropagation()}>
                         <div className="ie-panel-head">
-                            <span><i className="bi bi-file-earmark-zip" /> Экспорт и сжатие</span>
+                            <span><i aria-hidden="true" className="bi bi-file-earmark-zip" /> Экспорт и сжатие</span>
                             {exportTouched && (
                                 <button className="ie-panel-link" onClick={() => setOutput(DEFAULT_OUTPUT)}>Сбросить</button>
                             )}
@@ -627,10 +642,10 @@ const ImageEditor = ({ file, onCancel, onSaved }) => {
 
             <div className="img-editor-toolbar">
                 <div className="img-editor-group">
-                    <button className="ie-btn" title="Повернуть влево" onClick={rotateLeft}><i className="bi bi-arrow-counterclockwise" /></button>
-                    <button className="ie-btn" title="Повернуть вправо" onClick={rotateRight}><i className="bi bi-arrow-clockwise" /></button>
-                    <button className={`ie-btn ${flipH ? 'on' : ''}`} title="Отразить по горизонтали" onClick={doFlipH}><i className="bi bi-symmetry-vertical" /></button>
-                    <button className={`ie-btn ${flipV ? 'on' : ''}`} title="Отразить по вертикали" onClick={doFlipV}><i className="bi bi-symmetry-horizontal" /></button>
+                    <button className="ie-btn" title="Повернуть влево" onClick={rotateLeft}><i aria-hidden="true" className="bi bi-arrow-counterclockwise" /></button>
+                    <button className="ie-btn" title="Повернуть вправо" onClick={rotateRight}><i aria-hidden="true" className="bi bi-arrow-clockwise" /></button>
+                    <button className={`ie-btn ${flipH ? 'on' : ''}`} title="Отразить по горизонтали" onClick={doFlipH}><i aria-hidden="true" className="bi bi-symmetry-vertical" /></button>
+                    <button className={`ie-btn ${flipV ? 'on' : ''}`} title="Отразить по вертикали" onClick={doFlipV}><i aria-hidden="true" className="bi bi-symmetry-horizontal" /></button>
                 </div>
 
                 <label className="img-editor-straighten" title="Выровнять горизонт">
@@ -649,13 +664,13 @@ const ImageEditor = ({ file, onCancel, onSaved }) => {
                 {/* Toggles */}
                 <div className="img-editor-group">
                     <button className={`ie-btn ${gridOn ? 'on' : ''}`} title="Пиксельная сетка (зум колесом)" onClick={() => setGridOn(v => !v)}>
-                        <i className="bi bi-grid-3x3" />
+                        <i aria-hidden="true" className="bi bi-grid-3x3" />
                     </button>
                     <button className={`ie-btn ${snapOn ? 'on' : ''}`} title="Привязка к краям" onClick={() => setSnapOn(v => !v)}>
-                        <i className="bi bi-magnet" />
+                        <i aria-hidden="true" className="bi bi-magnet" />
                     </button>
                     <button className={`ie-btn ${loupeOn ? 'on' : ''}`} title="Лупа (пиксели под курсором)" onClick={() => setLoupeOn(v => !v)}>
-                        <i className="bi bi-search" />
+                        <i aria-hidden="true" className="bi bi-search" />
                     </button>
                 </div>
 
@@ -666,26 +681,26 @@ const ImageEditor = ({ file, onCancel, onSaved }) => {
                         title="Цвет: яркость, контраст, насыщенность, гамма"
                         onClick={() => setPanel(p => (p === 'color' ? null : 'color'))}
                     >
-                        <i className="bi bi-palette" />
+                        <i aria-hidden="true" className="bi bi-palette" />
                     </button>
                     <button
                         className={`ie-btn ${panel === 'export' ? 'on' : ''} ${exportTouched ? 'dot' : ''}`}
                         title="Экспорт и сжатие: формат, качество, размер"
                         onClick={() => setPanel(p => (p === 'export' ? null : 'export'))}
                     >
-                        <i className="bi bi-file-earmark-zip" />
+                        <i aria-hidden="true" className="bi bi-file-earmark-zip" />
                     </button>
                 </div>
 
                 <div className="img-editor-actions">
                     {file.editedAt && (
                         <button className="ie-btn-text ie-revert" onClick={handleRevert} disabled={saving}>
-                            <i className="bi bi-arrow-90deg-left me-1" />Оригинал
+                            <i aria-hidden="true" className="bi bi-arrow-90deg-left me-1" />Оригинал
                         </button>
                     )}
                     <button className="ie-btn-text" onClick={onCancel} disabled={saving}>Отмена</button>
                     <button className="ie-btn-text ie-save" onClick={handleSave} disabled={saving || !img}>
-                        {saving ? <i className="bi bi-arrow-repeat spin" /> : <><i className="bi bi-check-lg me-1" />Сохранить</>}
+                        {saving ? <i aria-hidden="true" className="bi bi-arrow-repeat spin" /> : <><i aria-hidden="true" className="bi bi-check-lg me-1" />Сохранить</>}
                     </button>
                 </div>
             </div>

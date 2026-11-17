@@ -1,14 +1,15 @@
 import React, {useEffect, useRef, useState} from 'react';
-import {SORT_FIELDS, SORT_ORDER, RATING_MIN, RATING_MAX} from '@hooks/library/useLibraryFilter'
+import {RATING_MIN, RATING_MAX} from '@hooks/library/useLibraryFilter'
 import {libraryApi} from '@/Infrastructure/Ipc';
 import LibraryService from '@services/LibraryService';
 import {notify} from '@services/NotificationService';
 import NotificationBell from "@react/Helpers/NotificationBell";
+import SortMenu from './SortMenu';
 import {normalizeFilter, advancedCount, isFilterActive, toSmartFilter} from '@/shared/filterPredicate';
 import AdvancedFilterFields, {ADVANCED_RESET} from './Filters/AdvancedFilterFields';
 import {useTagPrefs} from '@services/tagPrefs';
+import {runVisualSearch} from '@services/visualSearch';
 
-// ─── Tag filter input with live suggestions ───────────────────────────────────
 // Reuses the same libraryApi.searchTags source the metadata TagEditor uses, so
 // the navbar filter offers the very tags that actually exist in the library.
 export const TagFilterInput = ({ filters, addTag, removeTag, toggleTagExclude }) => {
@@ -75,9 +76,9 @@ export const TagFilterInput = ({ filters, addTag, removeTag, toggleTagExclude })
                         title={exclude ? 'Исключение · клик, чтобы включить' : 'Включение · клик, чтобы исключить'}
                         onClick={() => toggleTagExclude(name)}
                     >
-                        {exclude && <i className="bi bi-slash-circle" />}
+                        {exclude && <i aria-hidden="true" className="bi bi-slash-circle" />}
                         <span className={exclude ? 'struck' : ''}>{name}</span>
-                        <i
+                        <i aria-hidden="true"
                             className="bi bi-x"
                             onClick={e => { e.stopPropagation(); removeTag(name); }}
                         />
@@ -110,10 +111,33 @@ export const TagFilterInput = ({ filters, addTag, removeTag, toggleTagExclude })
                         >
                             {t.type != null && <span className={`tag-dot tag-type-${t.type}`} />}
                             <span>{t.name}</span>
-                            {t.pinned && <i className="bi bi-pin-angle-fill tag-pin-mark" />}
+                            {t.pinned && <i aria-hidden="true" className="bi bi-pin-angle-fill tag-pin-mark" />}
                         </div>
                     ))}
                 </div>
+            )}
+        </div>
+    );
+};
+
+// Search by picture: from the clipboard or a file on disk.
+const VisualSearchButton = () => {
+    const [open, setOpen] = useState(false);
+    const go = (q) => { setOpen(false); runVisualSearch(q); };
+    return (
+        <div className="nav-vsearch">
+            <button className={`nav-vsearch-btn ${open ? 'on' : ''}`} onClick={() => setOpen(v => !v)} title="Поиск по картинке">
+                <i aria-hidden="true" className="bi bi-image" />
+            </button>
+            {open && (
+                <>
+                    <div className="bulk-move-backdrop" onMouseDown={() => setOpen(false)} />
+                    <div className="nav-vsearch-menu">
+                        <button onClick={() => go({ clipboard: true })}><i aria-hidden="true" className="bi bi-clipboard-image" /> Из буфера обмена</button>
+                        <button onClick={() => go({ pick: true })}><i aria-hidden="true" className="bi bi-folder2-open" /> Из файла…</button>
+                        <div className="nav-vsearch-hint">Или в просмотрщике: «Искать похожие во всей библиотеке»</div>
+                    </div>
+                </>
             )}
         </div>
     );
@@ -139,7 +163,7 @@ export const LibraryNavControls = ({ ctx }) => {
         <div className="library-nav-controls">
             {/* Search — glass pill with an inline clear */}
             <div className="nav-search">
-                <i className="bi bi-search nav-search-icon" />
+                <i aria-hidden="true" className="bi bi-search nav-search-icon" />
                 <input
                     className="nav-search-input"
                     placeholder="Поиск…"
@@ -148,7 +172,7 @@ export const LibraryNavControls = ({ ctx }) => {
                 />
                 {filters.search && (
                     <button className="nav-search-clear" title="Очистить поиск" onClick={() => update('search', '')}>
-                        <i className="bi bi-x" />
+                        <i aria-hidden="true" className="bi bi-x" />
                     </button>
                 )}
             </div>
@@ -159,6 +183,8 @@ export const LibraryNavControls = ({ ctx }) => {
                 removeTag={removeTag}
                 toggleTagExclude={toggleTagExclude}
             />
+
+            <VisualSearchButton />
 
             {/* Save the current filter as a smart collection */}
             {hasFilters && (savingSmart ? (
@@ -173,14 +199,14 @@ export const LibraryNavControls = ({ ctx }) => {
                 />
             ) : (
                 <button className="nav-reset" title="Сохранить фильтр как умную коллекцию" onClick={() => setSavingSmart(true)}>
-                    <i className="bi bi-funnel-fill" />
+                    <i aria-hidden="true" className="bi bi-funnel-fill" />
                 </button>
             ))}
 
             {/* Reset-all sits right next to the filters it clears */}
             {hasFilters && (
                 <button className="nav-reset" title="Сбросить фильтры" onClick={reset}>
-                    <i className="bi bi-x-circle" />
+                    <i aria-hidden="true" className="bi bi-x-circle" />
                 </button>
             )}
 
@@ -191,7 +217,6 @@ export const LibraryNavControls = ({ ctx }) => {
     );
 };
 
-// ─── Rating range filter ──────────────────────────────────────────────────────
 const ratingLabel = (min, max) => {
     if (min <= RATING_MIN && max >= RATING_MAX) return 'Рейтинг';
     if (min === 0 && max === 0)                 return 'Без оценки';
@@ -222,7 +247,7 @@ const RatingFilter = ({ filters, update }) => {
         <div className="rating-filter" ref={ref}>
             <button className={`btn btn-outline-secondary ${active ? 'rating-filter-active' : ''}`}
                     onClick={() => setOpen(v => !v)}>
-                {ratingLabel(min, max)}
+                {active ? ratingLabel(min, max) : <><i aria-hidden="true" className="bi bi-star rf-icon" /><span className="rf-text">Рейтинг</span></>}
             </button>
 
             {open && (
@@ -260,7 +285,6 @@ const RatingFilter = ({ filters, update }) => {
     );
 };
 
-// ─── Advanced conditions popover (type, size, resolution, dates, …) ─────────
 const AdvancedFilter = ({ filters, patch }) => {
     const [open, setOpen] = useState(false);
     const ref = useRef(null);
@@ -279,7 +303,7 @@ const AdvancedFilter = ({ filters, patch }) => {
                 title="Дополнительные условия: тип, размер, разрешение, дата…"
                 onClick={() => setOpen(v => !v)}
             >
-                <i className="bi bi-sliders2" />
+                <i aria-hidden="true" className="bi bi-sliders2" />
                 {count > 0 && <span className="adv-filter-badge">{count}</span>}
             </button>
 
@@ -300,7 +324,7 @@ const AdvancedFilter = ({ filters, patch }) => {
     );
 };
 
-// Сортировка в navbar для library
+// The library's filter / order controls on the right of the top bar.
 export const LibraryNavSort = ({ ctx }) => {
     const { filters, update, patch } = ctx;
 
@@ -309,46 +333,8 @@ export const LibraryNavSort = ({ ctx }) => {
             <AdvancedFilter filters={filters} patch={patch} />
             <RatingFilter filters={filters} update={update} />
 
-            {/* Сортировка */}
-            <div className="btn-group dropdown">
-                <button className="btn btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">
-                    {
-                        {
-                            [SORT_FIELDS.ORDER]:       'Порядок',
-                            [SORT_FIELDS.IMPORTED_AT]: 'Дата',
-                            [SORT_FIELDS.TITLE]:       'Название',
-                            [SORT_FIELDS.RATING]:      'Рейтинг',
-                            [SORT_FIELDS.SIZE]:        'Размер',
-                        }[filters.sortBy]
-                    }
-                </button>
-                <ul className="dropdown-menu dropdown-menu-end">
-                    {[
-                        [SORT_FIELDS.ORDER,       'Порядок'],
-                        [SORT_FIELDS.IMPORTED_AT, 'Дата добавления'],
-                        [SORT_FIELDS.TITLE,       'Название'],
-                        [SORT_FIELDS.RATING,      'Рейтинг'],
-                        [SORT_FIELDS.SIZE,        'Размер'],
-                    ].map(([value, label]) => (
-                        <li key={value}>
-                            <button
-                                className={`dropdown-item ${filters.sortBy === value ? 'active' : ''}`}
-                                onClick={() => update('sortBy', value)}
-                            >
-                                {label}
-                            </button>
-                        </li>
-                    ))}
-                </ul>
-            </div>
-
-            {/* Порядок */}
-            <button
-                className="btn btn-outline-secondary"
-                onClick={() => update('order', filters.order === SORT_ORDER.DESC ? SORT_ORDER.ASC : SORT_ORDER.DESC)}
-            >
-                <i className={`bi bi-sort-${filters.order === SORT_ORDER.DESC ? 'down' : 'up'}`} />
-            </button>
+            {/* Order: what by, which way, random, groups */}
+            <SortMenu filters={filters} patch={patch} items={ctx.items} />
 
             <NotificationBell />
         </div>

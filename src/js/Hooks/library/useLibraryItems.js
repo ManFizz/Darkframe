@@ -27,13 +27,16 @@ export function useLibraryItems(collectionId, trash = false, smartFilterJson = n
                 order:  1000000,
                 _meta: {
                     itemCount: col.itemCount,
+                    childCount: col.childCount || 0,
+                    previews: col.previews || [],
                     isCollection: true,
                     collectionId: col.id,
                 },
             })
         );
 
-        const thumbFiles = (raw.items || []).map(item => new ThumbFile({
+        const ranked = smartFilterJson && smartFilterJson.startsWith('{"ids"');
+        const thumbFiles = (raw.items || []).map((item, rank) => new ThumbFile({
             id:         item.id,
             title:      item.title || item.fileName,
             thumbUrl:   item.thumbPath,
@@ -43,7 +46,7 @@ export function useLibraryItems(collectionId, trash = false, smartFilterJson = n
             width:      item.width,
             height:     item.height,
             time:       item.importedAt,
-            order:      item.order,
+            order:      ranked ? rank : item.order,   // search results: closest first
             rating:     item.rating,
             notes:      item.notes,
             type:       item.mimeType.startsWith('video/') ? FILE_TYPES.VIDEO : FILE_TYPES.IMAGE,
@@ -57,6 +60,15 @@ export function useLibraryItems(collectionId, trash = false, smartFilterJson = n
             mimeType:   item.mimeType,
             remoteType: SOURCE_TYPES.LIBRARY,
             collectionId: item.collectionId,
+            pageCount:  item.pageCount,
+            duration:   item.duration,
+            viewCount:  item.viewCount,
+            lastViewedAt: item.lastViewedAt,
+            readPosition: item.readPosition,
+            readFinished: item.readFinished,
+            readTotal:  item.readTotal,
+            mangaNew:   item.mangaNew,
+            mangaRemote: item.mangaRemote,
         }));
 
         setItems([...collectionThumbs, ...thumbFiles]);

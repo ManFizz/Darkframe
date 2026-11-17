@@ -21,7 +21,7 @@ const NotificationBell = () => {
         });
     }, [isOpen]);
 
-    // Закрываем при клике вне
+    // Closes on a click outside.
     useEffect(() => {
         const handler = (e) => {
             if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
@@ -54,7 +54,7 @@ const NotificationBell = () => {
                 onClick={open}
                 title="Уведомления"
             >
-                <i className="bi bi-bell" />
+                <i aria-hidden="true" className="bi bi-bell" />
                 {unread > 0 && (
                     <span className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
                         {unread > 99 ? '99+' : unread}
@@ -76,13 +76,13 @@ const NotificationBell = () => {
                     <div className="notification-dropdown-list">
                         {history.length === 0 ? (
                             <div className="notification-dropdown-empty">
-                                <i className="bi bi-bell-slash" />
+                                <i aria-hidden="true" className="bi bi-bell-slash" />
                                 <span>Нет уведомлений</span>
                             </div>
                         ) : (
                             [...history].reverse().map(n => (
                                 <div key={n.id} className={`notification-dropdown-item notification-${n.type}`}>
-                                    <i className={`bi ${TYPE_ICON[n.type] || TYPE_ICON.info}`} />
+                                    <i aria-hidden="true" className={`bi ${TYPE_ICON[n.type] || TYPE_ICON.info}`} />
                                     <div className="notification-dropdown-content">
                                         <span className="notification-dropdown-message">{n.message}</span>
                                         <span className="notification-dropdown-time">
@@ -93,7 +93,7 @@ const NotificationBell = () => {
                                         className="notification-dropdown-remove"
                                         onClick={() => remove(n.id)}
                                     >
-                                        <i className="bi bi-x" />
+                                        <i aria-hidden="true" className="bi bi-x" />
                                     </button>
                                 </div>
                             ))

@@ -2,6 +2,7 @@ import React, {useCallback, useEffect, useMemo, useState} from 'react';
 import {CanMoreMedia, LoadMoreMedia} from "@modules/r34/R34Controller";
 import {FILE_TYPES} from "@/Constants";
 import {useFavorites} from "@hooks/useFavorites";
+import {useMobile} from "@services/mobile";
 
 const DIRECTION = {
     LEFT: -1,
@@ -17,10 +18,13 @@ const isCanDisplayedByIdx = (mainArray, nextIdx) => {
 };
 
 // hidden — visually hidden (slideshow running) but still mounted, so Escape / arrows work
-const Navigation = ({ file, modalUpdater, mainArray, setDegree, panelOpen, onPanelToggle, onEdit, onApplyLast, onDuplicate, onSlideshow, showFav, hidden = false }) => {
+const Navigation = ({ uiTheme = 'dark', file, modalUpdater, mainArray, setDegree, panelOpen, onPanelToggle, stripOpen = false, onStripToggle = null, onEdit, onApplyLast, onDuplicate, onSlideshow, showFav, hidden = false }) => {
     const { isFav, isPending, toggleFav } = useFavorites();
     const [editingCounter, setEditingCounter] = useState(false);
     const [counterInput, setCounterInput] = useState('');
+    const mobile = useMobile();
+    const [moreOpen, setMoreOpen] = useState(false);
+    useEffect(() => { setMoreOpen(false); }, [file?.uniqueId]);
 
     const currentIndex = useMemo(() => {
         return mainArray.findIndex(f =>
@@ -73,6 +77,13 @@ const Navigation = ({ file, modalUpdater, mainArray, setDegree, panelOpen, onPan
         toggleFav(file);
     }, [file]);
 
+    // A swipe in the viewer asks for the same step the arrow keys take.
+    useEffect(() => {
+        const onShift = (e) => openShift(e.detail);
+        document.addEventListener('df:modalShift', onShift);
+        return () => document.removeEventListener('df:modalShift', onShift);
+    }, [openShift]);
+
     useEffect(() => {
         const handleKeyDown = (e) => {
             if (e.ctrlKey) return;
@@ -114,9 +125,26 @@ const Navigation = ({ file, modalUpdater, mainArray, setDegree, panelOpen, onPan
     const canGoLeft  = isCanDisplayedByIdx(mainArray, currentIndex - 1);
     const canGoRight = isCanDisplayedByIdx(mainArray, currentIndex + 1);
 
+    // Secondary actions: icons in the bar on a desktop, a "more" menu on a phone.
+    const extras = [
+        { icon: 'bi-arrow-clockwise', label: 'Повернуть на 90°', title: 'Повернуть на 90°', onClick: () => setDegree(d => (d + 90) % 360) },
+        onEdit && { icon: 'bi-crop', label: 'Редактировать', title: 'Редактировать (поворот / обрезка)', onClick: onEdit },
+        onApplyLast && { icon: 'bi-magic', label: 'Применить последнюю правку', title: 'Применить последнюю правку (поворот / обрезку)', onClick: onApplyLast },
+        onDuplicate && { icon: 'bi-copy', label: 'Дублировать', title: 'Дублировать (полная копия)', onClick: onDuplicate },
+        onSlideshow && { icon: 'bi-play-btn', label: 'Слайдшоу', title: 'Слайдшоу (S)', onClick: onSlideshow },
+        onStripToggle && { icon: 'bi-film', label: stripOpen ? 'Спрятать ленту' : 'Показать ленту', title: stripOpen ? 'Спрятать ленту миниатюр (T)' : 'Показать ленту миниатюр (T)', onClick: onStripToggle, active: stripOpen },
+    ].filter(Boolean);
+    const panelButton = onPanelToggle && (
+        <i
+            className={`bi bi-layout-sidebar-reverse modal-nav-panel-btn ${panelOpen ? 'active' : ''}`}
+            onClick={onPanelToggle}
+            title={panelOpen ? 'Скрыть панель' : 'Показать панель'}
+        />
+    );
+
     return (
         <div className={`modal-nav-container ${hidden ? 'nav-hidden' : ''}`}>
-            <div className="modal-nav-row">
+            <div className="modal-nav-row" data-bs-theme={uiTheme}>
                 <i
                     className="bi bi-arrow-left-square btn-cancel"
                     title="Закрыть"
@@ -131,47 +159,32 @@ const Navigation = ({ file, modalUpdater, mainArray, setDegree, panelOpen, onPan
                             onClick={handleToggleFav}
                         />
                 )}
-                <i
-                    className="bi bi-arrow-clockwise"
-                    title="Повернуть на 90°"
-                    onClick={() => setDegree(d => (d + 90) % 360)}
-                />
-                {onEdit && (
-                    <i
-                        className="bi bi-crop"
-                        title="Редактировать (поворот / обрезка)"
-                        onClick={onEdit}
-                    />
-                )}
-                {onApplyLast && (
-                    <i
-                        className="bi bi-magic"
-                        title="Применить последнюю правку (поворот / обрезку)"
-                        onClick={onApplyLast}
-                    />
-                )}
-                {onDuplicate && (
-                    <i
-                        className="bi bi-copy"
-                        title="Дублировать (полная копия)"
-                        onClick={onDuplicate}
-                    />
-                )}
-                {onSlideshow && (
-                    <i
-                        className="bi bi-play-btn"
-                        title="Слайдшоу (S)"
-                        onClick={onSlideshow}
-                    />
-                )}
-                {onPanelToggle && (
-                    <i
-                        className={`bi bi-layout-sidebar-reverse modal-nav-panel-btn ${panelOpen ? 'active' : ''}`}
-                        onClick={onPanelToggle}
-                        title={panelOpen ? 'Скрыть панель' : 'Показать панель'}
-                    />
+                {mobile ? (
+                    <>
+                        <i
+                            className={`bi bi-three-dots modal-nav-panel-btn ${moreOpen ? "active" : ""}`}
+                            title="Ещё"
+                            onClick={() => setMoreOpen(o => !o)}
+                        />
+                        {panelButton}
+                    </>
+                ) : (
+                    <>
+                        {extras.map(x => <i key={x.icon} className={`bi ${x.icon} ${x.active ? 'modal-nav-panel-btn active' : ''}`} title={x.title} onClick={x.onClick} />)}
+                        {panelButton}
+                    </>
                 )}
             </div>
+
+            {mobile && moreOpen && (
+                <div className="modal-nav-more" data-bs-theme={uiTheme}>
+                    {extras.map(x => (
+                        <button key={x.icon} className={x.active ? 'active' : ''} onClick={() => { setMoreOpen(false); x.onClick(); }}>
+                            <i aria-hidden="true" className={`bi ${x.icon}`} />{x.label}
+                        </button>
+                    ))}
+                </div>
+            )}
 
             {position > 0 && total > 0 && (
                 editingCounter ? (
@@ -206,13 +219,13 @@ const Navigation = ({ file, modalUpdater, mainArray, setDegree, panelOpen, onPan
             )}
 
             {canGoLeft && (
-                <i
+                <i aria-hidden="true"
                     className="bi bi-chevron-compact-left arrow arrow-left"
                     onClick={() => openShift(DIRECTION.LEFT)}
                 />
             )}
             {(canGoRight || CanMoreMedia()) && (
-                <i
+                <i aria-hidden="true"
                     className="bi bi-chevron-compact-right arrow arrow-right"
                     onClick={() => openShift(DIRECTION.RIGHT)}
                 />

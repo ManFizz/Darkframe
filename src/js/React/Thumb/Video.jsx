@@ -1,12 +1,12 @@
 import React, {useMemo, useState} from "react";
-import {BiSolidVideo} from "react-icons/bi";
 import Settings from "@data/settings";
 import Image from "./Image";
 import {cachedMediaUrl} from "@/Infrastructure/MediaCache";
 
 const loadingUrl = "./images/loading.gif";
 
-const Video = ({ file }) => {
+// hoverOverlay: the hover preview, driven by the whole tile (Thumb).
+const Video = ({ file, hoverOverlay = null }) => {
     const [isLoading, setIsLoading] = useState(Settings.Resize);
 
     const hasThumb = useMemo(() =>
@@ -16,10 +16,11 @@ const Video = ({ file }) => {
 
     if (hasThumb) {
         return (
-            <>
+            <div className="hover-video-host">
                 <Image file={file} />
-                <BiSolidVideo className="video-mark" />
-            </>
+                {hoverOverlay}
+                <span className="video-mark"><i aria-hidden="true" className="bi bi-play-fill" /></span>
+            </div>
         );
     }
 
@@ -34,7 +35,7 @@ const Video = ({ file }) => {
                 onLoadedData={() => setIsLoading(false)}
                 style={{ display: isLoading ? 'none' : 'block' }}
             />
-            <BiSolidVideo className="video-mark" />
+            <span className="video-mark"><i aria-hidden="true" className="bi bi-play-fill" /></span>
         </>
     );
 }

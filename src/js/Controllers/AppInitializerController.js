@@ -1,4 +1,4 @@
-import Settings from "../../../data/settings";
+import Settings from "@data/settings";
 import {SORT_ORDER, SORT_TYPE, SOURCE_TYPES} from "@/Constants";
 
 export const SORT_STRATEGIES = {
@@ -19,32 +19,12 @@ export function getSortedArray(array, sortInfo, sourceType) {
     if (!Array.isArray(array)) return [];
 
     const order = sortInfo?.order ?? SORT_ORDER.ASC;
-    const strategy = SORT_STRATEGIES[sortInfo?.type];
 
     if (sourceType === SOURCE_TYPES.FAVORITE) {
-        console.log(array);
         return [...array].sort((a, b) => (a.id - b.id) * order);
     }
 
-    if (sourceType === SOURCE_TYPES.FOLDER) {
-        return [...array].sort((a, b) => {
-            if (a.priority !== b.priority) {
-                return (b.priority || 0) - (a.priority || 0);
-            }
-
-            let result = strategy ? strategy(a, b) : 0;
-            result *= order;
-
-            if (result === 0) {
-                const idA = String(a.uniqueId || "");
-                const idB = String(b.uniqueId || "");
-                return idA.localeCompare(idB);
-            }
-
-            return result;
-        });
-    }
-
+    // Booru results keep the API order (Folders sorts inside FolderView).
     return array;
 }
 
@@ -129,29 +109,22 @@ export function galleryReducer(state, action) {
     }
 }
 
-export const AppController = {
-    setGallery: () => {},
-    addToGallery: () => {},
-    getGallery: () => [],
-    getCurrentSource: () => {},
-    setTypeView: () => {},
-    updateGalleryFile: () => {},
+// The gallery state lives in React (Main, via galleryReducer). A few modules outside
+// React (the booru controllers) put results into it and read the current source:
+// Main binds its dispatch and a getter of the *current* state here once it mounts.
+// (The getter reads a ref Main updates on every render — functions captured once
+// would keep answering with the first state.)
+const gallery = {
+    dispatch: null,
+    getState: () => initialState,
 };
 
-export const setGallery = (...args) =>
-    AppController.setGallery(...args);
+export function bindGallery({ dispatch, getState }) {
+    gallery.dispatch = dispatch;
+    gallery.getState = getState;
+}
 
-export const addToGallery = (...args) =>
-    AppController.addToGallery(...args);
-
-export const getGallery = (...args) =>
-    AppController.getGallery(...args);
-
-export const getCurrentSource = (...args) =>
-    AppController.getCurrentSource(...args);
-
-export const setTypeView = (...args) =>
-    AppController.setTypeView(...args);
-
-export const updateGalleryFile = (...args) =>
-    AppController.updateGalleryFile(...args);
+export const setGallery = (items) => gallery.dispatch?.({ type: 'SET_MAIN_ARRAY', payload: items });
+export const addToGallery = (items) => gallery.dispatch?.({ type: 'ADD_TO_GALLERY', payload: items });
+export const getCurrentSource = () => gallery.getState().currentSource;
+export const openModal = (file) => gallery.dispatch?.({ type: 'SET_MODAL_FILE', payload: file?.uniqueId || null });

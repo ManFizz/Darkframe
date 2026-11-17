@@ -44,7 +44,7 @@ const LibraryTagEditor = ({ tags, onChange }) => {
                 {tags.map(tag => (
                     <span key={tag} className="badge bg-secondary me-1 mb-1">
                         {tag}
-                        <i
+                        <i aria-hidden="true"
                             className="bi bi-x ms-1"
                             style={{ cursor: 'pointer' }}
                             onClick={() => removeTag(tag)}

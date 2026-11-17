@@ -41,7 +41,7 @@ const Highlight = ({ text, query }) => {
 
 const NodeIcon = ({ node }) => node.icon
     ? <span className="cts-emoji">{node.icon}</span>
-    : <i className={`bi ${node.children.length ? 'bi-folder2' : 'bi-folder'}`} />;
+    : <i aria-hidden="true" className={`bi ${node.children.length ? 'bi-folder2' : 'bi-folder'}`} />;
 
 // Searchable collapsible collection tree for "put these items into…" pickers.
 // Everything starts collapsed to the top level; only the branch holding the
@@ -149,7 +149,7 @@ const CollectionTreeSelect = ({ value, onSelect, onClose, showRecent = true, aut
     return (
         <div className="cts" onKeyDown={onKeyDown}>
             <div className="cts-search">
-                <i className="bi bi-search" />
+                <i aria-hidden="true" className="bi bi-search" />
                 <input
                     autoFocus={autoFocus}
                     placeholder="Найти коллекцию…"
@@ -157,13 +157,13 @@ const CollectionTreeSelect = ({ value, onSelect, onClose, showRecent = true, aut
                     onChange={e => setQuery(e.target.value)}
                 />
                 {query
-                    ? <button className="cts-icon-btn" title="Очистить" onClick={() => setQuery('')}><i className="bi bi-x-lg" /></button>
+                    ? <button className="cts-icon-btn" title="Очистить" onClick={() => setQuery('')}><i aria-hidden="true" className="bi bi-x-lg" /></button>
                     : <button
                         className="cts-icon-btn"
                         title={anyExpanded ? 'Свернуть всё' : 'Развернуть всё'}
                         onClick={() => anyExpanded ? setExpanded(new Set()) : expandAll()}
                     >
-                        <i className={`bi ${anyExpanded ? 'bi-arrows-collapse' : 'bi-arrows-expand'}`} />
+                        <i aria-hidden="true" className={`bi ${anyExpanded ? 'bi-arrows-collapse' : 'bi-arrows-expand'}`} />
                     </button>}
             </div>
 
@@ -177,9 +177,9 @@ const CollectionTreeSelect = ({ value, onSelect, onClose, showRecent = true, aut
                             {recent.length > 0 && <div className="cts-label">Все коллекции</div>}
                             <div className={`${cls} ${value === null ? 'active' : ''}`} onMouseMove={hover} onClick={() => choose(row)}>
                                 <span className="cts-caret" />
-                                <i className="bi bi-inbox" />
+                                <i aria-hidden="true" className="bi bi-inbox" />
                                 <span className="cts-name">Без коллекции</span>
-                                {value === null && <i className="bi bi-check2 cts-check" />}
+                                {value === null && <i aria-hidden="true" className="bi bi-check2 cts-check" />}
                             </div>
                         </React.Fragment>
                     );
@@ -191,14 +191,14 @@ const CollectionTreeSelect = ({ value, onSelect, onClose, showRecent = true, aut
                         <React.Fragment key={row.key}>
                             {row.kind === 'recent' && i === 0 && <div className="cts-label">Недавние</div>}
                             <div className={`${cls} ${isActive ? 'active' : ''}`} onMouseMove={hover} onClick={() => choose(row)}>
-                                <span className="cts-caret">{row.kind === 'recent' && <i className="bi bi-clock-history" />}</span>
+                                <span className="cts-caret">{row.kind === 'recent' && <i aria-hidden="true" className="bi bi-clock-history" />}</span>
                                 <NodeIcon node={n} />
                                 <span className="cts-name">
                                     <span className="cts-title"><Highlight text={n.name} query={q} /></span>
                                     {n.path.length > 0 && <span className="cts-path">{n.path.join(' › ')}</span>}
                                 </span>
                                 <span className="cts-count">{n.count}</span>
-                                {isActive && <i className="bi bi-check2 cts-check" />}
+                                {isActive && <i aria-hidden="true" className="bi bi-check2 cts-check" />}
                             </div>
                         </React.Fragment>
                     );
@@ -216,20 +216,20 @@ const CollectionTreeSelect = ({ value, onSelect, onClose, showRecent = true, aut
                                 className={`cts-caret ${n.children.length ? 'has' : ''}`}
                                 onClick={n.children.length ? (e) => { e.stopPropagation(); toggle(n.id); } : undefined}
                             >
-                                {n.children.length > 0 && <i className={`bi bi-chevron-right ${open ? 'open' : ''}`} />}
+                                {n.children.length > 0 && <i aria-hidden="true" className={`bi bi-chevron-right ${open ? 'open' : ''}`} />}
                             </span>
                             <NodeIcon node={n} />
                             <span className="cts-name">{n.name}</span>
                             {!open && n.children.length > 0 && <span className="cts-sub" title={`Вложенных коллекций: ${n.children.length}`}>{n.children.length}</span>}
                             <span className="cts-count">{n.count}</span>
-                            {isActive && <i className="bi bi-check2 cts-check" />}
+                            {isActive && <i aria-hidden="true" className="bi bi-check2 cts-check" />}
                         </div>
                     );
                 })}
 
                 {q && rows.length === 0 && (
                     <div className="cts-empty">
-                        <i className="bi bi-search" />
+                        <i aria-hidden="true" className="bi bi-search" />
                         Ничего не найдено
                     </div>
                 )}

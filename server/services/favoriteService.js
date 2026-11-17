@@ -1,7 +1,7 @@
 const fs = require('fs');
 const path = require('path');
-const { Item, Tag, ItemTag } = require('../models/associations');
-const { importFile, ITEMS_PATH } = require('./importService');
+const { Item, ItemTag } = require('../models/associations');
+const { importFile, itemsPath } = require('./importService');
 const { importFromUrl } = require('./urlImportService');
 const { getFavoritesCollectionId } = require('../favoritesCollection');
 const { withTagNames } = require('./itemTags');
@@ -51,7 +51,7 @@ async function removeFavoriteByPost(postUrl) {
     await ItemTag.destroy({ where: { itemId: item.id } });
     await Item.destroy({ where: { id: item.id } });
 
-    const itemDir = path.join(ITEMS_PATH, item.id);
+    const itemDir = path.join(itemsPath(), item.id);
     try { fs.rmSync(itemDir, { recursive: true, force: true }); }
     catch (e) { console.warn('[favorites] could not remove files for', item.id, e.message); }
 

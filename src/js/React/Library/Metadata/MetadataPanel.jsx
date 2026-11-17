@@ -1,9 +1,14 @@
 import React, {useCallback, useEffect, useRef, useState} from 'react';
+import {confirmDeleteForever} from '@services/deleteForever';
 import LibraryService from '@services/LibraryService';
 import {libraryApi} from '@/Infrastructure/Ipc';
+import {isWeb} from '@/Infrastructure/electron';
 import RatingStars from './RatingStars';
 import TagEditor from './TagEditor';
+import SuggestTags from './SuggestTags';
+import MangaInfo from '../../Manga/MangaInfo';
 import CollectionPicker from '../Collection/CollectionPicker';
+import RelatedBlock, {RelatedHint, SearchByThisButton, useRelations} from './RelatedBlock';
 
 function formatSize(bytes) {
     if (!bytes) return '—';
@@ -21,6 +26,7 @@ function formatDuration(seconds) {
 const MetadataPanel = ({ file, onUpdated }) => {
     const [form, setForm]           = useState(null);
     const [activeTab, setActiveTab] = useState('info');
+    const relations = useRelations(file?.isManga ? null : file);
 
     const fileRef        = useRef(file);
     const saveTimeout    = useRef(null);
@@ -111,7 +117,7 @@ const MetadataPanel = ({ file, onUpdated }) => {
     if (!file || !form) return (
         <div className="metadata-panel">
             <div className="metadata-panel-empty">
-                <i className="bi bi-cursor-fill" />
+                <i aria-hidden="true" className="bi bi-cursor-fill" />
                 <span>Выбери файл</span>
             </div>
         </div>
@@ -133,7 +139,7 @@ const MetadataPanel = ({ file, onUpdated }) => {
                         className={`metadata-tab ${activeTab === tab ? 'active' : ''}`}
                         onClick={() => setActiveTab(tab)}
                     >
-                        <i className={`bi bi-${tab === 'info' ? 'info-circle' : 'file-earmark'} me-1`} />
+                        <i aria-hidden="true" className={`bi bi-${tab === 'info' ? 'info-circle' : 'file-earmark'} me-1`} />
                         {tab === 'info' ? 'Инфо' : 'Файл'}
                     </button>
                 ))}
@@ -141,10 +147,12 @@ const MetadataPanel = ({ file, onUpdated }) => {
 
             {activeTab === 'info' && (
                 <div className="metadata-content">
+                    {file.isManga && <MangaInfo file={file} onChanged={() => onUpdated?.('refresh')} />}
                     <div className="metadata-section">
                         <label>Рейтинг</label>
                         <RatingStars value={form.rating} onChange={v => update('rating', v)} />
                     </div>
+                    {!file.isManga && <RelatedBlock file={file} data={relations.data} reload={relations.reload} onChanged={() => onUpdated?.('refresh')} />}
 
                     <div className="metadata-section">
                         <label>Название</label>
@@ -156,8 +164,9 @@ const MetadataPanel = ({ file, onUpdated }) => {
                     </div>
 
                     <div className="metadata-section">
-                        <label>Теги</label>
-                        <TagEditor tags={form.tags} onChange={v => update('tags', v)} />
+                        <SuggestTags file={file} label="Теги" onAdd={(names) => update('tags', [...new Set([...(form.tags || []), ...names])])}>
+                            <TagEditor tags={form.tags} onChange={v => update('tags', v)} />
+                        </SuggestTags>
                     </div>
 
                     <div className="metadata-section">
@@ -184,7 +193,7 @@ const MetadataPanel = ({ file, onUpdated }) => {
                                     target="_blank"
                                     rel="noreferrer"
                                 >
-                                    <i className="bi bi-box-arrow-up-right" />
+                                    <i aria-hidden="true" className="bi bi-box-arrow-up-right" />
                                 </a>
                             )}
                         </div>
@@ -200,6 +209,13 @@ const MetadataPanel = ({ file, onUpdated }) => {
                             placeholder="Заметки..."
                         />
                     </div>
+
+                    {!file.isManga && (
+                        <div className="metadata-section metadata-tail">
+                            <RelatedHint file={file} data={relations.data} />
+                            <SearchByThisButton file={file} />
+                        </div>
+                    )}
                 </div>
             )}
 
@@ -218,15 +234,15 @@ const MetadataPanel = ({ file, onUpdated }) => {
                         </div>
                     ))}
 
-                    <div className="metadata-section">
+                    {!isWeb && <div className="metadata-section">
                         <button
                             className="btn btn-sm btn-outline-secondary w-100"
                             onClick={() => libraryApi.revealItem({ id: file.id })}
                         >
-                            <i className="bi bi-folder2-open me-1" />
+                            <i aria-hidden="true" className="bi bi-folder2-open me-1" />
                             Показать в проводнике
                         </button>
-                    </div>
+                    </div>}
                 </div>
             )}
 
@@ -237,15 +253,19 @@ const MetadataPanel = ({ file, onUpdated }) => {
                         title="Восстановить из корзины"
                         onClick={() => onUpdated?.('restore', file.id)}
                     >
-                        <i className="bi bi-arrow-counterclockwise" />
+                        <i aria-hidden="true" className="bi bi-arrow-counterclockwise" />
                     </button>
                 )}
                 <button
                     className="btn btn-outline-danger btn-sm"
-                    title={file.deletedAt ? 'Удалить навсегда' : 'В корзину'}
-                    onClick={() => onUpdated?.('delete', file.id)}
+                    title={file.deletedAt ? 'Удалить навсегда' : 'В корзину · Shift — удалить навсегда'}
+                    onClick={(e) => {
+                        if (e.shiftKey && !file.deletedAt) {
+                            if (confirmDeleteForever(1, file.title)) onUpdated?.('deleteForever', file.id);
+                        } else onUpdated?.('delete', file.id);
+                    }}
                 >
-                    <i className={`bi ${file.deletedAt ? 'bi-trash3' : 'bi-trash'}`} />
+                    <i aria-hidden="true" className={`bi ${file.deletedAt ? 'bi-trash3' : 'bi-trash'}`} />
                 </button>
             </div>
         </div>

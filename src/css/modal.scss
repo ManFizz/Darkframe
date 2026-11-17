@@ -15,20 +15,20 @@
   flex-direction: column;
   align-items: center;
   justify-content: space-around;
-  background: linear-gradient(45deg, rgba(56, 0, 54, 0.7), rgba(1, 2, 2, 0.8));
+  background: linear-gradient(45deg, rgba(var(--df-magenta-deep-rgb), 0.7), rgba(var(--df-black-rgb), 0.8));
   color: white;
-  z-index: 1000;
+  z-index: var(--df-z-modal);
   overflow-y: auto;
 
   &.favorite {
-    background: linear-gradient(45deg, rgba(137, 3, 132, 0.7), rgba(1, 2, 2, 0.8));
+    background: linear-gradient(45deg, rgba(var(--df-magenta-rgb), 0.7), rgba(var(--df-black-rgb), 0.8));
     .library-layout & {
-      background: linear-gradient(45deg, rgba(56, 0, 54, 0.7), rgba(1, 2, 2, 0.8));
+      background: linear-gradient(45deg, rgba(var(--df-magenta-deep-rgb), 0.7), rgba(var(--df-black-rgb), 0.8));
     }
   }
 
   &::backdrop {
-    background: rgba(0, 0, 0, 0.6);
+    background: rgba(var(--df-black-rgb), 0.6);
     backdrop-filter: blur(4px);
   }
 
@@ -36,12 +36,11 @@
     max-width: 95vw;
     max-height: 94.8vh;
     object-fit: contain;
-    box-shadow: 0 0 30px rgba(0,0,0,0.5);
+    box-shadow: 0 0 30px rgba(var(--df-black-rgb), 0.5);
   }
 
-  // "Long" images are taller than the viewport and the modal scrolls. Instead of
-  // the old orange frame, a soft fade + bouncing chevron at the bottom signal
-  // "there's more below, scroll".
+  // "Long" images are taller than the viewport and the modal scrolls: a soft fade
+  // + a bouncing chevron at the bottom say "there's more below".
   &.long {
     img {
       width: 700px;
@@ -50,9 +49,9 @@
       display: block;
       max-height: unset;
       max-width: 1000px;
-      border-radius: 10px;
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+      border-radius: var(--df-r-xl);
+      border: 1px solid rgba(var(--df-white-rgb), 0.1);
+      box-shadow: var(--df-shadow-xl);
     }
 
     .modal-panel-wrapper {
@@ -65,6 +64,21 @@
       overflow: visible;
     }
 
+    // Without the side panel the modal is a column too: the media area must grow to
+    // the image's full height (not be squeezed into the viewport and clipped to its
+    // middle) and start at the top, so the whole modal scrolls through it.
+    &:not(.with-panel) {
+      justify-content: flex-start;
+
+      .modal-media-area {
+        flex: 0 0 auto;
+        min-height: auto;
+        justify-content: flex-start;
+        overflow: visible;
+        padding: var(--df-sp-8) 0 110px;
+      }
+    }
+
     // Fade at the very bottom of the window.
     &::after {
       content: "";
@@ -73,7 +87,7 @@
       right: 0;
       bottom: 0;
       height: 96px;
-      background: linear-gradient(to bottom, transparent, rgba(8, 6, 12, 0.9));
+      background: linear-gradient(to bottom, transparent, rgba(var(--df-black-rgb), 0.9));
       pointer-events: none;
       z-index: 1;
     }
@@ -87,8 +101,8 @@
       width: 15px;
       height: 15px;
       margin-left: -8px;
-      border-right: 3px solid rgba(255, 255, 255, 0.75);
-      border-bottom: 3px solid rgba(255, 255, 255, 0.75);
+      border-right: 3px solid rgba(var(--df-white-rgb), 0.75);
+      border-bottom: 3px solid rgba(var(--df-white-rgb), 0.75);
       transform: rotate(45deg);
       pointer-events: none;
       z-index: 2;
@@ -98,7 +112,7 @@
 
   .tag {
     cursor: pointer;
-    transition: transform 0.1s ease, opacity 0.1s ease;
+    transition: transform var(--df-dur-instant) ease, opacity var(--df-dur-instant) ease;
 
     &:active {
       transform: scale(0.95);
@@ -111,8 +125,8 @@
   }
 }
 
-// The media area is always present now (so toggling the panel doesn't remount the
-// video). Base styles cover the no-panel case; ".with-panel" adds the stage look.
+// The media area is always present (toggling the panel doesn't remount the video).
+// Base styles cover the no-panel case; ".with-panel" adds the stage look.
 .modal-media-area {
   flex: 1;
   min-height: 0;
@@ -124,11 +138,9 @@
   overflow: hidden;
 }
 
-// Without a side panel (r34 / folders) the modal is a column: the media area
-// shares its height with the <Tags> row below it. The media kept its viewport-sized
-// cap (94.8vh) while the area was shorter, so it overflowed and got clipped by
-// `overflow: hidden`. Let the wrapper fill the area and size the media against it.
-// (".long" keeps its own scrolling layout, so it's excluded.)
+// Without a side panel (boorus / folders) the modal is a column: the media area
+// shares its height with the <Tags> row below, so the wrapper fills the area and
+// the media is sized against it, not the viewport (".long" has its own layout).
 .modal-view:not(.long) .modal-media-area {
   .modal-content-wrapper {
     flex: 1;
@@ -149,7 +161,7 @@
   left: 0;
   width: 100%;
   height: calc(100vh - var(--df-modal-top));
-  z-index: 1100;
+  z-index: var(--df-z-viewer);
   pointer-events: none;
 
   i {
@@ -168,18 +180,18 @@
     width: 38px;
     height: 38px;
     margin: 0;
-    font-size: 19px;
-    border-radius: 50%;
-    filter: none;   // sits on the glass pill now, not over bare media
-    transition: background 0.15s ease, color 0.15s ease, transform 0.1s ease;
+    font-size: var(--df-fs-3xl);
+    border-radius: var(--df-r-round);
+    filter: none;   // sits on the glass pill
+    transition: background var(--df-dur-fast) ease, color var(--df-dur-fast) ease, transform var(--df-dur-instant) ease;
 
-    &:hover { background: rgba(255, 255, 255, 0.14); }
+    &:hover { background: rgba(var(--df-white-rgb), 0.14); }
     &:active { transform: scale(0.9); }
   }
 
   .btn-cancel {
-    color: #ff6b6b !important;
-    &:hover { background: rgba(255, 75, 75, 0.18); }
+    color: var(--df-red-light) !important;
+    &:hover { background: rgba(var(--df-red-bright-rgb), 0.18); }
   }
 
   .modal-nav-panel-btn {
@@ -196,15 +208,15 @@
     transform: translateX(-50%);
     display: flex;
     align-items: center;
-    gap: 4px;
-    padding: 4px 13px;
-    background: rgba(0, 0, 0, 0.55);
-    color: #fff;
-    font-size: 14px;
+    gap: var(--df-sp-2);
+    padding: var(--df-sp-2) 13px;
+    background: rgba(var(--df-black-rgb), 0.55);
+    color: var(--df-white);
+    font-size: var(--df-fs-base);
     font-weight: 600;
     line-height: 1;
     letter-spacing: 0.5px;
-    border-radius: 999px;
+    border-radius: var(--df-r-pill);
     pointer-events: none;
     user-select: none;
     backdrop-filter: blur(4px);
@@ -212,17 +224,17 @@
     &.clickable {
       pointer-events: auto;
       cursor: pointer;
-      &:hover { background: rgba(0, 0, 0, 0.72); }
+      &:hover { background: rgba(var(--df-black-rgb), 0.72); }
     }
     &.editing { pointer-events: auto; }
 
     .modal-nav-counter-input {
       width: 3.5em;
-      padding: 0 4px;
+      padding: 0 var(--df-sp-2);
       border: none;
-      border-radius: 5px;
-      background: rgba(255, 255, 255, 0.15);
-      color: #fff;
+      border-radius: var(--df-r-md);
+      background: rgba(var(--df-white-rgb), 0.15);
+      color: var(--df-white);
       font: inherit;
       text-align: center;
       outline: none;
@@ -236,7 +248,7 @@
 
   .arrow {
     position: absolute;
-    transition: transform 0.2s, opacity 0.2s;
+    transition: transform var(--df-dur-base), opacity var(--df-dur-base);
     top: 50%;
     transform: translateY(-50%);
     font-size: 100px;
@@ -260,33 +272,32 @@
 // Slideshow running: the toolbar/arrows/counter fade out but stay mounted, so
 // their keyboard handling (Escape, arrows) keeps working.
 .modal-nav-container.nav-hidden {
-  > * { opacity: 0; pointer-events: none !important; transition: opacity 0.25s ease; }
+  > * { opacity: 0; pointer-events: none !important; transition: opacity var(--df-dur-slow) ease; }
   i, .modal-nav-counter { pointer-events: none !important; }
 }
 
-// ─── Slideshow HUD ────────────────────────────────────────────────────────────
 .ss-hud {
   position: fixed;
   top: calc(var(--df-modal-top) + 12px);
   left: 50%;
   transform: translateX(-50%);
-  z-index: 1150;
+  z-index: calc(var(--df-z-viewer) + 50);
   display: flex;
   align-items: center;
-  gap: 4px;
-  padding: 5px 8px;
-  border-radius: 999px;
-  background: var(--df-glass-strong, rgba(20, 16, 28, 0.8));
-  border: 1px solid var(--df-glass-border, rgba(255, 255, 255, 0.1));
+  gap: var(--df-sp-2);
+  padding: 5px var(--df-sp-4);
+  border-radius: var(--df-r-pill);
+  background: var(--df-glass-strong, rgba(var(--df-ink-900-rgb), 0.8));
+  border: 1px solid var(--df-glass-border, rgba(var(--df-white-rgb), 0.1));
   backdrop-filter: blur(14px);
-  box-shadow: 0 8px 26px rgba(0, 0, 0, 0.45);
-  color: #fff;
-  transition: opacity 0.25s ease;
+  box-shadow: var(--df-shadow-lg);
+  color: var(--df-white);
+  transition: opacity var(--df-dur-slow) ease;
 
   &.idle { opacity: 0; pointer-events: none; }
 }
 .ss-pos {
-  padding: 0 8px 0 6px;
+  padding: 0 var(--df-sp-4) 0 var(--df-sp-3);
   font: 600 12px/1 var(--mono, ui-monospace, monospace);
   font-variant-numeric: tabular-nums;
   opacity: 0.85;
@@ -297,56 +308,56 @@
   display: grid;
   place-items: center;
   border: none;
-  border-radius: 50%;
+  border-radius: var(--df-r-round);
   background: transparent;
-  color: #fff;
-  font-size: 15px;
+  color: var(--df-white);
+  font-size: var(--df-fs-lg);
   cursor: pointer;
-  transition: background 0.15s, color 0.15s;
+  transition: background var(--df-dur-fast), color var(--df-dur-fast);
 
-  &:hover { background: rgba(255, 255, 255, 0.14); }
+  &:hover { background: rgba(var(--df-white-rgb), 0.14); }
   &.on { color: var(--df-accent); }
 }
 .ss-play {
   width: 36px;
   height: 36px;
-  font-size: 19px;
+  font-size: var(--df-fs-3xl);
   background: linear-gradient(135deg, var(--df-accent), var(--df-accent-dim));
   &:hover { filter: brightness(1.08); background: linear-gradient(135deg, var(--df-accent), var(--df-accent-dim)); }
 }
-.ss-stop:hover { color: #ff8b8b; }
+.ss-stop:hover { color: var(--df-red-light); }
 .ss-sep {
   width: 1px;
   height: 18px;
-  margin: 0 4px;
-  background: rgba(255, 255, 255, 0.18);
+  margin: 0 var(--df-sp-2);
+  background: rgba(var(--df-white-rgb), 0.18);
 }
 .ss-intervals {
   display: flex;
   align-items: center;
-  gap: 2px;
+  gap: var(--df-sp-1);
 
   button {
     height: 26px;
-    padding: 0 8px;
+    padding: 0 var(--df-sp-4);
     border: none;
-    border-radius: 999px;
+    border-radius: var(--df-r-pill);
     background: transparent;
-    color: rgba(255, 255, 255, 0.75);
+    color: rgba(var(--df-white-rgb), 0.75);
     font: 600 11.5px/1 var(--mono, ui-monospace, monospace);
     cursor: pointer;
-    &:hover { color: #fff; background: rgba(255, 255, 255, 0.1); }
-    &.on { color: #fff; background: var(--df-accent-soft); }
+    &:hover { color: var(--df-white); background: rgba(var(--df-white-rgb), 0.1); }
+    &.on { color: var(--df-white); background: var(--df-accent-soft); }
   }
 }
 .ss-custom {
   width: 54px;
   height: 26px;
-  padding: 0 6px;
+  padding: 0 var(--df-sp-3);
   border: 1px solid var(--df-accent-dim);
-  border-radius: 999px;
-  background: rgba(0, 0, 0, 0.35);
-  color: #fff;
+  border-radius: var(--df-r-pill);
+  background: rgba(var(--df-black-rgb), 0.35);
+  color: var(--df-white);
   font: 600 11.5px/1 var(--mono, ui-monospace, monospace);
   outline: none;
 }
@@ -357,9 +368,9 @@
   top: var(--df-modal-top);
   left: 0;
   right: 0;
-  z-index: 1150;
+  z-index: calc(var(--df-z-viewer) + 50);
   height: 3px;
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(var(--df-white-rgb), 0.08);
   pointer-events: none;
 }
 .ss-progress-fill {
@@ -380,8 +391,6 @@
   z-index: 3;
 }
 
-// ─── Modal + metadata panel ───────────────────────────────────────────────────
-
 .modal-view.with-panel {
   flex-direction: row;
   align-items: stretch;
@@ -399,11 +408,9 @@
       radial-gradient(closest-side at 50% 42%, rgba(var(--df-accent-rgb), 0.10), transparent 78%);
   }
 
-  // The panel eats 288px on the right, so the media area is the *left* region and
-  // anything smaller than it drifts left of the screen centre. Reserve the same
-  // 288px on the left: the clear area is now symmetric and the media sits dead-centre
-  // on the viewport. Media is capped to that clear width so it never slides under
-  // the panel. (Skipped in ".long" mode, which has its own left-aligned layout.)
+  // The panel takes 288px on the right; the same 288px are reserved on the left, so
+  // the media sits in the middle of the screen and never slides under the panel
+  // (not in ".long" mode, which has its own left-aligned layout).
   &:not(.long) .modal-media-area { padding-left: variables.$modal-panel-width; }
 
   &:not(.long) .modal-media-area img,
@@ -412,7 +419,6 @@
   }
 }
 
-// ─── Redesign: framed stage + glass panel (direction B) ───────────────────────
 .modal-view {
   .modal-content-wrapper {
     display: flex;
@@ -422,9 +428,9 @@
 
   // Give the media a real frame: rounded, hairline edge, deep soft shadow.
   img, video {
-    border-radius: 12px;
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    box-shadow: 0 24px 70px rgba(0, 0, 0, 0.6);
+    border-radius: var(--df-r-2xl);
+    border: 1px solid rgba(var(--df-white-rgb), 0.08);
+    box-shadow: var(--df-shadow-xl);
   }
 }
 
@@ -441,7 +447,7 @@
 // so drop the topbar offset and lift the viewer over the sticky topbar.
 html:fullscreen {
   --df-modal-top: 0px;
-  .modal-view { z-index: 1050; }
+  .modal-view { z-index: calc(var(--df-z-modal) + 50); }
 }
 
 .modal-panel-wrapper {
@@ -449,12 +455,12 @@ html:fullscreen {
   flex-shrink: 0;
   overflow-y: auto;
   // Frosted glass layer floating over the stage.
-  background: var(--df-glass-strong, rgba(20, 16, 28, 0.72));
+  background: var(--df-glass-strong, rgba(var(--df-ink-900-rgb), 0.72));
   backdrop-filter: blur(16px);
-  border-left: 1px solid var(--df-glass-border, rgba(255, 255, 255, 0.08));
-  box-shadow: -18px 0 40px rgba(0, 0, 0, 0.35);
+  border-left: 1px solid var(--df-glass-border, rgba(var(--df-white-rgb), 0.08));
+  box-shadow: -18px 0 40px rgba(var(--df-black-rgb), 0.35);
 
-  // Переопределяем fixed-позиционирование MetadataPanel внутри модалки
+  // MetadataPanel's fixed positioning, overridden inside the viewer
   .metadata-panel {
     position: relative;
     top: auto;
@@ -475,30 +481,29 @@ html:fullscreen {
 
   // Inputs sit on the darker glass, not the flat body colour.
   .metadata-content .form-control {
-    background: rgba(0, 0, 0, 0.3);
+    background: var(--df-field);
     border-color: var(--df-glass-border);
-    border-radius: 10px;
+    border-radius: var(--df-r-xl);
   }
 }
 
-// ─── Remote (booru) side panel ────────────────────────────────────────────────
 .remote-panel {
   .remote-panel-title {
-    font-size: 14px;
+    font-size: var(--df-fs-base);
     font-weight: 600;
     line-height: 1.3;
-    color: #fff;
+    color: var(--bs-body-color);
     word-break: break-word;
   }
 
-  // The "Теги" row carries a count badge and a copy-all button on the right.
+  // The tags row carries a count badge and a copy-all button on the right.
   .remote-tags-label {
     display: flex;
     align-items: center;
     justify-content: space-between;
   }
   .remote-tag-count {
-    margin-left: 4px;
+    margin-left: var(--df-sp-2);
     opacity: 0.65;
     font-variant-numeric: tabular-nums;
   }
@@ -507,11 +512,11 @@ html:fullscreen {
     background: none;
     color: var(--bs-secondary);
     cursor: pointer;
-    padding: 2px 6px;
-    border-radius: 6px;
-    font-size: 13px;
+    padding: var(--df-sp-1) var(--df-sp-3);
+    border-radius: var(--df-r-md);
+    font-size: var(--df-fs-md);
     line-height: 1;
-    &:hover { background: rgba(255, 255, 255, 0.12); color: #fff; }
+    &:hover { background: rgba(var(--df-white-rgb), 0.12); color: var(--df-white); }
     .bi-check2 { color: var(--bs-success); }
   }
 
@@ -534,8 +539,6 @@ html:fullscreen {
   .metadata-section > a.btn { text-decoration: none; }
 }
 
-// ─── Delete countdown ─────────────────────────────────────────────────────────
-
 $delete-delay: 1500ms;
 
 @keyframes modal-delete-drain {
@@ -548,21 +551,21 @@ $delete-delay: 1500ms;
   bottom: 0;
   left: 0;
   right: 0;
-  z-index: 1102;
-  background: rgba(180, 30, 30, 0.92);
+  z-index: calc(var(--df-z-viewer) + 2);
+  background: rgba(var(--df-red-deep-rgb), 0.92);
   backdrop-filter: blur(4px);
-  padding: 10px 20px 6px;
+  padding: var(--df-sp-5) var(--df-sp-10) var(--df-sp-3);
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: var(--df-sp-3);
   color: white;
-  font-size: 13px;
+  font-size: var(--df-fs-md);
   font-weight: 500;
 
   &-bar {
     height: 3px;
-    background: rgba(255, 255, 255, 0.9);
-    border-radius: 2px;
+    background: rgba(var(--df-white-rgb), 0.9);
+    border-radius: var(--df-r-xs);
     animation: modal-delete-drain $delete-delay linear forwards;
   }
 }
@@ -574,13 +577,226 @@ $delete-delay: 1500ms;
   display: inline-flex;
   flex-direction: row;
   align-items: center;
-  gap: 2px;
+  gap: var(--df-sp-1);
   width: max-content;
-  margin: 12px 0 0 12px;
-  padding: 4px;
-  background: rgba(0, 0, 0, 0.55);
+  margin: var(--df-sp-6) 0 0 var(--df-sp-6);
+  padding: var(--df-sp-2);
+  background: rgba(var(--df-black-rgb), 0.55);
   backdrop-filter: blur(10px);
-  border: 1px solid var(--df-glass-border, rgba(255, 255, 255, 0.08));
-  border-radius: 999px;
-  box-shadow: 0 6px 22px rgba(0, 0, 0, 0.4);
+  border: 1px solid var(--df-glass-border, rgba(var(--df-white-rgb), 0.08));
+  border-radius: var(--df-r-pill);
+  box-shadow: var(--df-shadow-lg);
 }
+// Light theme: the toolbar pill turns light too (the stage behind stays dark).
+.modal-nav-container .modal-nav-row[data-bs-theme="light"] {
+  background: rgba(var(--df-white-rgb), 0.92);
+  border-color: rgba(var(--df-black-rgb), 0.08);
+  box-shadow: var(--df-shadow-lg);
+
+  .bi {
+    color: var(--df-ink-600);
+    filter: none;
+    &:hover { background: rgba(var(--df-black-rgb), 0.06); }
+  }
+}
+
+// In the light theme the page behind is bright: make the (still dark) stage opaque
+// enough that it doesn't turn into a washed-out lilac.
+html[data-bs-theme="light"] .modal-view {
+  background: linear-gradient(45deg, rgba(var(--df-plum-rgb), 0.985), rgba(var(--df-black-rgb), 0.99));
+  &.favorite { background: linear-gradient(45deg, rgba(var(--df-magenta-deep-rgb), 0.985), rgba(var(--df-black-rgb), 0.99)); }
+}
+.modal-panel-wrapper[data-bs-theme="light"] { background: rgba(var(--df-white-rgb), 0.97); }
+// The dialog sets white text for the stage; the panel follows its own theme.
+.modal-panel-wrapper { color: var(--bs-body-color); }
+
+$strip-h: 84px;
+
+.modal-view.with-strip {
+  // Column layout (no side panel): everything moves up above the strip.
+  &:not(.with-panel) { padding-bottom: $strip-h; }
+  // Row layout: only the media column shrinks; the panel keeps full height.
+  &.with-panel .modal-media-area { padding-bottom: $strip-h; }
+
+  .video-controls.v2 { bottom: $strip-h + 14px; }
+  .vc-expand { bottom: $strip-h + 10px; }
+  &.long::before { bottom: $strip-h + 20px; }
+}
+
+.filmstrip {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: calc(var(--df-z-viewer) + 1);
+  height: $strip-h;
+  display: flex;
+  align-items: center;
+  background: linear-gradient(to top, rgba(var(--df-black-rgb), 0.92), rgba(var(--df-black-rgb), 0.7));
+  border-top: 1px solid rgba(var(--df-white-rgb), 0.06);
+  backdrop-filter: blur(8px);
+
+  .with-panel & { right: variables.$modal-panel-width; }
+}
+
+// Hide / show handles: a small tab on the strip's top edge, and one at the
+// bottom of the screen while the strip is hidden.
+.fs-hide, .fs-show {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 46px;
+  height: 18px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 1px solid rgba(var(--df-white-rgb), 0.08);
+  border-bottom: none;
+  border-radius: var(--df-r-xl) var(--df-r-xl) 0 0;
+  background: rgba(var(--df-black-rgb), 0.85);
+  color: rgba(var(--df-white-rgb), 0.55);
+  font-size: var(--df-fs-sm);
+  cursor: pointer;
+  &:hover { color: var(--df-white); background: rgba(var(--df-ink-900-rgb), 0.95); }
+}
+.fs-hide { top: -18px; }
+.fs-show {
+  position: fixed;
+  bottom: 0;
+  z-index: calc(var(--df-z-viewer) + 1);
+  opacity: 0.45;
+  transition: opacity var(--df-dur-fast);
+  &:hover { opacity: 1; }
+  .with-panel & { left: calc(50% - #{variables.$modal-panel-width} / 2); }
+}
+
+.fs-track {
+  display: flex;
+  align-items: center;
+  gap: var(--df-sp-3);
+  width: 100%;
+  height: 100%;
+  padding: 0 var(--df-sp-6);
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+  &::-webkit-scrollbar { display: none; }
+}
+
+.fs-item {
+  position: relative;
+  flex: 0 0 auto;
+  width: 64px;
+  height: 64px;
+  padding: 0;
+  border: 2px solid transparent;
+  border-radius: var(--df-r-xl);
+  overflow: hidden;
+  background: rgba(var(--df-white-rgb), 0.06);
+  opacity: 0.55;
+  cursor: pointer;
+  transition: opacity var(--df-dur-fast), transform var(--df-dur-fast), border-color var(--df-dur-fast);
+
+  img { width: 100%; height: 100%; object-fit: cover; border: none !important; border-radius: 0 !important; box-shadow: none !important; }
+  &:hover { opacity: 0.95; transform: translateY(-2px); }
+  &.current {
+    opacity: 1;
+    width: 76px;
+    height: 76px;
+    border-color: var(--df-accent);
+    box-shadow: 0 0 0 3px var(--df-accent-soft), 0 6px 16px rgba(var(--df-black-rgb), 0.5);
+  }
+  &.dragging { opacity: 0.3; }
+
+  // Where the dragged thumbnail would land: a bar on that side.
+  &.drop-before::after, &.drop-after::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    background: var(--df-accent);
+    box-shadow: 0 0 6px var(--df-accent);
+  }
+  &.drop-before::after { left: 0; }
+  &.drop-after::after { right: 0; }
+}
+
+.fs-video-ph { display: grid; place-items: center; width: 100%; height: 100%; color: rgba(var(--df-white-rgb), 0.5); font-size: var(--df-fs-3xl); }
+
+.fs-play {
+  position: absolute;
+  left: 3px;
+  bottom: 3px;
+  width: 18px;
+  height: 18px;
+  display: grid;
+  place-items: center;
+  border-radius: var(--df-r-round);
+  background: rgba(var(--df-black-rgb), 0.6);
+  color: var(--df-white);
+  font-size: var(--df-fs-xs);
+}
+
+.fs-more {
+  flex: 0 0 auto;
+  padding: 0 var(--df-sp-4);
+  color: rgba(var(--df-white-rgb), 0.45);
+  font-size: var(--df-fs-xs);
+  font-variant-numeric: tabular-nums;
+}
+// Few thumbnails → centred; many → scrollable from the start (auto margins collapse).
+.fs-track > :first-child { margin-left: auto; }
+.fs-track > :last-child { margin-right: auto; }
+
+.modal-view .anim-canvas {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  border-radius: var(--df-r-2xl);
+  border: 1px solid rgba(var(--df-white-rgb), 0.08);
+  box-shadow: var(--df-shadow-xl);
+}
+
+.anim-controls {
+  position: absolute;
+  left: 50%;
+  bottom: 18px;
+  transform: translateX(-50%);
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: var(--df-sp-3);
+  padding: var(--df-sp-3) var(--df-sp-5);
+  border-radius: var(--df-r-pill);
+  background: rgba(var(--df-black-rgb), 0.78);
+  border: 1px solid rgba(var(--df-white-rgb), 0.08);
+  backdrop-filter: blur(10px);
+  color: var(--df-white);
+  box-shadow: var(--df-shadow-lg);
+
+  .with-strip & { bottom: 98px; }
+
+  button {
+    min-width: 32px;
+    height: 32px;
+    display: grid;
+    place-items: center;
+    padding: 0 var(--df-sp-3);
+    border: none;
+    border-radius: var(--df-r-round);
+    background: transparent;
+    color: var(--df-white);
+    font-size: var(--df-fs-xl);
+    cursor: pointer;
+    &:hover { background: rgba(var(--df-white-rgb), 0.12); }
+  }
+  .anim-play { background: var(--df-accent); &:hover { background: var(--df-accent); filter: brightness(1.1); } }
+  .anim-speed { border-radius: var(--df-r-lg); font-size: var(--df-fs-sm); font-weight: 700; font-variant-numeric: tabular-nums; }
+  input[type="range"] { width: 220px; accent-color: var(--df-accent); }
+  .anim-frame { min-width: 64px; font-size: var(--df-fs-sm); font-variant-numeric: tabular-nums; color: rgba(var(--df-white-rgb), 0.75); text-align: center; }
+}
+
+// Slideshow: each image slide fades in.
+.modal-view img.ss-slide { animation: ssFade var(--df-dur-slower) ease-out; }
+@keyframes ssFade { from { opacity: 0; } }

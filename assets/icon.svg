@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#b784ff"/>
+      <stop offset="1" stop-color="#6d3ad6"/>
+    </linearGradient>
+  </defs>
+  <rect x="8" y="8" width="240" height="240" rx="56" fill="url(#bg)"/>
+  <!-- a dark frame with a picture inside: mountains + sun -->
+  <rect x="52" y="60" width="152" height="136" rx="18" fill="#1b1430"/>
+  <circle cx="160" cy="98" r="15" fill="#ffd66b"/>
+  <path d="M64 184 L108 128 L140 164 L160 144 L192 184 Z" fill="#c9a6ff"/>
+</svg>

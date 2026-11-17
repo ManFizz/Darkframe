@@ -5,6 +5,7 @@ import LibraryService from "@services/LibraryService";
 import {notify} from "@services/NotificationService";
 import {mediaKey} from "@services/mediaKey";
 import {toggleViewerFullscreen} from "./fullscreen";
+import {ipcRenderer} from '@/Infrastructure/electron';
 
 // Resume support: only long videos, saved every few seconds while playing.
 const RESUME_MIN_DURATION = 180;   // seconds
@@ -31,7 +32,6 @@ const Video = ({ file, mainArray = [], modalUpdater, canEdit = false, onEdited, 
     const [busy, setBusy] = useState(null);   // { label, percent } while an edit runs
     const [resume, setResume] = useState(null);   // { position } offered to the user
 
-    // ─── Resume position ────────────────────────────────────────────────────────
     // `track` always describes the file currently playing; the file-change cleanup
     // below saves it before it's replaced (the old <video> is already gone by then).
     const track       = useRef({ mk: null, time: 0, dur: 0 });
@@ -94,7 +94,6 @@ const Video = ({ file, mainArray = [], modalUpdater, canEdit = false, onEdited, 
     // on success onEdited() reloads the list and the new URL remounts the player.
     const runFileEdit = useCallback(async (label, action, doneMessage) => {
         const v = videoRef.current;
-        const { ipcRenderer } = window.require('electron');
         const onProgress = (_, p) => {
             if (p?.id === file.id) setBusy({ label, percent: p.percent });
         };
@@ -206,7 +205,10 @@ const Video = ({ file, mainArray = [], modalUpdater, canEdit = false, onEdited, 
 
     // Single click toggles play, double click toggles fullscreen. The short timer
     // stops a double click from also firing the single-click play/pause.
-    const handleClick = useCallback(() => {
+    // A tap on a touch screen only brings the controls back (VideoControls) —
+    // pausing there is what the play button is for.
+    const handleClick = useCallback((e) => {
+        if (e.nativeEvent?.pointerType === 'touch') return;
         if (clickTimer.current) return;
         clickTimer.current = setTimeout(() => {
             clickTimer.current = null;
@@ -258,6 +260,8 @@ const Video = ({ file, mainArray = [], modalUpdater, canEdit = false, onEdited, 
                 resume={resume}
                 onResume={acceptResume}
                 onDismissResume={() => setResume(null)}
+                storyboardSrc={file.remoteType === SOURCE_TYPES.LIBRARY && file.id ? { itemId: file.id }
+                    : file.filePath ? { path: file.filePath } : null}
             />
         </>
     );

@@ -48,11 +48,11 @@ const SlideshowHud = ({ ss, file }) => {
             <div className={`ss-hud ${visible ? '' : 'idle'}`} onPointerDown={e => e.stopPropagation()}>
                 <span className="ss-pos">{ss.position} / {ss.total}</span>
 
-                <button className="ss-btn" title="Назад" onClick={ss.prev}><i className="bi bi-skip-backward-fill" /></button>
+                <button className="ss-btn" title="Назад" onClick={ss.prev}><i aria-hidden="true" className="bi bi-skip-backward-fill" /></button>
                 <button className="ss-btn ss-play" title="Пауза / продолжить (S)" onClick={ss.togglePause}>
-                    <i className={`bi ${ss.paused ? 'bi-play-fill' : 'bi-pause-fill'}`} />
+                    <i aria-hidden="true" className={`bi ${ss.paused ? 'bi-play-fill' : 'bi-pause-fill'}`} />
                 </button>
-                <button className="ss-btn" title="Дальше" onClick={ss.next}><i className="bi bi-skip-forward-fill" /></button>
+                <button className="ss-btn" title="Дальше" onClick={ss.next}><i aria-hidden="true" className="bi bi-skip-forward-fill" /></button>
 
                 <span className="ss-sep" />
 
@@ -91,19 +91,19 @@ const SlideshowHud = ({ ss, file }) => {
                     title="Вперемешку"
                     onClick={() => ss.setSettings({ shuffle: !ss.settings.shuffle })}
                 >
-                    <i className="bi bi-shuffle" />
+                    <i aria-hidden="true" className="bi bi-shuffle" />
                 </button>
                 <button
                     className={`ss-btn ${ss.settings.loop ? 'on' : ''}`}
                     title="По кругу"
                     onClick={() => ss.setSettings({ loop: !ss.settings.loop })}
                 >
-                    <i className="bi bi-repeat" />
+                    <i aria-hidden="true" className="bi bi-repeat" />
                 </button>
 
                 <span className="ss-sep" />
                 <button className="ss-btn ss-stop" title="Остановить слайдшоу" onClick={ss.stop}>
-                    <i className="bi bi-stop-fill" />
+                    <i aria-hidden="true" className="bi bi-stop-fill" />
                 </button>
             </div>
         </>

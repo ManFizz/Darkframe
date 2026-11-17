@@ -71,6 +71,19 @@ export function useTheme() {
     return [theme, setTheme];
 }
 
+// 'light' | 'dark' as actually applied right now (resolves "system").
+export function useResolvedTheme() {
+    const [theme] = useTheme();
+    const [, bump] = useState(0);
+    useEffect(() => {
+        const mq = window.matchMedia?.('(prefers-color-scheme: dark)');
+        const onChange = () => bump(v => v + 1);
+        mq?.addEventListener?.('change', onChange);
+        return () => mq?.removeEventListener?.('change', onChange);
+    }, []);
+    return resolveMode(theme.mode) === 'light' ? 'light' : 'dark';
+}
+
 // Apply once at startup (before the first render, so there's no flash), and keep
 // following the OS while the mode is "system".
 export function initTheme() {

@@ -1,5 +1,5 @@
 import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
-import {useDragAutoScroll} from '@hooks/library/useDragAutoScroll';
+import {confirmDeleteForever} from '@services/deleteForever';
 import CollectionTree, {SPECIAL} from './Collection/CollectionTree';
 import ImportButton from './Import/ImportButton';
 import MetadataPanel from './Metadata/MetadataPanel';
@@ -10,7 +10,10 @@ import QuickFilters from "./Filters/QuickFilters";
 import useSelection from "@hooks/gallery/useSelection";
 import LibraryService from "@services/LibraryService"
 import LibraryGallery from "../PageBuilders/LibraryGallery";
-import {useViewPref} from '@services/viewPrefs';
+import {getViewPrefs, setViewPref, useViewPref} from '@services/viewPrefs';
+import {collectionRequests} from '@services/commands';
+import {runVisualSearch, useVisualSearch} from '@services/visualSearch';
+import VisualSearchHeader from './VisualSearchHeader';
 import {FILE_TYPES, SOURCE_TYPES} from "@/Constants";
 import {ThumbFile} from "@/Models/ThumbFile";
 import useCollections from "@hooks/library/useCollections"
@@ -18,6 +21,16 @@ import {useLibraryStats} from "@hooks/library/useLibraryStats";
 import {useLibraryContext} from '@/LibraryContext';
 import Modal from "@react/Modal/Modal";
 import {notify} from '@services/NotificationService';
+import {libraryApi} from '@/Infrastructure/Ipc';
+import {isWeb} from '@/Infrastructure/electron';
+import {useMobile} from '@services/mobile';
+import {newSeed, sortOf} from '@/shared/librarySort';
+import {saveItemOrder} from '@/Hooks/library/useItemReorder';
+import {openManga} from '@modules/manga/openManga';
+import {readLibraryManga} from '@services/mangaLibrary';
+import {undoLast, redoLast} from '@services/undo';
+import {useCommands} from '@services/commands';
+import {matches} from '@services/keymap';
 
 // Human labels for the history section selector (keys are SOURCE_TYPES / remoteType).
 const SECTION_LABELS = {
@@ -25,19 +38,71 @@ const SECTION_LABELS = {
     [SOURCE_TYPES.R34]:       'R34',
     [SOURCE_TYPES.GELBOORU]:  'Gelbooru',
     [SOURCE_TYPES.REALBOORU]: 'Realbooru',
+    [SOURCE_TYPES.DANBOORU]:  'Danbooru',
     [SOURCE_TYPES.FOLDER]:    'Папки',
     [SOURCE_TYPES.FAVORITE]:  'Избранное',
 };
 const sectionLabel = (s) => SECTION_LABELS[s] || `Секция ${s}`;
 
-const LibraryView = () => {
-    const [selectedCollection, setSelectedCollection] = useState(SPECIAL.NONE);
-    const { filtered, filters, setLibraryItems, refreshStats, statsVersion } = useLibraryContext();
+const LibraryView = ({ model = null }) => {
+    const [selectedCollection, setSelectedCollection] = useState(() => {
+        if (model) return SPECIAL.ALL;
+        const requested = collectionRequests.take();   // Ctrl+K from another tab
+        if (requested) {
+            if (requested !== SPECIAL.VISUAL) setViewPref('lastCollection', requested);
+            return requested;
+        }
+        const { restoreSession, lastCollection } = getViewPrefs();
+        return (restoreSession && lastCollection) || SPECIAL.NONE;
+    });
+    // (a model's page in the Models tab leaves "go to collection" to the library)
+    useEffect(() => (model ? undefined : collectionRequests.subscribe((id) => {
+        if (id === SPECIAL.VISUAL) setModalFileId(null);   // results replace the viewer
+        setSelectedCollection(id);
+        if (id !== SPECIAL.VISUAL) setViewPref('lastCollection', id);   // results aren't a place to return to
+    })), []);   // eslint-disable-line react-hooks/exhaustive-deps
+    const { filtered, filters, update, patch, setLibraryItems, refreshStats, statsVersion } = useLibraryContext();
     const [ratingDividers] = useViewPref('ratingDividers');
+    const [dateDividers] = useViewPref('dateDividers');
+    const [typeDividers] = useViewPref('typeDividers');
+
+    // The order is remembered: one for the whole library, or (option in the menu)
+    // separately for each collection.
+    const [sortPerCollection] = useViewPref('sortPerCollection');
+    const sortLoadedFor = useRef(undefined);
+    useEffect(() => {
+        const prefs = getViewPrefs();
+        // Search-by-picture results come closest first.
+        if (selectedCollection === SPECIAL.VISUAL) { patch({ sortBy: 'order', order: 1 }); sortLoadedFor.current = null; return; }
+        const s = (sortPerCollection && prefs.sortByCollection?.[selectedCollection]) || prefs.librarySort;
+        if (s?.sortBy) patch({ sortBy: s.sortBy, order: s.order || 1 });
+        sortLoadedFor.current = selectedCollection;
+    }, [selectedCollection, sortPerCollection]);   // eslint-disable-line react-hooks/exhaustive-deps
+    useEffect(() => {
+        if (sortLoadedFor.current !== selectedCollection) return;
+        const s = { sortBy: filters.sortBy, order: filters.order };
+        setViewPref('librarySort', s);
+        if (sortPerCollection && selectedCollection != null) {
+            setViewPref('sortByCollection', { ...(getViewPrefs().sortByCollection || {}), [selectedCollection]: s });
+        }
+    }, [filters.sortBy, filters.order]);   // eslint-disable-line react-hooks/exhaustive-deps
     const { favoritesId } = useLibraryStats(statsVersion);
+
+    // A restored selection may point at a collection deleted since: fall back.
+    useEffect(() => {
+        const check = () => {
+            const special = Object.values(SPECIAL).includes(selectedCollection);
+            const cols = LibraryService.getCollections();
+            if (special || !favoritesId || !cols.length) return;
+            if (selectedCollection !== favoritesId && !cols.some(c => c.id === selectedCollection)) {
+                setSelectedCollection(SPECIAL.NONE);
+            }
+        };
+        check();
+        return LibraryService.subscribe(check);
+    }, [selectedCollection, favoritesId]);
     const [modalFileId, setModalFileId] = useState(null);
     const galleryScrollRef = useRef(null);
-    useDragAutoScroll(galleryScrollRef);
 
     const isTrash = selectedCollection === SPECIAL.TRASH;
     const isHistory = selectedCollection === SPECIAL.HISTORY;
@@ -46,9 +111,17 @@ const LibraryView = () => {
     const [historySection, setHistorySection] = useState(null);
     const [historySections, setHistorySections] = useState([]);
 
-    // A smart collection loads by its saved filter instead of by id.
+    // A smart collection loads by its saved filter instead of by id; search by
+    // picture loads its fixed, ordered list of results the same way.
+    const isVisual = selectedCollection === SPECIAL.VISUAL;
+    const visual = useVisualSearch();
     const smartCol = LibraryService.getCollections().find(c => c.id === selectedCollection && c.isSmart);
-    const smartFilterJson = smartCol ? (smartCol.filter || '{}') : null;
+    const smartFilterJson = model ? JSON.stringify({ tags: [{ name: model.name, exclude: false }] }) : isVisual
+        ? JSON.stringify({ ids: visual.results.map(r => r.id) })
+        : smartCol ? (smartCol.filter || '{}') : null;
+    // Where "close" on the results goes back to.
+    const beforeVisual = useRef(SPECIAL.ALL);
+    useEffect(() => { if (!isVisual) beforeVisual.current = selectedCollection; }, [selectedCollection, isVisual]);
 
     const { items, reload, deleteItem, restoreItem } = useLibraryItems(
         isHistory
@@ -74,13 +147,95 @@ const LibraryView = () => {
     const reloadRef = useRef(reload);
     useEffect(() => { reloadRef.current = reload; });
     useEffect(() => {
+        const onReload = () => reloadRef.current();
+        window.addEventListener('df:libraryReload', onReload);
+        return () => window.removeEventListener('df:libraryReload', onReload);
+    }, []);
+
+    // Slideshow of the selection / the whole view, started without opening a file first.
+    const [slideSet, setSlideSet] = useState(null);   // { items, token }
+    const startSlideshow = useCallback((list) => {
+        const media = list.filter(f => f.type === FILE_TYPES.IMAGE || f.type === FILE_TYPES.VIDEO);
+        if (!media.length) { notify({ message: 'Нечего показывать', type: 'info' }); return; }
+        setSlideSet({ items: media, token: Date.now() });
+        setModalFileId(media[0].uniqueId);
+    }, []);
+    const slideshowListRef = useRef([]);
+    useEffect(() => {
+        const onPlay = () => startSlideshow(slideshowListRef.current);
+        window.addEventListener('df:slideshow', onPlay);
+        return () => window.removeEventListener('df:slideshow', onPlay);
+    }, [startSlideshow]);
+
+    // Ctrl+Z / Ctrl+Y (Ctrl+Shift+Z) — library edits only, so this lives with the
+    // library view; text fields and the image editor keep their own undo.
+    useEffect(() => {
+        const onKey = (e) => {
+            const t = e.target;
+            if (t?.closest?.('input, textarea, [contenteditable="true"]') || document.querySelector('.img-editor')) return;
+            if (matches(e, 'lib.undo')) { e.preventDefault(); undoLast(); }
+            else if (matches(e, 'lib.redo')) { e.preventDefault(); redoLast(); }
+            else if (matches(e, 'lib.paste')) { e.preventDefault(); pasteRef.current(); }
+        };
+        document.addEventListener('keydown', onKey);
+        return () => document.removeEventListener('keydown', onKey);
+    }, []);
+    useCommands('library-visual', () => [
+        { id: 'vs:clip', group: 'Поиск по картинке', icon: 'bi-clipboard-image', title: 'Найти по картинке из буфера обмена', run: () => runVisualSearch({ clipboard: true }) },
+        { id: 'vs:file', group: 'Поиск по картинке', icon: 'bi-image', title: 'Найти по картинке из файла…', run: () => runVisualSearch({ pick: true }) },
+    ]);
+    // Ctrl+V: what's on the clipboard goes into the open collection (or "no
+    // collection" when a special / smart view is open).
+    const pasteRef = useRef(null);
+    pasteRef.current = async () => {
+        if (isWeb) return;   // the PC's clipboard — not over the network
+        const special = Object.values(SPECIAL).includes(selectedCollection) || !!smartFilterJson;
+        const target = special ? null : selectedCollection;
+        const where = target ? `«${LibraryService.getCollections().find(c => c.id === target)?.name || 'коллекция'}»` : '«Без коллекции»';
+        const res = await libraryApi.paste(target).catch(e => ({ errors: [{ error: e.message }] }));
+        const added = res?.results?.length || 0, dup = res?.skipped?.length || 0, err = res?.errors?.length || 0;
+        if (res?.manga?.length) {
+            notify({
+                message: `Манга в очереди загрузки в ${where}: ${res.manga.length}`,
+                type: 'success',
+                action: { label: 'Загрузки', onClick: () => openManga({ view: 'downloads' }) },
+            });
+            if (res.kind === 'manga') return;
+        }
+        if (!res?.kind && !added && !err) {
+            notify({ message: 'В буфере нет картинки, ссылки или файлов', type: 'info' });
+            return;
+        }
+        notify({
+            message: added ? `Вставлено в ${where}: ${added}${dup ? ` · уже было: ${dup}` : ''}${err ? ` · ошибок: ${err}` : ''}`
+                : dup ? 'Уже есть в библиотеке' : String(res.errors?.[0]?.error || 'Не удалось вставить').split(/\n/).pop(),
+            type: added ? 'success' : err ? 'warning' : 'info',
+        });
+        if (added) { refreshStats(); await reloadRef.current(); }
+    };
+
+    useCommands('library-slideshow', () => [
+        { id: 'paste', group: 'Библиотека', icon: 'bi-clipboard-plus', title: 'Вставить из буфера обмена в эту коллекцию', hint: 'Ctrl+V', run: () => pasteRef.current() },
+        { id: 'ss:view', group: 'Библиотека', icon: 'bi-play-circle', title: 'Слайд-шоу: всё, что показано', hint: 'S в просмотрщике', run: () => startSlideshow(orderedItems) },
+        { id: 'sort:shuffle', group: 'Библиотека', icon: 'bi-shuffle', title: 'Перемешать (случайный порядок)', keywords: 'рандом случайно порядок сортировка', run: () => patch({ sortBy: 'random', seed: newSeed() }) },
+        { id: 'sort:new', group: 'Библиотека', icon: 'bi-calendar-plus', title: 'Порядок: сначала новые', keywords: 'сортировка дата', run: () => patch({ sortBy: 'importedAt', order: -1 }) },
+        { id: 'sort:views', group: 'Библиотека', icon: 'bi-eye', title: 'Порядок: давно не открывал', keywords: 'сортировка просмотры забытые', run: () => patch({ sortBy: 'lastViewedAt', order: 1 }) },
+        ...(selectedItems.length > 1 ? [{ id: 'ss:sel', group: 'Библиотека', icon: 'bi-play-circle', title: `Слайд-шоу: выделенные (${selectedItems.length})`, run: () => startSlideshow(selectedItems) }] : []),
+    ]);
+    useCommands('library-undo', () => [
+        { id: 'undo', group: 'Библиотека', icon: 'bi-arrow-counterclockwise', title: 'Отменить последнее действие', hint: 'Ctrl+Z', run: undoLast },
+        { id: 'redo', group: 'Библиотека', icon: 'bi-arrow-clockwise', title: 'Повторить отменённое', hint: 'Ctrl+Y', run: redoLast },
+    ]);
+    useEffect(() => {
         let timer = null, last = 0;
         const shows = (addedTo) => {
             if (selectedCollection === SPECIAL.ALL || smartFilterJson) return true;
             if (selectedCollection === SPECIAL.UNCATEGORIZED) return addedTo.includes(null);
             return addedTo.includes(selectedCollection);
         };
-        const off = LibraryService.onLibraryChanged(({ added, addedTo = [] }) => {
+        const off = LibraryService.onLibraryChanged(({ added, addedTo = [], reload }) => {
+            // Undo / redo: whatever it touched, show the current state right away.
+            if (reload) { reloadRef.current(); return; }
             if (!added || isTrash || isHistory || selectedCollection === SPECIAL.NONE) return;
             if (!shows(addedTo) || timer) return;
             timer = setTimeout(() => {
@@ -97,6 +252,8 @@ const LibraryView = () => {
     // In the history view it's driven by loadHistory() instead of the item DB.
     const [orderedItems, setOrderedItems] = useState([]);
     useEffect(() => { if (!isHistory) setOrderedItems(filtered); }, [filtered, isHistory]);
+    // The slideshow (top bar's ⋯ menu) shows the selection if there is one, else everything.
+    useEffect(() => { slideshowListRef.current = selectedItems.length > 1 ? selectedItems : orderedItems; });
 
     // Load recently-viewed for the chosen section, newest first. Snapshots are rebuilt
     // into ThumbFiles so the gallery + viewer work uniformly across sources.
@@ -130,6 +287,7 @@ const LibraryView = () => {
     const { tree } = useCollections();
 
     const handleFileOpen = useCallback((file) => {
+        if (file.isManga) { readLibraryManga(file); return; }
         if (file.type === FILE_TYPES.IMAGE || file.type === FILE_TYPES.VIDEO) {
             setModalFileId(file.uniqueId);
         }
@@ -137,17 +295,28 @@ const LibraryView = () => {
 
     const handleCollectionSelect = useCallback((id) => {
         setSelectedCollection(id);
+        setViewPref('lastCollection', id);
     }, []);
 
     // Clicking a thumb body selects it (Explorer-style: plain = single, ctrl = toggle,
     // shift = range). Opening the viewer is the overlay button / context menu / dbl-click.
+    // Phone: a tap opens the file; once something is selected (long press), taps
+    // add to / take from the selection instead.
+    const mobile = useMobile();
+    const [drawer, setDrawer] = useState(false);
+    useEffect(() => { setDrawer(false); }, [selectedCollection, smartFilterJson]);
     const handleFileClick = useCallback((file, e) => {
         if (file.type === FILE_TYPES.LIBRARY) {
             handleCollectionSelect(file._meta.collectionId);
             return;
         }
+        if (mobile) {
+            if (selected.size) toggle(file.uniqueId);
+            else handleFileOpen(file);
+            return;
+        }
         handleSelect(file.uniqueId, e || {});
-    }, [handleSelect, handleCollectionSelect]);
+    }, [handleSelect, handleCollectionSelect, mobile, selected, toggle, handleFileOpen]);
 
     // Checkbox overlay: toggle (shift extends the range) without disturbing modifiers.
     const handleCheckbox = useCallback((file, e) => {
@@ -180,8 +349,26 @@ const LibraryView = () => {
         return findName(tree);
     }, [selectedCollection, tree, favoritesId]);
 
+    // Inside a real collection: one step up (the parent, else the top level).
+    const backTarget = useMemo(() => {
+        if (isTrash || isHistory || isVisual || smartFilterJson || Object.values(SPECIAL).includes(selectedCollection)) return null;
+        const col = LibraryService.getCollections().find(c => c.id === selectedCollection);
+        if (!col) return null;
+        const parent = col.parentId && LibraryService.getCollections().find(c => c.id === col.parentId);
+        return parent ? { id: parent.id, label: parent.name } : { id: SPECIAL.NONE, label: 'Коллекции' };
+    }, [selectedCollection, tree, isTrash, isHistory, isVisual, smartFilterJson]);
+
+    // Positions are written in ascending order, so only this sort can show them as dragged.
+    const customOrder = filters.sortBy === 'order' && filters.order === 1;
+
     const handleReordered = useCallback((reordered) => {
         setOrderedItems(reordered);
+    }, []);
+
+    // The viewer's strip: same as dragging in the gallery.
+    const handleStripReorder = useCallback((reordered) => {
+        setOrderedItems(reordered);
+        saveItemOrder(reordered);
     }, []);
 
     const handleEmptyTrash = useCallback(async () => {
@@ -193,9 +380,19 @@ const LibraryView = () => {
     }, [refreshStats, reload, clear]);
 
     // Trash every selected item at once (one IPC call), with an Undo toast.
-    const bulkTrash = useCallback(async () => {
+    // `forever` (Shift + Delete): past the trash, after a confirmation.
+    const bulkTrash = useCallback(async (forever = false) => {
         if (!selectedItems.length || isTrash) return;
         const ids = selectedItems.map(f => f.id);
+        if (forever) {
+            if (!confirmDeleteForever(ids.length, selectedItems[0]?.title)) return;
+            await LibraryService.deleteItems(ids, true);
+            clear();
+            refreshStats();
+            await reload();
+            notify({ message: `Удалено навсегда: ${ids.length}`, type: 'info' });
+            return;
+        }
         await LibraryService.deleteItems(ids, false);
         clear();
         refreshStats();
@@ -232,7 +429,13 @@ const LibraryView = () => {
     }, [selectedItems, clear, loadHistory]);
 
     const handleUpdated = useCallback(async (idOrAction, data) => {
-        if (idOrAction === 'delete') {
+        if (idOrAction === 'deleteForever') {
+            // Shift + Delete: past the trash (confirmed where it was pressed).
+            await deleteItem(data, true);
+            refreshStats();
+            await reload();
+            notify({ message: 'Удалено навсегда', type: 'info' });
+        } else if (idOrAction === 'delete') {
             // In the trash view "delete" means gone for good; elsewhere it's a soft delete.
             await deleteItem(data, isTrash);
             refreshStats();
@@ -288,11 +491,10 @@ const LibraryView = () => {
     }, [deleteItem, restoreItem, reload, refreshStats, isTrash, selectedCollection]);
 
     const onGalleryKeyDown = useCallback((e) => {
-        const k = e.key.toLowerCase();
-        if ((e.ctrlKey || e.metaKey) && k === 'a')      { e.preventDefault(); selectAll(); }
-        else if ((e.ctrlKey || e.metaKey) && k === 'i') { e.preventDefault(); invert(); }
+        if (matches(e, 'common.selectAll'))  { e.preventDefault(); selectAll(); }
+        else if (matches(e, 'lib.invert'))   { e.preventDefault(); invert(); }
         else if (e.key === 'Escape' && selected.size)   { clear(); }
-        else if (e.key === 'Delete' && selectedItems.length && !isTrash) { e.preventDefault(); bulkTrash(); }
+        else if (e.key === 'Delete' && selectedItems.length && !isTrash) { e.preventDefault(); bulkTrash(e.shiftKey); }
     }, [selectAll, invert, clear, selected.size, selectedItems.length, isTrash, bulkTrash]);
 
     const bulkOnDone = useCallback(async () => {
@@ -302,15 +504,21 @@ const LibraryView = () => {
     }, [clear, refreshStats, reload]);
 
     return (
-        <div className="library-layout">
+        <div className={`library-layout ${drawer ? 'drawer-open' : ''}`}>
+            {mobile && drawer && <div className="lib-drawer-backdrop" onClick={() => setDrawer(false)} />}
             <Modal
                 fileId={modalFileId}
-                mainArray={orderedItems}
-                modalUpdater={(file) => setModalFileId(file?.uniqueId || null)}
-                displayFiles={orderedItems}
+                mainArray={slideSet ? slideSet.items : orderedItems}
+                modalUpdater={(file) => {
+                    setModalFileId(file?.uniqueId || null);
+                    if (!file) setSlideSet(null);   // viewer closed: back to the whole view
+                }}
+                displayFiles={slideSet ? slideSet.items : orderedItems}
                 onUpdated={isHistory ? undefined : handleUpdated}
+                onReorder={slideSet || isHistory || isTrash || !customOrder ? undefined : handleStripReorder}
+                autoSlideshow={slideSet?.token || false}
             />
-            <div className="library-sidebar" onDragOver={e => e.stopPropagation()}>
+            {!model && <div className="library-sidebar" onDragOver={e => e.stopPropagation()}>
                 <CollectionTree
                     selectedId={selectedCollection}
                     onSelect={handleCollectionSelect}
@@ -353,22 +561,37 @@ const LibraryView = () => {
                         onImported={() => { reload(); refreshStats(); }}
                     />
                 )}
-            </div>
+            </div>}
 
             <div className="library-main">
+            {mobile && !model && (
+                <button className="lib-drawer-btn" onClick={() => setDrawer(true)}>
+                    <i aria-hidden="true" className="bi bi-list" />
+                    <span>{isTrash ? 'Корзина' : isHistory ? 'История' : currentCollectionName || (selectedCollection === SPECIAL.UNCATEGORIZED ? 'Без коллекции' : 'Все файлы')}</span>
+                    <span className="lib-drawer-count">{orderedItems.length}</span>
+                </button>
+            )}
+            {backTarget && (
+                <div className="collection-back">
+                    <button className="btn btn-sm btn-outline-secondary" onClick={() => handleCollectionSelect(backTarget.id)}>
+                        <i aria-hidden="true" className="bi bi-arrow-left" />{backTarget.label}
+                    </button>
+                    <span className="collection-back-name">{currentCollectionName}</span>
+                </div>
+            )}
             {isTrash && (
                 <div className="trash-toolbar">
-                    <i className="bi bi-trash me-1" />
+                    <i aria-hidden="true" className="bi bi-trash me-1" />
                     <span>Корзина — удалённые элементы</span>
                     <button className="btn btn-sm btn-outline-danger ms-auto" onClick={handleEmptyTrash}>
-                        <i className="bi bi-trash3 me-1" />
+                        <i aria-hidden="true" className="bi bi-trash3 me-1" />
                         Очистить корзину
                     </button>
                 </div>
             )}
             {isHistory && (
                 <div className="history-toolbar">
-                    <i className="bi bi-clock-history history-toolbar-icon" />
+                    <i aria-hidden="true" className="bi bi-clock-history history-toolbar-icon" />
                     <div className="history-sections">
                         <button
                             className={`history-sec ${historySection == null ? 'active' : ''}`}
@@ -390,27 +613,36 @@ const LibraryView = () => {
                     <div className="history-actions ms-auto">
                         {selectedItems.length > 0 && (
                             <button className="btn btn-sm btn-outline-secondary" onClick={removeSelectedFromHistory}>
-                                <i className="bi bi-x-lg me-1" />
+                                <i aria-hidden="true" className="bi bi-x-lg me-1" />
                                 Убрать ({selectedItems.length})
                             </button>
                         )}
                         <button className="btn btn-sm btn-outline-danger" onClick={clearCurrentHistory}>
-                            <i className="bi bi-trash3 me-1" />
+                            <i aria-hidden="true" className="bi bi-trash3 me-1" />
                             Очистить
                         </button>
                     </div>
                 </div>
             )}
+            {isVisual && (
+                <VisualSearchHeader
+                    onClose={() => handleCollectionSelect(beforeVisual.current)}
+                    sortedBySimilarity={filters.sortBy === 'order'}
+                    onSortBySimilarity={() => update('sortBy', 'order')}
+                />
+            )}
             {!isHistory && <QuickFilters />}
             {!isHistory && (
                 <BulkActionBar
                     selectedItems={selectedItems}
+                    onSlideshow={() => startSlideshow(selectedItems)}
                     permanent={isTrash}
                     totalCount={orderedItems.length}
                     onSelectAll={selectAll}
                     onInvert={invert}
                     onClear={clear}
                     onDone={bulkOnDone}
+                    onChanged={async () => { refreshStats(); await reload(); }}
                 />
             )}
                 <div
@@ -432,7 +664,12 @@ const LibraryView = () => {
                         typeView={2}
                         scrollRef={galleryScrollRef}
                         reorderable={!isHistory}
-                        groupByRating={ratingDividers && filters.sortBy === 'rating' && !isHistory}
+                        sortable={customOrder}
+                        groupBy={isHistory ? null
+                            : ratingDividers && filters.sortBy === 'rating' ? 'rating'
+                            : dateDividers && sortOf(filters.sortBy).month ? `month:${filters.sortBy}`
+                            : typeDividers && filters.sortBy === 'type' ? 'type'
+                            : null}
                         resetKey={isHistory ? `history:${historySection ?? 'all'}` : selectedCollection}
                     />
                 </div>
@@ -482,7 +719,7 @@ const LibraryView = () => {
                                         <label>Источник</label>
                                         <a className="btn btn-sm btn-outline-secondary"
                                            href={focused.sourceUrl} target="_blank" rel="noreferrer">
-                                            <i className="bi bi-box-arrow-up-right me-1" />
+                                            <i aria-hidden="true" className="bi bi-box-arrow-up-right me-1" />
                                             Открыть источник
                                         </a>
                                     </div>
@@ -491,7 +728,7 @@ const LibraryView = () => {
                         </>
                     ) : (
                         <div className="metadata-panel-empty">
-                            <i className="bi bi-clock-history" />
+                            <i aria-hidden="true" className="bi bi-clock-history" />
                             <span>Выбери элемент</span>
                         </div>
                     )}

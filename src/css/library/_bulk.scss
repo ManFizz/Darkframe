@@ -1,38 +1,37 @@
-// ─── Bulk Actions ─────────────────────────────────────────────────────────────
 
 .bulk-action-bar {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 12px;
+  gap: var(--df-sp-4);
+  padding: var(--df-sp-4) var(--df-sp-6);
   background: var(--bs-primary-bg-subtle);
   border-bottom: 1px solid var(--bs-primary);
   flex-shrink: 0;
   flex-wrap: wrap;
-  animation: slideDown 0.15s ease;
+  animation: slideDown var(--df-dur-fast) ease;
 }
 
 .bulk-count {
   font-weight: 600;
-  font-size: 14px;
+  font-size: var(--df-fs-base);
   white-space: nowrap;
 }
 
 .bulk-select-controls {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--df-sp-2);
 }
 
 .bulk-linkbtn {
   border: none;
   background: none;
   color: var(--bs-primary);
-  font-size: 12px;
+  font-size: var(--df-fs-sm);
   font-weight: 600;
   cursor: pointer;
-  padding: 2px 6px;
-  border-radius: 5px;
+  padding: var(--df-sp-1) var(--df-sp-3);
+  border-radius: var(--df-r-md);
   white-space: nowrap;
 
   &:hover { background: rgba(var(--bs-primary-rgb), 0.14); }
@@ -40,7 +39,7 @@
 
 .bulk-action-group {
   display: flex;
-  gap: 4px;
+  gap: var(--df-sp-2);
   align-items: center;
 
   .form-select,
@@ -56,24 +55,24 @@
   position: absolute;
   top: calc(100% + 6px);
   left: 0;
-  z-index: 1200;
+  z-index: var(--df-z-popover);
   width: 260px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  padding: 12px;
-  border-radius: 12px;
+  gap: var(--df-sp-5);
+  padding: var(--df-sp-6);
+  border-radius: var(--df-r-2xl);
   background: var(--df-glass-strong);
   border: 1px solid var(--df-glass-border);
   backdrop-filter: blur(16px);
-  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5);
+  box-shadow: var(--df-shadow-xl);
 }
 .bulk-compress-row {
   display: grid;
   grid-template-columns: 96px 1fr auto;
   align-items: center;
-  gap: 8px;
-  font-size: 12px;
+  gap: var(--df-sp-4);
+  font-size: var(--df-fs-sm);
   color: var(--bs-secondary);
 
   .form-select, .form-control { grid-column: 2 / span 2; }
@@ -86,3 +85,58 @@
   to   { transform: translateY(0);    opacity: 1; }
 }
 
+
+// Bulk tags popover
+.bulk-tags { position: relative; }
+.bulk-tags-panel {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: var(--df-z-popover);
+  width: 340px;
+  padding: var(--df-sp-5);
+  border-radius: var(--df-r-2xl);
+  background: color-mix(in srgb, var(--bs-body-bg) 97%, transparent);
+  border: 1px solid var(--bs-border-color);
+  box-shadow: 0 16px 40px var(--df-shadow, rgba(var(--df-black-rgb), 0.45));
+  animation: cts-in var(--df-dur-instant) ease-out;
+}
+.bt-tabs {
+  display: flex;
+  gap: var(--df-sp-1);
+  padding: 3px;
+  margin-bottom: var(--df-sp-5);
+  border-radius: var(--df-r-xl);
+  background: var(--bs-tertiary-bg);
+  button {
+    flex: 1;
+    padding: 5px var(--df-sp-3);
+    border: none;
+    border-radius: var(--df-r-lg);
+    background: transparent;
+    color: var(--bs-secondary);
+    font-size: var(--df-fs-sm);
+    font-weight: 600;
+    cursor: pointer;
+    &.active { background: var(--bs-body-bg); color: var(--df-accent); box-shadow: 0 1px 3px rgba(var(--df-black-rgb), 0.2); }
+  }
+}
+.bt-body { display: flex; flex-direction: column; gap: var(--df-sp-4); }
+.bt-row { display: flex; align-items: center; gap: var(--df-sp-3); .bi { color: var(--bs-secondary); } }
+.bt-hint { font-size: var(--df-fs-sm); color: var(--bs-secondary); }
+.bt-list { max-height: 260px; overflow-y: auto; display: flex; flex-direction: column; gap: var(--df-sp-1); }
+.bt-tag {
+  display: flex;
+  align-items: center;
+  gap: var(--df-sp-4);
+  padding: var(--df-sp-2) var(--df-sp-2) var(--df-sp-2) var(--df-sp-5);
+  border-radius: var(--df-r-lg);
+  &:hover { background: var(--bs-tertiary-bg); }
+  .bt-tag-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: var(--df-fs-md); }
+  .bt-tag-count { font-size: var(--df-fs-xs); color: var(--bs-secondary); white-space: nowrap; }
+  button {
+    width: 24px; height: 24px; display: grid; place-items: center;
+    border: none; border-radius: var(--df-r-md); background: transparent; color: var(--bs-secondary); cursor: pointer;
+    &:hover:not(:disabled) { background: color-mix(in srgb, var(--bs-danger) 15%, transparent); color: var(--bs-danger); }
+  }
+}

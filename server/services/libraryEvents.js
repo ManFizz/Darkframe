@@ -14,9 +14,10 @@ function broadcast(channel, payload) {
         const wc = win.webContents;
         if (wc && !wc.isDestroyed()) wc.send(channel, payload);
     }
+    // …and to the phones / browsers connected over the network.
+    try { require('../remote/server').emit(channel, payload); } catch { /* tests */ }
 }
 
-// ─── Item changes ─────────────────────────────────────────────────────────────
 // Coalesced: a batch import or a bulk move fires one event, not one per row.
 // The first change goes out quickly; during a steady stream at most one per second.
 
@@ -81,7 +82,6 @@ function installItemHooks() {
     Item.addHook('afterBulkDestroy', 'libraryEvents', (options) => afterCommit(options, () => itemsChanged()));
 }
 
-// ─── Import activity ──────────────────────────────────────────────────────────
 // One aggregate counter across every import source running at once. Totals reset
 // when everything has finished, so the next import starts again from 0 / N.
 
@@ -147,4 +147,7 @@ function beginImport(count) {
     };
 }
 
-module.exports = { installItemHooks, itemsChanged, beginImport, broadcast };
+// True while any import job is running (the library can't be switched then).
+const importActive = () => activity.jobs > 0;
+
+module.exports = { installItemHooks, itemsChanged, beginImport, broadcast, importActive };

@@ -10,7 +10,7 @@ const fmtNum = (v) => (v == null ? '' : String(Math.round(v * 100) / 100));
 const NumInput = ({ value, onChange, placeholder, step = 1, min = 0 }) => {
     const [text, setText] = useState(fmtNum(value));
 
-    // Follow external changes (e.g. "Сбросить"), but not the echo of our own typing —
+    // Follow external changes (e.g. a reset), but not the echo of our own typing —
     // values round-trip through bytes, so compare with a small tolerance.
     useEffect(() => {
         const parsed = text === '' ? null : Number(text);
@@ -56,6 +56,7 @@ const TYPES = [
     { id: 'image', label: 'Изображения', icon: 'bi-image' },
     { id: 'video', label: 'Видео',       icon: 'bi-film' },
     { id: 'gif',   label: 'GIF',         icon: 'bi-filetype-gif' },
+    { id: 'manga', label: 'Манга',       icon: 'bi-book' },
 ];
 
 const ORIENTATIONS = [
@@ -98,7 +99,7 @@ const AdvancedFilterFields = ({ value, onChange }) => {
                             className={`adv-chip ${types.includes(t.id) ? 'active' : ''}`}
                             onClick={() => toggleType(t.id)}
                         >
-                            <i className={`bi ${t.icon}`} /> {t.label}
+                            <i aria-hidden="true" className={`bi ${t.icon}`} /> {t.label}
                         </button>
                     ))}
                 </div>

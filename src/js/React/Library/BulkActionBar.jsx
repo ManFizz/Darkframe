@@ -1,16 +1,20 @@
 import React, {useState} from 'react';
+import {confirmDeleteForever} from '@services/deleteForever';
 import LibraryService from '@services/LibraryService';
 import {notify} from '@services/NotificationService';
 import {loadEditPreset} from '@services/imageEditPreset';
 import {FILE_TYPES} from '@/Constants';
-import {recordTagUse} from '@services/tagPrefs';
+import BulkTags from './BulkTags';
+import {autotagItems} from '@services/autotagRun';
+import MakeMangaButton from '../Manga/MakeMangaButton';
+import {compareItemFromThumb, openCompare} from '../Compare/CompareView';
 import CollectionTreeSelect, {pushRecentCollection} from './Collection/CollectionTreeSelect';
 
 const fmtMB = (b) => `${(b / 1024 / 1024).toFixed(1)} МБ`;
 
-const BulkActionBar = ({ selectedItems, onDone, permanent = false, totalCount = 0, onSelectAll, onInvert, onClear }) => {
+const BulkActionBar = ({ selectedItems, onDone, onChanged, onSlideshow, permanent = false, totalCount = 0, onSelectAll, onInvert, onClear }) => {
+    const [tagging, setTagging] = useState(null);   // autotag progress
     const [moveOpen, setMoveOpen] = useState(false);
-    const [tagInput, setTagInput] = useState('');
     const [compressOpen, setCompressOpen] = useState(false);
     const [cFormat, setCFormat]   = useState('webp');
     const [cQuality, setCQuality] = useState(85);
@@ -26,8 +30,8 @@ const BulkActionBar = ({ selectedItems, onDone, permanent = false, totalCount = 
     // Re-encode every selected still image (format / quality / max side). Each keeps
     // its own crop/colour edits, and the pristine original stays available for revert.
     const compressAll = async () => {
-        const targets = selectedItems.filter(f => f.type === FILE_TYPES.IMAGE && f.mimeType !== 'image/gif');
-        if (!targets.length) { notify({ message: 'Нет подходящих изображений (GIF и видео пропускаются)', type: 'warning' }); return; }
+        const targets = selectedItems.filter(f => f.type === FILE_TYPES.IMAGE && !f.isManga);
+        if (!targets.length) { notify({ message: 'Нет подходящих изображений (видео пропускаются)', type: 'warning' }); return; }
         if (!confirm(`Пересжать ${targets.length} изображений? Оригиналы сохранятся — можно будет откатить.`)) return;
         setCompressOpen(false);
 
@@ -69,30 +73,18 @@ const BulkActionBar = ({ selectedItems, onDone, permanent = false, totalCount = 
         onDone();
     };
 
-    const addTagToAll = async () => {
-        const tag = tagInput.trim().toLowerCase();
-        if (!tag) return;
-        recordTagUse(tag);
-
-        await LibraryService.bulkUpdateItems(
-            selectedItems.map(f => ({
-                id: f.id,
-                data: { tags: [...new Set([...(f.tags || []), tag])] },
-            }))
-        );
-        setTagInput('');
-        onDone();
-    };
-
-    const deleteAll = async () => {
+    // Shift + click: past the trash, like in the trash view.
+    const deleteAll = async (e) => {
+        const forever = permanent || !!e?.shiftKey;
         // Permanent still asks; the soft path is reversible via the Undo toast.
-        if (permanent && !confirm(`Удалить ${selectedItems.length} элементов навсегда?`)) return;
+        if (forever && !(permanent ? confirm(`Удалить ${selectedItems.length} элементов навсегда?`) : confirmDeleteForever(selectedItems.length, selectedItems[0]?.title))) return;
 
         const ids = selectedItems.map(f => f.id);
-        await LibraryService.deleteItems(ids, permanent);   // one IPC call
+        await LibraryService.deleteItems(ids, forever);   // one IPC call
         onDone();
 
-        if (!permanent) {
+        if (forever && !permanent) notify({ message: `Удалено навсегда: ${ids.length}`, type: 'info' });
+        if (!forever) {
             notify({
                 message: `Перемещено в корзину: ${ids.length}`,
                 type: 'info',
@@ -115,7 +107,7 @@ const BulkActionBar = ({ selectedItems, onDone, permanent = false, totalCount = 
     const applyLastEdit = async () => {
         const preset = loadEditPreset();
         if (!preset) return;
-        const targets = selectedItems.filter(f => f.type === FILE_TYPES.IMAGE && f.mimeType !== 'image/gif');
+        const targets = selectedItems.filter(f => f.type === FILE_TYPES.IMAGE && !f.isManga);   // GIF too: frame by frame
         if (!targets.length) { notify({ message: 'Нет подходящих изображений', type: 'warning' }); return; }
         if (!confirm(`Применить последнюю правку к ${targets.length} изображениям?`)) return;
 
@@ -136,7 +128,7 @@ const BulkActionBar = ({ selectedItems, onDone, permanent = false, totalCount = 
     return (
         <div className="bulk-action-bar">
             <span className="bulk-count">
-                <i className="bi bi-check2-square me-1" />
+                <i aria-hidden="true" className="bi bi-check2-square me-1" />
                 {selectedItems.length}
             </span>
 
@@ -162,7 +154,7 @@ const BulkActionBar = ({ selectedItems, onDone, permanent = false, totalCount = 
                             className={`btn btn-sm btn-outline-primary ${moveOpen ? 'active' : ''}`}
                             onClick={() => setMoveOpen(v => !v)}
                         >
-                            <i className="bi bi-folder-symlink me-1" />
+                            <i aria-hidden="true" className="bi bi-folder-symlink me-1" />
                             Переместить в…
                         </button>
                         {moveOpen && (
@@ -179,22 +171,37 @@ const BulkActionBar = ({ selectedItems, onDone, permanent = false, totalCount = 
                         )}
                     </div>
 
-                    <div className="bulk-action-group">
-                        <input
-                            className="form-control form-control-sm"
-                            placeholder="Тег..."
-                            value={tagInput}
-                            onChange={e => setTagInput(e.target.value)}
-                            onKeyDown={e => e.key === 'Enter' && addTagToAll()}
-                        />
-                        <button
-                            className="btn btn-sm btn-outline-secondary"
-                            onClick={addTagToAll}
-                        >
-                            <i className="bi bi-tag me-1" />
-                            Добавить тег
+                    <BulkTags selectedItems={selectedItems} onChanged={onChanged} />
+
+                    <button className="btn btn-sm btn-outline-secondary" disabled={!!tagging}
+                            title="Локальная нейросеть добавит теги по картинкам (Ctrl+Z — отменить)"
+                            onClick={async () => {
+                                setTagging({ done: 0, total: selectedItems.length });
+                                try { await autotagItems(selectedItems.map(f => f.id), { onProgress: setTagging }); }
+                                finally { setTagging(null); onChanged?.(); }
+                            }}>
+                        {tagging ? <><i aria-hidden="true" className="bi bi-arrow-repeat spin me-1" />{tagging.done}/{tagging.total}</>
+                            : <><i aria-hidden="true" className="bi bi-stars me-1" /> Автотеги</>}
+                    </button>
+
+                    {selectedItems.filter(f => f.type === FILE_TYPES.IMAGE && !f.isManga).length > 1 && (
+                        <MakeMangaButton items={selectedItems.filter(f => f.type === FILE_TYPES.IMAGE && !f.isManga)}
+                                         collectionId={selectedItems[0]?.collectionId ?? null} onDone={() => onDone?.()} />
+                    )}
+
+                    {onSlideshow && selectedItems.length > 1 && (
+                        <button className="btn btn-sm btn-outline-secondary" onClick={onSlideshow} title="Слайд-шоу из выделенных">
+                            <i aria-hidden="true" className="bi bi-play-circle me-1" /> Слайд-шоу
                         </button>
-                    </div>
+                    )}
+
+                    {selectedItems.length === 2 && (
+                        <button className="btn btn-sm btn-outline-secondary"
+                                onClick={() => openCompare(selectedItems.map(compareItemFromThumb), { onDone: onDone })}
+                                title="Сравнить два файла бок о бок">
+                            <i aria-hidden="true" className="bi bi-layout-split me-1" /> Сравнить
+                        </button>
+                    )}
 
                     {hasPreset && (
                         <button
@@ -202,7 +209,7 @@ const BulkActionBar = ({ selectedItems, onDone, permanent = false, totalCount = 
                             title="Применить последнюю правку (поворот / обрезку / цвет) ко всем выбранным"
                             onClick={applyLastEdit}
                         >
-                            <i className="bi bi-magic me-1" />
+                            <i aria-hidden="true" className="bi bi-magic me-1" />
                             Применить правку
                         </button>
                     )}
@@ -214,7 +221,7 @@ const BulkActionBar = ({ selectedItems, onDone, permanent = false, totalCount = 
                             onClick={() => setCompressOpen(v => !v)}
                             disabled={!!busy}
                         >
-                            <i className="bi bi-file-earmark-zip me-1" />
+                            <i aria-hidden="true" className="bi bi-file-earmark-zip me-1" />
                             {busy || 'Сжать'}
                         </button>
                         {compressOpen && (
@@ -255,7 +262,7 @@ const BulkActionBar = ({ selectedItems, onDone, permanent = false, totalCount = 
                     className="btn btn-sm btn-outline-success ms-auto"
                     onClick={restoreAll}
                 >
-                    <i className="bi bi-arrow-counterclockwise me-1" />
+                    <i aria-hidden="true" className="bi bi-arrow-counterclockwise me-1" />
                     Восстановить
                 </button>
             )}
@@ -263,8 +270,9 @@ const BulkActionBar = ({ selectedItems, onDone, permanent = false, totalCount = 
             <button
                 className={`btn btn-sm btn-outline-danger ${permanent ? '' : 'ms-auto'}`}
                 onClick={deleteAll}
+                title={permanent ? undefined : 'Shift + клик — удалить навсегда, минуя корзину'}
             >
-                <i className="bi bi-trash me-1" />
+                <i aria-hidden="true" className="bi bi-trash me-1" />
                 {permanent ? 'Удалить навсегда' : 'В корзину'}
             </button>
 
@@ -273,7 +281,7 @@ const BulkActionBar = ({ selectedItems, onDone, permanent = false, totalCount = 
                 onClick={onClear || onDone}
                 title="Снять выделение (Esc)"
             >
-                <i className="bi bi-x" />
+                <i aria-hidden="true" className="bi bi-x" />
             </button>
         </div>
     );

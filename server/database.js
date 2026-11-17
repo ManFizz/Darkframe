@@ -14,13 +14,15 @@ function customLogger(message) {
     }
 }
 
-const active = getActive();
-const dbFilePath = active.dbPath;
-
-fs.mkdirSync(path.dirname(dbFilePath), { recursive: true });
-if (!fs.existsSync(dbFilePath)) {
-    fs.closeSync(fs.openSync(dbFilePath, 'w'));
+function ensureDbFile(dbFilePath) {
+    fs.mkdirSync(path.dirname(dbFilePath), { recursive: true });
+    if (!fs.existsSync(dbFilePath)) {
+        fs.closeSync(fs.openSync(dbFilePath, 'w'));
+    }
 }
+
+const dbFilePath = getActive().dbPath;
+ensureDbFile(dbFilePath);
 
 const sequelize = new Sequelize({
     dialect: 'sqlite',
@@ -40,5 +42,22 @@ sequelize.afterConnect(async (connection) => {
     await run('PRAGMA busy_timeout = 5000;');
     await run('PRAGMA journal_mode = WAL;');
 });
+
+// Point the (single, shared) Sequelize instance at another library's database
+// without restarting: the sqlite dialect keeps its open handles in
+// connectionManager.connections and opens new ones from options.storage, so
+// closing the handles and swapping the path is enough — models stay defined.
+sequelize.switchStorage = async function switchStorage(newDbPath) {
+    const cm = this.connectionManager;
+    const open = Object.entries(cm.connections || {});
+    await Promise.all(open.map(([key, conn]) => new Promise((resolve) => {
+        delete cm.connections[key];
+        conn.close(() => resolve());
+    })));
+    ensureDbFile(newDbPath);
+    this.options.storage = newDbPath;
+    await this.query('PRAGMA busy_timeout = 5000;');
+    await this.query('PRAGMA journal_mode = WAL;');
+};
 
 module.exports = sequelize;

@@ -9,11 +9,11 @@
   max-width: variables.$sidebar-width;
   -webkit-transition: all 0.3s;
   -o-transition: all 0.3s;
-  transition: all 0.3s;
+  transition: all var(--df-dur-slow);
   margin-left: -(variables.$sidebar-width);
-  padding: 10px;
+  padding: var(--df-sp-5);
   position: fixed;
-  z-index: 100;
+  z-index: var(--df-z-sidebar);
   top: variables.$navbar-height;
 }
 
@@ -25,26 +25,12 @@
   margin-right: -20px;
   -webkit-transition: 0.3s;
   -o-transition: 0.3s;
-  transition: 0.3s;
+  transition: var(--df-dur-slow);
   z-index: 1;
 
   .btn {
     width: 40px;
     height: 40px;
-    border-radius: 50%;
-  }
-}
-
-.tag-list {
-  max-height: 610px;
-  overflow-y: scroll;
-  margin-bottom: 10px;
-
-  button {
-    padding: 3px;
-  }
-
-  .btn-group {
-    margin: 2px;
+    border-radius: var(--df-r-round);
   }
 }

@@ -1,6 +1,4 @@
-// server/services/jsonImportService.js
-//
-// Flexible JSON import — designed to be produced by browser extensions later.
+// Flexible JSON import (e.g. produced by browser extensions).
 //
 // Accepted top-level shapes:
 //   [ item, item, ... ]
@@ -39,10 +37,8 @@ const CONTENT_TYPE_EXT = {
     'image/gif': '.gif',  'video/mp4': '.mp4', 'video/webm': '.webm',
 };
 
-// ─── parsing helpers ───────────────────────────────────────────────────────────
-
 function parseFile(jsonPath) {
-    const content = fs.readFileSync(jsonPath, 'utf-8').replace(/^﻿/, '');
+    const content = fs.readFileSync(jsonPath, 'utf-8').replace(/^\uFEFF/, '');
     const data = JSON.parse(content);
     if (Array.isArray(data)) return { items: data, defaultCollection: null };
     return {
@@ -95,8 +91,6 @@ function writeBase64Temp(base64, mimeType) {
     return tmp;
 }
 
-// ─── collection resolver (find-or-create by name / path, cached per run) ────────
-
 function makeCollectionResolver() {
     const cache = new Map(); // `${parentId||'root'}::${nameLower}` -> id
 
@@ -123,8 +117,6 @@ function makeCollectionResolver() {
         return parentId;
     };
 }
-
-// ─── main ───────────────────────────────────────────────────────────────────────
 
 async function importFromJson({ jsonPath, collectionId = null, webContents }) {
     const { items, defaultCollection } = parseFile(jsonPath);

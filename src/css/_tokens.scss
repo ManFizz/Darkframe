@@ -1,0 +1,129 @@
+// Design tokens: the one place to change how the app looks. Everything in the
+// stylesheets refers to these instead of literal numbers and colours.
+//
+//   Colours     — a fixed palette of 26, plus the accent (the user's, see main.scss).
+//                 The same in both themes: what changes with the theme lives in the
+//                 semantic --df-* variables of main.scss, built from these.
+//                 Each colour also has a "-rgb" triple for transparency:
+//                 rgba(var(--df-black-rgb), 0.45).
+//   Type        — font sizes.
+//   Shape       — corner radii.
+//   Space       — gaps, paddings, margins: --df-sp-N = N × --df-sp-unit (2px).
+//   Depth       — shadows; z-index layers (values kept exact: stacking order).
+//   Motion      — transition / short animation durations.
+
+:root {
+  // ── Colours ──────────────────────────────────────────────────────────────
+  // Neutrals
+  --df-black: #000000;        --df-black-rgb: 0, 0, 0;
+  --df-ink-900: #14111c;      --df-ink-900-rgb: 20, 17, 28;
+  --df-ink-700: #2a2533;      --df-ink-700-rgb: 42, 37, 51;
+  --df-ink-600: #322a44;      --df-ink-600-rgb: 50, 42, 68;
+  --df-grey-500: #5d566b;     --df-grey-500-rgb: 93, 86, 107;
+  --df-grey-400: #7f7f7f;     --df-grey-400-rgb: 127, 127, 127;
+  --df-grey-300: #9aa3b2;     --df-grey-300-rgb: 154, 163, 178;
+  --df-grey-200: #b9b3c6;     --df-grey-200-rgb: 185, 179, 198;
+  --df-grey-100: #ddd6ea;     --df-grey-100-rgb: 221, 214, 234;
+  --df-grey-50: #e9e6f1;      --df-grey-50-rgb: 233, 230, 241;
+  --df-white: #ffffff;        --df-white-rgb: 255, 255, 255;
+  // Violets (the accent itself: --df-accent)
+  --df-violet-light: #c98bff; --df-violet-light-rgb: 201, 139, 255;
+  --df-plum: #1a0d2b;         --df-plum-rgb: 26, 13, 43;
+  --df-magenta-deep: #380036; --df-magenta-deep-rgb: 56, 0, 54;
+  --df-magenta: #890384;      --df-magenta-rgb: 137, 3, 132;
+  // Reds — errors, deleting, "removed"
+  --df-red: #e5484d;          --df-red-rgb: 229, 72, 77;
+  --df-red-deep: #c8283c;     --df-red-deep-rgb: 200, 40, 60;
+  --df-red-bright: #ff4d5e;   --df-red-bright-rgb: 255, 77, 94;
+  --df-red-light: #ff8a8a;    --df-red-light-rgb: 255, 138, 138;
+  // Oranges, yellows — warnings, ratings, favourites
+  --df-orange: #fd7e14;       --df-orange-rgb: 253, 126, 20;
+  --df-amber: #f2b940;        --df-amber-rgb: 242, 185, 64;
+  --df-gold: #f4c95d;         --df-gold-rgb: 244, 201, 93;
+  // Greens — success, "in the library"
+  --df-green-deep: #2f9e44;   --df-green-deep-rgb: 47, 158, 68;
+  --df-green: #3fb950;        --df-green-rgb: 63, 185, 80;
+  --df-green-light: #7ee2a8;  --df-green-light-rgb: 126, 226, 168;
+  // Blue — information, links on media
+  --df-blue-light: #72a8ff;   --df-blue-light-rgb: 114, 168, 255;
+
+  // ── Type ─────────────────────────────────────────────────────────────────
+  --df-fs-2xs: 10px;
+  --df-fs-xs: 11px;
+  --df-fs-sm: 12px;
+  --df-fs-md: 13px;
+  --df-fs-base: 14px;
+  --df-fs-lg: 15px;
+  --df-fs-xl: 16px;
+  --df-fs-2xl: 18px;
+  --df-fs-3xl: 20px;
+  --df-fs-4xl: 24px;
+  --df-fs-5xl: 32px;
+  --df-fs-6xl: 40px;
+
+  // ── Shape ────────────────────────────────────────────────────────────────
+  --df-r-xs: 2px;
+  --df-r-sm: 4px;
+  --df-r-md: 6px;
+  --df-r-lg: 8px;
+  --df-r-xl: 10px;
+  --df-r-2xl: 12px;
+  --df-r-3xl: 16px;
+  --df-r-4xl: 20px;
+  --df-r-5xl: 24px;
+  --df-r-pill: 999px;
+  --df-r-round: 50%;
+
+  // ── Space ────────────────────────────────────────────────────────────────
+  --df-sp-unit: 2px;
+  --df-sp-1: calc(var(--df-sp-unit) * 1);     //  2px
+  --df-sp-2: calc(var(--df-sp-unit) * 2);     //  4px
+  --df-sp-3: calc(var(--df-sp-unit) * 3);     //  6px
+  --df-sp-4: calc(var(--df-sp-unit) * 4);     //  8px
+  --df-sp-5: calc(var(--df-sp-unit) * 5);     // 10px
+  --df-sp-6: calc(var(--df-sp-unit) * 6);     // 12px
+  --df-sp-7: calc(var(--df-sp-unit) * 7);     // 14px
+  --df-sp-8: calc(var(--df-sp-unit) * 8);     // 16px
+  --df-sp-9: calc(var(--df-sp-unit) * 9);     // 18px
+  --df-sp-10: calc(var(--df-sp-unit) * 10);   // 20px
+  --df-sp-11: calc(var(--df-sp-unit) * 11);   // 22px
+  --df-sp-12: calc(var(--df-sp-unit) * 12);   // 24px
+  --df-sp-16: calc(var(--df-sp-unit) * 16);   // 32px
+  --df-sp-20: calc(var(--df-sp-unit) * 20);   // 40px
+
+  // ── Depth ────────────────────────────────────────────────────────────────
+  --df-shadow-sm: 0 1px 3px rgba(var(--df-black-rgb), 0.25);
+  --df-shadow-md: 0 4px 12px rgba(var(--df-black-rgb), 0.35);
+  --df-shadow-lg: 0 12px 30px rgba(var(--df-black-rgb), 0.45);
+  --df-shadow-xl: 0 24px 60px rgba(var(--df-black-rgb), 0.55);
+  --df-ring: 0 0 0 3px var(--df-accent-soft);   // focus ring
+
+  // Layers, bottom to top. Parts that must sit just above / below another use
+  // calc(var(--df-z-…) ± n), so the order stays exact.
+  --df-z-sidebar: 100;
+  --df-z-dropdown: 200;
+  --df-z-modal: 1000;      // modal dialogs and their backdrop
+  --df-z-viewer: 1100;     // the media viewer and its panels
+  --df-z-popover: 1200;    // menus, pickers, popovers over everything above
+  --df-z-overlay: 2000;    // full-window tools (folders, settings, editor)
+  --df-z-floating: 5000;   // drag previews, floating bars
+  --df-z-top: 10000;       // notifications, compare, import progress
+
+  // ── Motion ───────────────────────────────────────────────────────────────
+  --df-dur-instant: 0.1s;
+  --df-dur-fast: 0.15s;
+  --df-dur-base: 0.2s;
+  --df-dur-slow: 0.3s;
+  --df-dur-slower: 0.45s;
+}
+
+// Less motion when the system asks for it.
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --df-dur-instant: 0s;
+    --df-dur-fast: 0s;
+    --df-dur-base: 0s;
+    --df-dur-slow: 0s;
+    --df-dur-slower: 0s;
+  }
+}

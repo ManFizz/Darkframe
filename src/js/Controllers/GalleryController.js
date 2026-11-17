@@ -1,4 +1,3 @@
-import {getGallery, setGallery} from "./AppInitializerController";
 import {ThumbFile} from "@/Models/ThumbFile";
 
 export function GetThumbByData(data) {
@@ -13,14 +12,4 @@ export function GetThumbByData(data) {
             console.error('invalid type object for display: ' + data.thumbUrl);
     }
     return null;
-}
-
-export function AddThumbByData(data){
-    const newDisplayFile = GetThumbByData(data);
-    if(newDisplayFile === null)
-        return;
-
-    let displayList = getGallery();
-    displayList.push(newDisplayFile);
-    setGallery(displayList);
 }

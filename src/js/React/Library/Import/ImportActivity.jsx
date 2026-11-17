@@ -1,4 +1,5 @@
 import React, {useEffect, useRef, useState} from 'react';
+import {ipcRenderer} from '@/Infrastructure/electron';
 
 // Global "import in progress" pill. Fed by the main process for every import source
 // (dialog, drag & drop, folder, link, API / browser extension), so a long batch is
@@ -8,7 +9,6 @@ const ImportActivity = () => {
     const hideTimer = useRef(null);
 
     useEffect(() => {
-        const { ipcRenderer } = window.require('electron');
         const onActivity = (_, a) => {
             clearTimeout(hideTimer.current);
             setState(a);
@@ -32,8 +32,8 @@ const ImportActivity = () => {
         <div className={`import-activity ${active ? '' : 'finished'} ${!active && failed ? 'has-errors' : ''}`}>
             <div className="import-activity-icon">
                 {active
-                    ? <i className="bi bi-arrow-repeat spin" />
-                    : <i className={`bi ${failed ? 'bi-exclamation-triangle-fill' : 'bi-check-lg'}`} />}
+                    ? <i aria-hidden="true" className="bi bi-arrow-repeat spin" />
+                    : <i aria-hidden="true" className={`bi ${failed ? 'bi-exclamation-triangle-fill' : 'bi-check-lg'}`} />}
             </div>
             <div className="import-activity-body">
                 <div className="import-activity-title">

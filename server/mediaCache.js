@@ -1,25 +1,25 @@
 /**
  * Transparent media cache for remote (http/https) images and videos.
  *
- * The renderer rewrites remote URLs to `mediacache://media/?u=<encoded-url>`.
- * This handler downloads each unique URL exactly once to a temp folder and
- * serves all subsequent requests from disk — so the thumbnail, the modal image
- * and neighbour preloads all share a single download instead of re-fetching
- * (Chromium partitions its HTTP cache by request mode, which caused the same
- * file_url to be downloaded once in CORS mode and again in no-cors mode).
- *
- * The entire cache folder is wiped on app start and on quit, so nothing
- * persists between sessions.
+ * The renderer rewrites remote URLs to `mediacache://media/?u=<encoded-url>`; each
+ * URL is downloaded once to a temp folder and served from disk, so the thumbnail,
+ * the viewer and neighbour preloads share one download (Chromium's HTTP cache is
+ * split by request mode and would fetch it twice). Wiped on start and on quit.
  */
 
 const { app, net, protocol } = require('electron');
 const fs   = require('fs');
 const path = require('path');
 const crypto = require('crypto');
-const { pathToFileURL } = require('url');
+const { fileResponse } = require('./fileResponse');
 
 const SCHEME    = 'mediacache';
-const CACHE_DIR = path.join(app.getPath('temp'), 'darkframe-media-cache');
+// Per profile: every instance wipes its cache on start / quit, so two instances
+// (e.g. a test one next to the real one) must never share the folder.
+const CACHE_DIR = path.join(
+    app.getPath('temp'),
+    'darkframe-media-cache-' + require('crypto').createHash('sha1').update(app.getPath('userData')).digest('hex').slice(0, 8),
+);
 
 const USER_AGENT =
     'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 ' +
@@ -42,11 +42,31 @@ function cachePathFor(url) {
     return path.join(CACHE_DIR, hash + ext);
 }
 
-async function downloadToCache(realUrl, cachePath) {
-    const res = await net.fetch(realUrl, { headers: { 'User-Agent': USER_AGENT } });
-    if (!res.ok) throw new Error(`upstream ${res.status}`);
+// A response cut short (fewer bytes than announced) is fetched again, up to 3 times:
+// otherwise the broken copy (a picture with a grey / green half) would be served
+// for the whole session.
+async function fetchWhole(realUrl, attempts = 3) {
+    let last = null;
+    for (let i = 1; i <= attempts; i++) {
+        try {
+            const res = await net.fetch(realUrl, { headers: { 'User-Agent': USER_AGENT } });
+            if (!res.ok) throw new Error(`upstream ${res.status}`);
+            const buf = Buffer.from(await res.arrayBuffer());
+            const encoded = /gzip|br|deflate/i.test(res.headers.get('content-encoding') || '');
+            const expected = encoded ? 0 : Number(res.headers.get('content-length')) || 0;
+            if (!expected || buf.length >= expected) return buf;
+            last = new Error(`short download ${buf.length}/${expected}`);
+        } catch (e) {
+            last = e;
+            if (/upstream 4\d\d/.test(e.message)) throw e;   // not there: no point retrying
+        }
+        if (i < attempts) await new Promise(r => setTimeout(r, 800 * i));
+    }
+    throw last;
+}
 
-    const buf = Buffer.from(await res.arrayBuffer());
+async function downloadToCache(realUrl, cachePath) {
+    const buf = await fetchWhole(realUrl);
     ensureDir();
     // Write atomically to avoid serving a half-written file to a parallel reader
     const tmp = cachePath + '.part';
@@ -91,21 +111,8 @@ function registerProtocol() {
         try {
             const cachePath = await getCachedFile(realUrl);
 
-            // Serve from file:// so the <video> element gets proper Range support.
-            // Forward the Range header for seeking.
-            const range = request.headers.get('range');
-            const fileRes = await net.fetch(pathToFileURL(cachePath).toString(),
-                range ? { headers: { range } } : undefined);
-
-            // Copy headers and add CORS so canvas toDataURL() isn't tainted.
-            const headers = new Headers(fileRes.headers);
-            headers.set('Access-Control-Allow-Origin', '*');
-
-            return new Response(fileRes.body, {
-                status: fileRes.status,
-                statusText: fileRes.statusText,
-                headers,
-            });
+            // Range support for <video> seeking; CORS so canvas toDataURL() isn't tainted.
+            return fileResponse(cachePath, request.headers.get('range'), { 'Access-Control-Allow-Origin': '*' });
         } catch (e) {
             console.error('[mediaCache] failed for', realUrl, e.message);
             return new Response('cache error', { status: 502 });
@@ -114,12 +121,9 @@ function registerProtocol() {
 }
 
 /**
- * Wipe the cache folder.
- *
- * On Windows files that are still memory-mapped by the renderer (<video>,
- * <img>) or by in-flight streams can't be deleted, yielding EPERM/ENOTEMPTY.
- * `maxRetries`/`retryDelay` make Node retry those locks. Any leftover is wiped
- * on next startup (when no handles exist), so a failure here is harmless and logged quietly.
+ * Wipe the cache folder. On Windows files still held by the renderer (<video>, <img>)
+ * can't be deleted (EPERM / ENOTEMPTY): retried a few times, and whatever is left
+ * goes on the next start.
  */
 function clearCache() {
     try {

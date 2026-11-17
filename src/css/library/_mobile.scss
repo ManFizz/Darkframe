@@ -1,0 +1,364 @@
+// Only for the app opened in a phone's browser over the network (html.df-web) on
+// a narrow screen; the desktop window keeps its layout at any width.
+
+@mixin phone {
+  @media (max-width: 760px) {
+    html.df-web { @content; }
+  }
+}
+
+@include phone {
+  --df-modal-top: 0px;
+
+  body { overscroll-behavior: none; }
+
+  // Top bar: tabs + actions in one scrollable row, the search under them.
+  .navbar-glass {
+    padding: var(--df-sp-3) var(--df-sp-4);
+    .container-fluid { flex-wrap: wrap; gap: var(--df-sp-3); padding: 0; }
+  }
+  .nav-sections { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; max-width: 100%; gap: var(--df-sp-2); }
+  .nav-island { padding: var(--df-sp-1); }
+  .navbar-glass .nav-source-tab { padding: var(--df-sp-3) var(--df-sp-5); span { display: none; } .bi { font-size: var(--df-fs-xl); opacity: 1; } }
+  .navbar-actions {
+    margin-left: auto;
+    max-width: 100%;
+    overflow-x: auto;
+    scrollbar-width: none;
+    flex-wrap: nowrap;
+    gap: var(--df-sp-1);
+    .btn { padding: var(--df-sp-2) var(--df-sp-4); }
+  }
+  .library-nav-controls { flex: 1 1 100%; max-width: none; flex-wrap: wrap; order: 5; }
+  .navbar-spacer { display: none; }
+
+  // Booru search sidebar overlays the grid. It used to grow in the row (width
+  // transition), which reflowed every tile. Same pattern as the collection drawer.
+  .main-split > .sidebar {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    z-index: var(--df-z-viewer);
+    width: min(86vw, 340px);
+    min-width: 0;
+    max-width: none;
+    height: auto;
+    margin: 0;
+    padding: 0;
+    transform: translateX(-105%);
+    transition: transform var(--df-dur-base) ease;
+    background: var(--bs-body-bg) !important;
+    border-right: 1px solid var(--bs-border-color);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    overscroll-behavior: contain;
+    &.open { width: min(86vw, 340px); transform: none; }
+    // Keep wheel/touch pans inside the drawer; otherwise they chain to the
+    // gallery under the overlay (main-split is overflow-auto).
+    > section {
+      flex: 1 1 auto;
+      min-height: 0;
+      height: auto;
+      opacity: 1;
+      pointer-events: auto;
+      overflow-y: auto;
+      overscroll-behavior: contain;
+      -webkit-overflow-scrolling: touch;
+      touch-action: pan-y;
+    }
+  }
+  .sidebar-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: calc(var(--df-z-viewer) - 10);
+    border: 0;
+    padding: 0;
+    background: rgba(var(--df-black-rgb), 0.5);
+    // Block scroll gestures on the dimmed gallery while the drawer is open.
+    touch-action: none;
+    overscroll-behavior: none;
+  }
+  // Closed: left-edge handle clear of the two-row navbar/search.
+  // Open: half-out on the drawer edge (same idea as desktop .custom-menu).
+  .sidebar-edge {
+    position: fixed;
+    z-index: calc(var(--df-z-viewer) + 2);
+    top: 50%;
+    left: 0;
+    width: 40px;
+    height: 40px;
+    display: grid;
+    place-items: center;
+    border: 0;
+    border-radius: 0 var(--df-r-round) var(--df-r-round) 0;
+    background: var(--df-island);
+    color: var(--bs-body-color);
+    box-shadow: var(--df-shadow-lg);
+    transform: translateY(-50%);
+    &.open {
+      top: max(16px, calc(env(safe-area-inset-top) + 14px));
+      left: calc(min(86vw, 340px) - 20px);
+      border-radius: var(--df-r-round);
+      transform: none;
+    }
+  }
+
+  .library-layout { position: relative; }
+  .library-sidebar {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    z-index: var(--df-z-viewer);
+    width: min(86vw, 330px);
+    min-width: 0;
+    max-width: none;
+    transform: translateX(-105%);
+    transition: transform var(--df-dur-base) ease;
+    background: var(--bs-body-bg);
+    box-shadow: 12px 0 40px rgba(var(--df-black-rgb), 0.5);
+    padding-top: max(var(--df-sp-4), env(safe-area-inset-top));
+  }
+  .library-layout.drawer-open .library-sidebar { transform: none; }
+  .lib-drawer-backdrop { position: fixed; inset: 0; z-index: calc(var(--df-z-viewer) - 10); background: rgba(var(--df-black-rgb), 0.5); }
+  .library-main { margin-right: 0; }
+  .library-layout > .metadata-panel { display: none; }
+
+  .lib-drawer-btn {
+    display: flex;
+    align-items: center;
+    gap: var(--df-sp-5);
+    margin: var(--df-sp-3) var(--df-sp-4) var(--df-sp-1);
+    padding: var(--df-sp-4) var(--df-sp-6);
+    border: 1px solid var(--df-glass-border);
+    border-radius: var(--df-r-2xl);
+    background: var(--df-island);
+    color: var(--bs-body-color);
+    font-weight: 600;
+    font-size: var(--df-fs-base);
+    .bi { font-size: var(--df-fs-3xl); }
+    span:nth-child(2) { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: left; }
+  }
+  .lib-drawer-count { font-size: var(--df-fs-sm); color: var(--bs-secondary); font-weight: 500; }
+
+  .quick-filters-chips { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
+  .bulk-action-bar { flex-wrap: wrap; gap: var(--df-sp-3); padding: var(--df-sp-3) var(--df-sp-4); }
+
+  // Square tiles, three in a row, like a phone gallery.
+  .gallery-view-2 {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 3px;
+    padding: 3px;
+    .thumb-drag-wrapper, .thumb {
+      min-width: 0;
+      max-width: none;
+      min-height: 0;
+      max-height: none;
+      aspect-ratio: 1;
+      margin: 0;
+      border-radius: var(--df-r-md);
+    }
+    .thumb img:not(.ftile-paper), .thumb video { width: 100%; height: 100%; object-fit: cover; }
+    .gallery-divider { grid-column: 1 / -1; }
+    .ftile { grid-column: span 1; }
+
+    // A collection fits the same square as its neighbours: the art takes what the
+    // name and the counter leave.
+    .collection-thumb { flex: 1; min-height: 0; display: flex; }
+    .collection-thumb .ftile { flex: 1; min-width: 0; padding: 5px var(--df-sp-2) var(--df-sp-2); gap: 0; }
+    .collection-thumb .ftile-art { flex: 1; min-height: 0; aspect-ratio: auto; }
+    .collection-thumb .ftile-name { margin-top: var(--df-sp-1); font-size: var(--df-fs-sm); line-height: 1.25; }
+    .collection-thumb .ftile-meta { font-size: var(--df-fs-2xs); line-height: 1.25; }
+  }
+  .thumb .overlay { display: none; }
+  .thumb-check { opacity: 0; }
+  .thumb.selection-active .thumb-check, .thumb.thumb-selected .thumb-check { opacity: 1; }
+
+  .modal-view {
+    top: 0;
+    height: 100dvh;
+    z-index: calc(var(--df-z-modal) + 50);
+    background: var(--df-ink-900);
+    &.favorite { background: var(--df-ink-900); }
+    img, video { max-width: 100vw; max-height: calc(100dvh - 64px); border-radius: 0; border: none; }
+  }
+  // The info panel is a sheet over the lower part of the screen; the picture stays
+  // in the upper part. While it's open the video bar, the strip and the arrows
+  // step aside.
+  .modal-view.with-panel {
+    flex-direction: column;
+    justify-content: flex-start;
+    .modal-media-area { flex: 0 0 auto; height: 38dvh; min-height: 0; padding: 56px 0 0 !important; background: none; }
+    &:not(.long) .modal-media-area img, &:not(.long) .modal-media-area video { max-width: 100vw; max-height: 34dvh; }
+    .video-controls, .filmstrip, .fs-show, .arrow, .vc-expand { display: none !important; }
+  }
+  .modal-panel-wrapper {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: calc(var(--df-z-viewer) + 50);
+    width: 100%;
+    height: 62dvh;
+    border-left: none;
+    border-top: 1px solid var(--df-glass-border, rgba(var(--df-white-rgb), 0.08));
+    border-radius: var(--df-r-4xl) var(--df-r-4xl) 0 0;
+    box-shadow: 0 -16px 40px rgba(var(--df-black-rgb), 0.5);
+    padding-bottom: env(safe-area-inset-bottom);
+    .metadata-preview { display: none; }
+    .metadata-panel { min-height: 0; }
+    &::before {   // grab bar
+      content: '';
+      display: block;
+      width: 42px;
+      height: 4px;
+      margin: var(--df-sp-4) auto var(--df-sp-1);
+      border-radius: var(--df-r-pill);
+      background: rgba(var(--df-white-rgb), 0.25);
+    }
+  }
+  .modal-nav-container { height: 100dvh; }
+  // Arrows: swipes do it on a phone; small edge arrows show it can be done.
+  .modal-nav-container .arrow {
+    font-size: 30px;
+    width: 40px;
+    height: 56px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--df-r-2xl);
+    background: rgba(var(--df-black-rgb), 0.35);
+    opacity: 0.7;
+    &:hover { transform: translateY(-50%); }
+  }
+  .modal-nav-container .arrow-left { left: 4px; }
+  .modal-nav-container .arrow-right { right: 4px; }
+  .modal-nav-container .modal-nav-more {
+    position: absolute;
+    top: calc(max(8px, env(safe-area-inset-top)) + 54px);
+    left: 8px;
+    min-width: 230px;
+    padding: var(--df-sp-3);
+    display: flex;
+    flex-direction: column;
+    background: rgba(var(--df-ink-900-rgb), 0.96);
+    backdrop-filter: blur(10px);
+    border: 1px solid var(--df-glass-border, rgba(var(--df-white-rgb), 0.08));
+    border-radius: var(--df-r-3xl);
+    box-shadow: var(--df-shadow-lg);
+    pointer-events: auto;
+    button {
+      display: flex;
+      align-items: center;
+      gap: var(--df-sp-6);
+      padding: var(--df-sp-6) var(--df-sp-5);
+      border: none;
+      border-radius: var(--df-r-xl);
+      background: none;
+      color: var(--df-white);
+      font-size: var(--df-fs-lg);
+      text-align: left;
+      .bi { font-size: var(--df-fs-2xl); width: 22px; text-align: center; }
+      &.active { color: var(--df-accent, var(--bs-primary)); }
+      &:active { background: rgba(var(--df-white-rgb), 0.1); }
+    }
+  }
+  .modal-nav-container .modal-nav-counter {
+    top: max(18px, calc(env(safe-area-inset-top) + 10px));
+    left: auto;
+    right: 10px;
+    transform: none;
+  }
+  .modal-nav-row {
+    max-width: calc(100vw - 80px);
+    margin: max(var(--df-sp-4), env(safe-area-inset-top)) var(--df-sp-4) 0;
+    overflow-x: auto;
+    scrollbar-width: none;
+    .bi { width: 40px; height: 40px; flex-shrink: 0; }
+  }
+
+  // Video bar: play controls on top, time + a few buttons under them; the rest
+  // (A-B, play mode, picture-in-picture, volume slider) is for the desktop.
+  .video-controls.v2 { width: calc(100% - 16px); bottom: calc(10px + env(safe-area-inset-bottom)); gap: var(--df-sp-3); }
+  .vc-pill {
+    grid-template-columns: 1fr auto;
+    grid-template-areas: "center center" "left right";
+    row-gap: var(--df-sp-1);
+    padding: var(--df-sp-3) var(--df-sp-5);
+  }
+  .vc-center { grid-area: center; }
+  .vc-left { grid-area: left; }
+  .vc-right { grid-area: right; }
+  .vc-center > .vc-btn:first-child, .vc-center > .vc-btn:last-child { display: none; }
+  .vc-ab, .vc-mode, .vc-vol-popup, .vc-right .vc-btn:has(.bi-pip) { display: none !important; }
+  .vc-btn { min-width: 40px; min-height: 40px; }
+  .vc-preview, .vc-tooltip { display: none; }
+
+  .settings-overlay { padding: 0; }
+  .settings-modal { width: 100vw; max-width: none; height: 100dvh; max-height: none; border-radius: 0; }
+  .cp-tabs, .cp-subtabs { overflow-x: auto; flex-wrap: nowrap; scrollbar-width: none; }
+
+  .mo-layout { flex-direction: column; --mo-card: 108px; }
+  .mo-layout > .fsb {
+    width: auto;
+    display: flex;
+    gap: var(--df-sp-2);
+    padding: var(--df-sp-3) var(--df-sp-4);
+    overflow-x: auto;
+    scrollbar-width: none;
+    border-right: none;
+    border-bottom: 1px solid var(--bs-border-color);
+    .fsb-section { display: contents; }
+    .fsb-title, .mo-tips, .fsb-empty { display: none; }
+    .fsb-item { flex: 0 0 auto; white-space: nowrap; padding: var(--df-sp-3) var(--df-sp-5); border: 1px solid var(--bs-border-color); border-radius: var(--df-r-pill); }
+    .fsb-label { overflow: visible; }
+  }
+  .mo-toolbar { padding: var(--df-sp-3) var(--df-sp-4); gap: var(--df-sp-3); }
+  .mo-sbar { flex: 1 1 100%; min-width: 0; }
+  .mo-sort { min-width: 0; flex: 1; }
+  .mo-scroll { padding: var(--df-sp-2) var(--df-sp-4) var(--df-sp-10); }
+  .mo-grid { gap: var(--df-sp-5) var(--df-sp-4); }
+  .mo-card { padding: 3px; }
+  .mo-card-quick { opacity: 1; }
+  .mo-tb { position: fixed; inset: 0; width: 100vw; z-index: var(--df-z-popover); background: var(--bs-body-bg); }
+  .mo-detail { flex-direction: column; gap: var(--df-sp-6); }
+  .mo-cover.big { width: 150px; }
+  .mo-title { font-size: var(--df-fs-2xl); }
+  .mo-tags-label { min-width: 100%; }
+  .mo-job { flex-wrap: wrap; }
+  .mo-pager { gap: var(--df-sp-4); }
+
+  .rd-top { flex-wrap: wrap; padding: max(var(--df-sp-3), env(safe-area-inset-top)) var(--df-sp-3) var(--df-sp-3); }
+  .rd-seg span, .rd-btn-text { display: none; }
+  .rd-title { flex: 1 1 100%; order: -1; }
+  .rd-chapter { max-width: 45vw; }
+  .rd-btn { min-width: 40px; height: 40px; }
+  .rd-bottom { padding-bottom: max(var(--df-sp-4), env(safe-area-inset-bottom)); }
+  .rd-menu { right: 8px; left: 8px; width: auto; }
+}
+
+// Desktop / wide screens never show the phone-only controls.
+.lib-drawer-btn, .lib-drawer-backdrop { display: none; }
+@include phone {
+  .lib-drawer-btn { display: flex; }
+  .lib-drawer-backdrop { display: block; }
+}
+
+// Lost connection to the computer (server-sent events dropped).
+html.df-offline body::after {
+  content: 'Нет связи с компьютером…';
+  position: fixed;
+  left: 50%;
+  bottom: 16px;
+  transform: translateX(-50%);
+  z-index: var(--df-z-floating);
+  padding: var(--df-sp-4) var(--df-sp-7);
+  border-radius: var(--df-r-pill);
+  background: rgba(var(--df-red-deep-rgb), 0.92);
+  color: var(--df-white);
+  font-size: var(--df-fs-md);
+  pointer-events: none;
+}

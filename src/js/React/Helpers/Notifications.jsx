@@ -17,7 +17,7 @@ const NotificationItem = ({ notification, onRemove }) => {
 
     return (
         <div className={`notification-item notification-${notification.type}`}>
-            <i className={`bi ${ICONS[notification.type] || ICONS.info} notification-icon`} />
+            <i aria-hidden="true" className={`bi ${ICONS[notification.type] || ICONS.info} notification-icon`} />
             <span className="notification-message">{notification.message}</span>
             {notification.action && (
                 <button
@@ -28,7 +28,7 @@ const NotificationItem = ({ notification, onRemove }) => {
                 </button>
             )}
             <button className="notification-close" onClick={() => onRemove(notification.id)}>
-                <i className="bi bi-x" />
+                <i aria-hidden="true" className="bi bi-x" />
             </button>
         </div>
     );

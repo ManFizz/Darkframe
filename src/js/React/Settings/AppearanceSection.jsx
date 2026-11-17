@@ -8,16 +8,20 @@ const MODES = [
     { id: 'system', label: 'Как в ОС',  icon: 'bi-circle-half' },
 ];
 
-// Colour mode + accent. Applied instantly (no "save & relaunch" needed).
+// Colour mode + accent, applied at once.
 const AppearanceSection = () => {
     const [theme, setTheme] = useTheme();
     const [ratingDividers, setRatingDividers] = useViewPref('ratingDividers');
+    const [restoreSession, setRestoreSession] = useViewPref('restoreSession');
+    const [dateDividers, setDateDividers] = useViewPref('dateDividers');
+    const [filmstrip, setFilmstrip] = useViewPref('filmstrip');
+    const [booruInfinite, setBooruInfinite] = useViewPref('booruInfinite');
     const isPreset = ACCENT_PRESETS.some(p => p.value.toLowerCase() === String(theme.accent).toLowerCase());
 
     return (
         <div className="settings-section">
             <div className="settings-section-title">
-                <i className="bi bi-palette me-2" />
+                <i aria-hidden="true" className="bi bi-palette me-2" />
                 Оформление
                 <span className="appearance-live">применяется сразу</span>
             </div>
@@ -34,7 +38,7 @@ const AppearanceSection = () => {
                                 className={theme.mode === m.id ? 'active' : ''}
                                 onClick={() => setTheme({ mode: m.id })}
                             >
-                                <i className={`bi ${m.icon}`} /> {m.label}
+                                <i aria-hidden="true" className={`bi ${m.icon}`} /> {m.label}
                             </button>
                         ))}
                     </div>
@@ -59,7 +63,7 @@ const AppearanceSection = () => {
                             title="Свой цвет"
                             style={!isPreset ? { background: theme.accent } : undefined}
                         >
-                            <i className="bi bi-eyedropper" />
+                            <i aria-hidden="true" className="bi bi-eyedropper" />
                             <input
                                 type="color"
                                 value={theme.accent}
@@ -80,6 +84,54 @@ const AppearanceSection = () => {
                             type="checkbox"
                             checked={ratingDividers}
                             onChange={e => setRatingDividers(e.target.checked)}
+                        />
+                    </div>
+                </div>
+
+                <div className="settings-item settings-item--inline">
+                    <div className="settings-item-info">
+                        <div className="settings-item-label">Разделители по месяцам</div>
+                        <div className="settings-item-desc">При сортировке по дате делить галерею на месяцы</div>
+                    </div>
+                    <div className="form-check form-switch settings-switch">
+                        <input className="form-check-input" type="checkbox" checked={dateDividers}
+                               onChange={e => setDateDividers(e.target.checked)} />
+                    </div>
+                </div>
+
+                <div className="settings-item settings-item--inline">
+                    <div className="settings-item-info">
+                        <div className="settings-item-label">Полоса миниатюр в просмотре</div>
+                        <div className="settings-item-desc">Соседние файлы внизу просмотрщика; клавиша T — показать / скрыть</div>
+                    </div>
+                    <div className="form-check form-switch settings-switch">
+                        <input className="form-check-input" type="checkbox" checked={filmstrip}
+                               onChange={e => setFilmstrip(e.target.checked)} />
+                    </div>
+                </div>
+
+                <div className="settings-item settings-item--inline">
+                    <div className="settings-item-info">
+                        <div className="settings-item-label">Бесконечная прокрутка на booru</div>
+                        <div className="settings-item-desc">Новые посты подгружаются при прокрутке; выключи, чтобы листать страницами</div>
+                    </div>
+                    <div className="form-check form-switch settings-switch">
+                        <input className="form-check-input" type="checkbox" checked={booruInfinite}
+                               onChange={e => setBooruInfinite(e.target.checked)} />
+                    </div>
+                </div>
+
+                <div className="settings-item settings-item--inline">
+                    <div className="settings-item-info">
+                        <div className="settings-item-label">Открывать там, где закрыл</div>
+                        <div className="settings-item-desc">При запуске вернуться на последнюю вкладку, коллекцию и папку</div>
+                    </div>
+                    <div className="form-check form-switch settings-switch">
+                        <input
+                            className="form-check-input"
+                            type="checkbox"
+                            checked={restoreSession}
+                            onChange={e => setRestoreSession(e.target.checked)}
                         />
                     </div>
                 </div>

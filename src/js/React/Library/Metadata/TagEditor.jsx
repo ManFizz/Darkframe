@@ -1,6 +1,7 @@
 import React, {useEffect, useRef, useState} from 'react';
 import {libraryApi} from '@/Infrastructure/Ipc';
 import {recordTagUse, useTagPrefs} from '@services/tagPrefs';
+import {useTagTypeMenu} from './TagTypeMenu';
 
 const FREQUENT_LIMIT = 12;
 
@@ -77,7 +78,7 @@ const TagDropdown = ({ currentTags, onAdd, onClose }) => {
             >
                 {typeN != null && <span className={`tag-dot tag-type-${typeN}`} />}
                 <span>{name}</span>
-                {isPinned && <i className="bi bi-pin-angle-fill tag-pin-mark" />}
+                {isPinned && <i aria-hidden="true" className="bi bi-pin-angle-fill tag-pin-mark" />}
             </div>
         );
     };
@@ -96,7 +97,7 @@ const TagDropdown = ({ currentTags, onAdd, onClose }) => {
     return (
         <div className="tag-dropdown">
             <div className="tag-dropdown-search">
-                <i className="bi bi-search" />
+                <i aria-hidden="true" className="bi bi-search" />
                 <input
                     ref={inputRef}
                     value={query}
@@ -113,7 +114,7 @@ const TagDropdown = ({ currentTags, onAdd, onClose }) => {
                         {suggestions.length > 0 && <div className="tag-dropdown-section-label">Результаты</div>}
                         {loading && (
                             <div className="tag-dropdown-empty">
-                                <i className="bi bi-arrow-repeat spin" /> Поиск...
+                                <i aria-hidden="true" className="bi bi-arrow-repeat spin" /> Поиск...
                             </div>
                         )}
                         {isEmpty && (
@@ -122,7 +123,7 @@ const TagDropdown = ({ currentTags, onAdd, onClose }) => {
                                 onMouseDown={e => e.preventDefault()}
                                 onClick={() => pick(query.trim().toLowerCase())}
                             >
-                                <i className="bi bi-plus-circle me-1" />
+                                <i aria-hidden="true" className="bi bi-plus-circle me-1" />
                                 Создать «{query.trim().toLowerCase()}»
                             </div>
                         )}
@@ -142,6 +143,7 @@ const TagDropdown = ({ currentTags, onAdd, onClose }) => {
 };
 
 const TagEditor = ({ tags, onChange }) => {
+    const {onTagContextMenu, tagTypeMenu} = useTagTypeMenu();
     const [open, setOpen] = useState(false);
     const wrapperRef      = useRef(null);
 
@@ -164,11 +166,12 @@ const TagEditor = ({ tags, onChange }) => {
 
     return (
         <div className="tag-editor-eagle" ref={wrapperRef}>
+            {tagTypeMenu}
             <div className="tag-editor-eagle-tags">
                 {tags.map(tag => (
-                    <span key={tag} className="tag-chip">
+                    <span key={tag} className="tag-chip" onContextMenu={e => onTagContextMenu(e, tag)}>
                         {tag}
-                        <i className="bi bi-x" onClick={() => removeTag(tag)} />
+                        <i aria-hidden="true" className="bi bi-x" onClick={() => removeTag(tag)} />
                     </span>
                 ))}
                 <button
@@ -176,7 +179,7 @@ const TagEditor = ({ tags, onChange }) => {
                     onClick={() => setOpen(v => !v)}
                     title="Добавить тег"
                 >
-                    <i className="bi bi-plus" />
+                    <i aria-hidden="true" className="bi bi-plus" />
                 </button>
             </div>
 

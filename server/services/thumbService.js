@@ -70,7 +70,6 @@ async function generateHeifThumb(srcPath, thumbPath) {
     const displayPath = path.join(path.dirname(thumbPath), 'display.jpg');
     await fs.promises.writeFile(displayPath, buf);
 
-    // Resize for thumbnail
     await sharp(buf)
         .resize(THUMB_SIZE, THUMB_SIZE, {
             fit: 'inside',

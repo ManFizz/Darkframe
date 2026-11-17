@@ -15,4 +15,12 @@
 @use 'library/dashboard';
 @use 'library/control-panel';
 @use 'library/filters';
+@use 'library/folders';
+@use 'library/booru';
+@use 'library/compare';
+@use 'library/manga';
+@use 'library/manga-online';
 @use 'library/misc';
+@use 'library/mobile';
+@use 'library/models';
+@use 'library/crash';

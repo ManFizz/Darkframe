@@ -1,5 +1,6 @@
-const { ipcMain, dialog, shell } = require('electron');
-const { importFiles, ITEMS_PATH, importDirectory, ensureTag } = require('../services/importService');
+const { ipcMain, dialog, shell, clipboard, nativeImage } = require('electron');
+const { importFiles, itemsPath, importDirectory, ensureTag } = require('../services/importService');
+const journal = require('../services/undoJournal');
 const { Item, Tag, ItemTag } = require('../models/associations');
 const Collection = require('../models/Collection');
 const { Op } = require('sequelize');
@@ -17,15 +18,17 @@ const tagAdmin = require('../services/tagAdmin');
 const { getSmartItems } = require('../services/smartItems');
 const { getDashboard } = require('../services/dashboard');
 const { findDuplicates } = require('../services/duplicates');
+const { rankTags, allowedTypos } = require('../../src/js/shared/tagRank');
 const similarity = require('../services/similarity');
 const maintenance = require('../services/maintenance');
 const { itemUrls } = require('../services/itemUrls');
+const { readClipboardImageBuffer } = require('../services/clipboardImage');
 const videoEdit = require('../services/videoEditService');
 const videoPositions = require('../services/videoPositions');
 const viewHistory = require('../services/viewHistory');
 
 // When an item's collection changes, drop it at the end of the destination's order
-// so the just-moved item is easy to find (last relative to "Порядок"). Mutates
+// so the just-moved item is easy to find (last in the custom order). Mutates
 // `fields.order` in place; a no-op when the collection isn't changing.
 async function moveToEndOnCollectionChange(id, fields, t) {
     if (!('collectionId' in fields)) return;
@@ -52,22 +55,119 @@ function nextDuplicateTitle(title, siblingTitles) {
     return base ? `${base} (${n})` : `(${n})`;
 }
 
+// Thumbnails for a collection tile: its own first items, topped up from its
+// sub-collections (one level down) when it has fewer than three.
+async function collectionPreviews(collectionId, childIds = [], limit = 3) {
+    const pick = (ids) => Item.findAll({
+        where: { collectionId: ids },
+        attributes: ['id', 'editedAt', 'thumbAt'],
+        order: [['order', 'ASC']],
+        limit,
+        raw: true,
+    });
+    let rows = await pick([collectionId]);
+    if (rows.length < limit && childIds.length) rows = rows.concat(await pick(childIds)).slice(0, limit);
+    return rows.map(r => itemUrls(r).thumbPath);
+}
+
+// nativeImage only decodes PNG and JPEG. Anything else (webp, gif, bmp) is
+// re-encoded to PNG so the search and the preview still get a picture.
+async function nativeImageFromClipboard(buf) {
+    if (!buf?.length) return null;
+    const direct = nativeImage.createFromBuffer(buf);
+    if (direct && !direct.isEmpty()) return direct;
+    try {
+        const png = await require('sharp')(buf).png().toBuffer();
+        const img = nativeImage.createFromBuffer(png);
+        return img.isEmpty() ? null : img;
+    } catch {
+        return null;
+    }
+}
+
 function register() {
+    // Search by picture: a library item, or whatever image is on the clipboard.
+    ipcMain.handle('library:visualSearch', async (event, { id, hash, clipboard: fromClipboard, pick, maxDistance } = {}) => {
+        const { searchByImage } = require('../services/similarity');
+        if (fromClipboard) {
+            const img = await nativeImageFromClipboard(await readClipboardImageBuffer(clipboard));
+            if (!img) return { error: 'В буфере обмена нет картинки' };
+            const res = await searchByImage({ buffer: img.toPNG() }, maxDistance);
+            return { ...res, preview: img.resize({ width: 160 }).toDataURL() };
+        }
+        if (pick) {
+            const { canceled, filePaths } = await dialog.showOpenDialog({
+                title: 'Картинка для поиска',
+                properties: ['openFile'],
+                filters: [{ name: 'Images', extensions: ['jpg', 'jpeg', 'png', 'webp', 'gif', 'jfif', 'bmp'] }],
+            });
+            if (canceled || !filePaths.length) return { canceled: true };
+            const res = await searchByImage({ buffer: fs.readFileSync(filePaths[0]) }, maxDistance);
+            const img = nativeImage.createFromPath(filePaths[0]);
+            return { ...res, fileName: path.basename(filePaths[0]), preview: img.isEmpty() ? null : img.resize({ width: 160 }).toDataURL() };
+        }
+        return searchByImage({ id, hash }, maxDistance);
+    });
+
+    // Tag suggestions from the local tagger model (services/autotag).
+    const autotag = require('../services/autotag');
+    const sendTo = (event, ch) => (p) => { if (!event.sender.isDestroyed()) event.sender.send(ch, p); };
+    ipcMain.handle('autotag:status', () => autotag.status());
+    ipcMain.handle('autotag:download', (event) => autotag.downloadModel(sendTo(event, 'autotag:downloadProgress')));
+    ipcMain.handle('autotag:remove', () => autotag.removeModel());
+    ipcMain.handle('autotag:settings', (_, patch) => autotag.saveSettings(patch || {}));
+    ipcMain.handle('autotag:suggest', (event, { ids }) => autotag.suggest(ids || [], sendTo(event, 'autotag:progress')));
+    // Add suggested tags ({ [itemId]: [names] }) — one undo step.
+    ipcMain.handle('autotag:apply', async (_, { tagsById }) => {
+        const ids = Object.keys(tagsById || {}).filter(id => tagsById[id]?.length);
+        if (!ids.length) return { items: 0, tags: 0 };
+        let added = 0;
+        await journal.around(`автотеги · ${ids.length} файлов`, ids, [], true, async () => {
+            await sequelize.transaction(async (t) => {
+                for (const id of ids) {
+                    for (const name of [...new Set(tagsById[id])]) {
+                        const tag = await ensureTag(name, t);
+                        const [, created] = await ItemTag.findOrCreate({ where: { itemId: id, tagId: tag.id }, transaction: t });
+                        if (created) added++;
+                    }
+                }
+            });
+        });
+        require('../services/libraryEvents').broadcast('library:changed', { reload: true, counts: true });
+        return { items: ids.length, tags: added };
+    });
+
+    // Undo / redo (Ctrl+Z / Ctrl+Y) — see services/undoJournal.
+    ipcMain.handle('library:undo', () => journal.undo());
+    ipcMain.handle('library:redo', () => journal.redo());
+    ipcMain.handle('library:undoState', () => journal.state());
+
+    // Imports started by the user are one undo step each ("undo" = to the trash).
+    const recordImport = (res) => {
+        const ids = (res?.results || []).map(r => r?.id).filter(Boolean);
+        journal.recordCreated(ids.length > 1 ? `импорт · ${ids.length} файлов` : 'импорт', ids);
+        return res;
+    };
+
+    // Ctrl+V: files / an image / links from the clipboard into the open collection.
+    ipcMain.handle('library:paste', async (_, { collectionId }) =>
+        recordImport(await require('../services/pasteImport').pasteImport({ collectionId })));
+
     ipcMain.handle('library:importDialog', async (_, { collectionId }) => {
         const { canceled, filePaths } = await dialog.showOpenDialog({
             properties: ['openFile', 'multiSelections'],
             filters: [
-                { name: 'Media', extensions: ['jpg','jpeg','png','webp','gif','mp4','webm','avi','mkv','mov'] }
+                { name: 'Media', extensions: ['jpg','jpeg','png','webp','gif','mp4','webm','avi','mkv','mov','ts','m2ts','mts'] }
             ]
         });
 
         if (canceled || !filePaths.length) return { results: [], errors: [] };
 
-        return importFiles({ filePaths, collectionId });
+        return recordImport(await importFiles({ filePaths, collectionId }));
     });
 
     ipcMain.handle('library:importFiles', async (_, { filePaths, collectionId, tags, sourceUrl, allowDuplicate = false }) => {
-        return importFiles({ filePaths, collectionId, tags, sourceUrl, allowDuplicate });
+        return recordImport(await importFiles({ filePaths, collectionId, tags, sourceUrl, allowDuplicate }));
     });
 
     ipcMain.handle('library:getItems', async (_, params = {}) => {
@@ -97,24 +197,42 @@ function register() {
                 : Promise.resolve([]),
         ]);
 
-        const collectionItems = await Promise.all(
-            childCollections.map(async (col) => {
-                const count = await Item.count({ where: { collectionId: col.id } });
-                return {
-                    ...col.toJSON(),
-                    itemCount: count,
-                    isCollection: true, // маркер
-                };
-            })
-        );
+        // Sequential (single SQLite connection); each tile gets its count, how many
+        // sub-collections it holds and up to three thumbnails for the folder art.
+        const collectionItems = [];
+        for (const col of childCollections) {
+            const [count, childIds] = await Promise.all([
+                Item.count({ where: { collectionId: col.id } }),
+                Collection.findAll({ where: { parentId: col.id }, attributes: ['id'], order: [['order', 'ASC']], raw: true }),
+            ]);
+            collectionItems.push({
+                ...col.toJSON(),
+                itemCount: count,
+                childCount: childIds.length,
+                previews: await collectionPreviews(col.id, childIds.map(c => c.id)),
+                isCollection: true,   // a collection tile among the items
+            });
+        }
 
         // editedAt / thumbAt cache-bust the URLs after an in-app edit (see itemUrls).
-        const plainItems = items.map(item => ({ ...item, ...itemUrls(item) }));
+        const plainItems = await require('../services/viewStats').attach(
+            await require('../services/manga/progress').attach(items.map(item => ({ ...item, ...itemUrls(item) }))));
 
         return { collections: collectionItems, items: plainItems };
     });
 
     ipcMain.handle('library:bulkUpdateItems', async (_, { updates }) => {
+        const fields = {};
+        let withTags = false;
+        updates.forEach(({ data }) => {
+            Object.entries(data).forEach(([k, v]) => { if (k === 'tags') withTags = true; else fields[k] = v; });
+        });
+        if ('collectionId' in fields) fields.order = 0;   // moving re-numbers the order
+        return journal.around(journal.describe(fields, withTags, updates.length), updates.map(u => u.id),
+            Object.keys(fields), withTags, () => bulkUpdate(updates));
+    });
+
+    const bulkUpdate = async (updates) => {
         await sequelize.transaction(async (t) => {
             for (const { id, data } of updates) {
                 const { tags, ...fields } = data;
@@ -142,14 +260,20 @@ function register() {
             }
         });
         return { ok: true };
-    });
+    };
 
     ipcMain.handle('library:updateItem', async (_, { id, data }) => {
         const { tags, ...fields } = data;
+        const touched = Object.keys(fields).concat('collectionId' in fields ? ['order'] : []);
+        return journal.around(journal.describe(fields, tags !== undefined, 1), [id], touched, tags !== undefined,
+            () => updateOne(id, data));
+    });
 
-        // One transaction keeps all writes for a single save on one connection, and
-        // tags are created sequentially — parallel findOrCreate INSERTs were racing
-        // each other into SQLITE_BUSY, especially when a paste added many tags at once.
+    const updateOne = async (id, data) => {
+        const { tags, ...fields } = data;
+
+        // One transaction keeps a save's writes on one connection; tags are created
+        // one by one (parallel findOrCreate INSERTs end in SQLITE_BUSY).
         await sequelize.transaction(async (t) => {
             await moveToEndOnCollectionChange(id, fields, t);
 
@@ -174,11 +298,11 @@ function register() {
         });
 
         return { ok: true };
-    });
+    };
 
     // Remove an item's files from disk (best-effort on Windows locks).
     async function purgeItemFiles(id) {
-        const itemDir = path.join(ITEMS_PATH, id);
+        const itemDir = path.join(itemsPath(), id);
         if (!fs.existsSync(itemDir)) return;
 
         for (const file of fs.readdirSync(itemDir)) {
@@ -205,7 +329,8 @@ function register() {
             await hardDeleteItem(id);
         } else {
             // Soft delete → trash. Files and tags stay so it can be restored.
-            await Item.unscoped().update({ deletedAt: Math.floor(Date.now() / 1000) }, { where: { id } });
+            await journal.around('удаление в корзину', [id], ['deletedAt'], false, () =>
+                Item.unscoped().update({ deletedAt: Math.floor(Date.now() / 1000) }, { where: { id } }));
         }
         return { ok: true };
     });
@@ -219,12 +344,12 @@ function register() {
         });
         if (!src) throw new Error('Элемент не найден');
 
-        const srcDir = path.join(ITEMS_PATH, src.id);
+        const srcDir = path.join(itemsPath(), src.id);
         const files = fs.existsSync(srcDir) ? fs.readdirSync(srcDir) : [];
         if (!files.length) throw new Error('Файлы элемента не найдены');
 
         const newId  = crypto.randomUUID();
-        const dstDir = path.join(ITEMS_PATH, newId);
+        const dstDir = path.join(itemsPath(), newId);
         fs.mkdirSync(dstDir, { recursive: true });
 
         try {
@@ -295,6 +420,7 @@ function register() {
                 return item;
             });
 
+            journal.recordCreated('дублирование', [created.id]);
             return { ok: true, id: created.id };
         } catch (e) {
             // Row couldn't be created — don't leave orphaned copied files behind.
@@ -314,7 +440,6 @@ function register() {
     // New output settings (format / quality / max side), keeping the item's edits.
     ipcMain.handle('library:recompressImage', async (_, { id, output }) => recompressImage(id, output));
 
-    // ─── Video editing (trim / revert) ─────────────────────────────────────────
     ipcMain.handle('library:trimVideo', async (event, { id, start, end, mode, backup }) => {
         return videoEdit.trimVideo(id, { start, end, mode, backup }, (percent) => {
             if (!event.sender.isDestroyed()) event.sender.send('library:videoEditProgress', { id, percent });
@@ -327,19 +452,20 @@ function register() {
 
     ipcMain.handle('library:setVideoThumb', async (_, { id, time }) => videoEdit.setVideoThumb(id, time));
 
-    // ─── Resume positions for long videos ─────────────────────────────────────
     ipcMain.handle('library:getVideoPosition',  async (_, p) => videoPositions.getPosition(p || {}));
     ipcMain.handle('library:saveVideoPosition', async (_, p) => videoPositions.savePosition(p || {}));
 
     ipcMain.handle('library:restoreItems', async (_, { ids = [] }) => {
         if (!ids.length) return { ok: true, count: 0 };
-        await Item.unscoped().update({ deletedAt: null }, { where: { id: { [Op.in]: ids } } });
+        await journal.around(journal.describe({ deletedAt: null }, false, ids.length), ids, ['deletedAt'], false, () =>
+            Item.unscoped().update({ deletedAt: null }, { where: { id: { [Op.in]: ids } } }));
         return { ok: true, count: ids.length };
     });
 
     ipcMain.handle('library:restoreItem', async (_, { id }) => {
         // Unscoped: the row we're restoring is currently trashed.
-        await Item.unscoped().update({ deletedAt: null }, { where: { id } });
+        await journal.around('восстановление', [id], ['deletedAt'], false, () =>
+            Item.unscoped().update({ deletedAt: null }, { where: { id } }));
         return { ok: true };
     });
 
@@ -351,8 +477,11 @@ function register() {
         return { ok: true, removed: trashed.length };
     });
 
-    // ─── Tag manager ──────────────────────────────────────────────────────────
     ipcMain.handle('library:getAllTags',   async ()               => tagAdmin.getAllTags());
+    ipcMain.handle('library:setTagType', async (_, data) => tagAdmin.setTagType(data));
+    ipcMain.handle('library:getModels', async () => tagAdmin.getModels());
+    ipcMain.handle('library:getModelFiles', async (_, { id }) => tagAdmin.getModelFiles(id));
+    ipcMain.handle('library:setModelCover', async (_, data) => tagAdmin.setModelCover(data || {}));
     ipcMain.handle('library:renameTag',    async (_, { id, newName }) => tagAdmin.renameTag(id, newName));
     ipcMain.handle('library:mergeTags',    async (_, { sourceId, targetId }) => tagAdmin.mergeTags(sourceId, targetId));
     ipcMain.handle('library:deleteTag',    async (_, { id })       => tagAdmin.deleteTag(id));
@@ -362,7 +491,6 @@ function register() {
     ipcMain.handle('library:addTagRule',   async (_, data)         => tagAdmin.addRule(data));
     ipcMain.handle('library:deleteTagRule', async (_, { id })      => tagAdmin.deleteRule(id));
 
-    // ─── Smart collections ──────────────────────────────────────────────────────
     ipcMain.handle('library:getSmartItems', async (_, { filter }) => getSmartItems(filter || {}));
 
     ipcMain.handle('library:createSmartCollection', async (_, { name, filter }) => {
@@ -429,7 +557,7 @@ function register() {
     // library:// URL, not the on-disk path).
     ipcMain.handle('library:revealItem', async (_, { id }) => {
         if (!/^[A-Za-z0-9._-]+$/.test(String(id || ''))) return { ok: false };
-        const dir = path.join(ITEMS_PATH, id);
+        const dir = path.join(itemsPath(), id);
         let target = dir;
         try {
             const f = fs.readdirSync(dir).find(x => /^original\./i.test(x));
@@ -441,23 +569,66 @@ function register() {
 
     ipcMain.handle('library:findDuplicates', async () => findDuplicates());
 
-    // ─── Near-duplicates (perceptual hash) ────────────────────────────────────
     ipcMain.handle('library:phashStatus', async () => similarity.phashStatus());
     ipcMain.handle('library:computePhashes', async (event) => similarity.computeMissing((p) => {
         if (!event.sender.isDestroyed()) event.sender.send('library:phashProgress', p);
     }));
-    ipcMain.handle('library:findSimilar', async (event, { maxDistance }) => similarity.findSimilar(maxDistance, (pct) => {
-        if (!event.sender.isDestroyed()) event.sender.send('library:similarProgress', pct);
-    }));
+    // Watched folders (auto import of new files)
+    const watchFolders = require('../services/watchFolders');
+    ipcMain.handle('watch:list',   () => watchFolders.list());
+    ipcMain.handle('watch:save',   (_, { folder }) => watchFolders.save(folder));
+    ipcMain.handle('watch:remove', (_, { id }) => watchFolders.remove(id));
+    ipcMain.handle('watch:importExisting', (_, { id }) => watchFolders.importExisting(id));
+    ipcMain.handle('watch:pickDir', async () => {
+        const { canceled, filePaths } = await dialog.showOpenDialog({ properties: ['openDirectory'] });
+        return canceled || !filePaths.length ? null : filePaths[0];
+    });
 
-    // ─── View history / recently viewed (per section) ────────────────────────
+    // Import rules (auto tags / collection / rating)
+    const autoRules = require('../services/autoRules');
+    ipcMain.handle('autoRules:list',   () => autoRules.list());
+    ipcMain.handle('autoRules:save',   (_, { rule }) => autoRules.save(rule));
+    ipcMain.handle('autoRules:remove', (_, { id }) => autoRules.remove(id));
+    ipcMain.handle('autoRules:preview', (_, { rule }) => autoRules.preview(rule));
+    ipcMain.handle('autoRules:apply',  (_, { id }) => autoRules.applyToExisting(id));
+
+    // Post links of everything in the library (booru "already saved" marks).
+    ipcMain.handle('library:sourceUrls', async () => {
+        const rows = await Item.findAll({ attributes: ['sourceUrl'], where: { sourceUrl: { [Op.ne]: '' } }, raw: true });
+        return rows.map(r => r.sourceUrl).filter(Boolean);
+    });
+
+    ipcMain.handle('library:itemRelations', async (_, { id }) => similarity.relationsOf(id));
+    ipcMain.handle('library:findSimilar', async (event, { maxDistance, mirror = true }) => similarity.findSimilar(maxDistance, (pct) => {
+        if (!event.sender.isDestroyed()) event.sender.send('library:similarProgress', pct);
+    }, { mirror }));
+
+    // More fingerprints for the duplicate finder: similar videos (frame hashes) and
+    // images alike by content (vectors from the tagger model, optional keypoint check).
+    const embeddings = require('../services/embeddings');
+    ipcMain.handle('library:fingerprintStatus', async () => {
+        const [images, videos, content] = await Promise.all([similarity.phashStatus(), similarity.videoStatus(), embeddings.status()]);
+        return {
+            images: { ...images, running: similarity.isRunning('images') },
+            videos: { ...videos, running: similarity.isRunning('videos') },
+            content: { ...content, running: similarity.isRunning('content') },
+        };
+    });
+    ipcMain.handle('library:computeVideoHashes', async (event) => similarity.computeVideoMissing(sendTo(event, 'library:fingerprintProgress:videos')));
+    ipcMain.handle('library:computeEmbeddings', async (event) => embeddings.computeMissing(sendTo(event, 'library:fingerprintProgress:content')));
+    ipcMain.handle('library:cancelFingerprints', async (_, { kind }) => similarity.cancelJob(kind));
+    ipcMain.handle('library:findSimilarVideos', async (event, { maxDistance }) =>
+        similarity.findSimilarVideos(maxDistance, sendTo(event, 'library:similarProgress')));
+    ipcMain.handle('library:findByContent', async (event, { threshold, verify }) =>
+        embeddings.findByContent(threshold, { verify }, sendTo(event, 'library:contentProgress')));
+
     ipcMain.handle('library:recordView',        async (_, p)  => viewHistory.recordView(p || {}));
     ipcMain.handle('library:getHistory',        async (_, p)  => viewHistory.getHistory(p || {}));
     ipcMain.handle('library:getHistorySections', async ()     => viewHistory.getHistorySections());
+    ipcMain.handle('library:viewedKeys',        async (_, p)  => viewHistory.viewedKeys(p || {}));
     ipcMain.handle('library:clearHistory',      async (_, p)  => viewHistory.clearHistory(p || {}));
     ipcMain.handle('library:removeHistory',     async (_, p)  => viewHistory.removeHistory(p || {}));
 
-    // ─── Maintenance (Панель управления → Управление) ─────────────────────────
     ipcMain.handle('library:checkIntegrity', async () => maintenance.checkIntegrity());
 
     ipcMain.handle('library:cleanupIntegrity', async (_, { missingIds = [], orphanNames = [] }) => {
@@ -481,10 +652,11 @@ function register() {
         if (permanent) {
             for (const id of ids) await hardDeleteItem(id);   // sequential: single SQLite writer
         } else {
-            await Item.unscoped().update(
-                { deletedAt: Math.floor(Date.now() / 1000) },
-                { where: { id: { [Op.in]: ids } } },
-            );
+            await journal.around(journal.describe({ deletedAt: 1 }, false, ids.length), ids, ['deletedAt'], false, () =>
+                Item.unscoped().update(
+                    { deletedAt: Math.floor(Date.now() / 1000) },
+                    { where: { id: { [Op.in]: ids } } },
+                ));
         }
         return { ok: true, count: ids.length };
     });
@@ -535,25 +707,40 @@ function register() {
     });
 
     ipcMain.handle('library:searchTags', async (_, { query }) => {
-        if (!query || query.length < 1) return [];
+        const q = String(query || '').trim().toLowerCase().replace(/\s+/g, '_');
+        if (!q) return [];
+
+        // Tags on at least one file outside the trash, with how many files they're on.
+        // "_" stays a one-letter wildcard, so it finds both "big_breasts" and "big breasts".
+        const like = (part) => `%${part.replace(/[!%]/g, c => '!' + c)}%`;
+        const find = (patterns) => sequelize.query(
+            `SELECT t.id, t.name, t.type, t.userType, t.pinned, COUNT(*) AS count
+               FROM Tags t
+               JOIN ItemTags it ON it.tagId = t.id
+               JOIN Items i ON i.id = it.itemId AND i.deletedAt IS NULL
+              WHERE ${patterns.map(() => "t.name LIKE ? ESCAPE '!'").join(' OR ')}
+              GROUP BY t.id
+              ORDER BY t.pinned DESC, count DESC
+              LIMIT 400`,
+            { replacements: patterns.map(like), type: sequelize.QueryTypes.SELECT },
+        );
 
         try {
-            const tags = await Tag.findAll({
-                where: { name: { [Op.like]: `%${query.toLowerCase()}%` } },
-                include: [{
-                    model: Item,
-                    as: 'items',
-                    required: true,
-                    through: { attributes: [] },
-                    attributes: [],
-                }],
-                attributes: ['id', 'name', 'type', 'pinned'],
-                limit: 10,
-                order: [['pinned', 'DESC'], ['name', 'ASC']],   // pinned matches first
-                subQuery: false, // ← ускоряет запрос с include + limit
-            });
+            let rows = await find([q]);
+            // Few hits: maybe a typo. It sits in one half of the word, so the other
+            // half still matches; rankTags then keeps only the close ones.
+            if (rows.length < 10 && allowedTypos(q.length)) {
+                const half = Math.ceil(q.length / 2);
+                const seen = new Set(rows.map(r => r.id));
+                const more = await find([q.slice(0, half), q.slice(q.length - half)]);
+                rows = rows.concat(more.filter(r => !seen.has(r.id)));
+            }
 
-            return tags.map(t => ({ name: t.name, type: t.type, pinned: !!t.pinned, value: t.name, label: t.name }));
+            // The category set by hand wins over the site's.
+            return rankTags(rows, q).slice(0, 20).map(t => ({
+                name: t.name, type: t.userType ?? t.type, pinned: !!t.pinned, count: Number(t.count) || 0,
+                value: t.name, label: t.name,
+            }));
         } catch (e) {
             console.error('[searchTags] error:', e.message);
             return [];
@@ -589,23 +776,26 @@ function register() {
             allResults.errors.push(...result.errors);
         }
 
-        return allResults;
+        return recordImport(allResults);
     });
 
     ipcMain.handle('library:importDirectory', async (_, { dirPath, collectionId }) => {
-        return importDirectory({ dirPath, collectionId });
+        return recordImport(await importDirectory({ dirPath, collectionId }));
     });
 
     ipcMain.handle('library:importFromEagle', async (_, { csvPath, collectionId }) => {
         return importFromEagleCsv({ csvPath, collectionId });
     });
 
-    ipcMain.handle('library:importUrl', async (event, { url, collectionId }) => {
-        return importFromUrl({
+    ipcMain.handle('library:importUrl', async (event, { url, collectionId, tags, sourceUrl, title }) => {
+        return recordImport(await importFromUrl({
             url,
             collectionId,
-            onProgress: (p) => event.sender.send('library:urlImportProgress', p),
-        });
+            tags: Array.isArray(tags) ? tags : [],
+            sourceUrl,
+            title,
+            onProgress: (p) => { if (!event.sender.isDestroyed()) event.sender.send('library:urlImportProgress', p); },
+        }));
     });
 
     ipcMain.handle('library:importEagleDialog', async (event, { collectionId }) => {
@@ -645,15 +835,14 @@ function register() {
     // Generate display.jpg for items that have HEIC originals but no display copy
     ipcMain.handle('library:generateMissingDisplays', async (event) => {
         const { generateHeifDisplay } = require('../services/thumbService');
-        const dirs = fs.readdirSync(ITEMS_PATH);
+        const dirs = fs.readdirSync(itemsPath());
         let fixed = 0, skipped = 0, failed = 0;
 
         for (const id of dirs) {
-            const itemDir = path.join(ITEMS_PATH, id);
+            const itemDir = path.join(itemsPath(), id);
             const displayPath = path.join(itemDir, 'display.jpg');
             if (fs.existsSync(displayPath)) { skipped++; continue; }
 
-            // Find original file
             let originalPath = null;
             try {
                 const files = fs.readdirSync(itemDir);

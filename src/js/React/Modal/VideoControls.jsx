@@ -1,5 +1,7 @@
 import React, {useCallback, useEffect, useRef, useState} from 'react';
+import {getStoryboard} from '@/Infrastructure/Ipc';
 import {toggleViewerFullscreen} from './fullscreen';
+import {matches} from '@services/keymap';
 
 const RATE_KEY      = 'jsg_video_rate';
 const VOL_KEY       = 'jsg_video_volume';
@@ -32,7 +34,7 @@ const volumeIcon = (muted, v) =>
 const BusyIndicator = ({ busy }) => (
     <div className="vc-busy">
         <div className="vc-busy-label">
-            <i className="bi bi-arrow-repeat spin" />
+            <i aria-hidden="true" className="bi bi-arrow-repeat spin" />
             {busy.label}{busy.percent != null ? ` ${Math.round(busy.percent)}%` : '…'}
         </div>
         <div className="vc-busy-bar">
@@ -47,7 +49,7 @@ const BusyIndicator = ({ busy }) => (
 // resume — { position } when a saved spot can be continued (onResume / onDismissResume)
 const VideoControls = ({
     video, isPaused, currentTime, videoDuration, playMode, cyclePlayMode,
-    tools, busy, resume, onResume, onDismissResume,
+    tools, busy, resume, onResume, onDismissResume, storyboardSrc,
 }) => {
     const [volume, setVolume]     = useState(1);
     const [muted, setMuted]       = useState(false);
@@ -57,6 +59,15 @@ const VideoControls = ({
     const [endRec, setEndRec]     = useState(null);   // B of the A–B loop
     const [speedOpen, setSpeedOpen] = useState(false);
     const [hoverPct, setHoverPct] = useState(null);   // seek-bar hover position
+    // Frame previews over the seek bar: the storyboard sprite is fetched on first hover.
+    const [board, setBoard] = useState(null);         // null | 'loading' | 'none' | { url, cols, … }
+    const sbKey = storyboardSrc ? JSON.stringify(storyboardSrc) : null;
+    useEffect(() => { setBoard(null); }, [sbKey]);
+    useEffect(() => {
+        if (hoverPct === null || board !== null || !storyboardSrc) return;
+        setBoard('loading');
+        getStoryboard(storyboardSrc).then(sb => setBoard(sb || 'none')).catch(() => setBoard('none'));
+    }, [hoverPct, board, sbKey]);   // eslint-disable-line react-hooks/exhaustive-deps
     const [hidden, setHidden]     = useState(false);   // auto-hide while playing
     const [collapsed, setCollapsed] = useState(() => localStorage.getItem(COLLAPSED_KEY) === '1');
     const [toolsOpen, setToolsOpen] = useState(false);
@@ -76,7 +87,6 @@ const VideoControls = ({
     const pct = (t) => (dur ? clamp(t / dur, 0, 1) * 100 : 0);
     const abActive = startRec !== null && endRec !== null;
 
-    // ─── Pull volume / rate / buffered off the element, apply saved prefs ───────
     useEffect(() => {
         if (!video) return;
 
@@ -106,7 +116,6 @@ const VideoControls = ({
         };
     }, [video]);
 
-    // ─── Smooth progress: drive the fill/thumb from rAF, not the 4Hz timeupdate ─
     useEffect(() => {
         if (!video || collapsed) return;
         let raf;
@@ -121,7 +130,6 @@ const VideoControls = ({
         return () => cancelAnimationFrame(raf);
     }, [video, collapsed]);
 
-    // ─── Actions (all read straight off the element to stay closure-safe) ───────
     const togglePlay = useCallback(() => {
         if (video) (video.paused || video.ended) ? video.play().catch(() => {}) : video.pause();
     }, [video]);
@@ -180,7 +188,6 @@ const VideoControls = ({
         });
     }, []);
 
-    // ─── A–B loop: click cycles set-A → set-B → clear ──────────────────────────
     const handleAB = useCallback(() => {
         const t = video?.currentTime ?? 0;
         if (startRec === null)      setStartRec(t);
@@ -195,7 +202,6 @@ const VideoControls = ({
         return () => video.removeEventListener('timeupdate', onTime);
     }, [video, abActive, startRec, endRec]);
 
-    // ─── Seek bar drag ─────────────────────────────────────────────────────────
     const onSeekDown = useCallback(() => {
         if (!video) return;
         wasPlaying.current = !video.paused;
@@ -206,7 +212,6 @@ const VideoControls = ({
         if (video && wasPlaying.current) video.play().catch(() => {});
     }, [video]);
 
-    // ─── Auto-hide the bar after a moment of stillness while playing ────────────
     const hideTimerRef = useRef(null);
     const isPausedRef = useRef(isPaused);
     useEffect(() => { isPausedRef.current = isPaused; }, [isPaused]);
@@ -223,10 +228,14 @@ const VideoControls = ({
         if (collapsed) return;
         reveal();
         document.addEventListener('mousemove', reveal);
-        return () => { clearTimeout(hideTimerRef.current); document.removeEventListener('mousemove', reveal); };
+        document.addEventListener('pointerdown', reveal);   // taps: no mouse to move
+        return () => {
+            clearTimeout(hideTimerRef.current);
+            document.removeEventListener('mousemove', reveal);
+            document.removeEventListener('pointerdown', reveal);
+        };
     }, [isPaused, collapsed, reveal]);
 
-    // ─── Close the speed / tools menus on outside click ─────────────────────────
     useEffect(() => {
         if (!speedOpen) return;
         const onDown = (e) => { if (speedRef.current && !speedRef.current.contains(e.target)) setSpeedOpen(false); };
@@ -254,7 +263,6 @@ const VideoControls = ({
         tools.revert();
     }, [tools]);
 
-    // ─── Keyboard shortcuts ────────────────────────────────────────────────────
     useEffect(() => {
         const typing = () => {
             const el = document.activeElement;
@@ -271,6 +279,15 @@ const VideoControls = ({
                 return;
             }
 
+            // Remappable ones first (Settings → Hotkeys).
+            if (matches(e, 'video.mute'))       { toggleMute(); return; }
+            if (matches(e, 'video.fullscreen')) { e.preventDefault(); toggleFullscreen(); return; }
+            if (matches(e, 'video.pip'))        { togglePip(); return; }
+            if (matches(e, 'video.slower'))     { bumpRate(-1); return; }
+            if (matches(e, 'video.faster'))     { bumpRate(1); return; }
+            if (matches(e, 'media.frameBack'))  { stepFrame(-1); return; }
+            if (matches(e, 'media.frameFwd'))   { stepFrame(1); return; }
+
             switch (e.code) {
                 case 'Space':
                     e.preventDefault();
@@ -278,13 +295,8 @@ const VideoControls = ({
                     isSpaceDown.current = true;
                     togglePlay();
                     break;
-                case 'KeyM': toggleMute(); break;
-                case 'KeyF': e.preventDefault(); toggleFullscreen(); break;
-                case 'KeyP': togglePip(); break;
                 case 'ArrowUp':   e.preventDefault(); setVol((video?.volume ?? 1) + 0.05); break;
                 case 'ArrowDown': e.preventDefault(); setVol((video?.volume ?? 1) - 0.05); break;
-                case 'Comma':  e.shiftKey ? bumpRate(-1) : stepFrame(-1); break;   // "<" slower, "," frame back
-                case 'Period': e.shiftKey ? bumpRate(1)  : stepFrame(1);  break;   // ">" faster, "." frame fwd
                 // Digits are reserved for rating in the modal (0 = 10); use Ctrl+←/→ to seek.
             }
         };
@@ -305,17 +317,17 @@ const VideoControls = ({
                 {resume && !busy && (
                     <div className="vc-busy-float">
                         <div className="vc-resume">
-                            <i className="bi bi-clock-history" />
+                            <i aria-hidden="true" className="bi bi-clock-history" />
                             <span>Продолжить с <b>{formatTime(resume.position)}</b>?</span>
                             <button className="vc-panel-btn primary" onClick={onResume}>
-                                <i className="bi bi-play-fill" /> Продолжить
+                                <i aria-hidden="true" className="bi bi-play-fill" /> Продолжить
                             </button>
                             <button className="vc-panel-btn" onClick={onDismissResume}>С начала</button>
                         </div>
                     </div>
                 )}
                 <button className="vc-expand" title="Показать управление" onClick={toggleCollapsed}>
-                    <i className="bi bi-chevron-up" />
+                    <i aria-hidden="true" className="bi bi-chevron-up" />
                 </button>
             </>
         );
@@ -337,10 +349,10 @@ const VideoControls = ({
 
             {resume && !busy && (
                 <div className="vc-resume">
-                    <i className="bi bi-clock-history" />
+                    <i aria-hidden="true" className="bi bi-clock-history" />
                     <span>Продолжить с <b>{formatTime(resume.position)}</b>?</span>
                     <button className="vc-panel-btn primary" onClick={onResume}>
-                        <i className="bi bi-play-fill" /> Продолжить
+                        <i aria-hidden="true" className="bi bi-play-fill" /> Продолжить
                     </button>
                     <button className="vc-panel-btn" onClick={onDismissResume}>С начала</button>
                 </div>
@@ -349,7 +361,7 @@ const VideoControls = ({
             {trimOpen && tools?.trim && abActive && !busy && (
                 <div className="vc-panel">
                     <div className="vc-panel-title">
-                        <i className="bi bi-scissors" />
+                        <i aria-hidden="true" className="bi bi-scissors" />
                         Оставить {formatTime(startRec)} – {formatTime(endRec)}
                         <span className="vc-panel-dim">({formatTime(endRec - startRec)})</span>
                     </div>
@@ -368,7 +380,7 @@ const VideoControls = ({
                     <div className="vc-panel-actions">
                         <button className="vc-panel-btn" onClick={() => setTrimOpen(false)}>Отмена</button>
                         <button className="vc-panel-btn primary" onClick={startTrim}>
-                            <i className="bi bi-scissors" /> Обрезать
+                            <i aria-hidden="true" className="bi bi-scissors" /> Обрезать
                         </button>
                     </div>
                 </div>
@@ -392,6 +404,20 @@ const VideoControls = ({
                 {startRec !== null && <div className="vc-mark" style={{ left: `${pct(startRec)}%` }} />}
                 {endRec   !== null && <div className="vc-mark" style={{ left: `${pct(endRec)}%` }} />}
                 <div className="vc-thumb" ref={thumbRef} style={{ left: `${pct(currentTime)}%` }} />
+                {hoverPct !== null && board && typeof board === 'object' && (() => {
+                    const i = Math.min(board.count - 1, Math.floor(hoverPct * board.count));
+                    const scale = 1.25;   // sprite frames are 160px wide
+                    return (
+                        <div className="vc-preview" style={{
+                            left: `${hoverPct * 100}%`,
+                            width: board.width * scale,
+                            height: board.height * scale,
+                            backgroundImage: `url("${board.url}")`,
+                            backgroundSize: `${board.cols * board.width * scale}px ${board.rows * board.height * scale}px`,
+                            backgroundPosition: `-${(i % board.cols) * board.width * scale}px -${Math.floor(i / board.cols) * board.height * scale}px`,
+                        }} />
+                    );
+                })()}
                 {hoverPct !== null && (
                     <div className="vc-tooltip" style={{ left: `${hoverPct * 100}%` }}>
                         {formatTime(hoverPct * dur)}
@@ -416,7 +442,7 @@ const VideoControls = ({
                     <time className="vc-time">{formatTime(currentTime)} <span>/</span> {formatTime(dur)}</time>
                     <div className="vc-vol">
                         <button className="vc-btn" title="Звук (M)" onClick={toggleMute}>
-                            <i className={`bi ${volumeIcon(muted, volume)}`} />
+                            <i aria-hidden="true" className={`bi ${volumeIcon(muted, volume)}`} />
                         </button>
                         <div className="vc-vol-popup">
                             <input
@@ -434,19 +460,19 @@ const VideoControls = ({
 
                 <div className="vc-zone vc-center">
                     <button className="vc-btn" title="В начало" onClick={() => skipToSec(0)}>
-                        <i className="bi bi-skip-start-fill" />
+                        <i aria-hidden="true" className="bi bi-skip-start-fill" />
                     </button>
                     <button className="vc-btn" title="−10 c" onClick={() => skipSec(-10)}>
-                        <i className="bi bi-rewind-fill" />
+                        <i aria-hidden="true" className="bi bi-rewind-fill" />
                     </button>
                     <button className="vc-btn vc-play" title="Пробел" onClick={togglePlay}>
-                        <i className={`bi ${isPaused ? 'bi-play-fill' : 'bi-pause-fill'}`} />
+                        <i aria-hidden="true" className={`bi ${isPaused ? 'bi-play-fill' : 'bi-pause-fill'}`} />
                     </button>
                     <button className="vc-btn" title="+10 c" onClick={() => skipSec(10)}>
-                        <i className="bi bi-fast-forward-fill" />
+                        <i aria-hidden="true" className="bi bi-fast-forward-fill" />
                     </button>
                     <button className="vc-btn" title="В конец" onClick={() => skipToSec(Number.MAX_VALUE)}>
-                        <i className="bi bi-skip-end-fill" />
+                        <i aria-hidden="true" className="bi bi-skip-end-fill" />
                     </button>
                 </div>
 
@@ -459,7 +485,7 @@ const VideoControls = ({
                         {abLabel}
                     </button>
                     <button className="vc-btn vc-mode" title={mode.title} onClick={cyclePlayMode}>
-                        <i className={`bi ${mode.icon}`} />
+                        <i aria-hidden="true" className={`bi ${mode.icon}`} />
                     </button>
                     <div className="vc-speed-wrap" ref={speedRef}>
                         <button
@@ -492,17 +518,17 @@ const VideoControls = ({
                                 onClick={() => setToolsOpen(v => !v)}
                                 disabled={!!busy}
                             >
-                                <i className="bi bi-tools" />
+                                <i aria-hidden="true" className="bi bi-tools" />
                             </button>
                             {toolsOpen && (
                                 <div className="vc-tools-menu">
                                     <button onClick={() => { setToolsOpen(false); tools.captureFrame(); }}>
-                                        <i className="bi bi-camera" />
+                                        <i aria-hidden="true" className="bi bi-camera" />
                                         Сохранить кадр в библиотеку
                                     </button>
                                     {tools.setThumb && (
                                         <button onClick={() => { setToolsOpen(false); tools.setThumb(); }}>
-                                            <i className="bi bi-image" />
+                                            <i aria-hidden="true" className="bi bi-image" />
                                             Сделать этот кадр превью
                                         </button>
                                     )}
@@ -512,13 +538,13 @@ const VideoControls = ({
                                             title={abActive ? '' : 'Сначала отметьте A и B кнопкой «A‑B»'}
                                             onClick={() => { setToolsOpen(false); setTrimOpen(true); }}
                                         >
-                                            <i className="bi bi-scissors" />
+                                            <i aria-hidden="true" className="bi bi-scissors" />
                                             Обрезать по A–B
                                         </button>
                                     )}
                                     {tools.canRevert && (
                                         <button onClick={startRevert}>
-                                            <i className="bi bi-arrow-counterclockwise" />
+                                            <i aria-hidden="true" className="bi bi-arrow-counterclockwise" />
                                             Вернуть оригинал
                                         </button>
                                     )}
@@ -527,13 +553,13 @@ const VideoControls = ({
                         </div>
                     )}
                     <button className="vc-btn" title="Картинка-в-картинке (P)" onClick={togglePip}>
-                        <i className="bi bi-pip" />
+                        <i aria-hidden="true" className="bi bi-pip" />
                     </button>
                     <button className="vc-btn" title="На весь экран (F)" onClick={toggleFullscreen}>
-                        <i className="bi bi-arrows-fullscreen" />
+                        <i aria-hidden="true" className="bi bi-arrows-fullscreen" />
                     </button>
                     <button className="vc-btn" title="Свернуть панель" onClick={toggleCollapsed}>
-                        <i className="bi bi-chevron-down" />
+                        <i aria-hidden="true" className="bi bi-chevron-down" />
                     </button>
                 </div>
             </div>

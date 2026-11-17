@@ -8,7 +8,7 @@ const FILTER_DEFAULTS = {
     tags:               [],       // [{ name, exclude }]
     ratingMin:          0,
     ratingMax:          10,       // 0..10; min=max=0 → "unrated only"
-    types:              [],       // subset of ['image', 'video', 'gif']; empty = any
+    types:              [],       // subset of ['image', 'video', 'gif', 'manga']; empty = any
     sizeMin:            null,     // bytes
     sizeMax:            null,     // bytes
     minSide:            null,     // px — the shorter side must be at least this
@@ -18,9 +18,113 @@ const FILTER_DEFAULTS = {
     importedTo:         null,     // unix seconds, inclusive
     noTags:             false,
     noCollection:       false,
+    // Smart collections: a tree of "all / any" groups of conditions, AND-ed with
+    // the flat fields above. { op: 'all'|'any', items: [condition | group] }
+    rules:              null,
 };
 
-const MEDIA_TYPES = ['image', 'video', 'gif'];
+// { field, cmp, value }. `viewed` needs a context with the last-view time per item
+// (ctx.lastViewed: Map id → unix seconds) — only smart collections (server) have it.
+const RULE_FIELDS = ['tag', 'title', 'source', 'rating', 'type', 'size', 'duration',
+    'width', 'height', 'minSide', 'orientation', 'imported', 'collection', 'viewed'];
+
+function normalizeRules(r, depth = 0) {
+    if (!r || typeof r !== 'object' || depth > 4) return null;
+    const op = r.op === 'any' ? 'any' : 'all';
+    const items = (Array.isArray(r.items) ? r.items : [])
+        .map(x => (x && Array.isArray(x.items) ? normalizeRules(x, depth + 1)
+            : x && RULE_FIELDS.includes(x.field) ? { field: x.field, cmp: String(x.cmp || ''), value: x.value ?? '' } : null))
+        .filter(Boolean);
+    return { op, items };
+}
+
+const hostOf = (url) => {
+    try { return new URL(url).hostname.replace(/^www\./, '').toLowerCase(); } catch { return ''; }
+};
+
+function cmpNum(v, cmp, x) {
+    if (x === '' || x == null || !isFinite(Number(x))) return true;   // unfinished condition
+    x = Number(x);
+    if (cmp === 'lte') return v <= x;
+    if (cmp === 'eq') return v === x;
+    return v >= x;
+}
+
+function matchCondition(item, c, nowSec, ctx) {
+    const v = c.value;
+    const tags = Array.isArray(item.tags) ? item.tags : [];
+    switch (c.field) {
+        case 'tag': {
+            const t = String(v).trim().toLowerCase();
+            if (!t) return true;
+            return c.cmp === 'not' ? !tags.includes(t) : tags.includes(t);
+        }
+        case 'title': {
+            const q = String(v).trim().toLowerCase();
+            if (!q) return true;
+            const hay = `${item.title || ''} ${item.fileName || ''}`.toLowerCase();
+            return c.cmp === 'not' ? !hay.includes(q) : hay.includes(q);
+        }
+        case 'source': {
+            const host = hostOf(item.sourceUrl);
+            if (c.cmp === 'empty') return !item.sourceUrl;
+            if (c.cmp === 'present') return !!item.sourceUrl;
+            const q = String(v).trim().toLowerCase().replace(/^www\./, '');
+            if (!q) return true;
+            if (c.cmp === 'not') return !(host === q || host.endsWith(`.${q}`));
+            return host === q || host.endsWith(`.${q}`);
+        }
+        case 'rating':   return cmpNum(item.rating || 0, c.cmp, v);
+        case 'size':     return cmpNum((Number(item.size) || 0) / (1024 * 1024), c.cmp, v);
+        case 'duration': return cmpNum(Number(item.duration) || 0, c.cmp, v);
+        case 'width':    return cmpNum(Number(item.width) || 0, c.cmp, v);
+        case 'height':   return cmpNum(Number(item.height) || 0, c.cmp, v);
+        case 'minSide':  return cmpNum(Math.min(Number(item.width) || 0, Number(item.height) || 0), c.cmp, v);
+        case 'type': {
+            if (!v) return true;
+            return c.cmp === 'not' ? mediaKind(item) !== v : mediaKind(item) === v;
+        }
+        case 'orientation': {
+            if (!v) return true;
+            return orientationOf(Number(item.width) || 0, Number(item.height) || 0) === v;
+        }
+        case 'imported': {
+            const days = Number(v);
+            if (!isFinite(days) || v === '') return true;
+            const at = Number(item.importedAt) || 0;
+            return c.cmp === 'older' ? at < nowSec - days * 86400 : at >= nowSec - days * 86400;
+        }
+        case 'collection': {
+            if (c.cmp === 'none') return !item.collectionId;
+            if (!v) return true;
+            return c.cmp === 'not' ? item.collectionId !== v : item.collectionId === v;
+        }
+        case 'viewed': {
+            if (!ctx?.lastViewed) return true;   // no history available → don't filter
+            const last = ctx.lastViewed.get(item.id) || 0;
+            if (c.cmp === 'never') return !last;
+            const days = Number(v);
+            if (!isFinite(days) || v === '') return true;
+            const recent = last >= nowSec - days * 86400;
+            return c.cmp === 'not_within' ? !recent : recent;
+        }
+        default: return true;
+    }
+}
+
+function matchRules(item, group, nowSec, ctx) {
+    if (!group || !group.items.length) return true;
+    const test = (x) => (x.items ? matchRules(item, x, nowSec, ctx) : matchCondition(item, x, nowSec, ctx));
+    return group.op === 'any' ? group.items.some(test) : group.items.every(test);
+}
+
+// Does the rule tree reference view history (the server then loads it)?
+function rulesNeedHistory(group) {
+    if (!group) return false;
+    return group.items.some(x => (x.items ? rulesNeedHistory(x) : x.field === 'viewed'));
+}
+
+const MEDIA_TYPES = ['image', 'video', 'gif', 'manga'];
 const ORIENTATIONS = ['any', 'portrait', 'landscape', 'square'];
 
 const num = (v) => (v === null || v === undefined || v === '' || !isFinite(Number(v)) ? null : Number(v));
@@ -44,12 +148,14 @@ function normalizeFilter(f = {}) {
     n.importedTo = num(n.importedTo);
     n.noTags = !!n.noTags;
     n.noCollection = !!n.noCollection;
+    n.rules = normalizeRules(n.rules);
     return n;
 }
 
-// 'video' | 'gif' | 'image' — works for renderer ThumbFiles (numeric type) and raw rows.
+// 'video' | 'gif' | 'image' | 'manga' — works for renderer ThumbFiles (numeric type) and raw rows.
 function mediaKind(item) {
     const mime = String(item.mimeType || '');
+    if (mime === 'application/x-darkframe-manga') return 'manga';
     if (mime.startsWith('video/') || item.type === 2) return 'video';
     if (mime === 'image/gif') return 'gif';
     return 'image';
@@ -71,6 +177,7 @@ function advancedCount(f) {
     if (f.importedWithinDays != null || f.importedFrom != null || f.importedTo != null) n++;
     if (f.noTags) n++;
     if (f.noCollection) n++;
+    if (f.rules?.items?.length) n++;
     return n;
 }
 
@@ -91,7 +198,7 @@ function toSmartFilter(filters) {
  * `isCollection` items (child-collection tiles in the grid) only take part in the
  * search/tag/rating filter and are hidden while any media-specific condition is on.
  */
-function matchItem(item, f, nowSec = Math.floor(Date.now() / 1000)) {
+function matchItem(item, f, nowSec = Math.floor(Date.now() / 1000), ctx = null) {
     const isCollection = !!(item.isCollection || item._meta?.isCollection);
     if (isCollection && advancedCount(f)) return false;
 
@@ -133,10 +240,13 @@ function matchItem(item, f, nowSec = Math.floor(Date.now() / 1000)) {
     if (f.noTags && tags.length) return false;
     if (f.noCollection && item.collectionId) return false;
 
+    if (f.rules && !matchRules(item, f.rules, nowSec, ctx)) return false;
+
     return true;
 }
 
 module.exports = {
     FILTER_DEFAULTS, MEDIA_TYPES, ORIENTATIONS,
     normalizeFilter, mediaKind, orientationOf, advancedCount, isFilterActive, toSmartFilter, matchItem,
+    RULE_FIELDS, normalizeRules, matchRules, matchCondition, rulesNeedHistory,
 };

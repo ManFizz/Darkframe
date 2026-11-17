@@ -125,6 +125,31 @@ function thumbAt(src, dst, time) {
     return run(cmd);
 }
 
+/**
+ * Storyboard: `count` evenly spaced frames tiled into one JPEG (seek-bar previews).
+ * Decodes key frames only (-skip_frame nokey), so even long videos take a second or
+ * two; falls back to a full decode when that yields nothing (odd codecs).
+ */
+async function storyboard(src, dst, { count = 80, width = 160 } = {}) {
+    const { duration, width: vw, height: vh } = await probe(src);
+    if (!duration) throw new Error('no duration');
+    const cols = 10;
+    const rows = Math.ceil(count / cols);
+    const h = vw && vh ? Math.max(2, Math.round((width * vh) / vw / 2) * 2) : Math.round(width * 9 / 16 / 2) * 2;
+    const vf = `fps=${count}/${duration.toFixed(3)},scale=${width}:${h},tile=${cols}x${rows}`;
+    const attempt = (keyOnly) => run(ffmpeg(src)
+        .inputOptions(keyOnly ? ['-skip_frame', 'nokey'] : [])
+        .outputOptions(['-vf', vf, '-frames:v', '1', '-fps_mode', 'vfr', '-q:v', '5', '-y'])
+        .output(dst));
+    try {
+        await attempt(true);
+        if (!fs.existsSync(dst) || fs.statSync(dst).size < 1000) throw new Error('empty');
+    } catch {
+        await attempt(false);
+    }
+    return { cols, rows, count, width, height: h, interval: duration / count, duration };
+}
+
 function hashFile(filePath) {
     return new Promise((resolve, reject) => {
         const h = crypto.createHash('sha256');
@@ -153,7 +178,50 @@ async function replaceFile(from, target, attempts = 20) {
     }
 }
 
+/**
+ * A container the browser can't play (MPEG-TS from streams / camcorders) → MP4.
+ * First a lossless repack (seconds: the streams are copied as they are); if the
+ * codecs don't fit MP4 that way, a re-encode (H.264 + AAC).
+ */
+async function remuxToMp4(src, dst, { onProgress } = {}) {
+    const tmp = `${dst}.part.mp4`;
+    try {
+        await run(ffmpeg(src)
+            .outputOptions(['-map', '0:v:0?', '-map', '0:a:0?', '-c', 'copy', '-bsf:a', 'aac_adtstoasc', '-movflags', '+faststart', '-y'])
+            .output(tmp));
+    } catch {
+        let total = null;
+        try { total = (await probe(src)).duration || null; } catch { /* unknown */ }
+        await run(ffmpeg(src)
+            .outputOptions(['-map', '0:v:0?', '-map', '0:a:0?', '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '20', '-pix_fmt', 'yuv420p',
+                '-c:a', 'aac', '-b:a', '160k', '-movflags', '+faststart', '-y'])
+            .output(tmp), { total, onProgress });
+    }
+    fs.renameSync(tmp, dst);
+    return dst;
+}
+
+/**
+ * A video without sound + its sound track, each a separate file (Reddit's v.redd.it
+ * serves them as two DASH streams) → one MP4. The streams are copied as they are.
+ */
+async function muxAudioVideo(videoSrc, audioSrc, dst) {
+    const tmp = `${dst}.part.mp4`;
+    try {
+        await run(ffmpeg()
+            .input(videoSrc)
+            .input(audioSrc)
+            .outputOptions(['-map', '0:v:0', '-map', '1:a:0', '-c', 'copy', '-movflags', '+faststart', '-y'])
+            .output(tmp));
+        fs.renameSync(tmp, dst);
+    } catch (e) {
+        fs.rmSync(tmp, { force: true });
+        throw e;
+    }
+    return dst;
+}
+
 module.exports = {
-    THUMB_SIZE, isUrl, timemarkToSec, probe,
-    trimFile, captureFrame, thumbAt, hashFile, replaceFile,
+    THUMB_SIZE, isUrl, timemarkToSec, probe, remuxToMp4, muxAudioVideo,
+    trimFile, captureFrame, thumbAt, storyboard, hashFile, replaceFile,
 };

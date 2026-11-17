@@ -1,11 +1,12 @@
 import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
+import {confirmDeleteForever} from '@services/deleteForever';
 import Navigation from "./Navigation";
-import Tags from "./Tags";
 import Video from "./Video";
 import MetadataPanel from "../Library/Metadata/MetadataPanel";
 import RemotePanel from "./RemotePanel";
+import FolderPanel from "./FolderPanel";
 import ImageEditor from "./ImageEditor";
-import Settings from "../../../../data/settings";
+import Settings from "@data/settings";
 import {FILE_TYPES, SOURCE_TYPES} from "@/Constants";
 import {useFavorites} from "@hooks/useFavorites";
 import {cachedMediaUrl} from "@/Infrastructure/MediaCache";
@@ -15,14 +16,24 @@ import {loadEditPreset} from "@services/imageEditPreset";
 import {mediaKey} from "@services/mediaKey";
 import {useSlideshow} from "./useSlideshow";
 import SlideshowHud from "./SlideshowHud";
+import Filmstrip from "./Filmstrip";
+import AnimatedImage, {isMaybeAnimated} from "./AnimatedImage";
+import {useViewPref} from "@services/viewPrefs";
 import {exitViewerFullscreen} from "./fullscreen";
+import {useResolvedTheme} from "@services/theme";
+import {matches} from '@services/keymap';
+import {readLibraryManga} from '@services/mangaLibrary';
+import {isMobileView, swipeHandlers} from '@services/mobile';
 
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(v, hi));
 
-const Modal = ({ fileId, mainArray, modalUpdater, displayFiles, onUpdated }) => {
+// autoSlideshow — start the slideshow as soon as the viewer opens (started from
+// outside the viewer: the selection / the whole collection).
+const Modal = ({ fileId, mainArray, modalUpdater, displayFiles, onUpdated, onReorder, autoSlideshow = false }) => {
     const [isLong, setIsLong]             = useState(false);
     const [degree, setDegree]             = useState(0);
-    const [panelOpen, setPanelOpen]       = useState(true);
+    // Phone: the picture gets the whole screen; the info panel opens on request.
+    const [panelOpen, setPanelOpen]       = useState(() => !isMobileView());
     const [editing, setEditing]           = useState(false);
     const [zoom, setZoom]                 = useState(1);
     const [pan, setPan]                   = useState({ x: 0, y: 0 });
@@ -37,6 +48,8 @@ const Modal = ({ fileId, mainArray, modalUpdater, displayFiles, onUpdated }) => 
     [fileId, mainArray]);
 
     const ss = useSlideshow({ file, mainArray, modalUpdater });
+    // The media stage stays dark; the side panel and the toolbar follow the app theme.
+    const uiTheme = useResolvedTheme();
 
     // Fullscreen belongs to the viewer: closing it drops back to the window.
     const isOpen = !!file;
@@ -45,9 +58,37 @@ const Modal = ({ fileId, mainArray, modalUpdater, displayFiles, onUpdated }) => 
 
     const isLibrary   = file?.remoteType === SOURCE_TYPES.LIBRARY;
     const hasMetaPanel = isLibrary && !!onUpdated;               // editable library metadata
-    const hasRemotePanel = !isLibrary && !!file?.tags?.length;   // read-only booru tag panel
+    const hasFolderPanel = file?.remoteType === SOURCE_TYPES.FOLDER && !!file?.filePath;   // file on disk
+    const hasRemotePanel = !isLibrary && !hasFolderPanel && !!file?.tags?.length;   // read-only booru tag panel
+    const hasSidePanel = hasMetaPanel || hasRemotePanel || hasFolderPanel;
     // The side panel steps aside for the whole slideshow (no layout jumps on pause).
-    const showPanel   = panelOpen && (hasMetaPanel || hasRemotePanel) && !ss.active;
+    const showPanel   = panelOpen && hasSidePanel && !ss.active;
+    // Thumbnail strip along the bottom (setting + T to toggle).
+    const [stripPref, setStripPref] = useViewPref('filmstrip');
+    const showStrip = stripPref && !ss.active && !editing;
+
+    useEffect(() => {
+        if (!file) return;
+        const onKey = (e) => {
+            if (!matches(e, 'viewer.filmstrip')) return;
+            const el = document.activeElement;
+            if (el?.tagName === 'INPUT' || el?.tagName === 'TEXTAREA' || el?.isContentEditable) return;
+            if (document.querySelector('.img-editor')) return;
+            e.preventDefault();
+            setStripPref(!stripPref);
+        };
+        document.addEventListener('keydown', onKey);
+        return () => document.removeEventListener('keydown', onKey);
+    }, [file, stripPref, setStripPref]);
+
+    const autoStarted = useRef(null);
+    useEffect(() => {
+        if (!file) { autoStarted.current = null; return; }
+        if (autoSlideshow && !ss.active && autoStarted.current !== autoSlideshow) {
+            autoStarted.current = autoSlideshow;
+            ss.start();
+        }
+    }, [file, autoSlideshow, ss]);
 
     // S starts the slideshow / toggles pause. While it runs, any other key, a click
     // on the media or the wheel pauses it (arrows still navigate).
@@ -59,7 +100,7 @@ const Modal = ({ fileId, mainArray, modalUpdater, displayFiles, onUpdated }) => 
         };
         const onKey = (e) => {
             if (typing() || document.querySelector('.img-editor')) return;
-            if (e.code === 'KeyS' && !e.ctrlKey && !e.metaKey && !e.altKey) {
+            if (matches(e, 'viewer.slideshow')) {
                 e.preventDefault();
                 ss.active ? ss.togglePause() : ss.start();
                 return;
@@ -75,7 +116,7 @@ const Modal = ({ fileId, mainArray, modalUpdater, displayFiles, onUpdated }) => 
         };
     }, [file, ss]);
 
-    // Переход к соседнему файлу (используется при удалении и смене коллекции)
+    // Step to a neighbour (after a delete or a move to another collection).
     const navigateToNext = useCallback(() => {
         const currentIndex = mainArray.findIndex(f => f.uniqueId === fileId);
         const next = mainArray[currentIndex + 1] || mainArray[currentIndex - 1];
@@ -87,15 +128,16 @@ const Modal = ({ fileId, mainArray, modalUpdater, displayFiles, onUpdated }) => 
         }
     }, [fileId, mainArray, modalUpdater]);
 
-    // Переход к соседнему файлу и удаление текущего
-    const handleDelete = useCallback(() => {
+    // Step to a neighbour and delete the current file.
+    // `forever`: Shift + Delete — past the trash (already confirmed by the caller).
+    const handleDelete = useCallback((forever = false) => {
         if (!file || !onUpdated) return;
         navigateToNext();
-        onUpdated('delete', file.id);
+        onUpdated(forever ? 'deleteForever' : 'delete', file.id);
     }, [file, navigateToNext, onUpdated]);
 
-    // Delete key removes immediately — the trash + Undo toast make the old countdown
-    // pointless. (capture phase so it runs before Navigation's key handling)
+    // Delete removes at once (the trash + Undo toast bring it back); capture phase,
+    // so it runs before Navigation's keys.
     useEffect(() => {
         if (!isLibrary || !onUpdated) return;
 
@@ -103,7 +145,9 @@ const Modal = ({ fileId, mainArray, modalUpdater, displayFiles, onUpdated }) => 
             if (document.querySelector('.img-editor')) return;   // don't delete while editing
             if (e.key === 'Delete') {
                 e.stopPropagation();
-                handleDelete();
+                if (e.shiftKey && !file?.deletedAt) {
+                    if (confirmDeleteForever(1, file?.title)) handleDelete(true);
+                } else handleDelete();
             }
         };
 
@@ -112,8 +156,8 @@ const Modal = ({ fileId, mainArray, modalUpdater, displayFiles, onUpdated }) => 
     }, [isLibrary, onUpdated, handleDelete]);
 
     // Number keys rate a library item: 1–9 set the rating, 0 sets 10, and pressing
-    // the current rating again clears it. Works for both images and videos — the
-    // video player no longer steals digits for percentage seeking.
+    // the current rating again clears it. Images and videos alike (the video player
+    // leaves digits alone).
     useEffect(() => {
         if (!hasMetaPanel || !file ||
             (file.type !== FILE_TYPES.IMAGE && file.type !== FILE_TYPES.VIDEO)) return;
@@ -187,6 +231,7 @@ const Modal = ({ fileId, mainArray, modalUpdater, displayFiles, onUpdated }) => 
                     sourceUrl: file.sourceUrl, tags: file.tags, type: file.type,
                     remoteType: file.remoteType, localUrl: file.localUrl, mimeType: file.mimeType,
                     rating: file.rating, time: file.time, size: file.size,
+                    filePath: file.filePath, score: file.score,
                 },
             }).catch(() => {});
         }, 900);
@@ -251,8 +296,8 @@ const Modal = ({ fileId, mainArray, modalUpdater, displayFiles, onUpdated }) => 
     }, [file, onUpdated]);
 
     const handlePanelUpdated = useCallback((idOrAction, data) => {
-        if (idOrAction === 'delete') {
-            handleDelete();
+        if (idOrAction === 'delete' || idOrAction === 'deleteForever') {
+            handleDelete(idOrAction === 'deleteForever');
             return;
         }
 
@@ -263,7 +308,6 @@ const Modal = ({ fileId, mainArray, modalUpdater, displayFiles, onUpdated }) => 
         onUpdated?.(idOrAction, data);
     }, [handleDelete, navigateToNext, onUpdated, file]);
 
-    // ─── Wheel-zoom / drag-pan for images while just viewing ───────────────────
     const canZoom = file?.type === FILE_TYPES.IMAGE && !(Settings.LongView && isLong);
 
     const onWheel = useCallback((e) => {
@@ -312,17 +356,32 @@ const Modal = ({ fileId, mainArray, modalUpdater, displayFiles, onUpdated }) => 
 
     if (!file) return null;
 
-    const mediaContent = file.type === FILE_TYPES.IMAGE ? (
-        <img
-            alt={file.title}
-            draggable={false}
-            onDragStart={(e) => e.preventDefault()}
-            style={{
-                transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom}) rotate(${degree}deg)`,
-                cursor: zoom > 1 ? 'grab' : 'default',
-            }}
-            src={cachedMediaUrl(file.getUrl())}
-        />
+    const imageStyle = {
+        transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom}) rotate(${degree}deg)`,
+        cursor: zoom > 1 ? 'grab' : 'default',
+    };
+    const imageSrc = cachedMediaUrl(file.getUrl());
+    const mediaContent = file.isManga ? (
+        <div className="manga-cover-view">
+            <img src={imageSrc} alt={file.title} draggable={false} />
+            <button className="manga-cover-read" onClick={(e) => { e.stopPropagation(); readLibraryManga(file); }}>
+                <i aria-hidden="true" className="bi bi-book-half" /> Читать · {file.pageCount} стр.
+            </button>
+        </div>
+    ) : file.type === FILE_TYPES.IMAGE ? (
+        isMaybeAnimated(file, file.getUrl())
+            // GIF / WebP: turns into a player (pause, frames, speed) when animated.
+            ? <AnimatedImage key={file.uniqueId} file={file} src={imageSrc} alt={file.title} style={imageStyle} />
+            : <img
+                // Re-mounted per file during a slideshow so each slide fades in.
+                key={ss.active ? file.uniqueId : 'img'}
+                className={ss.active ? 'ss-slide' : undefined}
+                alt={file.title}
+                draggable={false}
+                onDragStart={(e) => e.preventDefault()}
+                style={imageStyle}
+                src={imageSrc}
+            />
     ) : (
         <Video
             file={file}
@@ -339,7 +398,7 @@ const Modal = ({ fileId, mainArray, modalUpdater, displayFiles, onUpdated }) => 
         <>
             {/* The media viewer stays dark in the light theme too (data-bs-theme island). */}
             <dialog
-                className={`modal-view ${isFav(file) ? "favorite" : ""} ${showPanel ? 'with-panel' : ''} ${Settings.LongView && isLong ? "long" : ""}`}
+                className={`modal-view ${isFav(file) ? "favorite" : ""} ${showPanel ? 'with-panel' : ''} ${showStrip ? 'with-strip' : ''} ${Settings.LongView && isLong ? "long" : ""}`}
                 data-bs-theme="dark"
                 open
                 ref={modalRef}
@@ -352,16 +411,19 @@ const Modal = ({ fileId, mainArray, modalUpdater, displayFiles, onUpdated }) => 
             >
                 {!editing && (
                     <Navigation
+                        uiTheme={uiTheme}
                         file={file}
                         modalUpdater={modalUpdater}
                         mainArray={mainArray}
                         setDegree={setDegree}
                         displayFiles={displayFiles}
                         panelOpen={panelOpen}
-                        showFav={!isLibrary}
-                        onPanelToggle={(hasMetaPanel || hasRemotePanel) ? () => setPanelOpen(v => !v) : null}
-                        onEdit={isLibrary && onUpdated && file.type === FILE_TYPES.IMAGE && file.mimeType !== 'image/gif' ? () => setEditing(true) : null}
-                        onApplyLast={isLibrary && onUpdated && file.type === FILE_TYPES.IMAGE && file.mimeType !== 'image/gif' && loadEditPreset() ? handleApplyLast : null}
+                        showFav={!isLibrary && !hasFolderPanel}
+                        onPanelToggle={hasSidePanel ? () => setPanelOpen(v => !v) : null}
+                        stripOpen={!!stripPref}
+                        onStripToggle={mainArray.length > 1 ? () => setStripPref(!stripPref) : null}
+                        onEdit={isLibrary && onUpdated && file.type === FILE_TYPES.IMAGE && !file.isManga ? () => setEditing(true) : null}
+                        onApplyLast={isLibrary && onUpdated && file.type === FILE_TYPES.IMAGE && !file.isManga && loadEditPreset() ? handleApplyLast : null}
                         onDuplicate={isLibrary && onUpdated ? handleDuplicate : null}
                         onSlideshow={ss.active ? null : ss.start}
                         hidden={ss.active && !ss.paused}
@@ -369,24 +431,34 @@ const Modal = ({ fileId, mainArray, modalUpdater, displayFiles, onUpdated }) => 
                 )}
 
                 {ss.active && !editing && <SlideshowHud ss={ss} file={file} />}
+                {showStrip && <Filmstrip items={mainArray} current={file} onPick={modalUpdater} onHide={() => setStripPref(false)} onReorder={onReorder} />}
+                {!stripPref && !ss.active && !editing && mainArray.length > 1 && (
+                    <button className="fs-show" onClick={() => setStripPref(true)} title="Показать ленту миниатюр (T)">
+                        <i aria-hidden="true" className="bi bi-chevron-up" />
+                    </button>
+                )}
 
                 {/* The media area is always rendered in the same spot so toggling the
                     panel never remounts <Video> (which would restart playback). Only
                     the panel / tags sibling swaps. */}
-                <div className="modal-media-area" ref={contentRef} onPointerDown={onMediaPointerDown}>
+                <div className="modal-media-area" ref={contentRef} onPointerDown={onMediaPointerDown}
+                     {...swipeHandlers((dir) => {
+                         // Swipe left → next, right → previous (not while zoomed in).
+                         document.dispatchEvent(new CustomEvent('df:modalShift', { detail: -dir }));
+                     }, { enabled: zoom <= 1 && !editing })}>
                     <div className="modal-content-wrapper">
                         {editing ? null : mediaContent}
                     </div>
                 </div>
                 {showPanel && (
-                    <div className="modal-panel-wrapper">
+                    <div className="modal-panel-wrapper" data-bs-theme={uiTheme}>
                         {hasMetaPanel
                             ? <MetadataPanel file={file} onUpdated={handlePanelUpdated} />
-                            : <RemotePanel file={file} />}
+                            : hasFolderPanel
+                                ? <FolderPanel file={file} />
+                                : <RemotePanel file={file} />}
                     </div>
                 )}
-                {/* Library keeps its old bottom-tags look when its panel is hidden. */}
-                {hasMetaPanel && !panelOpen && !ss.active && <Tags file={file} />}
 
                 {editing && (
                     <ImageEditor

@@ -1,4 +1,3 @@
-// ─── Layout ──────────────────────────────────────────────────────────────────
 
 .library-layout {
   display: flex;
@@ -10,13 +9,13 @@
   min-width: 240px;
   max-width: 240px;
   border-right: 1px solid var(--bs-border-color);
-  // The sidebar itself no longer scrolls — the tree gets its own scroll region so
-  // the import block stays pinned at the bottom no matter how many collections exist.
+  // The sidebar itself doesn't scroll: the tree has its own scroll region, so the
+  // import block stays pinned at the bottom however many collections there are.
   overflow: hidden;
-  padding: 8px;
+  padding: var(--df-sp-4);
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--df-sp-4);
 }
 
 .library-main {
@@ -33,25 +32,23 @@
   user-select: none;
 }
 
-// ─── Filters ─────────────────────────────────────────────────────────────────
-
 .library-filters {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 8px 12px;
+  gap: var(--df-sp-6);
+  padding: var(--df-sp-4) var(--df-sp-6);
   border-bottom: 1px solid var(--bs-border-color);
   flex-wrap: wrap;
   flex-shrink: 0;
 }
 
 .filter-label {
-  font-size: 11px;
+  font-size: var(--df-fs-xs);
   font-weight: 600;
   text-transform: uppercase;
   color: var(--bs-secondary);
   display: block;
-  margin-bottom: 2px;
+  margin-bottom: var(--df-sp-1);
 }
 
 .filter-search {
@@ -64,11 +61,11 @@
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    gap: 2px;
+    gap: var(--df-sp-1);
     min-width: 150px;
-    padding: 2px 6px;
+    padding: var(--df-sp-1) var(--df-sp-3);
     border: 1px solid var(--bs-border-color);
-    border-radius: 4px;
+    border-radius: var(--df-r-sm);
     cursor: text;
   }
 
@@ -77,7 +74,7 @@
     outline: none;
     background: transparent;
     color: var(--bs-body-color);
-    font-size: 13px;
+    font-size: var(--df-fs-md);
     min-width: 60px;
     width: auto;
   }
@@ -85,11 +82,11 @@
 
 .filter-rating {
   .rating-stars {
-    font-size: 16px;
+    font-size: var(--df-fs-xl);
     color: var(--bs-warning);
     cursor: pointer;
     display: flex;
-    gap: 2px;
+    gap: var(--df-sp-1);
   }
 }
 
@@ -100,11 +97,11 @@
 .filter-footer {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--df-sp-4);
   margin-left: auto;
 
   .filter-count {
-    font-size: 12px;
+    font-size: var(--df-fs-sm);
     color: var(--bs-secondary);
     white-space: nowrap;
   }

@@ -44,14 +44,14 @@ const CollectionPicker = ({ currentCollectionId, mixed = false, onChange }) => {
                     title={current?.path.length ? [...current.path, current.name].join(' › ') : undefined}
                     onClick={() => setOpen(v => !v)}
                 >
-                    <i className={`bi ${current ? 'bi-folder' : 'bi-inbox'}`} />
+                    <i aria-hidden="true" className={`bi ${current ? 'bi-folder' : 'bi-inbox'}`} />
                     <span>
                         {mixed ? 'Разные коллекции' : (current?.name || 'Без коллекции')}
                         {!mixed && current?.path.length > 0 && (
                             <small className="collection-picker-path">{current.path.join(' › ')}</small>
                         )}
                     </span>
-                    <i className="bi bi-chevron-down ms-auto" />
+                    <i aria-hidden="true" className="bi bi-chevron-down ms-auto" />
                 </button>
                 {quick && (
                     <button
@@ -59,7 +59,7 @@ const CollectionPicker = ({ currentCollectionId, mixed = false, onChange }) => {
                         title={`Назначить в «${quick.name}»`}
                         onClick={() => assign(quick.id)}
                     >
-                        <i className="bi bi-arrow-repeat" />
+                        <i aria-hidden="true" className="bi bi-arrow-repeat" />
                     </button>
                 )}
             </div>

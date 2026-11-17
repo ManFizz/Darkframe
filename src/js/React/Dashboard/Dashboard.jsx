@@ -20,7 +20,7 @@ const fmtDuration = (sec) => {
     return `${m} мин`;
 };
 
-// "2026-09" → "сен 26"
+// "2026-09" → short month + year (Russian month names)
 const MONTHS = ['янв', 'фев', 'мар', 'апр', 'май', 'июн', 'июл', 'авг', 'сен', 'окт', 'ноя', 'дек'];
 const fmtMonth = (m) => {
     const [y, mo] = (m || '').split('-');
@@ -29,7 +29,7 @@ const fmtMonth = (m) => {
 
 const Kpi = ({ icon, label, value, hint }) => (
     <div className="dash-kpi">
-        <i className={`bi ${icon}`} />
+        <i aria-hidden="true" className={`bi ${icon}`} />
         <div className="dash-kpi-body">
             <div className="dash-kpi-value">{value}</div>
             <div className="dash-kpi-label">{label}</div>
@@ -70,7 +70,7 @@ const Dashboard = ({ onClose }) => {
                     {error && <div className="settings-error">{error}</div>}
                     {!data && !error && (
                         <div className="settings-loading">
-                            <i className="bi bi-arrow-repeat spin me-2" />Считаю…
+                            <i aria-hidden="true" className="bi bi-arrow-repeat spin me-2" />Считаю…
                         </div>
                     )}
 
@@ -177,7 +177,7 @@ const Dashboard = ({ onClose }) => {
                                         <div className="dash-filelist">
                                             {data.largest.map(f => (
                                                 <div key={f.id} className="dash-filerow">
-                                                    <i className={`bi ${f.mimeType?.startsWith('video/') ? 'bi-film' : 'bi-image'}`} />
+                                                    <i aria-hidden="true" className={`bi ${f.mimeType?.startsWith('video/') ? 'bi-film' : 'bi-image'}`} />
                                                     <span className="dash-filerow-name" title={f.title || f.fileName}>
                                                         {f.title || f.fileName}
                                                     </span>

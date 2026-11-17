@@ -1,4 +1,4 @@
-const { ipcMain, app } = require('electron');
+const { ipcMain } = require('electron');
 const fs = require('fs');
 const path = require('path');
 
@@ -28,15 +28,24 @@ function register() {
         if (priv) {
             fs.writeFileSync(PRIVATE_OVERRIDE, JSON.stringify(priv, null, 2), 'utf8');
         }
+        // Keep this process's copies current too (the renderer applies its own —
+        // see liveConfig.js); nothing needs a restart.
+        if (settings) Object.assign(require('../../data/settings'), settings);
+        if (priv) Object.assign(require('../../data/private'), priv);
+        if (settings) require('../services/autostart').apply();
         return { ok: true };
-    });
-
-    // Settings are read at module load across both processes, so a relaunch is
-    // the clean way to apply them everywhere.
-    ipcMain.handle('config:relaunch', () => {
-        app.relaunch();
-        app.exit(0);
     });
 }
 
-module.exports = { register };
+// One setting changed from the main process (tray menu): persisted like a save
+// from the panel, applied to this process at once.
+function setSetting(key, value) {
+    let cur = {};
+    try { cur = JSON.parse(fs.readFileSync(SETTINGS_OVERRIDE, 'utf8')); } catch { /* none yet */ }
+    cur[key] = value;
+    fs.writeFileSync(SETTINGS_OVERRIDE, JSON.stringify(cur, null, 2), 'utf8');
+    require('../../data/settings')[key] = value;
+    if (key === 'StartWithWindows') require('../services/autostart').apply();
+}
+
+module.exports = { register, setSetting };

@@ -3,7 +3,7 @@ import {FILE_TYPES} from "@/Constants";
 
 const EXT = {
     IMAGE: /\.(jpg|jpeg|png|webp|gif|jfif)$/i,
-    VIDEO: /\.(webm|mp4|avi|mkv|mov)$/i,
+    VIDEO: /\.(webm|mp4|avi|mkv|mov|ts|m2ts|mts)$/i,
     GIF: /\.(gif)$/i,
     WEBP: /\.(webp)$/i,
 };
@@ -37,8 +37,22 @@ export class ThumbFile {
         this.editedAt = data.editedAt || null;
         this.editParams = data.editParams || null;   // JSON string of the last image edit
         this.thumbAt = data.thumbAt ?? null;
+        this.duration = data.duration ?? null;
+        this.viewCount = data.viewCount ?? 0;          // times opened in the viewer (library)
+        this.lastViewedAt = data.lastViewedAt ?? null;
         this.mimeType = data.mimeType || null;
         this.notes = data.notes || null;
+        this.filePath = data.filePath || null;     // Folders browser: absolute path on disk
+        this.score = data.score ?? null;           // booru posts
+        this.remoteRating = data.remoteRating || null;
+        // Manga (library item made of pages)
+        this.isManga = this.mimeType === 'application/x-darkframe-manga';
+        this.pageCount = data.pageCount ?? null;
+        this.readPosition = data.readPosition ?? null;   // last read page (0-based, across chapters)
+        this.readTotal = data.readTotal ?? null;         // pages in all (guessed for online chapters)
+        this.mangaNew = data.mangaNew ?? 0;              // subscription: new chapters since last opened
+        this.mangaRemote = data.mangaRemote ?? 0;        // chapters read from the site (not downloaded)
+        this.readFinished = !!data.readFinished;
 
         this.type = data.type || this._detectType(this.thumbUrl);
         this._meta = data._meta || null;
@@ -62,9 +76,11 @@ export class ThumbFile {
         if (this.width > 0 && this.height > 0)
             return { width: this.width, height: this.height };
 
-        if (this.type === FILE_TYPES.IMAGE && this.thumbUrl) {
+        // Measure the real file: thumbUrl may be a downscaled preview (Folders, boorus).
+        const src = this.getUrl();
+        if (this.type === FILE_TYPES.IMAGE && src) {
             try {
-                const img = await this._loadMeta(this.thumbUrl);
+                const img = await this._loadMeta(src);
                 this.width = img.naturalWidth;
                 this.height = img.naturalHeight;
                 return { width: this.width, height: this.height };

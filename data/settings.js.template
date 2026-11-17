@@ -1,13 +1,19 @@
 const Settings = {
+    // 18+ sources (boorus, adult manga sites): hidden until switched on.
+    ShowAdult: false,
     SafeView: false,
     MaxThumbsPerPage: 32,
     Resize: true,
     LongView: true,
     HttpProxy: false,
-    LibraryPath: 'D:\\MyLibrary',
+    // Folder of the default (legacy) library. Empty = <userData>/library.
+    LibraryPath: '',
     EnableR34: false,
     EnableGelbooru: false,
     EnableR34Favs: false,
+    EnableDanbooru: false,
+    EnableManga: true,
+    CloseToTray: false,
 };
 
 module.exports = Settings;
