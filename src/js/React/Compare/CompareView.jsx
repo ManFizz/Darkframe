@@ -31,6 +31,7 @@ export function compareItemFromThumb(f) {
 
 const fmtSize = (b) => (b == null ? '—' : b < 1024 ** 2 ? `${Math.round(b / 1024)} КБ` : `${(b / 1024 ** 2).toFixed(2)} МБ`);
 const fmtDate = (s) => (s ? new Date(s * 1000).toLocaleDateString('ru-RU') : '—');
+const ipcErr = (e) => String(e?.message || e).replace(/^Error invoking remote method '[^']+': (Error: )?/, '');
 const isVideo = (it) => String(it.mimeType || '').startsWith('video/');
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 
@@ -64,24 +65,59 @@ const CompareView = () => {
     const [wipe, setWipe] = useState(50);
     const [busy, setBusy] = useState(false);
     const drag = useRef(null);
+    const dragCleanup = useRef(null);
     const stageRef = useRef(null);
+    const stateRef = useRef(null);
+    const aliveRef = useRef(true);
 
     useEffect(() => {
-        opener = (s) => { setState(s); setView({ z: 1, x: 0, y: 0 }); setWipe(50); setMode('side'); };
+        aliveRef.current = true;
+        return () => { aliveRef.current = false; };
+    }, []);
+
+    useEffect(() => {
+        opener = (s) => {
+            setState(s);
+            setView({ z: 1, x: 0, y: 0 });
+            setWipe(50);
+            setMode('side');
+            setBusy(false);
+        };
         return () => { opener = null; };
     }, []);
 
-    const close = useCallback(() => setState(null), []);
+    useEffect(() => { stateRef.current = state; }, [state]);
+
+    // Drop window pointer listeners if the overlay closes mid-drag.
+    useEffect(() => () => {
+        dragCleanup.current?.();
+        dragCleanup.current = null;
+        drag.current = null;
+    }, [state]);
+
+    const close = useCallback(() => {
+        if (busy) return;   // don't dismiss while a trash is in flight
+        setState(null);
+    }, [busy]);
 
     useEffect(() => {
         if (!state) return;
         const onKey = (e) => {
-            if (e.key === 'Escape') { e.stopPropagation(); close(); }
-            if (e.key === '0') setView({ z: 1, x: 0, y: 0 });
+            // Own the keyboard while open — otherwise Digit rating / viewer
+            // shortcuts under the overlay still fire (capture without stop).
+            e.stopPropagation();
+            if (e.key === 'Escape') { e.preventDefault(); close(); }
+            else if (e.key === '0') { e.preventDefault(); setView({ z: 1, x: 0, y: 0 }); }
         };
         window.addEventListener('keydown', onKey, true);
         return () => window.removeEventListener('keydown', onKey, true);
     }, [state, close]);
+
+    // Wipe/diff need two still images — fall back to side-by-side if a video appears.
+    useEffect(() => {
+        if (!state || mode === 'side') return;
+        if (isVideo(state.items[0]) || isVideo(state.items[1])) setMode('side');
+    }, [state, mode]);
 
     if (!state) return null;
     const [a, b] = state.items;
@@ -108,11 +144,20 @@ const CompareView = () => {
             const d = drag.current;
             if (!d) return;
             if (d.wipe) {
-                const r = stageRef.current.getBoundingClientRect();
+                const el = stageRef.current;
+                if (!el) return;
+                const r = el.getBoundingClientRect();
                 setWipe(clamp(((ev.clientX - r.left) / r.width) * 100, 0, 100));
             } else setView(v => ({ ...v, x: d.ox + ev.clientX - d.sx, y: d.oy + ev.clientY - d.sy }));
         };
-        const onUp = () => { drag.current = null; window.removeEventListener('pointermove', onMove); window.removeEventListener('pointerup', onUp); };
+        const onUp = () => {
+            drag.current = null;
+            dragCleanup.current = null;
+            window.removeEventListener('pointermove', onMove);
+            window.removeEventListener('pointerup', onUp);
+        };
+        dragCleanup.current?.();
+        dragCleanup.current = onUp;
         window.addEventListener('pointermove', onMove);
         window.addEventListener('pointerup', onUp);
     };
@@ -120,53 +165,81 @@ const CompareView = () => {
     const tf = { transform: `translate(${view.x}px, ${view.y}px) scale(${view.z})` };
 
     // A pool: go on with the kept one against the next of the rest.
+    // Read pool/items from stateRef so a swap/pick mid-await cannot trash the wrong pair.
     const goOn = (keepIt, dropIt) => {
-        const rest = state.pool?.filter(it => it.id !== dropIt.id);
+        const cur = stateRef.current;
+        if (!cur) return;
+        const rest = cur.pool?.filter(it => it.id !== dropIt.id);
         const next = rest?.find(it => it.id !== keepIt.id);
         if (next) {
-            const items = state.items[0].id === keepIt.id ? [keepIt, next] : [next, keepIt];
-            setState(s => ({ ...s, items, pool: rest.length > 2 ? rest : null }));
-        } else close();
+            const items = cur.items[0].id === keepIt.id ? [keepIt, next] : [next, keepIt];
+            setState(s => s ? ({ ...s, items, pool: rest.length > 2 ? rest : null }) : s);
+        } else setState(null);
     };
 
     const keep = async (keepIt, dropIt) => {
-        if (state.onKeep) {   // only marking — the caller trashes later
-            state.onKeep(keepIt, dropIt);
+        if (busy) return;
+        const cur = stateRef.current;
+        if (!cur) return;
+        if (cur.onKeep) {   // only marking — the caller trashes later
+            cur.onKeep(keepIt, dropIt);
             goOn(keepIt, dropIt);
             return;
         }
         setBusy(true);
         try {
             await LibraryService.deleteItem(dropIt.id, false);
+            if (!aliveRef.current) return;
             notify({
                 message: `«${dropIt.title}» — в корзину, оставлен «${keepIt.title}»`,
                 type: 'success',
                 duration: 8000,
-                action: { label: 'Вернуть', onClick: async () => { await LibraryService.restoreItem(dropIt.id); state.onDone?.(); } },
+                action: {
+                    label: 'Вернуть',
+                    onClick: async () => {
+                        try {
+                            await LibraryService.restoreItem(dropIt.id);
+                            cur.onDone?.();
+                        } catch (e) {
+                            notify({ message: ipcErr(e) || 'Не удалось вернуть', type: 'danger' });
+                        }
+                    },
+                },
             });
-            state.onDone?.();
+            cur.onDone?.();
             goOn(keepIt, dropIt);
+        } catch (e) {
+            if (aliveRef.current) {
+                notify({ message: ipcErr(e) || 'Не удалось удалить', type: 'danger' });
+            }
         } finally {
-            setBusy(false);
+            if (aliveRef.current) setBusy(false);
         }
     };
     const dropWord = state.onKeep ? 'отметить для корзины' : 'в корзину';
 
-    const swap = () => setState(s => ({ ...s, items: [s.items[1], s.items[0]] }));
+    const swap = () => {
+        if (busy) return;
+        setState(s => ({ ...s, items: [s.items[1], s.items[0]] }));
+    };
     // Put `it` on side `i`; picking the other side's item swaps them.
-    const pick = (i, it) => setState(s => {
-        const items = [...s.items];
-        if (items[1 - i].id === it.id) items[1 - i] = items[i];
-        items[i] = it;
-        return { ...s, items };
-    });
+    const pick = (i, it) => {
+        if (busy) return;
+        setState(s => {
+            const items = [...s.items];
+            if (items[1 - i].id === it.id) items[1 - i] = items[i];
+            items[i] = it;
+            return { ...s, items };
+        });
+    };
 
     const Info = ({ it, other, side }) => (
         <div className={`cmp-info ${side}`}>
             {state.pool && (
                 <div className="cmp-pick">
                     {state.pool.map((p, n) => (
-                        <button key={p.id} className={p.id === it.id ? 'active' : p.id === other.id ? 'other' : ''}
+                        <button key={p.id} type="button" className={p.id === it.id ? 'active' : p.id === other.id ? 'other' : ''}
+                                disabled={busy}
                                 onClick={() => pick(side === 'left' ? 0 : 1, p)}
                                 title={`${n + 1}. ${p.width ? `${p.width}×${p.height} · ` : ''}${fmtSize(p.size)} · ${p.collectionName || ''}`}>
                             <img src={p.thumb || p.url} alt="" draggable={false} />
@@ -189,20 +262,20 @@ const CompareView = () => {
             <div className="cmp-top">
                 <div className="cmp-modes">
                     {MODES.map(m => (
-                        <button key={m.id} className={mode === m.id ? 'active' : ''} onClick={() => setMode(m.id)}
+                        <button key={m.id} type="button" className={mode === m.id ? 'active' : ''} onClick={() => setMode(m.id)}
                                 disabled={m.id !== 'side' && (isVideo(a) || isVideo(b))}>
                             <i aria-hidden="true" className={`bi ${m.icon}`} /> {m.label}
                         </button>
                     ))}
                 </div>
                 <span className="cmp-hint">Колесо — масштаб (синхронно), перетаскивание — сдвиг, 0 — сброс</span>
-                <button className="cmp-icon" onClick={swap} title="Поменять местами"><i aria-hidden="true" className="bi bi-arrow-left-right" /></button>
-                <button className="cmp-icon" onClick={close} title="Закрыть (Esc)"><i aria-hidden="true" className="bi bi-x-lg" /></button>
+                <button type="button" className="cmp-icon" onClick={swap} disabled={busy} title="Поменять местами" aria-label="Поменять местами"><i aria-hidden="true" className="bi bi-arrow-left-right" /></button>
+                <button type="button" className="cmp-icon" onClick={close} disabled={busy} title="Закрыть (Esc)" aria-label="Закрыть (Esc)"><i aria-hidden="true" className="bi bi-x-lg" /></button>
             </div>
 
             <div className={`cmp-stage mode-${mode}`} ref={stageRef} onPointerDown={onDown}>
                 {mode === 'side' && [a, b].map((it, i) => (
-                    <div key={i} className="cmp-pane" onWheel={onWheel}>
+                    <div key={it.id || i} className="cmp-pane" onWheel={onWheel}>
                         <Media it={it} style={tf} className="cmp-media" />
                     </div>
                 ))}
@@ -225,11 +298,11 @@ const CompareView = () => {
             <div className="cmp-bottom">
                 <Info it={a} other={b} side="left" />
                 <div className="cmp-actions">
-                    <button className="cmp-btn" disabled={busy} onClick={() => keep(a, b)} title={`Правый — ${dropWord}`}>
+                    <button type="button" className="cmp-btn" disabled={busy} onClick={() => keep(a, b)} title={`Правый — ${dropWord}`}>
                         <i aria-hidden="true" className="bi bi-arrow-left" /> Оставить левый
                     </button>
-                    <button className="cmp-btn ghost" onClick={close}>Оставить оба</button>
-                    <button className="cmp-btn" disabled={busy} onClick={() => keep(b, a)} title={`Левый — ${dropWord}`}>
+                    <button type="button" className="cmp-btn ghost" disabled={busy} onClick={close}>Оставить оба</button>
+                    <button type="button" className="cmp-btn" disabled={busy} onClick={() => keep(b, a)} title={`Левый — ${dropWord}`}>
                         Оставить правый <i aria-hidden="true" className="bi bi-arrow-right" />
                     </button>
                 </div>
